@@ -1,0 +1,257 @@
+module ciena-fib-state {
+    namespace   "http://ciena.com/ns/yang/ciena/ciena-fib-state";
+    prefix "fib-state";
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific fib-state yang model.
+        Copyright (c) 2020  Ciena Corporation.  All rights
+        reserved.
+        All information contained herein is, and remains the
+        property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained
+        from Ciena Corporation.";
+
+    revision "2020-08-20" {
+        description
+            "Initial version of fib-state model.";
+    }
+
+    grouping fib-state-grouping {
+        description
+            "Fib state attributes";
+        container fib-state {
+            description
+                "Fib state container";
+            config false;
+            list vrf {
+                key "name";
+                leaf name {
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    description
+                        "Routing and forwarding instance name";
+                }
+                list ipv4 {
+                    description
+                        "IPv4 routing table";
+                    key "destination-prefix protocol";
+                    leaf destination-prefix {
+                        type union {
+                           type inet:ipv4-address;
+                           type inet:ipv4-prefix;
+                        }
+                        description
+                            "IPv4 destination prefix or destination address.";
+                    }
+                    leaf protocol {
+                        type enumeration {
+                            enum any {
+                               description "This IPv4 route is of type any";
+                            }
+                            enum static {
+                               description "This IPv4 route is of type static";
+                            }
+                            enum connected {
+                               description "This IPv4 route is of type connected";
+                            }
+                        }
+                        description
+                           "Describes the protocol type of IPv4 route";
+                    }
+                    list next-hop {
+                        key "hierarchy-level identifier";
+                        description
+                            "Next hop state attributes.
+                             A next hop is uniquely identified by combination of
+                             hierarchy-level + identifier";
+                        leaf hierarchy-level {
+                           type uint32;
+                           description
+                              "Indicates the hierarchy-level of next-hop.";
+                        }
+                        leaf identifier {
+                           type uint32;
+                           description
+                              "Identifier of next-hop in the list.";
+                        }
+                        leaf address {
+                            type  inet:ip-address;
+                            description
+                                "Ipv4 address";
+                        }
+                        leaf outgoing-interface {
+                            type string;
+                            description
+                                "Name of the outgoing ip-interface";
+                        }
+                        leaf installed {
+                            type boolean;
+                            description
+                                "State of route in FIB.
+                                 True indicates it was installed in the forwarding plane.
+                                 False indicates it was not installed in the forwarding plane.";
+                        }
+                        leaf active {
+                            type boolean;
+                            description
+                                "Presence indicates this is an active route.";
+                        }
+                        list mpls-label {
+                            key "label-number";
+
+                            leaf label-number {
+                               type uint8;
+                               description
+                                  "Label Number within the mpls-label-stack 1=> outermost, 2=> next etc...";
+                            }
+                            leaf label {
+                               type uint32;
+                               description
+                                  "Optional MPLS Label value for the MPLS Label within the label stack.";
+                            }
+                        }
+                    }
+                }
+                list ipv6 {
+                    description
+                        "IPv6 routing table";
+                    key "destination-prefix protocol";
+                    leaf destination-prefix {
+                        type union {
+                           type inet:ipv6-address;
+                           type inet:ipv6-prefix;
+                        }
+                        description
+                            "IPv6 destination prefix or destination address.";
+                    }
+                    leaf protocol {
+                        type enumeration {
+                            enum any {
+                               description "This IPv6 route is of type any";
+                            }
+                            enum static {
+                               description "This IPv6 route is of type static";
+                            }
+                            enum connected {
+                               description "This IPv6 route is of type connected";
+                            }
+                        }
+                        description
+                           "Describes the protocol type of IPv6 route";
+                    }
+                    list next-hop {
+                        key "hierarchy-level identifier";
+                        description
+                            "Next hop state attributes.
+                             A next hop is uniquely identified by combination of
+                             hierarchy-level + identifier";
+                        leaf hierarchy-level {
+                           type uint32;
+                           description
+                              "Indicates the hierarchy-level of next-hop.";
+                        }
+                        leaf identifier {
+                           type uint32;
+                           description
+                              "Identifier of next-hop in the list.";
+                        }
+                        leaf address {
+                            type  inet:ip-address;
+                            description
+                                "Ipv6 address";
+                        }
+                        leaf outgoing-interface {
+                            type string;
+                            description
+                                "Name of the outgoing ip-interface";
+                        }
+                        leaf installed {
+                            type boolean;
+                            description
+                                "State of route in FIB.
+                                 True indicates it was installed in the forwarding plane.
+                                 False indicates it was not installed in the forwarding plane.";
+                        }
+                        leaf active {
+                            type boolean;
+                            description
+                                "Presence indicates this is an active route.";
+                        }
+                        list mpls-label {
+                            key "label-number";
+
+                            leaf label-number {
+                               type uint8;
+                               description
+                                  "Label Number within the mpls-label-stack 1=> outermost, 2=> next etc...";
+                            }
+                            leaf label {
+                               type uint32;
+                               description
+                                  "Optional MPLS Label value for the MPLS Label within the label stack.";
+                            }
+                        }
+                    }
+                }
+                container summary {
+                    config false;
+                    description
+                        "Summary of all routes";
+
+                    list ip-routes {
+                        key "ip-version";
+                        description
+                            "Statistics of different IP routes";
+                        leaf ip-version {
+                            type enumeration {
+                                enum IPv4 {
+                                    description
+                                        "The IPv4 protocol as defined in RFC 791";
+                                }
+                                enum IPv6 {
+                                    description
+                                        "The IPv6 protocol as defined in RFC 2460";
+                                }
+                            }
+                        }
+                        leaf total-route-count {
+                            type  uint32;
+                            description "Total number of routes in the FIB from all protocols";
+                        }
+                        leaf static-routes {
+                            type  uint32;
+                            description "Total number of static routes in the FIB";
+                        }
+                        leaf connected-routes {
+                            type  uint32;
+                            description "Total number of connected routes in the FIB";
+                        }
+                    }
+                }
+            }
+        }
+    }
+    uses fib-state-grouping;
+}

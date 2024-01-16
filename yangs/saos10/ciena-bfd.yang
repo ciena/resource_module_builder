@@ -1,0 +1,945 @@
+module ciena-bfd {
+
+  namespace "http://ciena.com/ns/yang/ciena-bfd";
+
+  prefix "bfd";
+
+  import openconfig-interfaces {
+     prefix "oc-if";
+  }
+
+  import ciena-mpls-tp-corouted {
+     prefix "mpls-tp";
+  }
+
+  import ciena-bfd-mpls {
+     prefix "bfd-mpls";
+  }
+
+  import ciena-bfd-types {
+     prefix "bfd-types";
+  }
+
+  import ietf-inet-types {
+     prefix "inet";
+  }
+
+  import ciena-vrf {
+     prefix "vrf";
+  }
+
+  import ietf-routing-types {
+     prefix "rt-types";
+  }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+  description
+      "This YANG module defines Ciena's specific BFD protocol.
+      Copyright (c) 2019-2022  Ciena Corporation.  All rights
+      reserved.
+
+      All information and intellectual property contained in this
+      YANG module (Specification) is, and remains the property
+      of Ciena Corporation. Ciena retains all title and ownership
+      in the Specification, including any revisions.
+
+      Ciena grants all interested parties that access the
+      specification with the intent to use or distribute ('you') a
+      non-exclusive, no-cost license to use and distribute
+      unmodified copies of the Specification solely in connection
+      with the management of Ciena products sold by or on
+      behalf of Ciena, provided this copyright notice and license
+      appear on all copies. Ciena may rescind or modify this
+      license at any time.
+
+      This Specification is supplied 'as is', and Ciena makes no
+      warranty, either express or implied, as to the use, operation,
+      condition, or performance of the Specification. You agree
+      that Ciena has no liability for your use of the Specification.";
+
+  revision 2022-02-04 {
+     description
+        "Initiator in seamless-state is a container now and includes 
+         per-session operational data for Seamless BFD.
+         Introduced 'key' in all list elements for 'reflector' 
+         and sub-tree in 'seamless-state'.
+         Changed default admin-state of S-BFD initiator session.
+         Added support for Seamless-BFD over SR-policy.
+         Added 'common-seamless-bfd-profile-params-grouping' for 
+         parameters common to IP and MPLS Seamless-BFD profiles.
+         Added 'mpls-common-seamless-bfd-profile-params-grouping' for 
+         parameters common to MPLS tunnel and PW Seamless-BFD profiles.
+         Added 'sr-policy-seamless-bfd-cfg-grouping' for Seamless-BFD
+         configuration parameters on a SR-policy.
+         Added 'sr-policy-keys-grouping' for SR-policy key.
+         Added Seamless-BFD reflector and initiator sessions summary in 'global-state'.
+         Added branch with root 'seamless' for configuring local and remote reflector.
+         Added branch with root 'seamless' for local and remote reflector summary.
+         Added new MPLS Seamless-BFD profile type 'mpls-seamless-bfd-profile'.
+         Added description of profile leaf and updated description of slow-start leaf";
+  }
+
+  revision 2021-07-15 {
+    description
+       "Added profiles and profile-state container.
+        Added session-config-entry and session-config-entry-state containers.
+        Added identity ipv6-unicast-address-type and a leaf destination-address-type
+        for IPv6 address in session-config-entry.";
+  }
+
+  revision 2020-08-19 {
+    description 
+      "Added Notification for BFD session state change.
+       Added global-state container to get global bfd session statistics.
+       Added session-summary information in bfd global-state container.
+       Added a configurable global container.";
+  }
+
+  revision 2010-02-14 {
+    description "Initial revision.";
+  }
+
+  /* Identity definitions */
+
+  identity ipv6-unicast-address-type {
+     description
+        "IPv6 unicast address types";
+  }
+
+  identity link-local-unicast {
+     base ipv6-unicast-address-type;
+     description
+        "Link Local Unicast as address type";
+  }
+
+  identity global-unicast {
+     base ipv6-unicast-address-type;
+     description
+        "Global Unicast as address type.";
+  }
+
+  /*
+   * Groupings
+   */
+
+  grouping sr-policy-keys-grouping {
+     description
+        "SR-policy key for a Seamless-BFD initiator session.";
+
+     leaf sr-policy-color {
+        type uint32;
+        description
+           "Color of SR-policy.";
+     }
+
+     leaf sr-policy-endpoint {
+        type inet:ip-address;
+        description
+           "Endpoint-IP of SR-policy.";
+     }
+  }
+
+  grouping common-seamless-bfd-profile-params-grouping {
+     description 
+        "Seamless-BFD grouping for config parameters, which are
+        applicable for both IP and MPLS based Seamless-BFD profiles";
+
+     uses bfd-types:base-seamless-bfd-profile-params-grouping;
+     uses bfd-mpls:encap-cfg;
+  }
+
+  grouping mpls-common-seamless-bfd-profile-params-grouping {
+     description 
+        "Seamless-BFD grouping for config parameters, 
+        common to MPLS based entities.";
+
+     uses common-seamless-bfd-profile-params-grouping;
+
+     leaf gach-type {
+        description
+           "G-ACh channel-type value for MPLS Seamless-BFD session.";
+        type bfd-mpls:seamless-gach-value;
+     }
+  }
+
+  grouping sr-policy-seamless-bfd-cfg-grouping {
+     container seamless-bfd-cfg-params  {
+        description
+           "Seamless-BFD configuration on SR-policy.";
+        leaf profile {
+           description
+              "BFD profile to be used.";
+           type leafref  {
+              path "/bfd:bfd/bfd:profiles/bfd:mpls-seamless-bfd-profile/bfd:name";
+           }
+        }
+
+        leaf slow-start {
+           description
+              "Determines if initiator session uses configured or slow timer in
+               Desired Min TX Interval in transmitted packets
+               until a reply packet is received.";
+           type boolean;
+           default true;
+        }   
+
+        leaf admin-state {
+           description
+              "Determines if initiator session is administratively up or down.";
+           type boolean;
+           default false;
+        }   
+
+        leaf statistics-collection {
+           description
+              "Determines whether statistics collection will be 
+              turned on or off for accelerated Seamless-BFD session.";
+           if-feature bfd-types:accelerated-seamless-bfd;
+
+           type enumeration {
+              enum on {
+                 value 0;
+                 description
+                    "Statistics-collection will be on for accelerated Seamless-BFD session";
+              }
+              enum off {
+                 value 1;
+                 description
+                    "Statistics-collection will be off for accelerated Seamless-BFD session";
+              }
+           }
+           default off;
+        }   
+     }
+  }
+
+  /*
+   * Containers
+   */
+
+  container bfd {
+     description "BFD configuration and operational data.";
+
+     container global {
+        description
+           "BFD global configuration data.";
+        leaf admin-down {
+           type boolean;
+           default false;
+           description
+              "Is BFD global administratively down.";
+        }
+     }
+
+     container global-state {
+        description
+           "Bfd global operational data.";
+
+        config false;
+        container ipv4-bfd-summary {
+           description
+              "Ipv4 bfd session summary.";
+
+           uses bfd-types:session-statistics-summary;
+        }
+
+        container ipv6-bfd-summary {
+           description
+              "Ipv6 bfd session summary.";
+
+           uses bfd-types:session-statistics-summary;
+        }
+
+        container lsp-bfd-summary {
+           description
+              "Lsp bfd session summary.";
+
+           uses bfd-types:session-statistics-summary;
+        }
+
+        container seamless {
+           description
+              "Seamless-BFD reflector session summary.";
+           if-feature bfd-types:seamless-bfd;
+
+           container reflector-summary {
+              description
+                 "Seamless-BFD local reflector session summary.";
+
+              uses bfd-types:seamless-reflector-statistics-summary;
+           }
+
+           container initiator-summary {
+              description
+                 "Seamless-BFD local initiator session summary.";
+
+              uses bfd-types:seamless-initiator-statistics-summary;
+           }
+        }
+     }
+
+     container profiles {
+        description
+           "BFD profiles";
+        list ip-bfd-profile {
+           description
+              "List of IP BFD profiles.";
+           key "name";
+           uses bfd-types:profile-common-parms;
+        }
+        list mpls-bfd-profile {
+           description
+              "List of MPLS BFD profiles.";
+           key "name";
+           uses bfd-types:profile-common-parms;
+           uses bfd-mpls:encap-cfg;
+
+           leaf gach-type {
+              type bfd-mpls:gach-value;
+              description
+                 "GACH value for LSP BFD session";
+           }
+
+           leaf enable-cv {
+              when "../gach-type = 'mpls-tp-cc'" {
+                 description
+                    "Enable Connectivity Verification (CV) feature ";
+              }
+              type empty;
+           }
+        }
+
+        list mpls-seamless-bfd-profile {
+           description
+              "List of MPLS Seamless-BFD profiles.";
+           if-feature bfd-types:seamless-bfd;
+           key "name";
+           uses mpls-common-seamless-bfd-profile-params-grouping
+           {
+              refine encap {
+                 default bfd-types:encap-ip;
+              }
+
+              refine gach-type {
+                 default ipv4;
+              }
+           }
+
+           container reverse-path {
+              description 
+                 "Path details for Seamless-BFD reply packet on reverse path.
+                 Default reverse path is IP.";
+              leaf label {
+                 description 
+                    "Binding-SID value in case reverse path is SR-policy.
+                    For other TE paths, can be the reverse label.";
+                 type rt-types:mpls-label;
+              }
+           }
+        }
+     }
+
+     container profiles-state {
+        description
+           "BFD profiles state";
+        config false;
+        list ip-bfd-profile {
+           description
+              "List of IP BFD profile.";
+           key "name";
+           uses bfd-types:profile-common-parms;
+           leaf num-of-ref {
+              type uint16;
+              description
+                 "Number of BFD map referring the given profile.";
+           }
+        }
+        list mpls-bfd-profile {
+           description
+              "List of MPLS BFD profile.";
+           key "name";
+           uses bfd-types:profile-common-parms;
+           uses bfd-mpls:encap-cfg;
+
+           leaf gach-type {
+              type bfd-mpls:gach-value;
+              description
+                 "GACH value for LSP BFD session";
+           }     
+
+           leaf enable-cv {
+              when "../gach-type = 'mpls-tp-cc'" {
+                 description
+                    "Enable Connectivity Verification(CV) feature ";
+              }  
+              type empty;
+           }
+
+           leaf num-of-ref {
+              type uint16;
+              description
+                 "Number of BFD map referring the given profile.";
+           }
+        }
+
+        list mpls-seamless-bfd-profile {
+           description
+              "List of MPLS Seamless-BFD profiles.";
+           if-feature bfd-types:seamless-bfd;
+           key "name";
+           uses mpls-common-seamless-bfd-profile-params-grouping;
+
+           container reverse-path {
+              description 
+                 "Path details for Seamless-BFD reply packet on reverse path.
+                 Default reverse path is IP.";
+              leaf label {
+                 description 
+                    "Binding-SID value of reverse SR-policy.";
+                 type rt-types:mpls-label;
+              }
+              /* In future, "sid-list" param can be present as per need.
+               * Also, VCCV Seamless-BFD may not need a path disjoint than the PW itself. */
+           }
+
+           leaf num-of-ref {
+              description
+                 "Number of service entities referring the given profile.";
+              type uint16;   /* Up to 65,535 sessions per profile */
+           }
+        }
+     }
+
+     container seamless {
+        description 
+           "Seamless-BFD configuration data.";
+        if-feature bfd-types:seamless-bfd;
+
+        container reflector {
+           description
+              "Seamless-BFD reflector configuration data.";
+
+           container local {
+              description
+                 "Seamless-BFD local reflector configuration data.";
+
+              leaf discriminator {
+                 description
+                    "Discriminator of local Seamless-BFD reflector session.";
+
+                 type union {
+                    type bfd-types:discriminator;
+                    type inet:ipv4-address;
+                 }
+                 default 0;
+              }
+
+              leaf required-min-rx-interval {
+                 description
+                    "Required Min Rx Interval parameter (in microseconds)
+                    in Seamless-BFD Reply packet from reflector session.";
+
+                 type bfd-types:intervals;
+                 default 100000;
+              }
+
+              leaf admin-state {
+                 description
+                    "Seamless-BFD reflector session administrative state.";
+
+                 type boolean;
+                 default false;
+              }
+           }
+
+           list remote {
+              description
+                 "Seamless-BFD remote reflector information configured statically on local node."; 
+              key "ipv4-address";
+              /* Only one static remote reflector configuation is allowed. */
+
+              leaf ipv4-address {
+                 description
+                    "IPv4 address of remote Seamless-BFD reflector node.";
+
+                 type inet:ipv4-address;
+              }
+
+              leaf discriminator {
+                 description
+                    "Discriminator of remote Seamless-BFD reflector session.";
+
+                 type union {
+                    type bfd-types:discriminator;
+                    type inet:ipv4-address;
+                 }
+                 default 0;
+              }
+           }
+        }
+     }
+
+     container seamless-state {
+        description 
+           "Seamless-BFD state data.";
+        if-feature bfd-types:seamless-bfd;
+        config "false";
+
+        container reflector {
+           description
+              "Seamless-BFD reflector session configuration and state data.";
+
+           container local {
+              description
+                 "Local reflector session configuration data.";
+
+              leaf discriminator {
+                 description
+                    "Discriminator of local reflector session.";
+
+                 type bfd-types:discriminator;
+              }
+
+              leaf required-min-rx-interval {
+                 description
+                    "Required Min Rx Interval parameter (in microseconds)
+                    in Seamless-BFD Reply packet from reflector session.";
+
+                 type bfd-types:intervals;
+                 default 100000;
+              }
+
+              leaf admin-state {
+                 description
+                    "Administrative state of local reflector session.";
+
+                 type boolean;
+                 default false;
+              }
+           }
+
+           list remote {
+              description
+                 "List of reflector discriminator advertisements received 
+                 from remote node, or statically configured.";
+              reference
+                 "RFC 7883,7884: Seamless-BFD reflector discriminators advertised 
+                 using ISIS and OSPF, or configured statically.";
+              key "ipv4-address";
+
+              leaf ipv4-address {
+                 description 
+                    "Sender node's IPv4 address, which hosts the reflector.";
+
+                 type inet:ipv4-address;
+              }
+
+              list advertised {
+                 description
+                    "List of discriminators whose advertisements were received 
+                    from given reflector node, or is configured statically for the
+                    reflector node.";
+                 key "discriminator";
+
+                 leaf discriminator {
+                    description
+                       "Advertised discriminator value of reflector.";
+
+                    type bfd-types:discriminator;
+                 }
+
+                 list protocol {
+                    description 
+                       "List of protocols which advertised the discriminator.";
+                    key "name";
+
+                    leaf name {
+                       description 
+                          "Protocol name.
+                          Presently, 'Static' or 'ISIS'.
+                          In future, 'OSPF', 'BGP'.";
+                       type string {
+                          length "8";
+                       }
+                    }
+                 }
+
+                 leaf num-of-advertisements {
+                    description
+                       "Number of advertisements received."; 
+                    type uint16; /* Up to 65,535 advertisements. */
+                 }
+              }
+
+              list selected {
+                 description
+                    "List of discriminators from given reflector node, 
+                    selected for initiator sessions.";
+                 max-elements 1; /* Currently support single discriminator per reflector IP. */
+                 key "discriminator";
+
+                 leaf discriminator {
+                    description "Discriminator for given reflector session.";
+
+                    type bfd-types:discriminator;
+                 }
+
+                 leaf required-min-rx-interval {
+                    description
+                       "Required Min Rx Interval parameter (in microseconds) 
+                       for given remote reflector session.";
+
+                    type bfd-types:intervals;
+                 }
+
+                 leaf state {
+                    description
+                       "Remote state of given remote reflector session.";
+
+                    type bfd-types:state;
+                 }
+
+                 leaf num-of-ref {
+                    description
+                       "Number of local initiator sessions associated 
+                       with given reflector session.";
+
+                    type uint16; /* Up to 65,535 initiators per {reflector-IP, reflector-discriminator} tuple. */
+                 }
+              }
+           }
+        }
+
+        container initiator {
+           description
+              "State data of Seamless-BFD initiator sessions.";
+           list sr-policy {
+              description
+                 "State data of Seamless-BFD initiator sessions monitoring SR-policy.";
+              key "sr-policy-color sr-policy-endpoint";
+
+              uses sr-policy-keys-grouping; 
+              uses bfd-types:all-session;
+              leaf num-of-ref {
+                 description
+                    "Number of services monitored from given initiator session."; 
+
+                 type uint16; /* Up to 65,535 services per initiator session. */
+              }
+           }
+        }
+     }
+
+     container session-config-entry {
+        description
+           "BFD session config entry.";
+        container ip {
+           description
+              "Associate a BFD profile to IP-BFD session.";
+           container single-hop {
+              description
+                 "Associate a BFD profile to interface for a IP-SH BFD session.";
+              list ipv4 {
+                 key "interface";
+                 description
+                    "List of IPv4 single-hop session configuration entries.";
+                 leaf interface {
+                    type leafref  {
+                       path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description
+                       "L3 interface on which the BFD session is running.";
+                 }
+                 leaf profile {
+                    mandatory true;
+                    type leafref  {
+                       path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                    }
+                    description
+                       "BFD profile to be used.";
+                 }
+                 uses bfd-types:bfd-session-config-entry-params;
+              }
+              list ipv6 {
+                 key "interface destination-address-type";
+                 description
+                    "List of IPv6 single-hop session configuration entries.";
+                 leaf interface { 
+                    type leafref  {
+                       path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description
+                       "L3 interface on which the BFD session is running.";
+                 }
+                 leaf destination-address-type {
+                    type identityref {
+                       base ipv6-unicast-address-type;
+                    }
+                    description
+                       "Address type for IPv6 address on which BFD session is running.";
+                 }
+                 leaf profile {
+                    mandatory true;
+                    type leafref  {
+                       path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                    }
+                    description
+                       "BFD profile to be used.";
+                 }
+                 uses bfd-types:bfd-session-config-entry-params;
+              }
+           }
+           container multi-hop {
+              description
+                 "Associate a BFD profile to vrf-name:dest-name tuple for a IP-MH BFD session.";
+              list vrf {
+                 key "vrfname";
+                 description
+                    "List of VRF entries";
+                 leaf vrfname {
+                    description
+                       "VRF name";
+                    type leafref {
+                       path "/vrf:vrf/vrf:vrfName";
+                    }
+                 }
+                 list ipv4 {
+                    key "dest-addr";
+                    description
+                       "List of IPv4 multi-hop session configuration entries.";
+                    leaf dest-addr {
+                       type inet:ipv4-address;
+                       description
+                          "Destination IP address";
+                    }
+                    leaf profile {
+                       mandatory true;
+                       type leafref  {
+                          path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                       }
+                       description
+                          "BFD profile to be used.";
+                    }
+                    uses bfd-types:bfd-session-config-entry-params;
+                 }
+                 list ipv6 {
+                    key "dest-addr";
+                    description
+                       "List of IPv6 multi-hop session configuration entries.";
+                    leaf dest-addr {
+                       type inet:ipv6-address;
+                       description
+                          "Destination IP address";
+                    }
+                    leaf profile {
+                       mandatory true;
+                       type leafref  {
+                          path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                       }
+                       description
+                          "BFD profile to be used.";
+                    }
+                    uses bfd-types:bfd-session-config-entry-params;
+                 }
+              }
+           }
+        }
+     }
+
+     container session-config-entry-state {
+        config "false";
+        description
+           "BFD session state for BFD provisioning";
+        container ip {
+           description
+              "IP BFD session config entry state";
+           container single-hop {
+              description
+                 "IP-SH session config entry state";
+              list ipv4 {
+                 key "interface";
+                 description
+                    "List of IPv4 single-hop session configuration entries.";
+                 leaf interface { 
+                    type leafref  {
+                       path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description
+                       "L3 interface on which the BFD session is running.";
+                 }
+                 leaf profile {
+                    type leafref  {
+                       path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                    }
+                    description
+                       "BFD profile to be used.";
+                 }
+                 uses bfd-types:bfd-session-config-entry-params;
+              }
+              list ipv6 {
+                 key "interface destination-address-type";
+                 description
+                    "List of IPv6 single-hop session configuration entries.";
+                 leaf interface { 
+                    type leafref  {
+                       path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description
+                       "L3 interface on which the BFD session is running.";
+                 }
+                 leaf destination-address-type {
+                    type identityref {
+                       base ipv6-unicast-address-type;
+                    }
+                    description
+                       "Address type for IPv6 address on which BFD session is running.";
+                 }
+                 leaf profile {
+                    type leafref  {
+                       path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                    }
+                    description
+                       "BFD profile to be used.";
+                 }
+                 uses bfd-types:bfd-session-config-entry-params;
+              }
+           }
+           container multi-hop {
+              description
+                 "IP-MH session config entry state";
+              list vrf {
+                 key "vrfname";
+                 description
+                    "List of VRF entries";
+                 leaf vrfname {
+                    description
+                       "VRF name";
+                    type leafref {
+                       path "/vrf:vrf/vrf:vrfName";
+                    }
+                 }
+                 list ipv4 {
+                    key "dest-addr";
+                    description
+                       "List of IPv4 multi-hop session configuration entries.";
+                    leaf dest-addr {
+                       type inet:ipv4-address;
+                       description
+                          "Destination IP address";
+                    }
+                    leaf profile {
+                       type leafref  {
+                          path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                       }
+                       description
+                          "BFD profile to be used.";
+                    }
+                    uses bfd-types:bfd-session-config-entry-params;
+                 }
+                 list ipv6 {
+                    key "dest-addr";
+                    description
+                       "List of IPv6 multi-hop session configuration entries.";
+                    leaf dest-addr {
+                       type inet:ipv6-address;
+                       description
+                          "Destination IP address";
+                    }
+                    leaf profile {
+                       type leafref  {
+                          path "/bfd:bfd/bfd:profiles/bfd:ip-bfd-profile/bfd:name";
+                       }
+                       description
+                          "BFD profile to be used.";
+                    }
+                    uses bfd-types:bfd-session-config-entry-params;
+                 }
+              }
+           }
+        }
+     }
+  }
+
+  /*
+   * Notifications
+   */
+
+  notification bfd-notification {
+    description
+      "Notification for BFD session state change.";
+
+    leaf session-index {
+       type uint32;
+       description
+          "An index used to uniquely identify BFD sessions.";
+    }
+    leaf session-type {
+      type bfd-types:bfd-session-type;
+      description
+        "BFD session type, this indicates the path type that BFD is
+         running on";
+    }
+    leaf dest-addr {
+       type inet:ip-address;
+       description
+          "IP address of the peer.";
+    }
+    leaf source-addr {
+       type inet:ip-address;
+       description
+          "Local IP address.";
+    }
+    leaf interface {
+       type leafref  {
+          path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+       }
+       description
+          "L3 interface on which the BFD session is running.";
+    }
+    leaf tunnel-name {
+       when "../session-type = 'tp-ingress-corout' or
+             ../session-type = 'tp-egress-corout'" {
+          description
+             "Tunnel name applicable when session-type is tp-ingress-corout
+              or tp-egress-corout.";
+       }
+       type leafref  {
+          path "/mpls-tp:tp-corouted-tunnels/mpls-tp:tunnel/mpls-tp:name";
+       }
+       description
+          "Tunnel on which the BFD session is running.";
+    }
+
+    uses sr-policy-keys-grouping {
+       if-feature bfd-types:seamless-bfd;
+       when "session-type = 'sr-policy-seamless-initiator'" {
+          description
+             "SR-policy key applicable when session is Seamless-BFD initiator."; 
+       }
+       description
+          "SR-policy monitored by Seamless-BFD initiator session."; 
+    }
+
+    leaf local-state {
+       type bfd-types:state;
+       description
+          "Local state of the BFD session.";
+    }
+    leaf remote-state {
+       type bfd-types:state;
+       description
+          "Remote state of the BFD session.";
+    }
+  }
+}

@@ -1,0 +1,241 @@
+module ciena-6500r-channel-ctrl-types {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-channel-ctrl-types";
+  prefix ccs-types;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's channel control service object types for the 6500r-Series platform";
+
+  revision 2021-05-04 {
+    description
+      "Added damped-power to the channel-controller-mode-enum";
+    reference
+      "1.0.3";
+  }
+  revision 2020-10-08 {
+    description
+      "Added turn-down to the ccs-mode-enum";
+    reference
+      "1.0.2";
+  }
+  revision 2020-06-24 {
+    description
+      "Added closed-loop-mode-enum";
+    reference
+      "1.0.1";
+  }
+  revision 2020-04-02 {
+    description
+      "Changed enumerated type:
+       channel-controller-mode-enum
+       Removed open-loop-loss
+       Added loss and power";
+    reference
+      "0.1.0";
+  }
+  revision 2019-06-03 {
+    description
+      "Added enumerated types:
+       ccs-mode-enum
+       ase-replacement-mode-enum
+       ccs-state-enum
+       channel-controller-mode-enum
+       channel-controller-state-enum.
+       Added load-ase-action typedef.";
+    reference
+      "0.1.0";
+  }
+  revision 2018-09-14 {
+    description
+      "6500r-series Release 1.0";
+  }
+
+  typedef ccs-mode-enum {
+    type enumeration {
+      enum "standby" {
+        description
+          "Indicates the fact that the CCS instance is idle, awaiting direction. In this mode, requests to initiate capacity changes will
+           not be processed. These will be deferred until the mode is either traffic-with-ase, or traffic-without-ase.";
+      }
+      enum "launch-ase" {
+        description
+          "Initiate ASE launching during calibration. When set to this mode, the CCS instance will fill the usable spectrum
+           with ASE.";
+      }
+      enum "traffic-with-ase" {
+        description
+          "Capacity change operations permitted on traffic channels. Traffic channels get replaced with ASE on fault. Usage of this mode
+           infers the fact that calibration has been performed in the section, hence that the line is ASE-loaded prior to the presence of any traffic channels.";
+      }
+      enum "traffic-without-ase" {
+        description
+          "Capacity change operations permitted on traffic channels. Traffic channels do not get replaced with ASE on fault";
+      }
+      enum "turn-down" {
+        description
+          "Initiate tear down of existing channel-controller entities. These channel-controllers will be recovered
+           once the ccs-instance mode is set to traffic-with-ase or traffic-without-ase.";
+      }
+    }
+    description
+      "Mode of operation of the Channel Controller Service instance";
+  }
+
+  typedef ccs-state-enum {
+    type enumeration {
+      enum "standby" {
+        description
+          "Controller is idle, awaiting direction";
+      }
+      enum "executing" {
+        description
+          "Controller is in the process of performing a calibration or capacity change operation.";
+      }
+      enum "complete" {
+        description
+          "Controller operation is complete.";
+      }
+    }
+  }
+
+  typedef ase-replacement-mode-enum {
+    type enumeration {
+      enum "enabled" {
+        description
+          "ASE replacement on fault is enabled. Indicates the fact that an in-service channel will be replaced by ASE on fault.
+           Channel will be restored when fault is cleared";
+      }
+      enum "disabled" {
+        description
+          "ASE replacement on fault is disabled. This is an unsupported parameter.";
+      }
+      enum "forced-ase" {
+        description
+          "Force channel to be ASE loaded regardless of whether or not there is a fault.";
+      }
+      enum "forced-traffic" {
+        description
+          "Force channel to select traffic switch port.";
+      }
+    }
+    description
+      "Indicator of ASE replacement on fault functionality for the channel-controller";
+  }
+
+  typedef closed-loop-mode-enum {
+    type enumeration {
+      enum "enabled" {
+        description
+          "Closed-Loop control is enabled.";
+      }
+      enum "disabled" {
+        description
+          "Closed-Loop control is disabled.";
+      }
+    }
+    description
+      "Indicator of Closed-Loop control for the channel-controller";
+  }
+
+  typedef channel-controller-mode-enum {
+    type enumeration {
+      enum "loss" {
+        description
+          "Loss control mode";
+      }
+      enum "power" {
+        description
+          "Power control mode";
+      }
+      enum "damped-power" {
+        description
+          "Damped power control mode";
+      }
+    }
+    description
+      "Mode of operation of the channel controller";
+  }
+
+  typedef channel-controller-state-enum {
+    type enumeration {
+      enum "inactive" {
+        description
+          "Initial channel state";
+      }
+      enum "waiting-for-power" {
+        description
+          "Channel is waiting for sufficient power to be selected for addition.";
+      }
+      enum "pending-add" {
+        description
+          "Channel has been selected for addition.";
+      }
+      enum "adding" {
+        description
+          "Channel is in the process of being added.";
+      }
+      enum "in-service" {
+        description
+          "Channel has been added.";
+      }
+      enum "waiting-for-downstream" {
+        description
+          "Channel is waiting for the downstream section mux to finish deleting to be selected for deletion.";
+      }
+      enum "pending-delete" {
+        description
+          "Channel has been selected for deletion.";
+      }
+      enum "deleting" {
+        description
+          "Channel is in the process of being deleted.";
+      }
+      enum "faulted" {
+        description
+          "Fault has been declared against the channel.";
+      }
+      enum "pending-ase-replacement" {
+        description
+          "The faulted channel has been selected for ASE replacement.";
+      }
+      enum "replacing-with-ase" {
+        description
+          "Channel is in the process of being replaced by ASE.";
+      }
+      enum "ase" {
+        description
+          "Channel has been replaced by ASE.";
+      }
+    }
+  }
+
+  typedef load-ase-action {
+    type enumeration {
+      enum "initiate-ase-loading" {
+        description
+          "Initiate ASE loading. ASE loading status reported in ccs_status.";
+      }
+    }
+  }
+
+  typedef decibels {
+    type decimal64 {
+      fraction-digits 2;
+    }
+    units "dB";
+    description
+      "Positive or negative";
+  }
+}

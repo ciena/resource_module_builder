@@ -1,0 +1,385 @@
+module ciena-waveserver-ptp-cmd {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-ptp-cmd";
+  prefix ptp-cmd;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-ptp {
+    prefix ptp;
+  }
+
+  import ciena-waveserver-xcvr {
+    prefix xcvr;
+  }
+
+  import ciena-ddf {
+    prefix ddf;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines type specific data for Channel Mux/Demux (CMD) specific
+     PTP objects on the Waveserver platform. It augments the ciena-waveserver-ptp
+     module. The PTP model represents the signal carried on a physical port. The
+     OCH, OTM, and OSC-Add-Drop PTP objects are automatically provisioned during
+     service CMD module installation, while the OSC PTP object is dependent on
+     explicit provisioning or SFP plug insertion.";
+
+  revision 2020-08-28 {
+    description
+      "Fixed XPath errors in when statements.";
+    reference
+      "Waveserver OS R2.0.3 user's guide.";
+  }
+  revision 2019-07-23 {
+    description
+      "Added support for OTDR.";
+    reference
+      "Waveserver Ai R1.5 user's guide.";
+  }
+  revision 2018-02-20 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of this module.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+
+  grouping optical-loss-group {
+    description
+      "Group of optical loss (span loss or return loss) related operational
+       data leafs. Can be used for Rx or Tx";
+    leaf actual {
+      ui:ui-name "Actual Loss (dB)";
+      type cienawstypes:decimal-2-dig;
+      units "dB";
+      config false;
+      description
+        "Actual Tx or Rx loss in dB.";
+    }
+
+    leaf maximum {
+      ui:ui-name "Loss Max (dB)";
+      type cienawstypes:decimal-2-dig;
+      units "dB";
+      config false;
+      description
+        "Maximum actual recorded Tx or Rx loss in dB.";
+    }
+
+    leaf minimum {
+      ui:ui-name "Loss Min (dB)";
+      type cienawstypes:decimal-2-dig;
+      units "dB";
+      config false;
+      description
+        "Minimum actual recorded Tx or Rx loss in dB.";
+    }
+
+    leaf maximum-recorded-time {
+      ui:ui-name "Maximum Power Recorded Time";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "The exact date and time when the maximum loss (Tx or Rx) was
+         recorded. In the format of a date time string.";
+    }
+
+    leaf minimum-recorded-time {
+      ui:ui-name "Minimum Power Recorded Time";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "The exact date and time when the minimum loss (Tx or Rx) was
+         recorded. In the format of a date time string.";
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties" {
+    ddf:ddf-struct-version "CmdFilterProps";
+    when "ptp:type = 'OCH' or ptp:type = 'OSC-Add-Drop'" {
+      description
+        "PTP filter properties for OCH and OSC-Add-Drop PTP types.";
+    }
+    description
+      "PTP filter properties for OCH and OSC-Add-Drop PTP types.";
+    container filter {
+      ui:ui-name "Filter";
+      config false;
+      description
+        "PTP filter operational data.";
+      leaf type {
+        ui:ui-name "Filter Type";
+        type enumeration {
+          enum "none" {
+            description
+              "No filter.";
+          }
+          enum "fixed" {
+            description
+              "Filter is fixed.";
+          }
+          enum "tunable" {
+            description
+              "Filter is tunable.";
+          }
+        }
+        description
+          "Internal filter type of the PTP. For CMD10 PTPs this is fixed.";
+      }
+
+      leaf bandwidth {
+        ui:ui-name "Filter Bandwidth";
+        type cienawstypes:decimal-1-dig;
+        units "GHz";
+        description
+          "Filter bandwidth of the OCH port, in GHz. For CMD10 PTPs this is
+           100GHz.";
+      }
+
+      leaf frequency {
+        ui:ui-name "Filter Frequency";
+        type cienawstypes:decimal-1-dig;
+        units "GHz";
+        description
+          "The center filter frequency value of the OCH or OSC-Add-Drop port,
+           in GHz.";
+      }
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties" {
+    ddf:ddf-struct-version "CmdAdjProps";
+    when "ptp:type = 'OCH'" {
+      description
+        "PTP adjacency properties for OCH (Optical Channel) PTP types.";
+    }
+    description
+      "PTP adjacency properties for OCH (Optical Channel) PTP types.";
+    container adjacency {
+      ui:ui-name "OCH Adjacency";
+      description
+        "OCH PTP adjacency attributes.";
+      leaf auto-provisioning {
+        ui:ui-name "Auto-Provisioning";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Specifies whether the CMD Auto-Fiber Discovery Application (cluster
+           application) can automatically provision a defined adjacency (either
+           manually-created or auto-discovered) with correct frequency and
+           transmit power. If disabled, the user must provision the modem
+           frequency and power levels on the modem PTP manually.";
+      }
+
+      leaf far-end-chassis {
+        ui:ui-name "Far-End Chassis";
+        type cienawstypes:ip-address;
+        description
+          "The user-provisioned (or discovered) far-end chassis IP address, if
+           applicable, or 0 if unprovisioned";
+      }
+
+      leaf far-end-slot {
+        ui:ui-name "Far-End Slot";
+        type string {
+          length "0..30";
+        }
+        description
+          "The user-provisioned (or discovered) far-end slot number, if
+           applicable, or empty string if unprovisioned. Data is represented
+           as a string rather than integer to allow for forward-compatibility
+           with future identifier formats.";
+      }
+
+      leaf far-end-port {
+        ui:ui-name "Far-End Port";
+        type string {
+          length "0..30";
+        }
+        description
+          "The user-provisioned (or discovered) far-end port number, if
+           applicable, or empty string if unprovisioned. Data is represented
+           as a string rather than integer to allow for forward-compatibility
+           with future identifier formats.";
+      }
+
+      leaf requested-tx-power {
+        ui:ui-name "Requested Tx Power";
+        type cienawstypes:decimal-1-dig;
+        units "dBm";
+        config false;
+        description
+          "When adjacency-auto-provisioning is enabled, this is the provisioned
+           tx-power that is being sent to the far-end modem. If adjacency auto-
+           provisioning is disabled, this parameter will be cleared.";
+      }
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties" {
+    ddf:ddf-struct-version "CmdOtmProps";
+    when "ptp:type = 'OTM'" {
+      description
+        "PTP properties for OTM (Optical Transport Multiplex) PTP types.";
+    }
+    description
+      "PTP properties for OTM (Optical Transport Multiplex) PTP types.";
+    container span {
+      ui:ui-name "OTM Span";
+      description
+        "OTM Span properties.";
+      leaf tx-amp-state {
+        ui:ui-name "Tx Amp State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Allows the user to enable or disable the transmit path amplifier
+           (EDFA), which shall reduce the transmit power at minimum 20 dB.";
+      }
+
+      leaf rx-amp-state {
+        ui:ui-name "Rx Amp State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Allows the user to enable or disable the receive path amplifier
+           (EDFA), which shall reduce the receive power at minimum 20 dB.";
+      }
+
+      leaf auto-span-loss-compensation {
+        ui:ui-name "Auto Span Loss";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "If enabled, shall allow the CMD state machine to autonomously and
+           continuously control the transmit VOA setting based on values
+           derived from OSC span loss. Setting to disabled shall provision the
+           transmit VOA with a calculation based on the manual span loss
+           parameter value.";
+      }
+
+      leaf span-loss-compensation-offset {
+        ui:ui-name "Span Loss Offset";
+        type decimal64 {
+          fraction-digits 1;
+          range "-20.0 .. 20.0";
+        }
+        units "dB";
+        description
+          "If configured, provides an input into the auto span loss compensation
+           calculation whereby the user can effect an increase (positive) or a
+           decrease (negative) to the span loss calculation.";
+      }
+
+      leaf manual-span-loss {
+        ui:ui-name "Manual Span Loss";
+        type decimal64 {
+          fraction-digits 1;
+          range "0.0 .. 34.0";
+        }
+        units "dB";
+        description
+          "The user-provisioned span loss setting, in dB, to be used if auto
+           span loss compensation is disabled. Default setting is 0.0.";
+      }
+
+      container tx-span-loss {
+        ui:ui-name "Tx Span Loss";
+        config false;
+        description
+          "Tx Span Loss operational attributes (actual, min/max recorded, time
+           recorded, etc.).";
+        uses optical-loss-group;
+      }
+
+      container rx-span-loss {
+        ui:ui-name "Rx Span Loss";
+        config false;
+        description
+          "Rx Span Loss operational attributes (actual, min/max recorded, time
+           recorded, etc.).";
+        uses optical-loss-group;
+      }
+
+      container optical-return-loss {
+        ui:ui-name "Optical Return Loss";
+        config false;
+        description
+          "Optical Return Loss due to reflection, in dB.";
+        uses optical-loss-group;
+      }
+    }
+
+    container otdr {
+      ui:ui-name "OTM OTDR";
+      description
+        "OTM OTDR properties.";
+      leaf manual-otdr-tx-event-range {
+        ui:ui-name "Manual OTDR Tx Event Range";
+        type uint64 {
+          range "0 .. 128000";
+        }
+        units "meters";
+        description
+          "Allows the user to configure Tx event range (in meters) for Manual OTDR.";
+      }
+
+      leaf manual-otdr-rx-event-range {
+        ui:ui-name "Manual OTDR Rx Event Range";
+        type uint64 {
+          range "0 .. 128000";
+        }
+        units "meters";
+        description
+          "Allows the user to configure Rx event range (in meters) for Manual OTDR.";
+      }
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties/ptp:lanes/ptp:lane/ptp:rx/ptp:power" {
+    ddf:ddf-struct-version "CmdOtmRxPwr";
+    when "../../../../ptp:type = 'OTM'" {
+      description
+        "PTP Rx power properties specified to OTM (Optical Transport Multiplex) PTP types.";
+    }
+    description
+      "PTP Rx power properties specified to OTM (Optical Transport Multiplex) PTP types.";
+    container aggregate-power {
+      ui:ui-name "Rx Aggregate Power";
+      config false;
+      description
+        "The total DWDM + OSC receive power referenced to the faceplate (COM
+         IN LC) in dBm.";
+      uses xcvr:optical-power-group;
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties/ptp:lanes/ptp:lane/ptp:tx/ptp:power" {
+    ddf:ddf-struct-version "CmdOtmTxPwr";
+    when "../../../../ptp:type = 'OTM'" {
+      description
+        "PTP Tx power properties specified to OTM (Optical Transport Multiplex) PTP types.";
+    }
+    description
+      "PTP Tx power properties specified to OTM (Optical Transport Multiplex) PTP types.";
+    container aggregate-power {
+      ui:ui-name "Tx Aggregate Power";
+      config false;
+      description
+        "The total DWDM + OSC transmit power referenced to the faceplate (COM
+         OUT LC) in dBm.";
+      uses xcvr:optical-power-group;
+    }
+  }
+}

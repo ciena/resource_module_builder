@@ -1,0 +1,406 @@
+module ciena-6500r-local-fault {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-local-fault";
+  prefix local-fault;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-pro-alarm {
+    prefix ciena-pro-alarm;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's Local fault Service";
+
+  revision 2021-05-28 {
+    version:version "version" {
+      version:string "2.3.0";
+    }
+    description
+      "Add reraise-notification.";
+  }
+  revision 2021-05-27 {
+    version:version "version" {
+      version:string "2.2.0";
+    }
+    description
+      "Add additional-info to rpc set point.";
+  }
+  revision 2020-06-25 {
+    version:version "version" {
+      version:string "2.1.0";
+    }
+    description
+      "Add a version number and pec to slot correlation model";
+  }
+  revision 2020-04-22 {
+    version:version "version" {
+      version:string "2.0.1";
+    }
+    description
+      "Add a new rpc called display-diag-point-all-slot and renamed display-list rpc to display-diag-point-list ";
+  }
+  revision 2019-11-27 {
+    version:version "version" {
+      version:string "2.0.0";
+    }
+    description
+      "New notification";
+  }
+  revision 2019-07-16 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "RLS Release 1.1";
+  }
+
+  typedef diagnostic-point-state_t {
+    type enumeration {
+      enum "IDLE" {
+        value 0;
+      }
+      enum "ACTIVE" {
+        value 1;
+      }
+    }
+  }
+
+  typedef diagnostic-point-list-type {
+    type enumeration {
+      enum "masked-alarm" {
+        value 0;
+        description
+          "Display list of masked alarm. An alarm is masked when it's corresponding hardware point is set and the alarm is not
+           raised for some reason";
+      }
+      enum "alarm" {
+        value 1;
+      }
+      enum "input-point" {
+        value 2;
+        description
+          "These are hw and sw points.";
+      }
+    }
+    description
+      "Type of list requested in rpc";
+  }
+
+  grouping diag-point-id {
+    description
+      "The field that are used to uniquely identify a diagnostic point.";
+    leaf slot-name {
+      type ciena-6500r-types:object-name;
+      description
+        "The name of the slot";
+    }
+
+    leaf facility {
+      type ciena-6500r-types:object-name;
+      description
+        "This is the parent facility of this point , e.g. amps, optmon, oscs, eqpt, ...";
+    }
+
+    leaf diag-name {
+      type ciena-6500r-types:object-name;
+      description
+        "This is the diagnostic (fault/condition) managed by this point , e.g. optical-line-failed";
+    }
+
+    leaf instance {
+      type ciena-6500r-types:object-name;
+      description
+        "This is the parent instance of this point , e.g. Line-1-to-Line-2. The instance can be empty.";
+    }
+
+    leaf point-type {
+      type ciena-6500r-types:object-name;
+      description
+        "This is the type of point, also refered to as suffix. e.g. hw, sw, db, alm, ...";
+    }
+  }
+
+  grouping diag-point-status_list {
+    list diagnostic-point-status {
+      key "id";
+      description
+        "List of diagnostic points and their state.";
+      leaf id {
+        type uint32;
+        description
+          "Useless id to make entry in the list unique";
+      }
+
+      uses diag-point-id;
+
+      leaf state {
+        type diagnostic-point-state_t;
+        description
+          "The status of the point - ACTIVE/IDLE.";
+      }
+    }
+  }
+
+  grouping list-of-lines {
+    leaf-list lines {
+      type string {
+        length "1..151";
+      }
+      description
+        "In order for each line to be unique each line starts with a line number.";
+    }
+  }
+
+  list slots-correlation-model {
+    key "slotName";
+    description
+      "Cross reference table from slot-name to active correlation model.
+       Actually, with the new api, this table should be private, i.e. we
+       should move it to a private model.";
+    leaf slotName {
+      type ciena-6500r-types:object-name;
+      description
+        " The name of the slot";
+    }
+
+    leaf correlationModel {
+      type string;
+      description
+        " Name of the corresponding correlation model in the correlation-service";
+    }
+
+    container version {
+      uses version:version {
+        description
+          "A version number that will be used to allow some sanity check with slots-correlation-model,
+           for example, between two photonic releases there are significant chances that the correlation
+           model will be different mainly to add new dependencies and new points within a given card (PEC).";
+      }
+    }
+
+    leaf pec {
+      type ciena-6500r-types:pec-code;
+      description
+        "Product equipment code";
+    }
+  }
+
+  rpc get-diagnostic-point-status {
+    description
+      "Query the state of a list of points.";
+    input {
+      list diagnostic-points {
+        key "id";
+        description
+          "List of individual diagnostic points to get.";
+        leaf id {
+          type uint32;
+          description
+            "Useless id to make entry in the list unique.
+             We can't use the individual fields of a diag-point-id as a key because they can't
+             be null if they are part of a key, hence the usage of an artificial id.";
+        }
+
+        uses diag-point-id;
+      }
+    }
+
+    output {
+      uses diag-point-status_list;
+
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-diagnostic-point-status {
+    description
+      "Accepts lists of active diagnostic points set set.";
+    input {
+      list diagnostic-points {
+        key "id";
+        description
+          "List of individual diagnostic points to set.";
+        leaf id {
+          type uint32;
+          description
+            "Useless id to make entry in the list unique.
+             We can't use the individual fields of a diag-point-id as a key because they can't
+             be null if they are part of a key, hence the usage of an artificial id.";
+        }
+
+        uses diag-point-id;
+
+        leaf state {
+          type diagnostic-point-state_t;
+          description
+            "The new state value of the point - ACTIVE/IDLE.";
+        }
+
+        leaf additional-info {
+          type ciena-pro-alarm:alarm-additional-info-string;
+          description
+            "Additional info to include in the alarm.";
+        }
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc clear-slot-alarm {
+    description
+      "Clear every alarm managed by local-fault-svc for a given slot";
+    input {
+      leaf slot-name {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the slot";
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc audit-slot-alarm {
+    description
+      "Audit every alarm managed by local-fault-svc for a given slot";
+    input {
+      leaf slot-name {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the slot";
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc display-diag-point {
+    description
+      "Provide a detailed display of a given diag point.";
+    input {
+      uses diag-point-id;
+
+      leaf max-depth {
+        type uint8;
+        default "99";
+        description
+          "Maximum depth to display: the depth is the number of nested equation.";
+      }
+    }
+
+    output {
+      uses list-of-lines;
+    }
+  }
+
+  rpc display-diag-point-list {
+    description
+      "For a given slot, display list of diag-point: masked alarm, active alarm or input-point. An alarm is masked when it's corresponding hardware point is set and the alarm is not
+       raised for some reason";
+    input {
+      leaf slot-name {
+        type ciena-6500r-types:object-name;
+        description
+          "The slot for which we want to display the list of points.";
+      }
+
+      leaf type {
+        type diagnostic-point-list-type;
+        description
+          "Type of list to display.";
+      }
+
+      leaf detailed {
+        type boolean;
+        description
+          "Provide one level of detail with all points when true";
+      }
+    }
+
+    output {
+      uses list-of-lines;
+    }
+  }
+
+  rpc display-diag-point-all-slot {
+    description
+      "For all provisoned slots, display list of diag-point: masked alarm, active alarm or input-point. An alarm is masked when it's corresponding hardware point is set and the alarm is not
+       raised for some reason";
+    input {
+      leaf type {
+        type diagnostic-point-list-type;
+        description
+          "Type of list to display.";
+      }
+    }
+
+    output {
+      uses list-of-lines;
+    }
+  }
+
+  notification diag-point-notif {
+    description
+      "Notification of a state change of a given point.";
+    uses diag-point-id;
+
+    leaf state {
+      type diagnostic-point-state_t;
+      description
+        "Current state of the point - ACTIVE if currently active, IDLE if not.";
+    }
+
+    leaf latched {
+      type boolean;
+      description
+        "A flag to indicate if the current point is latched (TRUE) or not.
+         May only be TRUE if the point supports latching (latching field is
+         set to latched).  Not present if the point does not support latching
+         (not latched).";
+    }
+  }
+
+  notification reraise-alarm {
+    description
+      "Notification to application to reraise their alarms.";
+    leaf slot-name {
+      type ciena-6500r-types:object-name;
+      description
+        "The name of the slot. If empty then reraise is for every slots.";
+    }
+
+    leaf reason {
+      type string {
+        length "1..80";
+      }
+      description
+        "Specify why the reraise is required. Informative only";
+    }
+  }
+}

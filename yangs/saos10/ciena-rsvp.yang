@@ -1,0 +1,1402 @@
+module ciena-rsvp {
+   namespace "http://ciena.com/ns/yang/ciena-rsvp";
+   prefix ciena-rsvp;
+
+   import ietf-inet-types {
+      prefix inet;
+   }
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   import ciena-ietf-te {
+      prefix "ciena-te";
+   }
+  
+   import openconfig-mpls-types {
+      prefix oc-mplst;
+   }
+   import openconfig-yang-types { 
+      prefix yang; 
+   }
+   import openconfig-types {
+      prefix oc-types;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This module contains the Ciena proprietary YANG defintion
+       for the RSVP Protocol configuration and state information.
+       Copyright (c) 2022 Ciena Corporation.  All rights reserved.
+       All information contained herein is, and remains
+       the property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained from
+       Ciena Corporation.";
+
+   revision "2022-05-11" {
+      description
+         "1. Initial Version for RSVP Protocol Support.
+          2. It includes RSVP global, interface, frr objects.
+          3. It includes session, tunnel state.";
+   }
+ 
+   grouping fast-reroute-object-config {
+      description
+         "Global fast reroute object configuration
+          grouping.";
+      leaf name {
+         type string{
+            length "1..31";
+         }
+         description
+            "A string name that uniquely identifies fast reroute properties.";
+      }
+	
+      leaf setup-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 7;
+         description
+            "The priority of the backup path with respect to taking
+             resources, in the range 0 to 7. The value 0 is the highest
+             priority. Setup priority is used in deciding whether this
+             session can preempt another session.
+             Reference RFC-4090";
+      }
+
+      leaf hold-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 0;
+         description
+            "The priority of the backup path with respect to holding
+             resources, in the range 0 to 7. The value 0 is the highest
+             priority. Holding priority is used in deciding whether this
+             session can be preempted by another session.
+             Reference RFC-4090";
+      }
+
+      leaf hop-limit {
+         type uint8;
+         description
+            "The maximum number of extra hops the backup path is allowed to
+             take, from current node (a PLR) to an MP, with PLR and MP
+             excluded from the count. Reference RFC-4090 ";
+      }
+
+      leaf flags {
+         type uint8; 
+         default 0x02;
+         description
+            "Define FRR object flags per RFC 4090";
+      }
+	
+      leaf bandwidth {
+         type oc-mplst:bandwidth-kbps;
+         description
+            "Bandwidth estimate; 32-bit IEEE floating point integer, in
+             kilobytes per second of FRR object per RFC 4090";
+      }
+
+      leaf  exclude-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups to exclude in
+             path calculation.";
+      }
+
+      leaf include-all-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups of which all must
+             be included";
+      }
+
+      leaf include-any-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups of which one must
+             be included";
+      }
+   }
+  
+   grouping mpls-rsvp-fast-reroute-object-group {
+      description
+         "Global fast reroute object configuration
+          grouping.";
+      container fast-reroute-objects {
+         description
+            "RSVP fast reroute object container.";
+         list fast-reroute-object {
+            key "name";
+            description
+               "List fast reroute object configurations.";
+            uses fast-reroute-object-config;
+         }
+      }
+   }
+ 
+   typedef value-source-type {
+      type enumeration {
+         enum USER {
+            description
+               "Source of value is as per user configuration";
+         }
+         enum SIGNALING {
+            description
+               "Source of value is as per signaling information";
+         }
+      }
+      description
+         "Enumerated type for specifying the source of a value";
+   }
+
+   grouping auto-fb-profile-config {
+      description
+         "Global auto facility bypass profiles configuration
+          grouping.";
+      leaf name {
+         type string{
+            length "1..31";
+         }
+         description
+            "A string name that uniquely identifies auto facility bypass profile properties.";
+      }
+	
+      leaf setup-hold-priority-source {
+         type value-source-type;
+         description
+            "User or signaling as source";
+      }
+
+      leaf bandwidth-value-source {
+         type value-source-type;
+         description
+            "User or signaling as source";
+      }
+
+      leaf affinity-source-type {
+         type value-source-type;
+         description
+            "User or signaling as source";
+      }
+    
+      leaf setup-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 7;
+         when "../setup-hold-priority-source = 'USER'" {
+         description
+            "The priority of the backup path with respect to taking
+             resources, in the range 0 to 7. The value 0 is the highest
+             priority. Setup priority is used in deciding whether this
+             session can preempt another session.
+             Reference RFC-4090";
+         }
+      }
+
+      leaf hold-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 0;
+         when "../setup-hold-priority-source = 'USER'" {
+         description
+            "The priority of the backup path with respect to holding
+             resources, in the range 0 to 7. The value 0 is the highest
+             priority. Holding priority is used in deciding whether this
+             session can be preempted by another session.
+             Reference RFC-4090";
+         }
+      }
+
+      leaf bandwidth {
+         when "../bandwidth-value-source = 'USER'" {
+         description
+            "The percentage of interface bandwidth";
+         }
+         type oc-types:percentage;
+      }
+	
+      leaf  exclude-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         when "../affinity-source-type = 'USER'" {
+         description
+            "List of references to named admin-groups to exclude in
+             path calculation.";
+         }
+      }
+
+      leaf include-all-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+	 }
+         when "../affinity-source-type = 'USER'" {
+         description
+            "List of references to named admin-groups of which all must
+             be included";
+         }
+      }
+
+      leaf include-any-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         when "../affinity-source-type = 'USER'" {
+         description
+            "List of references to named admin-groups of which one must
+             be included";
+         }
+      }
+   }
+
+   grouping mpls-rsvp-auto-fb-profile-group {
+      description
+         "Global auto facility bypass tunnel configuration
+          grouping.";
+      container auto-fb-profiles {
+         description
+            "List of auto facility bypass profiles.";
+         list auto-fb-profile {
+            key "name";
+            description
+               "List of auto facility bypass profiles.";
+            uses auto-fb-profile-config;
+         }
+      }
+   }
+
+   grouping mpls-rsvp-hellos-config {
+      description
+         "RSVP protocol options configuration.";
+      leaf hello-enable {
+         type boolean;
+         default true;
+         description
+            "Enables hello messaging.";
+      }
+      leaf hello-interval {
+         type uint16 {
+            range 1000..60000;
+         }
+         units milliseconds;
+         default 9000;
+         description
+            "Set the interval in ms between RSVP hello
+             messages";
+         reference
+            "RFC 3209: RSVP-TE: Extensions to RSVP for
+             LSP Tunnels.
+             RFC 5495: Description of the Resource
+             Reservation Protocol - Traffic-Engineered
+             (RSVP-TE) Graceful Restart Procedures";
+      }
+      leaf hello-tolerance-count {
+         type uint16;
+         default 3;
+         description
+            "Hello tolerance count of an interface.";
+      }
+      leaf refresh-reduction {
+         type enumeration {
+            enum disable {
+               description
+                  "RSVP refresh reduction disable";
+            }
+            enum enable {
+               description
+                  "RSVP refresh reduction enable";
+            }
+         }
+         default disable;
+         description
+            "Refresh reduction enable or disable.";
+      }
+   }
+
+   grouping mpls-rsvp-global-hellos-config {
+      description
+         "RSVP protocol options configuration.";
+      leaf hello-enable {
+         type boolean;
+         default true;
+         description
+            "Enables hello messaging.";
+      }
+      leaf refresh-reduction {
+         type enumeration {
+            enum disable {
+               description
+                  "RSVP refresh reduction disable";
+            }
+            enum enable {
+               description
+                  "RSVP refresh reduction enable";
+            }
+         }
+         default disable;
+         description
+            "Refresh reduction enable or disable.";
+      }
+      leaf refresh-interval {
+         type uint16;
+         units seconds;
+         default 30;
+         description
+            "Set the refresh-interval in seconds.";
+      }
+   }
+
+   grouping mpls-rsvp-hellos {
+      description
+         "Top level grouping for RSVP hellos parameters";
+      container hellos {
+         description
+            "RSVP hello parameters configuration";
+
+         container config {
+            description
+               "Configuration parameters relating to RSVP
+                hellos";
+            uses mpls-rsvp-hellos-config;
+         }
+      }
+   }
+
+   grouping mpls-rsvp-global-hellos {
+      description
+         "Top level grouping for RSVP global hellos parameters";
+      container hellos {
+         description
+            "RSVP hello parameters configuration";
+         container config {
+            description
+               "Configuration parameters relating to RSVP
+                hellos";
+            uses mpls-rsvp-global-hellos-config;
+         }
+      }
+   }
+
+   grouping mpls-rsvp-neighbor-group {
+      description
+         "Top level grouping for rsvp neighbour state";
+         container neighbors-state {
+            config false;
+            description
+               "RSVP neighbour state globally";
+            list neighbor {
+               key "address";
+               description
+                  "Operational data for RSVP neighbors";
+               leaf address {
+                  type  inet:ip-address;
+                  description
+                     "Neighbor IP address";
+               }
+               leaf graceful-restart-capable {
+                  type boolean;
+                  description
+                     "Graceful restart capable status";
+               }
+               leaf restart-time {
+                  type uint32;
+                  units seconds;
+                  description
+                     "Graceful restart time (seconds).";
+               }
+               leaf recovery-time {
+                  type uint32;
+                  units seconds;
+                  description
+                     "RSVP state recovery time (seconds)";
+               }
+               leaf restart-time-remaining {
+                  type uint32;
+                  units seconds;
+                  description
+                     "RSVP remaining restart time (seconds)";
+               }
+               leaf recovery-time-remaining {
+                  type uint32;
+                  units seconds;
+                  description
+                     "RSVP remaining recovery time (seconds)";
+               }
+               leaf hello-status {
+                  type enumeration {
+                     enum enabled {
+                        description
+                           "RSVP hellos enabled.";
+                     }
+                     enum disabled {
+                        description
+                           "RSVP hellos disabled.";
+                     }
+                  }
+                  description
+                     "RSVP hello status.";
+               }
+               leaf interface {
+                  type string;
+                  description
+                     "RSVP interface";
+               }
+               leaf neighbor-status {
+                  type enumeration {
+                     enum UP {
+                        description
+                           "RSVP hello messages are detected from the neighbor";
+                     }
+                     enum DOWN {
+                        description
+                           "RSVP neighbor not detected as up, due to a
+                            communication failure or IGP notification
+                            the neighbor is unavailable";
+                     }
+                  }
+                  description
+                    "Enumeration of possible RSVP neighbor states";
+               }
+               leaf neighbor-gr-status {
+                  type enumeration {
+                     enum normal {
+                        description
+                           "Neighbour is normal state";
+                     }
+                     enum restart {
+                        description
+                           "RSVP neighbor is in restart state";
+                     }
+                     enum recovery {
+                        description
+                           "RSVP neighbor is in recovery state";
+                     }
+                  }
+                  description
+                     "Enumeration of possible RSVP neighbor GR states";
+               }
+               leaf refresh-reduction-capable {
+                  type boolean;
+                  description
+                     "Refresh reduction capable status";
+               }
+           }
+       }
+   }
+
+   grouping mpls-rsvp-graceful-restart-config {
+      description
+         "Configuration parameters relating to RSVP Graceful-Restart";
+      leaf enable {
+         type boolean;
+         default false;
+         description
+            "Enables graceful restart on the node.";
+      }
+      leaf restart-time {
+         type uint32;
+         units seconds;
+         description
+            "Graceful restart time (seconds).";
+         reference
+            "RFC 5495: Description of the Resource
+             Reservation Protocol - Traffic-Engineered
+             (RSVP-TE) Graceful Restart Procedures";
+      }
+      leaf recovery-time {
+         type uint32;
+         units seconds;
+         description
+            "RSVP state recovery time (seconds)";
+      }
+   }
+
+   grouping mpls-rsvp-graceful-restart {
+      description
+         "Top level group for RSVP graceful-restart
+          parameters";
+      container graceful-restart {
+         description
+            "Operational state and configuration parameters relating to
+             graceful-restart for RSVP";
+         container config {
+            description
+               "Configuration parameters relating to
+                graceful-restart";
+            uses mpls-rsvp-graceful-restart-config;
+         }
+      }
+   }
+
+   grouping mpls-rsvp-protection-config {
+      description
+         "RSVP facility (link/node) protection configuration";
+      leaf link-protection-style-requested {
+         type identityref {
+            base oc-mplst:PROTECTION_TYPE;
+         }
+         default oc-mplst:LINK_NODE_PROTECTION_REQUESTED;
+         description
+            "Style of MPLS FRR protection desired:
+             link, link-node, or unprotected";
+      }
+   }
+
+   grouping mpls-rsvp-link-protection {
+      description
+         "Top level group for RSVP protection";
+      container protection {
+         description
+            "Link-protection (NHOP) related configuration";
+         container config {
+            description
+               "Configuration for link-protection";
+            uses mpls-rsvp-protection-config;
+         }
+      }
+   }
+
+   grouping mpls-rsvp-statistics {
+      description
+         "Top level grouping for RSVP protocol state";
+      uses mpls-rsvp-protocol-state;
+   }
+
+   container rsvp-te {
+      description
+         "RSVP-TE global signaling protocol configuration";
+      container global {
+         description
+            "Platform wide RSVP configuration and state";
+         uses mpls-rsvp-graceful-restart;
+         uses mpls-rsvp-global-hellos;
+         container state {
+            config false;
+            description
+               "Platform wide RSVP state, including counters";
+            container counters {
+               config false;
+               description
+                  "Platform wide RSVP statistics and counters";
+               uses mpls-rsvp-statistics;
+               container errors {
+                  description
+                     "Error counters associated with the global RSVP-TE
+                      instance.";
+                  uses mpls-rsvp-error-counters;
+               }
+            }
+         }
+      }
+      container interface-attributes {
+         description
+            "Attributes relating to RSVP-TE enabled interfaces";
+         list interface {
+            key "interface";
+            description
+               "List of per-interface RSVP configurations";
+            leaf interface {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+               }
+               description
+                  "Interface name";
+            }
+            container state {
+               config false;
+               description
+                  "Per-interface RSVP protocol and state information";
+               uses mpls-rsvp-interfaces-state;
+               container counters {
+                  config false;
+                  description
+                     "Interface specific RSVP statistics and counters";
+                  uses mpls-rsvp-protocol-state;
+                  container errors {
+                     description
+                        "Interface specific RSVP error counters";
+                     uses mpls-rsvp-error-counters;
+                  }
+               }
+            }
+            uses mpls-rsvp-hellos;
+            uses mpls-rsvp-link-protection;
+            leaf auto-fb-profile {
+               type leafref {
+                  path "../../../auto-fb-profiles/auto-fb-profile/name";
+               }
+               description
+                  "Auto facility bypass profile name";
+            }
+	 }
+      }
+      uses mpls-rsvp-fast-reroute-object-group;
+      uses mpls-rsvp-auto-fb-profile-group;
+      uses mpls-rsvp-session-state;
+      uses tunnel-state-group;
+      uses tunnel-statistics-group;
+      uses mpls-rsvp-neighbor-group;
+   }
+
+   grouping rsvp-p2p-tunnel-attributes-config {
+      description
+         "Properties of RSVP point-to-point paths";
+      leaf source {
+         type inet:ip-address;
+         description
+            "RSVP-TE tunnel source address";
+      }
+      uses rsvp-priorities-tunnel-config;
+   }
+
+   grouping rsvp-priorities-tunnel-config {
+      description
+         "Configuration paramters related to RSVP-TE priorities for
+          an LSP tunnel";
+      leaf setup-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 7;
+         description
+            "RSVP-TE preemption priority during LSP setup, lower is
+             higher priority; default 7 indicates that LSP will not
+             preempt established LSPs during setup";
+         reference 
+            "RFC 3209 - RSVP-TE: Extensions to RSVP for
+             LSP Tunnels";
+      }
+      leaf hold-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 0;
+         description
+            "Preemption priority once the LSP is established,
+             lower is higher priority; default 0 indicates other LSPs
+             will not preempt the LSPs once established";
+         reference
+            "RFC 3209 - RSVP-TE: Extensions to RSVP for
+             LSP Tunnels";
+      }
+   }
+
+   grouping rsvp-priorities-path-config {
+      description
+         "Configuration paramters related to RSVP-TE priorities on
+          a primary/secondary path associated with an LSP.";
+      leaf setup-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 7;
+         description
+            "RSVP-TE preemption priority during LSP setup, lower is
+             higher priority; default 7 indicates that LSP will not
+             preempt established LSPs during setup";
+         reference
+            "RFC 3209 - RSVP-TE: Extensions to RSVP for
+             LSP Tunnels";
+      }
+      leaf hold-priority {
+         type uint8 {
+            range 0..7;
+         }
+         default 0;
+         description
+            "Preemption priority once the LSP is established,
+             lower is higher priority; default 0 indicates other LSPs
+             will not preempt the LSPs once established";
+         reference
+            "RFC 3209 - RSVP-TE: Extensions to RSVP for
+             LSP Tunnels";
+      }
+   }
+
+   grouping rsvp-p2p-path-attributes-config {
+      description
+         "Properties of RSVP point-to-point paths";
+      leaf retry-timer {
+         type uint16 {
+            range 1..600;
+         }
+         units seconds;
+         description
+            "Sets the time between attempts to establish the
+             LSP";
+      }
+      leaf retry-count {
+         type uint16;
+         default 0;
+         description
+            "Retry count of a tunnel. Zero means infinite retry";
+      }
+   }
+
+   grouping mpls-rsvp-session-state {
+      description
+         "State information for RSVP TE sessions";
+      container sessions {
+         description
+            "RSVP-TE tunnel configuration";
+         list session {
+            key "local-index";
+            config false;
+            description
+               "List of RSVP sessions";
+               leaf local-index {
+                  type uint64;
+                  description
+                     "The index used to identify the RSVP session
+                      on the local network element. This index is
+                      generated by the device and is unique only
+                      to the local network element.";
+               }
+               leaf source-address {
+                  type inet:ip-address;
+                  description
+                     "Origin address of RSVP session";
+               }
+               leaf destination-address {
+                  type inet:ip-address;
+                  description
+                     "Destination address of RSVP session";
+               }
+               leaf tunnel-id {
+                  type uint16;
+                  description
+                     "The tunnel ID is an identifier used in the
+                      RSVP session, which remains constant over
+                      the life of the tunnel.";
+                  reference "RFC 3209";
+               }
+               leaf lsp-id {
+                  type uint16;
+                  description
+                     "The LSP ID distinguishes between two LSPs
+                      originated from the same headend, and is
+                      commonly used to distinguish RSVP sessions
+                      during make before break operations.";
+                  reference "RFC 3209";
+               }
+               leaf session-name {
+                  type string;
+                  description
+                     "The signaled name of this RSVP session.";
+               }
+               leaf status {
+                  type enumeration {
+                     enum UP {
+                     description
+                        "RSVP session is up";
+                     }
+                     enum DOWN {
+                     description
+                        "RSVP session is down";
+                     }
+                  }
+                  description
+                     "Enumeration of RSVP session states";
+               }
+               leaf type {
+                  type identityref {
+                     base oc-mplst:LSP_ROLE;
+                  }
+                  description
+                     "The type/role of the RSVP session, signifing
+                      the session's role on the current device, such as
+                      a transit session vs. an ingress session.";
+               }
+               leaf protection-requested {
+                  type identityref {
+                     base oc-mplst:PROTECTION_TYPE;
+                  }
+                  description
+                     "The type of protection requested for the RSVP session";
+               }
+               leaf label-in {
+                  type oc-mplst:mpls-label;
+                  description
+                     "Incoming MPLS label associated with this RSVP session";
+               }
+               leaf label-out {
+                  type oc-mplst:mpls-label;
+                  description
+                     "Outgoing MPLS label associated with this RSVP session";
+               }
+               leaf previous-hop-address {
+                  type inet:ip-address;
+                  description
+                     "Previous hop address of RSVP session";
+               }
+               leaf next-hop-address {
+                  type inet:ip-address;
+                  description
+                     "Next hop address of RSVP session";
+               }
+               leaf signaled-bandwidth {
+                  type oc-mplst:bandwidth-kbps;
+                   description
+                    "The currently signaled bandwidth of the LSP. In the case where
+                     the bandwidth is specified explicitly, then this will match the
+                     value of the set-bandwidth leaf; in cases where the bandwidth is
+                     dynamically computed by the system, the current value of the
+                     bandwidth should be reflected.";
+               }
+               leaf setup-priority {
+                  type uint8 {
+                     range 0..7;
+                  }
+                  default 7;
+                  description
+                     "The priority of the backup path with respect to taking
+                      resources, in the range 0 to 7. The value 0 is the highest
+                      priority. Setup priority is used in deciding whether this
+                      session can preempt another session.
+                      Reference RFC-4090";
+                  }
+               leaf hold-priority {
+                  type uint8 {
+                     range 0..7;
+                  }
+                  default 0;
+                  description
+                     "The priority of the backup path with respect to holding
+                      resources, in the range 0 to 7. The value 0 is the highest
+                      priority. Holding priority is used in deciding whether this
+                      session can be preempted by another session.
+                      Reference RFC-4090";
+               }
+
+               uses mpls-rsvp-record-route-object-top;
+         }
+         leaf session-control {
+            type uint8;
+            default 1;
+            description
+               " Session control";
+         }
+      }
+   }
+
+   grouping mpls-rsvp-interfaces-state {
+      description
+         "RSVP state information relevant to an interface";
+      leaf max-link-bandwidth {
+         type oc-mplst:bandwidth-kbps;
+         description
+            "The maximum link bandwidth expressed in kilobits
+             per second. This value should be the same (other than
+             the units) as the value that is advertised into the
+             IGP traffic engineering database.";
+      }
+   }
+
+   grouping mpls-rsvp-protocol-state {
+      description
+         "RSVP protocol statistics and message counters";
+      leaf in-path-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Path messages";
+      }
+      leaf in-path-error-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Path Error messages";
+      }
+      leaf in-path-tear-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Path Tear messages";
+      }
+      leaf in-reservation-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Reservation messages";
+      }
+      leaf in-reservation-error-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Reservation Error messages";
+      }
+      leaf in-reservation-tear-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP Reservation Tear messages";
+      }
+      leaf in-hello-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP hello messages";
+      }
+      leaf in-srefresh-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP summary refresh messages";
+      }
+      leaf in-ack-messages {
+         type yang:counter64;
+         description
+            "Number of received RSVP refresh reduction ack
+             messages";
+      }
+      leaf out-path-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP PATH messages";
+      }
+      leaf out-path-error-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP Path Error messages";
+      }
+      leaf out-path-tear-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP Path Tear messages";
+      }
+      leaf out-reservation-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP Reservation messages";
+      }
+      leaf out-reservation-error-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP Reservation Error messages";
+      }
+      leaf out-reservation-tear-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP Reservation Tear messages";
+      }
+      leaf out-hello-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP hello messages";
+      }
+      leaf out-srefresh-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP summary refresh messages";
+      }
+      leaf out-ack-messages {
+         type yang:counter64;
+         description
+            "Number of sent RSVP refresh reduction ack messages";
+      }
+   }
+
+   grouping mpls-rsvp-explicit-route-object-top {
+      description
+         "Top-level structure for explicit-route objects.";
+      container explicit-route-objects {
+         description
+            "Enclosing container for MPLS ERO objects associated
+             with the traffic engineered tunnel.";
+         list explicit-route-object {
+            key "index";
+            config false;
+            description
+               "Read-only list of explicit route objects associated with the
+                traffic-engineered tunnel. Each entry in the list contains
+                a hop IP address, and the MPLS label allocated at the hop.";
+            leaf index {
+               type leafref {
+                  path "../state/index";
+               }
+               description
+                  "Reference to the index of the entry in the explicit route
+                   object. The index is used to indicate the ordering of hops
+                   in the path.";
+            }
+            container state {
+               config false;
+               description
+                  "Information related to the ERO index.";
+               uses mpls-rsvp-explicit-route-object-state;
+            }
+         }
+      }
+   }
+
+   grouping mpls-rsvp-explicit-route-object-state {
+      description
+         "Grouping defining information related to an individual hop
+          of an ERO.";
+      leaf index {
+         type uint64;
+         description
+            "Index of the entry in the ERO. Entries are ordered in
+             ascending order from the source to destination of the
+             LSP.";
+      }
+      leaf loose {
+         type boolean;
+         description
+            "When set to true, indicates that the hop of the ERO is
+             a loose hop within the explicit route. If unset, indicates
+             that the hop must explicitly traverse the entity specified
+             in the ERO hop as the next-entity.";
+      }
+      leaf type {
+         type enumeration {
+            enum IPV4 {
+               description
+                  "The hop represents an IPv4 prefix.";
+               reference 
+                  "RFC3209";
+            }
+         }
+         description
+            "The type of hop indicated by the ERO entry.";
+      }
+      leaf ip-prefix {
+         type inet:ip-prefix;
+         description
+            "The IPv4 or IPv6 prefix indicated by the ERO. Specified
+             only when the ERO hop is an IPv4 or IPv6 prefix.";
+      }
+   }
+
+   grouping mpls-rsvp-record-route-object-top {
+      description
+         "Top-level structure grouping for list of record route
+          objects.";
+      container record-route-objects {
+         description
+            "Enclosing container for MPLS RRO objects associated with the
+             traffic engineered tunnel.";
+         list record-route-object {
+            key "index";
+            config false;
+            description
+               "Read-only list of record route objects associated with the
+                traffic engineered tunnel. Each entry in the list
+                may contain a hop IP address, MPLS label allocated
+                at the hop, and the flags associated with the entry.";
+               uses mpls-rsvp-record-route-object-state;
+
+         }
+      }
+   }
+
+   grouping mpls-rsvp-record-route-object-state {
+      description
+         "Grouping to hold information relating to record route
+          objects relevant to a traffic engineering LSP.";
+      leaf index {
+         type uint8;
+         description
+            "Index of object in the list. Used for ordering.";
+      }
+      leaf address {
+         type inet:ip-address;
+         description
+            "IP router hop for RRO entry";
+      }
+      leaf reported-label {
+         type oc-mplst:mpls-label;
+         description
+            "Label reported for RRO hop";
+      }
+      leaf reported-flags {
+         type uint8;
+         description
+            "Subobject flags for MPLS label";
+      }
+   }
+
+   grouping mpls-rsvp-error-counters {
+      description
+         "Grouping containing definitions of leaves relating to
+          errors in RSVP-TE. This grouping can be used in different
+          contexts - e.g., per-RSVP-TE protocol instance, or per-
+          interface such that the errors represented should
+          correspond to the number of errors that have occurred for
+          the context in which the grouping is used.";
+      leaf bad-packet-format {
+         type yang:counter64;
+         description
+            "The number of packets received that were dropped due to being
+             badly formed in the context.";
+      }
+      leaf bad-packet-length {
+         type yang:counter64;
+         description
+            "The number of packets received that were dropped due to having
+             an invalid length specified in the context.";
+      }
+      leaf received-nack {
+         type yang:counter64;
+         description
+            "The number of NACK RESV messages received in the context.";
+      }
+      leaf transmit-failure {
+         type yang:counter64;
+         description
+            "The total number of packets dropped on transmit in the context.";
+      }
+      leaf unknown-ack {
+         type yang:counter64;
+         description
+            "The number of packets received containing an ACK for an unknown
+             message ID in the context.";
+      }
+      leaf unknown-nack {
+         type yang:counter64;
+         description
+            "The number of packets received containing a NACK for an unknown
+             message ID in the context.";
+      }
+   }
+
+   grouping tunnel-state-group {
+      description
+         "Top level grouping for RSVP tunnels state";
+         container tunnel-state {
+            config false;
+            description
+               "An RSVP TE tunnel state information";
+            list tunnel {
+               key "name source-address destination-address";
+               description
+                  "Operational data for tunnel";
+               leaf name {
+                  type string {
+                      length "1..255";
+                  }
+                  description
+                     "RSVP TE tunnel name";
+               }
+               leaf source-address {
+                  type  inet:ip-address;
+                  description
+                     "Source IP address";
+               }
+               leaf destination-address {
+                  type inet:ip-address;
+                  description
+                     "Destination IP address";
+               }
+               leaf oper-status {
+                  type string;
+                  description
+                     "Tunnel operational status";
+               }
+               leaf nodal-role {
+                  type identityref {
+                     base oc-mplst:LSP_ROLE;
+                  } 
+                  description
+                     "The LSP role at the current node, whether it is headend,
+                     transit or tailend.";
+               }
+               leaf-list session-local-indexes {
+                  type  uint64;
+                  description
+                     "This leaf-list provides a reference to the associated
+                      sessions within the RSVP-TE protocol sessions list, such
+                      that details of the signaling can be retrieved. More than
+                      one session may exist during re-signalling such as
+                      make-before-break.";
+               }
+            }
+        }
+   }
+
+
+   grouping tx-rx-stats-collection-grouping {
+      description
+         "Counters for tunnel statistics";
+      leaf tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the forward-out path of tunnel";
+      }
+
+      leaf tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the forward-out path of tunnel";
+      }
+
+
+      leaf dropped-tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the forward-out path of tunnel that
+            were dropped";
+      }
+
+
+      leaf dropped-tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the forward-out path of tunnel that
+            were chosen to be dropped";
+      }
+
+
+      leaf rx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes received on the forward-in path of tunnel that
+            were not dropped";
+      }
+
+
+      leaf rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the forward-in path of tunnel";
+      }
+
+
+      leaf dropped-rx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes received on the forward-in path of tunnel that
+            were chosen to be dropped";
+      }
+
+
+      leaf dropped-rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the forward-in path of tunnel that
+            were chosen to be dropped";
+      }
+   }
+
+
+
+   grouping tunnel-statistics-group {
+      description
+         "Top level grouping for RSVP tunnels statistics";
+         container tunnel-statistics {
+            config false;
+            description
+            "An RSVP TE tunnel statistics information";
+            list tunnel {
+               key "name source-address destination-address";
+               description
+                  "Operational data for tunnel";
+               leaf name {
+                  type string;
+                  description
+                     "RSVP TE tunnel name";
+               }
+               leaf source-address {
+                  type  inet:ip-address;
+                  description
+                     "Source IP address";
+               }
+               leaf destination-address {
+                  type inet:ip-address;
+                  description
+                     "Destination IP address";
+               }
+               uses tx-rx-stats-collection-grouping;
+            }
+         }
+    }
+
+   rpc rsvp-te-clear-global-statistics {
+      description
+         "RPC to clear RSVP global statistics";
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for
+                rsvp-te-global-clear-statistics failure";
+         }
+      }
+   }
+
+   rpc rsvp-te-clear-interface-statistics {
+      description
+         "RPC to clear RSVP interface statistics";
+      input {
+         leaf interface {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+             }
+             description
+                "Clear statistics for this interface";
+          }
+      }
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for
+                rsvp-te-clear-interface-statistics failure";
+         }
+      }
+   }
+
+   rpc rsvp-te-clear-tunnel-statistics {
+      description
+         "RPC to clear the RSVP tunnel statistics";
+      input {
+         leaf tunnel-name {
+            type string;
+            description
+               "Tunnel Name";
+         }
+
+         leaf source-ip {
+            type inet:ip-address;
+            description
+               "Tunnel Source IP";
+         }
+
+         leaf destination-ip {
+            type inet:ip-address;
+            description
+               "Tunnel Destination IP";
+         }
+      }
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for rsvp-te-tunnel-clear-statistics failure";
+         }
+      }
+   }
+}

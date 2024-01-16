@@ -1,0 +1,88 @@
+module ciena-common-exceptions {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-exceptions";
+  prefix exceptions;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Holds defintions to support exceptions.  Used internally for now.";
+
+  revision 2019-04-08 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial revision.";
+    reference
+      "";
+  }
+
+  identity exception {
+    description
+      "The base identity to represent an exception";
+  }
+
+  identity error-unhandled-exception {
+    base yang:error-code;
+    description
+      "Error was generated due to an unhandled exception.";
+  }
+
+  grouping exception-data {
+    leaf instance {
+      type instance-identifier;
+      mandatory false;
+      description
+        "The instance to which the exception applies.";
+    }
+
+    leaf id {
+      type identityref {
+        base exception;
+      }
+    }
+
+    leaf description {
+      type string;
+      description
+        "A description of the exception.";
+    }
+
+    leaf-list trace {
+      type string {
+        length "256";
+      }
+      description
+        "Traceback information";
+    }
+  }
+
+  grouping exceptions {
+    container exceptions {
+      yang:alias "exceptions";
+      config false;
+      uses exception-data;
+    }
+  }
+
+  uses exceptions;
+
+  augment "/yang:yang-rpc-action/yang:output" {
+    uses exceptions;
+  }
+}

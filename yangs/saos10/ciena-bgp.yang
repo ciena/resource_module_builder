@@ -1,0 +1,4844 @@
+module ciena-bgp {
+
+    namespace   "http://ciena.com/ns/yang/ciena-bgp";
+    prefix "bgp";
+
+    import yuma-ncx {
+        prefix ncx;
+    }
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+
+    import ciena-routing-policy {
+        prefix "rt-pol";
+    }
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+    import ciena-bfd-types {
+        prefix "bfd-types";
+    }
+
+    import ciena-l2vpn {
+        prefix "l2vpn";
+    }
+
+    import ciena-system-telemetry {
+        prefix ciena-sys-tmet;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+         "This YANG module defines Ciena's Border Gateway Protocol (BGP)
+
+         Copyright (c) 2018-2022  Ciena Corporation.  All rights
+         reserved.
+
+         All information and intellectual property contained in this
+         YANG module (Specification) is, and remains the property
+         of Ciena Corporation. Ciena retains all title and ownership
+         in the Specification, including any revisions.
+
+         Ciena grants all interested parties that access the
+         Specification with the intent to use or distribute ('you') a
+         non-exclusive, no-cost license to use and distribute
+         unmodified copies of the Specification solely in connection
+         with the management of Ciena products sold by or on
+         behalf of Ciena, provided this copyright notice and license
+         appear on all copies. Ciena may rescind or modify this
+         license at any time.
+
+         This Specification is supplied 'as is', and Ciena makes no
+         warranty, either express or implied, as to the use, operation,
+         condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.";
+
+    revision "2022-09-06" {
+       description
+              "Adding operational data for BGP dynamic update group in Vrf.
+               Adding local-as, site-origin-id, single-peer-member and remote-as-override 
+               leaves in operational data for BGP dynamic update.
+               Added operational data for BGP large community.
+               Added Segment Routing SRv6.
+               Added new leaf clear-redistribute-protocol in bgp-clear rpc
+               Added knob to turn off implicit-null for IPv4 Labeled Unicast
+               Added route-distinguisher key to BGP adjacency-out table under peer.
+               Updated the description of extended-asn knob as now modification is allowed.
+               Added RTFilter Unicast neighbor capability leaf to operational data.";
+    }
+
+    revision "2022-04-20" {
+       description
+              "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.
+               Removing default value for keepalive-interval and hold-time from BGP peer configuration.
+               Adding operational data for BGP LS.
+               Adding support for BGP peer prefix limit
+               Removed afi safi attribute from SR state.
+               Added segment-routing-ipv4 and  segment-routing-ipv6 in summary
+               Removed the default value for prefix limit warning-only
+               Adding support for BGP peer prefix limit idle timeout remaining feature
+               Adding a support to enable bgp 4 byte ASN capability with 2 byte ASN.
+               Adding delay metrics for BGP-LS link NLRIs.
+               Changing the SRLG leaf to leaf-list as NLRI contains a series of uint32s.
+               Changing bandwidth metrics to string.
+               Changed the range and type of prefix-limit-idle-timeout-remaining.
+               Added range for BGP prefix-limit drop-excess teardown-threshold";
+    } 
+
+    revision "2021-11-19" {
+        description
+              "Adding support for ISIS route redistribution for multi-instance.
+               Added BGP GR helper attributes under graceful restart container in config.        
+               Added new BGP GR helper attributes in state :last-graceful-restart-time, end-of-rib-received,
+               flushed-stalepath-count,flushed-stalepath-reason.
+               Added BGP GR helper attributes in config and state.
+               Enabled additional path attributes to VPNv6 address family.
+               Added label management container under VRF state to provide label modes based on AFI.
+               Changed descriptions for bgp vrf route-distinguisher/target to be more helpful.";
+    }
+    
+    revision "2021-09-20" {
+       description
+              "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.";
+    } 
+
+    revision "2021-07-09" {
+        description
+             "Added BGP GR helper attributes in config and state.        
+              Added BGP SR attributes in config and state.";
+    }
+
+    revision "2021-06-25" {
+        description
+             "Added IPv6 Prefix Count attribute.";
+    }
+
+    revision "2021-02-08" {
+        description
+             "Enable additional paths for ipv4 labeled-unicast.
+              Added BGP update group list attributes.
+              Added color and fallback for SR policy under VRF state.
+              Changed default keepalive and holdtimer to industry standard 60/180 seconds.
+              Adding support for clear BGP all soft counters.";
+    }
+
+    revision "2020-10-12" {
+        description
+            "Adding BGP test model for table-maps summary test.
+             Added next-hop-tracking delay timer,next-hop list attributes.
+             Added scan timer,next-hop list attributes.
+             Added peer-flap-counter.";
+    }
+                      
+    revision "2020-02-10" {
+        description
+            "Enable RT Constraint Address Family for BGP.
+             Enable BGP Peer state telemetry on-change sensor.
+             Add Remove-private-AS feature for BGP.
+             Add ext-community list into nexthop runtime attributes.
+             Add local-as no-prepend feature for BGP.
+             Add Support for OSPF route redistribution.
+             Additional paths supported only for vpnv4 address family.
+             Changed the router-id type to be ipv4-address format.
+             Add IPv6 and VPNv6 capability labels.";
+    }
+
+    revision "2019-06-10" {
+        description
+            "Remove default value from the leaf allocate-label.";
+    }
+
+    revision "2018-12-14" {
+        description
+            "Add LU related configuration and display info.
+             Add pic related configuration and display info.
+             Add bfd configuration.
+             Change ipv4-unicast default to false.
+             Supporting route maps, orf config and adjacency read only lists.
+             Supporting Peer Groups and adjacency in and out tables in read only output.";
+
+    }
+
+    revision "2018-12-10" {
+    }
+
+    revision "2018-07-16" {
+        description "Initial version of BGP model.";
+    }
+
+    /* Feature definitions */
+    feature bfd {
+        description
+           "Support for BFD detection of BGP peer reachability.";
+        reference
+           "RFC 5880 - Bidirectional Forwarding Detection
+            RFC 5881 - Bidirectional Forwarding Detection for IPv4 and IPv6 (Single Hop)";
+    }
+ 
+    typedef prefix-sid-state {
+        type enumeration {
+            enum not-applicable {
+               value 0;
+                description
+                    "Indicates prefix SID attribute is not-applicable";
+            }
+            enum acceptable {
+                value 1;
+                description
+                    "Indicates prefix SID attribute is acceptable";
+            }
+            enum conflicting {
+                value 2;
+                description
+                    "Indicates prefix SID attribute is conflicting";
+
+            }
+            enum invalid {
+                value 3;
+                description
+                    "Indicates prefix SID attribute is invalid";
+
+            }
+        }
+    }
+
+    grouping bgp-grouping {
+        description
+            "Top level grouping for bgp containing bgp config and state containers";
+
+        container bgp {
+            description
+                "Top level bgp container for bgp configuration";
+
+            list instance {
+                key "as";
+                max-elements 1;
+                description
+                   "Top level bgp list with maximum number of instances 1";
+
+                leaf as  {
+                    type  uint32 {
+                         range "1..4294967295";
+                    }
+                    description
+                        "Local autonomous system number. Uses
+                         the 32-bit as-number type from the model in RFC 6991.";
+                }
+
+                uses bgp-attrs;
+
+                container segment-routing {
+                    description
+                        "Attribute for MPLS-based segment routing for a BGP process.";
+                    uses srgb-cfg;
+                }
+                leaf extended-asn-cap {
+                    when "../as <= 65535";
+                    type boolean;
+                    default false;
+                    description
+                       "BGP ASN 4 bytes capability enable for BGP instance.
+                        It can be enabled with BGP as instance number more than 65535, all peers will be reset when modified.";
+               }
+
+            }
+        }
+
+        container bgp-state {
+            config false;
+            description
+                "Top level bgp state container for bgp state related information";
+
+            list instance {
+                key "as";
+                max-elements 1;
+                description
+                   "Top level bgp state list maximum number of instances 1";
+
+                leaf as  {
+                    type  uint32 {
+                         range "1..4294967295";
+                    }
+                    description
+                        "Local autonomous system number. Uses
+                         the 32-bit as-number type from the model in RFC 6991.";
+                }
+                uses bgp-state-attrs;
+                uses bgp-segment-routing-state-attrs;
+            }
+        }
+        container bgp-test {
+            config false;
+            description
+                "Top level bgp test container to get the dry run results.";
+
+            list instance {
+                key "as";
+                description
+                "Bgp state AS list.";
+
+                leaf as  {
+                    type  uint32 {
+                        range "1..4294967295";
+                    }
+                    description
+                        "Local autonomous system number. Uses
+                        the 32-bit as-number type from the model in RFC 6991.";
+                }
+                container table-map {
+                    description
+                        "Bgp Table-map test container.";
+                    uses bgp-test-state-attrs;
+                }
+            }
+        }
+    }
+
+    grouping bgp-test-summary-attrs {
+        description
+            "Grouping bgp test summary related attributes";
+
+        leaf total-routes  {
+            type uint32;
+            description
+                "BGP total routes";
+        }
+        leaf selected-routes  {
+            type uint32;
+            description
+                "BGP best path selected routes";
+        }
+        leaf rib-allowed-routes  {
+            type uint32;
+            description
+                "BGP best path selected routes that Table-Map would publish to the Global Routing Table";
+        }
+        leaf rib-filtered-routes  {
+            type uint32;
+            description
+                "BGP best path selected routes that Table-Map would exclude from publishing to the Global Routing Table";
+        }
+    }
+
+    grouping bgp-test-state-attrs {
+         description
+             "Grouping bgp table-map test related attributes";
+
+        list address-family {
+            key "afi safi policy";
+            description
+                "List for Bgp address families and policy along with dry run results.";
+
+            leaf afi  {
+                type  cn-l3-types:bgp-test-afi;
+                description
+                    "Enter the IPv4 or IPv6
+                    family mode allowing configuration of address-family specific parameters";
+            }
+
+            leaf safi  {
+                type  cn-l3-types:bgp-test-safi;
+                description
+                    "Configure sub address family such as unicast";
+            }
+
+            leaf policy {
+                type string;
+                description
+                    "Name of the route-map to apply the filter to.";
+            }
+
+            container summary {
+                description
+                    "Container with BGP summary of filtered/installed routes.";
+                uses bgp-test-summary-attrs;
+            }
+        }
+    }
+
+    grouping bgp-common-route-selection-options {
+        description
+            "Configuration and state relating to route selection options";
+
+        container route-selection-options {
+            description
+                "Parameters relating to options for route selection";
+
+            leaf always-compare-med {
+                type boolean;
+                default false;
+                description
+                    "Compare multi-exit discriminator (MED) value from
+                    different ASes when selecting the best route.  The default
+                    behavior is to only compare MEDs for paths received from
+                    the same AS.";
+            }
+
+            leaf deterministic-med {
+                type boolean;
+                default "false";
+                description
+                    "Compares the Multi Exit Discriminator (MED) variable when choosing among
+                     routes advertised by different peers in the same autonomous system.
+                     MED is compared after BGP attributes weight, local preference,
+                     AS-path and origin have been compared and are equal.";
+            }
+
+            leaf ignore-as-path-length {
+                type boolean;
+                default "false";
+                description
+                    "Ignore the AS path length when selecting the best path.
+                    The default is to use the AS path length and prefer paths
+                    with shorter length.";
+            }
+
+            leaf external-compare-router-id {
+                type boolean;
+                default "true";
+                description
+                    "When comparing similar routes received from external BGP
+                    peers, use the router-id as a criterion to select the
+                    active path.";
+            }
+
+            leaf tie-break-on-age {
+                type boolean;
+                default "false";
+                description
+                    "Prefer old routes when compare-router-id is not set.";
+            }
+        }
+    }
+
+
+    grouping bgp-attrs {
+        description
+            "Bgp grouping for bgp configuration related attributes";
+
+        leaf router-id  {
+            type inet:ipv4-address;
+            description
+                "Router id - an unsigned 32-bit integer
+                 expressed in dotted quad notation.";
+        }
+
+        leaf cluster-id  {
+            type  cn-l3-types:cluster-id;
+            description
+                "BGP route reflector cluster ID
+                 route-reflector cluster id to use when local router is
+                 configured as a route reflector.  Commonly set at the group
+                 level, but allows a different cluster
+                 id to be set for each peer.";
+        }
+
+        leaf keepalive-interval  {
+            type  uint16 {
+                 range "0..65535";
+            }
+            units seconds;
+            default "60";
+            description
+                "BGP keepalive time 0|<3-65535>
+                 Time interval in seconds between transmission of keepalive
+                 messages to the peer.  Typically set to 1/3 the
+                 hold-time.";
+        }
+
+        leaf hold-time  {
+            type  uint16 {
+                 range "0..65535";
+            }
+            units seconds;
+            default "180";
+            description
+                "BGP holdtime 0|<1-21845>
+                 Time interval in seconds that a BGP session will be
+                 considered active in the absence of keepalive or other
+                 messages from the peer.  The hold-time is typically
+                 set to 3x the keepalive-interval.";
+        }
+
+        leaf local-preference  {
+            type  uint32 {
+                 range "0..4294967295";
+            }
+            default "100";
+            description
+                "BGP default local preference <0-4294967295> ,default value is 100
+                 Local preference indicates the preferred path when
+                 there are multiple paths to the same destination";
+        }
+
+        leaf inbound-route-filter  {
+            type  boolean;
+            default true;
+            description
+                "Enable the MPLS (Multiprotocol Label Switching) VPN/BGP inbound route
+                 filter. This is used to control the installation of
+                 routing information into the BGP table.";
+        }
+
+        leaf log-peer-changes  {
+            type  boolean;
+            default false;
+            description
+                "Configure logging of peer state changes.  Default is
+                 to enable logging of peer state changes.";
+        }
+
+        leaf mpls-resolution  {
+            type boolean;
+            default false;
+            description
+                "Enable MPLS LSP resolution for BGP prefixes";
+        }
+
+        leaf fast-external-failover  {
+            type  boolean;
+            default true;
+            description
+                "Reset a BGP session immediately, if the
+                 interface used for BGP connection goes down.";
+        }
+
+        leaf scan-time {
+            type uint8 {
+                range "1..60";
+            }
+            units seconds;
+            default 60;
+            description
+                "Configure background scanner interval in seconds.";
+        }
+
+        container next-hop-tracking {
+            description
+                "Container to enable next hop tracking";
+
+            leaf enable {
+                type boolean;
+                default false;
+                description
+                    "Nexthop address tracking is an event-driven notification system that
+                     monitors the status of routes installed in the Routing Information Base (RIB)
+                     and reports nexthop changes that affect internal BGP (iBGP) or external BGP (eBGP)
+                     prefixes directly to the BGP process. This improves the overall BGP convergence
+                     time, by allowing BGP to respond rapidly to nexthop changes for routes
+                     installed in the RIB. Default delay is 5 seconds";
+            }
+
+            leaf delay {
+                when "../enable= 'true'";
+                type uint8 {
+                    range "1..100";
+                }
+                units seconds;
+                default 5;
+                description
+                    "The delay interval between routing table walks for nexthop delay tracking,
+                     after which BGP does a routing table scan on receiving a nexthop change trigger for nexthop updates.
+                     The time period determines how long BGP waits before it walks the full BGP table to
+                     determine which prefixes are affected by the nexthop changes, after it receives the
+                     trigger for nexthoop updates about one or more nexthop changes.";
+            }
+        }
+
+        uses bgp-common-route-selection-options;
+
+        list address-family {
+            key "afi safi";
+            description
+                "List BGP address family that takes AFI and SAFI related configuration";
+
+            leaf afi  {
+                type  cn-l3-types:afi-type;
+                description
+                    "Enter the IPv4, or VPNv4 address
+                     family mode allowing configuration of address-family specific parameters";
+            }
+
+            leaf safi  {
+                type  cn-l3-types:safi-type;
+                description
+                    "Configure sub address family such as unicast";
+            }
+
+            container additional-paths {
+                when "../afi='vpnv4' or ../afi='vpnv6' or ../afi='ipv4' and ../safi='labeled-unicast'";
+
+                description
+                    "Container to configure additional path attributes for a peer.";
+
+                leaf type {
+                    type  cn-l3-types:bgp-add-path-type;
+                    description
+                        "Send/Receive additional paths to/from peers. Parameters relating to the advertisement and receipt of
+                         multiple paths for a single NLRI (add-paths)";
+                }
+
+                leaf select-all  {
+                    type  boolean;
+                    default false;
+                    description
+                        "Enable BGP add-path advertisement";
+                }
+
+                leaf best-count  {
+                    type  uint8 {
+                         range "2..3";
+                    }
+                    description
+                        "Best <2-3> paths in additional paths to be selected";
+                }
+
+                leaf install {
+                    type boolean;
+                    default false;
+                    description
+                        "Enabled BGP pic to install indirect nexthops into RIB";
+                }
+            }
+
+            leaf route-reflector  {
+                when "../afi!='rtfilter'";
+                type  boolean;
+                default true;
+                description
+                    "Configure as route reflector for an address family";
+            }
+
+            leaf synchronization {
+                when "../afi!='rtfilter'";
+                type boolean;
+                default false;
+                description
+                    "Perform IGP synchronization. Enables IGP synchronization of Internal BGP (iBGP) learned routes
+                     with the Internal Gateway Protocol (IGP) system. Synchronization is used when a BGP
+                     router should not advertise routes learned from iBGP neighbors, unless those routes
+                     are also present in an IGP (for example, OSPF).";
+            }
+
+            leaf network-synchronization {
+                when "../afi!='rtfilter'";
+                type boolean;
+                default false;
+                description
+                    "Enables IGP synchronization of BGP networked routes.";
+            }
+
+            leaf auto-summary {
+                when "../afi!='rtfilter'";
+                type boolean;
+                default false;
+                description
+                    "Enables sending summarized routes by a BGP speaker to its peers. Auto-summary can be enabled if certain
+                     routes have already been advertised: in this case, configuring auto-summary advertises the summarized
+                     routes first, then corresponding non-summarized routes are withdrawn.";
+            }
+
+            container table-map {
+                when "../afi!='rtfilter'";
+                description
+                     "Suppresses or modifies incoming BGP updates to Routing table installation
+                     based on the routing policy configured.";
+
+                leaf policy {
+                    type leafref {
+                        path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                    }
+                    description
+                        "Name of the routemap to apply the filter to.";
+                }
+
+                leaf filter {
+                    type boolean;
+                    default true;
+                    description
+                        "Filter the routes. If present, the incoming routes are pruned as per the rule specified in
+                         route-map-name. If not, it is used to alter the incoming packet information.";
+                }
+            }
+
+            list aggregate-address {
+                when "../afi!='rtfilter'";
+                key "address";
+                description
+                    "Configure BGP aggregate entries to
+                     to minimize the size of routing tables";
+
+                leaf address  {
+                    type inet:ip-prefix;
+                    description
+                        "Aggregate-prefix in prefix/length format";
+                }
+
+                leaf as-set  {
+                    type  boolean;
+                    default false;
+                    description
+                        "As-set path parameter includes AS PATH information in summaries or aggregate
+                         routes. Creates an aggregate address with a mathematical set of
+                         autonomous systems (ASs). It summarizes the AS_PATH attributes of all the
+                         individual routes";
+                }
+
+                leaf summary-only  {
+                    type  boolean;
+                    default false;
+                    description
+                        "Summary-only path parameter advertises the prefix only,
+                         suppressing the more-specific routes to all peers.";
+                }
+            }
+            uses bgp-af-attrs;
+            uses network-af-attrs;
+
+            leaf pic  {
+                when "../afi!='rtfilter'";
+                type  boolean;
+                default false;
+                description
+                    "Enable/disable additional path installed for BGP route";
+            }
+
+            container allocate-label {
+                when "../afi!='rtfilter'";
+                description
+                    "Container to configure allocate-label attributes.";
+                leaf all {
+                    type  boolean;
+                    description
+                        "Allocate label for all routes";
+                }
+                leaf policy {
+                    when "../all= 'false'";
+                    type leafref {
+                        path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                    }
+                    description
+                        "Allocate label for the routes specified by the route map";
+                }
+                leaf implicit-null {
+                    when "../all = 'true' or ../policy";
+                    type boolean;
+                    default true;
+                    description
+                        "Enable PHP for local originated routes (network or
+                         redistribution of connected routes";
+                }
+            }
+       
+            leaf segment-routing {
+                type enumeration {
+                    enum "enable" {
+                        value 0;
+                        description
+                            "To enable BGP SR";
+                    }
+                    enum "disable" {
+                        value 1;
+                        description
+                            "To disable BGP SR";
+                    }
+                }
+                default "disable";
+                description
+                    "BGP SR enable/disable";
+            }          
+        }
+
+        list vrf {
+            key "name";
+            description
+                "Vrf list containing vrf related configuration such as rd, rt and peer";
+
+            leaf name  {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                description
+                    "Provides bgp address family to parent VRF binding.";
+            }
+
+            leaf route-distinguisher  {
+                type  cn-l3-types:bgp-rd;
+                mandatory true;
+                description
+                    "A route distinguisher is an 8-octet value used to distinguish
+                     routes from different BGP VPNs (RFC 4364). A route
+                     distinguisher consists of three fields: A 2-octet type field,
+                     an administrator field, and an assigned number field.
+                     According to the data formats for type 0, 1, and 2 defined in
+                     RFC4364, the encoding pattern is defined as:
+
+                     0:2-octet-asn:4-octet-number
+                     1:4-octet-ipv4addr:2-octet-number
+                     2:4-octet-asn:2-octet-number.
+                     2-octet-other-hex-number:6-octet-hex-number
+
+                     Some valid examples are: 0:100:100, 1:1.1.1.1:100, and
+                     2:1234567890:203.";
+            }
+
+            list route-target {
+                key "id";
+                min-elements 1;
+                description
+                    "Route Target list that takes route target id and direction";
+
+                leaf direction  {
+                    type  cn-l3-types:rt-direction;
+                    mandatory true;
+                    description
+                        "Route-target direction, that can be imported/exported for that particular route target id.";
+                }
+
+                leaf id  {
+                    type  cn-l3-types:bgp-rt;
+                    description
+                        "A route target is an 8-octet BGP extended community
+                         initially identifying a set of sites in a BGP
+                         VPN (RFC 4364). However, it has since taken on a more
+                         general role in BGP route filtering.
+                         A route target consists of three fields:
+                         a 2-octet type field, an administrator field,
+                         and an assigned number field.
+                         According to the data formats for type 0, 1, and 2 defined in
+                         RFC4360 and RFC5668, the encoding pattern is defined as:
+
+                         0:2-octet-asn:4-octet-number
+                         1:4-octet-ipv4addr:2-octet-number
+                         2:4-octet-asn:2-octet-number.
+                         Some valid examples are: 0:100:100, 1:1.1.1.1:100, and
+                         2:1234567890:203.";
+                }
+            }
+
+            container segment-routing-srv6 {
+              description
+                "Segment Routing SRv6";
+
+              leaf prefix {
+                type inet:ipv6-prefix;
+                description
+                  "IPv6 prefix";
+              }
+
+              leaf sid-type {
+                type cn-l3-types:sr-sidtype-grouping;
+                description
+                  "SR SID type as u-sid or classic-sid";
+              }
+            }
+
+            list vrf-address-family {
+                key "afi safi";
+                description
+                    "List of vrf address families such as ipv4 unicast";
+
+                leaf afi  {
+                    type  cn-l3-types:vrf-afi-type;
+                    description
+                        "Vrf Address Family type  enter the IPv4, address
+                         family mode allowing configuration of address-family specific parameters";
+                }
+
+                leaf safi  {
+                    type  cn-l3-types:vrf-safi-type;
+                    description
+                        "VRF SAFI type. Configure sub address family such as unicast";
+                }
+
+                leaf synchronization {
+                    type boolean;
+                    default false;
+                    description
+                        "Perform IGP synchronization. Enables IGP synchronization of Internal BGP (iBGP) learned routes
+                         with the Internal Gateway Protocol (IGP) system. Synchronization is used when a BGP
+                         router should not advertise routes learned from iBGP neighbors, unless those routes
+                         are also present in an IGP (for example, OSPF).";
+                }
+
+                leaf network-synchronization {
+                    type boolean;
+                    default false;
+                    description
+                        "Enables IGP synchronization of BGP networked routes.";
+                }
+
+                leaf auto-summary {
+                    type boolean;
+                    default false;
+                    description
+                        "Enables sending summarized routes by a BGP speaker to its peers. Auto-summary can be enabled if certain
+                         routes have already been advertised: in this case, configuring auto-summary advertises the summarized
+                         routes first, then corresponding non-summarized routes are withdrawn.";
+                }
+
+                list peer {
+                    key "address";
+                    description
+                        "List of vrf peer related configuration information";
+
+                    leaf address  {
+                        type  inet:ip-address;
+                        description
+                            "Address of the BGP peer, either in IPv4 or IPv6";
+                    }
+
+                    leaf remote-as  {
+                        type  uint32 {
+                             range "1..4294967295";
+                        }
+                        mandatory true;
+                        description
+                            "Remote AS number for this peer";
+                    }
+
+                    leaf update-source-interface  {
+                        type leafref  {
+                            path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                        }
+                        description
+                            "Allows internal BGP sessions to use any operational interface for TCP connections";
+                    }
+
+                    leaf local-as  {
+                        type  uint32 {
+                             range "1..4294967295";
+                        }
+                        description
+                            "The local-AS feature allows a router to appear to be a member of a second autonomous system (AS),
+                             in addition to its real AS. This feature can only be used for true eBGP peers.";
+                    }
+
+                    leaf local-as-options {
+                        when ../local-as;
+                        type  cn-l3-types:bgp-local-as-types;
+                        description
+                            "Local-as options: 
+                             no-prepend - not prepend local-as to updates from eBGP peers.";
+                    }
+
+                    leaf keepalive-interval  {
+                        type  uint16 {
+                             range "0..65535";
+                        }
+                        units seconds;
+                        description
+                            "BGP keepalive time 0|<3-65535>
+                             Time interval in seconds between transmission of keepalive
+                             messages to the peer.  Typically set to 1/3 the
+                             hold-time.";
+                    }
+
+                    leaf hold-time  {
+                        type  uint16 {
+                             range "0..65535";
+                        }
+                        units seconds;
+                        description
+                            "Time interval in seconds that a BGP session will be
+                             considered active in the absence of keepalive or other
+                             messages from the peer.  The hold-time is typically set to
+                             3x the keepalive-interval.";
+                    }
+
+                    leaf password  {
+                        type cn-l3-types:string-max-256;
+                        ncx:password;
+                        description
+                            "Configures an MD5 authentication password for use with
+                             peering devices.";
+                    }
+
+                    container ebgp-multihop {
+                        description
+                            "Configuration parameters relating to ebgp multihop";
+
+                        leaf enabled {
+                            type  boolean;
+                            default false;
+                            description
+                                "When enabled the referenced group or peers are permitted
+                                 to be indirectly connected - including cases where the TTL
+                                 can be decremented between the BGP peers";
+                        }
+
+                        leaf multihop-ttl {
+                            type  uint8 {
+                                 range "1..255";
+                            }
+                            default "255";
+                            description
+                                "Time-to-live value to use when packets are sent to the
+                             referenced group or peers and ebgp-multihop is enabled";
+                        }
+                    }
+
+                    leaf connect-retry-interval  {
+                        type  uint32 {
+                             range "1..65535";
+                        }
+                        units seconds;
+                        default "120";
+                        description
+                            "Time interval in seconds between attempts to establish a
+                             session with the peer.";
+                    }
+
+                    leaf minimum-advertisement-interval  {
+                        type  uint32 {
+                             range "0..65535";
+                        }
+                        units seconds;
+                        default "0";
+                        description
+                            "Minimum route advertisement interval <0-65535>
+                             Minimum time which must elapse between subsequent UPDATE
+                             messages relating to a common set of NLRI being transmitted
+                             to a peer. This timer is referred to as
+                             min-route-advertisement-interval-timer by RFC 4721 and serves to
+                             reduce the number of UPDATE messages transmitted when a
+                             particular set of NLRI exhibit instability.";
+                        reference
+                            "RFC 4271 - A Border Gateway Protocol 4, Sec 9.2.1.1";
+                    }
+
+                    leaf description  {
+                        type cn-l3-types:string-max-256;
+                        description
+                            "An optional textual description (intended primarily for use
+                             with a peer or group";
+                    }
+
+                    leaf passive {
+                        type boolean;
+                        default false;
+                        description
+                            "Wait for peers to issue requests to open a BGP session,
+                             rather than initiating sessions from the local router.";
+                    }
+
+                    leaf site-origin-id  {
+                        type cn-l3-types:ext-comm-rt;
+                        description
+                            "Enable the site-of-origin (SOO) feature. If the
+                             customer AS is multi-homed to the ISP, this ensures
+                             that the PE does not advertise the routes back to the same AS.";
+                    }
+
+                    leaf attribute-unchanged  {
+                        when "../ebgp-multihop/enabled='true'";
+                        type  cn-l3-types:attr-unchanged-type;
+                        description
+                            "Advertise unchanged BGP attributes to the specified peer.";
+                    }
+
+                    leaf orf-mode {
+                        type cn-l3-types:bgp-orf-prefix-type;
+                        description
+                            "Enables Outbound Router Filtering (ORF) and advertises the ORF capability to its
+                             neighbors.  The ORFs send and receive capabilities to lessen the number of
+                             updates exchanged between neighbors. By filtering updates, this option
+                             minimizes generating and processing of updates.";
+                    }
+
+                    leaf as-override {
+                        type boolean;
+                        default false;
+                        description
+                            "Override the Autonomous System Number (ASN) of a site with the ASN of a provider.
+                             BGP normally ignores the routes from the same AS. However, this capability is used
+                             to override the customer‘s ASN in BGP, so that the customer CE accepts and installs
+                             routes from the same AS.";
+                    }
+
+                    leaf graceful-restart-helper {
+                        type cn-l3-types:bgp-gr-mode;
+                        description
+                            "Configure the router to advertise the Graceful Restart Capability to the neighbors.
+                             This configuration indicates that the BGP speaker has the ability to preserve
+                             its forwarding state for the address family when BGP restarts.";
+                    }
+
+                    list policy {
+                        key "name direction";
+                        max-elements 2;
+                        description
+                            "Routing policy to be attached to this peer.";
+
+                        leaf name {
+                            type leafref  {
+                                path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                            }
+                            description
+                                "Route map name associated with the leaf";
+                        }
+
+                        leaf direction {
+                            type cn-l3-types:bgp-rmap-direction;
+                            description
+                                "The direction of application of the route map policy applies for the peer.";
+                        }
+                    }
+
+                    container bfd {
+                        if-feature bfd;
+                        description
+                            "Configure bidirectional forwarding detection for BGP.";
+                        uses bfd-types:bgp-client-cfg-parms;
+                    }
+
+                    container unsuppress {
+                        description
+                            "Selectively leak more-specific routes to a particular neighbor.";
+
+                        leaf policy {
+                            type leafref  {
+                                path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                            }
+                            description
+                                "Route map name associated with the leaf";
+                        }
+                    }
+                    uses peer-vrf-attrs;
+
+                    leaf remove-private-as {
+                        type boolean;
+                        default false;
+                        description
+                            "Remove private AS numbers from the outbound updates and do not advertise these
+                             to the internet. This command is used with eBgp peers only.";
+                    }
+                    uses graceful-restart ;
+                }
+
+                list redistribute {
+                    key "protocol";
+                    description
+                        "Inject routes from one routing process into another.
+                         Redistribution is used by routing protocols to advertise routes
+                         that are learned by some other means, such as by another routing
+                         protocol or by static routes";
+
+                    leaf protocol {
+                        type  cn-l3-types:bgp-redistribute-type;
+                        description
+                            "Protocol to redistribute into BGP";
+                    }
+
+                    leaf policy {
+                        type leafref  {
+                            path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                        }
+                        description
+                            "Routing Policy to apply during redistribution";
+                    }
+
+                    list instance {
+                        when "../protocol[.='ospf' or .='isis']";
+                        key "tag";
+                        description
+                            "Redistribute the routes from a specific OSPF/ISIS instance";
+                           leaf tag {
+                               type string;
+                               description
+                                   "Tag could be instance id of OSPFv2, OSPFv3 or ISIS";
+                           }
+                          leaf policy {
+                              type leafref  {
+                                  path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                              }
+                              description
+                                  "Routing Policy to apply during redistribution";
+                          }
+                    }
+                 }
+
+                list network {
+                    key "address";
+                    description
+                        "Specify the network to be advertised by the BGP routing process";
+
+                    leaf address  {
+                        type inet:ip-prefix;
+                        description
+                            "Network address to be announced in prefix/length format";
+                    }
+
+                    leaf policy {
+                        type leafref  {
+                            path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                        }
+                        description
+                            "Routing Policy to apply to network";
+                    }
+                }
+            }
+        }
+
+        list l2vpn-vpls {
+            key "name";
+            description
+                "L2VPN VPLS list containing L2VPN instance related configuration such as RD, RT and VPLS ID";
+
+            leaf name  {
+                type leafref {
+                    path "/l2vpn:l2vpn-services/l2vpn:l2vpn/l2vpn:name";
+                }
+                description
+                    "L2VPN services instance name.";
+            }
+
+            leaf route-distinguisher  {
+                type  cn-l3-types:bgp-rd;
+                description
+                    "Route distinguisher value. It uniquely generates L2VPN NLRI.";
+            }
+
+            list route-target {
+                key "id";
+                description
+                    "Route target list that takes route target id and direction";
+
+                leaf direction  {
+                    type  cn-l3-types:rt-direction;
+                    mandatory true;
+                    description
+                        "Route-target direction, that can be imported/exported for that particular route target ID.";
+                }
+
+                leaf id  {
+                    type  cn-l3-types:bgp-rt;
+                    description
+                        "Route-target ID. Creates lists of import and export route-target
+                         extended communities for the L2VPN instance. It specifies a target VPN 
+                         extended community. Execute the once for each community. All routes with
+                         the specific route-target extended community are imported into all L2VPN
+                         instances with the same extended community as an import route-target.";
+                }
+            }
+
+            leaf vpls-id  {
+                type  cn-l3-types:bgp-vpls-id;
+                description
+                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain. 
+                     Manual configuration of this ID is optional because a default VPLS ID is generated 
+                     using the BGP autonomous system number and the configured VPN ID.
+                     A VPLS ID can be composed in one of three ways: with an autonomous system number and
+                     an arbitrary number or with an IP address and an arbitrary number.
+                     For example:
+                     •Enter type 0, a colon, a 16-bit autonomous system number, a colon, and a 32-bit number.
+                     0:45000:3 or
+                     •Enter type 1, a colon , a 32-bit IP address, a colon, and a 16-bit number.
+                     1:192.168.10.15:1 or
+                     •Enter type 2, a colon, a 32-bit autonomous system number, a colon, and a 16-bit number.
+                     2:65536:3 .";
+            }
+        }
+
+        grouping peer-common-attributes-grouping {
+            description
+               "Grouping for peer and peergroup common attributes";
+
+            leaf local-as  {
+                type  uint32 {
+                     range "1..4294967295";
+                }
+                description
+                    "The local-AS feature allows a router to appear to be a member of a second autonomous system (AS),
+                     in addition to its real AS. This feature can only be used for true eBGP peers.";
+            }
+
+            leaf local-as-options {
+                when ../local-as;
+                type  cn-l3-types:bgp-local-as-types;
+                description
+                   "Local-as options:
+                    no-prepend - not prepend local-as to updates from eBGP peers.";
+            }
+
+            leaf connect-retry-interval  {
+                type  uint32 {
+                     range "1..65535";
+                }
+                units seconds;
+                default "120";
+                description
+                    "Time interval in seconds between attempts to establish a
+                     session with the peer.";
+            }
+
+            leaf description  {
+                type cn-l3-types:string-max-256;
+                description
+                    "An optional textual description (intended primarily for use
+                     with a peer or group";
+            }
+
+            container ebgp-multihop {
+                description
+                    "Configuration parameters relating to ebgp multihop";
+
+                leaf enabled {
+                    type  boolean;
+                    default false;
+                    description
+                        "When enabled the referenced group or peers are permitted
+                         to be indirectly connected - including cases where the TTL
+                         can be decremented between the BGP peers";
+                }
+
+                leaf multihopttl  {
+                    type  uint8 {
+                         range "1..255";
+                    }
+                    default "255";
+                    description
+                        "Time-to-live value to use when packets are sent to the
+                         referenced group or peers and ebgp-multihop is enabled";
+                }
+            }
+
+            leaf minimum-advertisement-interval  {
+                type  uint32 {
+                     range "0..65535";
+                }
+                units seconds;
+                default "0";
+                description
+                    "Minimum route advertisement interval <0-65535>
+                     Minimum time which must elapse between subsequent UPDATE
+                     messages relating to a common set of NLRI being transmitted
+                     to a peer. This timer is referred to as
+                     min-route-advertisement-interval-timer by RFC 4721 and serves to
+                     reduce the number of UPDATE messages transmitted when a
+                     particular set of NLRI exhibit instability.";
+                reference
+                    "RFC 4271 - A Border Gateway Protocol 4, Sec 9.2.1.1";
+            }
+
+            leaf keepalive-interval  {
+                type  uint16 {
+                     range "0..65535";
+                }
+                units seconds;
+                description
+                    "BGP keepalive time 0|<3-65535>
+                     Time interval in seconds between transmission of keepalive
+                     messages to the peer.  Typically set to 1/3 the
+                     hold-time.";
+            }
+
+            leaf hold-time  {
+                type  uint16 {
+                     range "0..65535";
+                }
+                units seconds;
+                description
+                    "Holdtime BGP holdtime 0|<1-21845>
+                     Time interval in seconds that a BGP session will be
+                     considered active in the absence of keepalive or other
+                     messages from the peer.  The hold-time is typically
+                     set to 3x the keepalive-interval.";
+                reference
+                    "RFC 4271 - A Border Gateway Protocol 4, Sec. 10";
+            }
+
+            leaf passive {
+                type boolean;
+                default false;
+                description
+                    "Wait for peers to issue requests to open a BGP session,
+                     rather than initiating sessions from the local router.";
+            }
+
+            leaf password  {
+                type cn-l3-types:string-max-256;
+                ncx:password;
+                description
+                    "Configures an MD5 authentication password for use with
+                     peering devices.";
+            }
+
+            leaf shutdown {
+                type boolean;
+                default false;
+                description
+                    "Terminate any active session for a specified peer and clear all related
+                     routing information. For peer groups large number of peering sessions will
+                     be terminated.";
+            }
+            uses graceful-restart ;
+        }
+
+        grouping peer-address-family-grouping {
+            description
+               "Grouping for peer address family attributes";
+
+            list address-family {
+                key "afi safi";
+                description
+                    "Peer address family configuration such as vpnv4 unicast";
+
+                leaf afi  {
+                    type leafref  {
+                        path "/bgp:bgp/bgp:instance/bgp:address-family/bgp:afi";
+                    }
+                    description
+                        "IPv4, or VPNv4 address
+                         family mode allowing configuration of address-family specific parameters";
+                }
+
+                leaf safi  {
+                    type leafref  {
+                        path "/bgp:bgp/bgp:instance/bgp:address-family/bgp:safi";
+                    }
+                    description
+                        "Configure sub address family such as unicast";
+                }
+
+                container additional-paths {
+                    when "../afi='vpnv4' or ../afi='vpnv6' or ../afi='ipv4' and ../safi='labeled-unicast'";
+
+                    description
+                        "Container to configure additional path attributes for a peer.";
+
+                    leaf type {
+                        type  cn-l3-types:bgp-peer-add-path-type;
+                        description
+                            "Send/Receive additional paths to/from peers. Parameters relating to the advertisement and receipt of
+                             multiple paths for a single NLRI (add-paths)";
+                    }
+
+                    leaf select-all  {
+                        type  boolean;
+                        default false;
+                        description
+                            "Enable BGP add-path advertisement";
+                    }
+
+                    leaf best-count  {
+                        type  uint8 {
+                             range "2..3";
+                        }
+                        description
+                            "Best <2-3> paths in additional paths to be selected";
+                    }
+                }
+
+                leaf next-hop-self  {
+                    when "../afi!='rtfilter'";
+                    type  boolean;
+                    default false;
+                    description
+                        "Configure the router as the next hop for a BGP-speaking peer or peer group";
+                }
+
+                leaf attribute-unchanged  {
+                    when "../../ebgp-multihop/enabled='true' and ../afi!='rtfilter'";
+                    type  cn-l3-types:attr-unchanged-type;
+                    description
+                        "Advertise unchanged BGP attributes to the specified peer.";
+                }
+
+                leaf graceful-restart-helper {
+                    when "../afi!='rtfilter'";
+                    type cn-l3-types:bgp-gr-mode;
+                    description
+                        "Configure the router to advertise the Graceful Restart Capability to the neighbors.
+                         This configuration indicates that the BGP speaker has the ability to preserve
+                         its forwarding state for the address family when BGP restarts.";
+                }
+
+                uses peer-vrf-attrs;
+
+                leaf orf-mode {
+                    when "../afi!='rtfilter'";
+                    type cn-l3-types:bgp-orf-prefix-type;
+                    description
+                        "Enables Outbound Router Filtering (ORF) and advertises the ORF capability to its
+                         neighbors.  The ORFs send and receive capabilities to lessen the number of
+                         updates exchanged between neighbors. By filtering updates, this option
+                         minimizes generating and processing of updates.";
+                }
+
+                list policy {
+                    when "../afi!='rtfilter'";
+                    key "name direction";
+                    max-elements 2;
+                    description
+                        "Routing policy to be attached to this peer.";
+
+                    leaf name {
+                        type leafref  {
+                            path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                        }
+                        description
+                            "Route map name associated with the leaf";
+                    }
+
+                    leaf direction {
+                        type cn-l3-types:bgp-rmap-direction;
+                        description
+                            "The direction of application of the route map policy applies for the peer.";
+                    }
+                }
+
+                container unsuppress {
+                    when "../afi!='rtfilter'";
+                    description
+                        "Selectively leak more-specific routes to a particular neighbor.";
+
+                    leaf policy {
+                        type leafref  {
+                            path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                        }
+                        description
+                            "Route map name associated with the leaf";
+                    }
+                }
+
+                leaf default-originate {
+                    when "../afi='rtfilter'";
+                    type boolean;
+                    default false;
+                    description
+                        "The default originate is used to indicate that all routes be sent regardless of the Route 
+                         Target filter values.";
+                }
+
+                leaf remove-private-as {
+                    when "../afi='ipv4' or ../afi='ipv6'";
+                    type boolean;
+                    default false;
+                    description
+                        "Remove private AS numbers from the outbound updates and do not advertise these
+                         to the internet. This command is used with eBgp peers only.";
+                }
+               
+                leaf allow-ebgp-sr {
+                    type enumeration {
+                        enum "enable" {
+                            value 0;
+                            description
+                                "To allow prefix SID attribute from different SR domain";
+                        }
+                        enum "disable" {
+                            value 1;
+                            description
+                                "To forbid prefix SID attribute from different SR domain";
+                        }
+                    }
+                    default "disable";
+                    description
+                        "EBGP Peers only. Allow/Forbid prefix SID attribute";
+                }
+  
+            }
+        }
+
+        list peer {
+            key "address";
+            description
+                "List of peers with peer related configuration";
+
+            leaf address  {
+                type  inet:ip-address;
+                description
+                    "Address of the BGP peer, either in IPv4 or IPv6";
+            }
+
+            leaf remote-as  {
+                type  uint32 {
+                     range "1..4294967295";
+                }
+                description
+                    "Remote AS number for this peer";
+            }
+
+            leaf update-source-interface  {
+                type leafref  {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                }
+                description
+                    "Allows internal BGP sessions to use any operational interface for TCP connections";
+            }
+
+            leaf peer-group {
+                type leafref  {
+                    path "/bgp:bgp/bgp:instance/peer-group/name";
+                }
+                description
+                    "Peer group configuration to be attached to this peer";
+            }
+
+            container bfd {
+                if-feature bfd;
+                description
+                    "Configure bidirectional forwarding detection for BGP";
+                uses bfd-types:bgp-client-cfg-parms;
+            }
+
+            uses peer-common-attributes-grouping;
+            uses peer-address-family-grouping;
+        }
+
+        list peer-group {
+            key "name";
+            description
+                "List of peer groups and its related configuration";
+
+            leaf name {
+                type string;
+                description
+                    "Name of the peer group template that can be attached to a peer";
+            }
+
+            leaf remote-as  {
+                type  uint32 {
+                     range "1..4294967295";
+                }
+                description
+                    "Remote AS number for this peer group";
+            }
+
+            leaf update-source-interface  {
+                type leafref  {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                }
+                description
+                    "Allows internal BGP sessions to use any operational interface for TCP connections";
+            }
+
+            uses peer-common-attributes-grouping;
+            uses peer-address-family-grouping;
+        }
+        
+        container graceful-restart {
+            description
+                "Container to enable graceful restart.";
+
+            leaf restart-time {
+                type  uint16 {
+                    range "1..3600";
+                }
+                units seconds;
+                default "120";
+                description
+                    "Estimated time (in seconds) for the local BGP speaker to
+                     restart a session. This value is advertised in the graceful
+                     restart BGP capability. This is a 12-bit value, referred to
+                     as Restart Time in RFC4724.";
+            }
+
+            leaf stalepath-time {
+                type  uint16 {
+                    range "1..3600";
+                }
+                units seconds;
+                default "360";
+                description
+                    "Maximum time to retain stale paths from restarting neighbors.";
+            }
+        }
+    }
+
+    grouping update-group-af-attrs {
+      description
+        "BGP grouping for update group AF state attributes";
+
+      leaf number-of-peer-count  {
+        type uint32; 
+        description
+          "Number of peers in update group";
+      }
+
+      leaf table-version  {
+        type uint32; 
+        description
+          "Update group table version";
+      }
+
+      leaf bgp-table-version  {
+        type uint32; 
+        description
+          "BGP table version";
+      }
+
+      leaf number-of-update-formatted-count  {
+        type  uint32;
+        description
+          "Number of update message formatted count";
+      }
+
+      leaf number-of-update-replicated-count  {
+        type  uint32;
+        description
+          "Number of update message replicated count";
+      }
+
+      leaf number-of-update-dropped-count  {
+        type  uint32;
+        description
+          "Number of update message dropped count";
+      }
+
+      leaf type-ebgp  {
+        type boolean;
+        description
+          "True if update group is of type EBGP else false";
+      }
+
+      leaf advertisement-interval  {
+        type uint32;
+        description
+          "Time between advertisement runs";
+      }
+
+      leaf next-hop-self  {
+        type  boolean;
+        description
+          "True if next hop self for update group will be enabled";
+      }
+
+      leaf route-reflector-client  {
+        type  boolean;
+        description
+          "True if route reflector client for update group will be enabled";
+      }
+
+      leaf out-prefix-list-name  {
+        type  string;
+        description
+          "Out prefix list name";
+      }
+
+      leaf out-routing-policy-name  {
+        type  string;
+        description
+          "Out routing policy name";
+      }
+        
+      leaf out-unsupressed-route-map-name  {
+        type string;
+        description
+          "Name of unsupressed map associated with the update group.";
+      }
+
+      leaf best-count  {
+        type uint32;
+        description
+          "Best paths in additional paths to be selected.";
+      }
+
+      leaf extended-asn-enabled {
+        type boolean;
+        description
+          "Extended ASN enabled.";
+      }
+
+      leaf gr-capability-enabled {
+        type boolean;
+        description
+          "GR capability is enabled for the peer.";
+      }
+
+      leaf attribute-unchanged-as {
+        type boolean;
+        description
+          "Advertise unchanged AS BGP attributes to the specified peer.";
+      }
+
+      leaf attribute-unchanged-next-hop {
+        type boolean;
+        description
+          "Advertise unchanged next-hop BGP attributes to the specified peer.";
+      }
+
+      leaf attribute-unchanged-med {
+        type boolean;
+        description
+          "Advertise unchanged MED BGP attributes to the specified peer.";
+      }
+
+      leaf remove-private-as {
+        type boolean;
+        description
+          "Remove private AS numbers from the outbound updates and do not advertise these to the internet.";
+      }
+
+      leaf local-as-options {
+        type cn-l3-types:bgp-local-as-types;
+        description
+          "Not prepend local-AS to updates from EBGP peers.";
+      }
+
+      leaf allow-ebgp-sr {
+        type boolean;
+        description
+          "To allow prefix SID attribute from different SR domain.";
+      }
+
+      leaf add-path-enabled {
+        type boolean;
+        description
+          "Additional path enabled at peer level.";
+      }
+
+      leaf remote-as-override  {
+        type  uint32;
+        description
+          "Remote AS number when AS override is set.";
+      }
+
+      leaf local-as  {
+        type  uint32;
+        description
+          "The local-AS feature allows a router to appear to be a member of a second autonomous system (AS),
+           in addition to its real AS. This feature can only be used for true eBGP peers.";
+      }
+
+      leaf site-origin-id  {
+        type cn-l3-types:ext-comm-rt;
+        description
+          "Enable the site-of-origin (SOO) feature. If the
+           customer AS is multi-homed to the ISP, this ensures
+           that the PE does not advertise the routes back to the same AS.";
+      }
+
+      leaf single-peer-member  {
+        type boolean;
+        description
+          "True if update group is created for single peer member only.";
+      }
+
+    }    
+
+    grouping update-group-peer-attrs {
+      description
+        "Bgp grouping for update group peer attributes";
+
+      leaf is-peer-master {
+        type boolean;
+        description
+          "True if peer is master peer in update group";
+      }
+
+      leaf is-peer-active {
+        type boolean;
+        description
+          "True if peer is active member in update group";
+      }
+
+      leaf number-of-update-formatted-count  {
+        type  uint32;
+        description
+          "Number of update message formatted count";
+      }
+
+      leaf number-of-update-replicated-count  {
+        type  uint32;
+        description
+          "Number of update message replicated count";
+      }
+
+      leaf number-of-update-dropped-count  {
+        type  uint32;
+        description
+          "Number of update message dropped count";
+      }
+
+      leaf sub-group  {
+        type  string;
+        description
+          "Sub group information for this peer";
+      }
+    }
+
+    grouping update-group-state {
+      description
+        "BGP grouping for update group state attributes";
+
+      list update-group {
+        key "id";
+        description
+          "List of update groups and its peers information";
+
+        leaf id  {
+          type  string;
+          description
+            "Index of update group list";
+        }
+
+        leaf name  {
+          type  string;
+          description
+            "Name of the update group";
+        }
+
+        list address-family {
+          key "afi safi";
+          description
+            "List for BGP address families and its related update group state information";
+
+          leaf afi  {
+            type leafref {
+              path "/bgp:bgp/instance/address-family/afi";
+            }
+            description
+              "Address family specific parameters such as ipv4, ipv6 or vpnv4";
+          }
+
+          leaf safi  {
+            type leafref {
+              path "/bgp:bgp/instance/address-family/safi";
+            }
+            description
+              "Sub-address family such as unicast";
+          }
+
+          uses update-group-af-attrs;
+
+          list peer {
+            key "address";
+            description
+              "List of BGP peers and its related state information in update group";
+
+            leaf address  {
+              type inet:ip-address;
+              description
+                "Address of the BGP peer, either in IPv4 or IPv6";
+            }
+
+            uses update-group-peer-attrs;
+
+          }
+        }
+      }     
+    }
+
+    grouping nexthop-tracking-state {
+        description
+            "BGP grouping for nexthop tracking state attributes";
+
+        leaf receive-rib-packet-count  {
+            type uint32;
+            description
+                "Rib receive message count";
+        }
+
+        leaf delay-remaining  {
+            type uint8;
+            units seconds;
+            description
+                "Remaining next hop tracking delay timer value";
+        }
+
+        leaf total-ipv4-nexthop-count  {
+            type uint32;
+            description
+                "Number of IPV4 nexthops count";
+        }
+
+        leaf total-ipv6-nexthop-count  {
+            type uint32;
+            description
+                "Number of IPV6 nexthops count";
+        }
+
+        list next-hop {
+            key "address";
+            description
+                "List of next-hops";
+
+            leaf address  {
+                type inet:ip-address;
+                description
+                    "Address of the BGP peer either in IPv4 or IPv6";
+            }
+
+            leaf registered  {
+                type boolean;
+                description
+                    "Next-hop is registered or not";
+            }
+        }
+    }
+
+    grouping bgp-scan-parameters {
+        description
+            "BGP grouping for BGP scan attributes";
+
+        leaf scan-remaining-time  {
+            type uint8;
+            units seconds;
+            description
+                "Remaining scan timer";
+        }
+
+        list next-hop-cache {
+            key "address";
+            description
+                "List of next-hops";
+
+            leaf address  {
+                type inet:ip-address;
+                description
+                    "Address of the BGP peer either in IPv4 or IPv6";
+            }
+
+            leaf next-hop-metric {
+                type uint32;
+                description
+                   "IGP metric for nexthop";
+            }
+           
+            leaf next-hop-valid {
+                type boolean;
+                description
+                   "Next-hop is valid or not";     
+            }
+        }
+    }
+
+    grouping bgp-attrs-state {
+        description
+            "Bgp grouping for state attributes";
+
+        leaf table-version  {
+            type uint32;
+            description
+                "BGP table version";
+        }
+
+        leaf prefix-count  {
+            type uint32;
+            description
+                "Number of prefixes";
+        }
+
+        leaf prefix-count-ipv6 {
+            type uint32;
+            description
+                "Number of IPv6 unicast prefixes";
+        }
+
+        leaf router-id  {
+            type string;
+            description
+                "Local router ID";
+        }
+
+    }
+
+    grouping nw-run-time-attr {
+        description
+            "Network routes runtime attributes grouping";
+
+        leaf path-count-route  {
+            type uint32;
+            description
+                "Number of prefix next-hop";
+        }
+
+        leaf no-advertise-route  {
+            type string;
+            description
+                "Community for no advertise";
+        }
+
+        leaf no-export-route  {
+            type string;
+            description
+                "Community for no export";
+        }
+
+        leaf local-as-route  {
+            type string;
+            description
+                "Community local as";
+        }
+
+        leaf suppress-route  {
+            type string;
+            description
+                "Aggregate related information (suppress)";
+        }
+
+        leaf best-path-count-route  {
+            type uint32;
+            description
+                "Number of best path network";
+        }
+
+        leaf default-ip-routing-table  {
+            type string;
+            description
+                "Table Default-IP-Routing-Table";
+        }
+
+        leaf advertised-peer-address-route  {
+            type string;
+            description
+                "Advertised to non peer-group peers";
+        }
+
+        leaf advertised-peer-group-name-route  {
+            type string;
+            description
+                "Advertised to peer-groups";
+        }
+
+        leaf advertised-any-peer  {
+            type string;
+            description
+                "Status to Not advertised to any peer";
+        }
+
+        list next-hop {
+            key "address";
+            description
+                "List of next hops and its related information for this particular network address";
+
+            leaf address  {
+                type string;
+                description "
+                    Next-hop address for this network";
+            }
+            uses next-hop-run-time-attr;
+        }
+
+        leaf route-distinguisher {
+            type string;
+            description
+                "Bgp Route Distinguisher 8 octet value";
+        }
+
+        leaf route-target  {
+            type string;
+            description
+                "Bgp Route Target";
+        }
+        
+    }
+
+    grouping next-hop-run-time-attr {
+        description
+            "Next hop grouping and its related attributes";
+
+        leaf vpn-label  {
+            type uint32;
+            description
+                "BGP-MPLS-VPNV4 Label assigned for this route";
+        }
+
+        leaf bgp-info-type-route  {
+            type string;
+            description
+                "Bgp route aggregate information";
+        }
+
+        leaf bgp-info-selected-route  {
+            type string;
+            description
+                "Bgp best selected route information";
+        }
+
+        leaf valid-state-route  {
+            type string;
+            description
+                "Status for Route is in VALID state";
+        }
+
+        leaf valid-route  {
+            type string;
+            description
+                "Bgp information on whether the next-hop is valid";
+        }
+
+        leaf flap-time-reuse-list  {
+            type string;
+            description
+                "Status for route is in a Reuse List";
+        }
+
+        leaf flap-record-duration  {
+            type string;
+            description
+                "Duration of record ";
+        }
+
+        leaf bgp-info-flag  {
+            type string;
+            description
+                "Route status";
+        }
+
+        leaf med-flag-type  {
+            type string;
+            description
+                "BGP MED send/recv";
+        }
+
+        leaf bgp-med-val  {
+            type uint32;
+            description
+                "MED value";
+        }
+
+        leaf bgp-as-path-string  {
+            type string;
+            description
+                "String expression of AS path";
+        }
+
+        leaf bgp-as-path4-string  {
+            type string;
+            description
+                "String expression of AS4 path";
+        }
+
+        leaf bgp-as-path-origin  {
+            type string;
+            description
+                "BGP AS path Route-Origin Type";
+        }
+
+        leaf bgp-as-path4-origin  {
+            type string;
+            description
+                "BGP AS4 path Route-Origin Type";
+        }
+
+        leaf ibgp-metric-route  {
+            type uint32;
+            description
+                "IGP metric value for route selection";
+        }
+
+        leaf aggregate-as-route  {
+            type uint32;
+            description
+                "Aggregate As route information";
+        }
+
+        leaf aggregator-address-route  {
+            type string;
+            description
+                "Aggregate address route information";
+        }
+
+        leaf remote-addr-route  {
+            type string;
+            description
+                "Remote router ID";
+        }
+
+        leaf originator-id-route  {
+            type string;
+            description
+                "Originator id (address)";
+        }
+
+        leaf peer-address-route  {
+            type string;
+            description
+                "Address of the peer";
+        }
+
+        leaf local-preference-route  {
+            type uint32;
+            description
+                "Local preference information for the route";
+        }
+
+        leaf community-name-route  {
+            type string;
+            description
+                "String of community attribute";
+        }
+
+        leaf ext-community-name-route {
+            type string;
+            description
+                "String of extended community attributes";
+        }
+
+        leaf cluster-list-route  {
+            type string;
+            description
+                "Cluster list";
+        }
+
+        leaf get-penalty-route  {
+            type uint32;
+            description
+                "Penalty value";
+        }
+
+        leaf get-flap-count-route  {
+            type uint32;
+            description
+                "Flap Count";
+        }
+
+        leaf last-update-route  {
+            type string;
+            description
+                "BGP rt-info Uptime";
+        }
+
+        leaf reflector-client-route  {
+            type string;
+            description
+                "Reflector Client flag";
+        }
+
+        leaf med-flag-type-route  {
+            type string;
+            description
+                "Status to unset MED attribute";
+        }
+
+        leaf bgp-info-stale-route  {
+            type string;
+            description
+                "Bgp stale route information";
+        }
+
+        leaf peer-local-as-route  {
+            type string;
+            description
+                "Status for internal peer as";
+        }
+
+        leaf bgp-confederation-peer-route  {
+            type string;
+            description
+                "Status for peer confederation as";
+        }
+
+        leaf ecmp-multi-candidate-route  {
+            type string;
+            description "Multipath candidate";
+        }
+
+        leaf multi-installed-route  {
+            type string;
+            description
+                "Bgp info multi installed";
+        }
+
+        leaf sync-flag-route  {
+            type  boolean;
+            description
+                "Bgp info synchronized";
+        }
+
+        leaf atomic-aggregate-route  {
+            type string;
+            description
+                "Atomic-aggregate";
+        }
+
+        leaf bgp-tx-path-id  {
+            type  uint8;
+            description
+                "Bgp add path Tx Id";
+        }
+
+        leaf bgp-rx-path-id  {
+            type  uint8;
+            description
+                "Bgp add path Rx Id";
+        }
+
+        leaf bgp-aigp-metric  {
+            type  uint32;
+            description
+                "Bgp aigp metric";
+        }
+
+        leaf in-label  {
+            type  uint32;
+            description
+                "Label received for this route";
+        }
+
+        leaf out-label  {
+            type  uint32;
+            description
+                "Label sent out for this route";
+        }
+
+        leaf backup-route  {
+            type string;
+            description
+                "Backup route";
+        }
+
+        leaf weight  {
+            type  uint32;
+            description
+                "Network weight of this route";
+        }
+
+        leaf prefix-sid-label-index {
+            type uint32;
+            description
+                "Label Index TLV carried with prefix SID.";
+        }
+
+        list originator-srgb {
+            key "lower-bound upper-bound";
+            description
+                "Concatenated ranges building the SRGB block.";
+            leaf lower-bound {
+                type uint32;
+                description
+                    "Start range of the block";
+            }
+
+            leaf upper-bound {
+                type uint32;
+                description
+                    "End range of the block";
+            }
+
+        }
+
+        leaf prefix-sid-state {
+            type prefix-sid-state;
+            description
+                "Different states of prefix SID attribute.";
+        }
+
+        leaf vpls-id {
+            type cn-l3-types:bgp-vpls-id;
+            description
+            "A VPLS ID is a BGP extended community value that identifies the VPLS domain.
+             Only applicable for L2VPN VPLS address family.";
+        } 
+        
+        leaf route-distinguisher {
+            type cn-l3-types:bgp-rd;
+            description
+                "BGP route distinguisher. Only applicable for L2VPN VPLS address family.";
+        }
+
+        leaf route-target  {
+            type cn-l3-types:bgp-rt;
+            description
+                "BGP route target. Only applicable for L2VPN VPLS address family.";
+        }
+
+        leaf large-community-name-route  {
+            type string;
+            description
+                "Name of large community attribute";
+        }
+              
+    }
+
+    grouping vrf-label-grouping {
+        description
+            "Grouping for label properties under a VRF";
+
+        container label-management {
+            description
+                "Label management properties container";
+            list address-family {
+                key "afi";
+                description
+                   "MPLS label allocation for address families";
+
+                leaf afi {
+                    type  cn-l3-types:vrf-afi-type;
+                    description
+                      "MPLS label allocation for given address family";
+                }
+
+                leaf mode {
+                    type cn-l3-types:label-mode-type;
+                    description
+                      "MPLS label allocation mode.";
+                }  
+           }
+       }
+    }
+
+    grouping peer-runtime-attr {
+        description
+            "Grouping for peer runtime attributes information";
+
+        leaf state  {
+            type string;
+            description
+                "BGP Peer FSM State";
+        }
+
+        leaf connection-established-count  {
+            type uint32;
+            description
+                "Peer Established count";
+        }
+
+        leaf connection-dropped-count  {
+            type uint32;
+            description
+                "Peer dropped count";
+        }
+
+        leaf notify-code  {
+            type string;
+            description
+                "Notification Error Message";
+        }
+
+        leaf max-path-ibgp  {
+            type uint32;
+            description
+                "Ibgp ECMP multipath";
+        }
+
+        leaf as-local-count  {
+            type uint32;
+            description
+                "As-local-count";
+        }
+
+        leaf config-max-path-ebgp  {
+            type uint32;
+            description
+                "Configured ebgp ECMP multipath";
+        }
+
+        leaf max-path-ebgp  {
+            type uint32;
+            description
+                "Ebgp ECMP multipath";
+        }
+
+        leaf config-max-path-ibgp  {
+            type uint32;
+            description
+                "Configured ibgp ECMP multipath";
+        }
+
+        leaf bgp-community-count  {
+            type uint32;
+            description
+                "BGP community entries";
+        }
+
+        leaf confederation-id-check  {
+            type string;
+            description
+                "Peer under common administration";
+        }
+
+        leaf ext-asn-cap  {
+            type string;
+            description
+                "4-Octet ASN Capability";
+        }
+
+        leaf advertised-ext-asn-cap  {
+            type string;
+            description
+                "4-Octet ASN Capability advertised";
+        }
+
+        leaf receive-ext-asn-cap  {
+            type string;
+            description
+                "4-Octet ASN Capability received";
+        }
+
+        leaf add-familystring  {
+            type string;
+            description
+                "Address family IPv4 Unicast type (advertised, received)";
+        }
+
+        leaf keepalive-interval-in  {
+            type uint32;
+            description
+                "Keepalive input count";
+        }
+
+        leaf keepalive-interval-out  {
+            type uint32;
+            description
+                "Keepalive output count";
+        }
+
+        leaf open-msg-in  {
+            type uint32;
+            description
+                "Open message input count";
+        }
+
+        leaf open-msg-out  {
+            type uint32;
+            description
+                "Open message output count";
+        }
+
+        leaf bgp-as-path-count  {
+            type uint32;
+            description
+                "BGP AS path entries";
+        }
+
+        leaf bgp-as-path4-bCount  {
+            type uint32;
+            description
+                "BGP AS path entries";
+        }
+
+        leaf update-msg-in  {
+            type uint32;
+            default "0";
+            description
+                "Update message input count";
+        }
+
+        leaf update-msg-out  {
+            type uint32;
+            default "0";
+            description
+                "Update message ouput count";
+        }
+
+        leaf next-hop-global  {
+            type string;
+            description
+                "Nexthop global information";
+        }
+
+        leaf next-hop-local  {
+            type string;
+            description
+                "Nexthop local information";
+        }
+
+        leaf remote-port  {
+            type uint32;
+            description
+                "Foreign port";
+        }
+
+        leaf remote-addr  {
+            type string;
+            description
+                "Foreign host address";
+        }
+
+        leaf local-host  {
+            type string;
+            description
+                "Local host address";
+        }
+
+        leaf next-hop  {
+            type string;
+            description
+                "Peer Next hop self address";
+        }
+
+        leaf local-port  {
+            type uint32;
+            description
+                "Local port number";
+        }
+
+        leaf prefix-list-count  {
+            type uint32;
+            description
+                "Number of prefix list entries";
+        }
+
+
+        leaf prefix-limit-idle-timeout-remaining {
+            type  uint32 {
+                 range "0..144000";
+            }
+            units seconds;
+            description
+                "Time in seconds left for the BGP session to come up";
+        }
+
+        leaf af-dependent-cap  {
+            type string;
+            description
+                "AF-dependant capabilities";
+        }
+
+        leaf peer-table-version  {
+            type uint32;
+            description
+                "Peer table version";
+        }
+
+        leaf bgp-table-version  {
+            type uint32;
+            description
+                "Bgp table version";
+        }
+
+        leaf index  {
+            type uint32;
+            description
+                "Index of the peer";
+        }
+
+        leaf offset  {
+            type uint32;
+            description
+                "Offset to use bit comparison";
+        }
+
+        leaf mask  {
+            type string;
+            description
+                "Mask of this peer index";
+        }
+
+        leaf forward-status-preserve  {
+            type string;
+            description
+                "Preserve of forwarding states ";
+        }
+
+        leaf prefix-count  {
+            type uint32;
+            description
+                "Prefix count";
+        }
+
+        leaf send-prefix-count  {
+            type uint32;
+            description
+                "Send prefix count";
+        }
+
+        leaf flag-shutdown  {
+            type string;
+            description
+                "Status for peer flag shutdown";
+        }
+
+        leaf count  {
+            type uint32;
+            description
+                "Total number of peers";
+        }
+
+        leaf route-distinguisher {
+            type cn-l3-types:bgp-rd;
+            description
+                "Bgp Route Distinguisher 8 octet value";
+        }
+
+        leaf notify-info  {
+            type uint32;
+            description
+                "BGP capability information";
+        }
+
+        leaf notify-direct  {
+            type string;
+            description
+                "BGP capability send/received information";
+        }
+
+        leaf notify-last-reset  {
+            type string;
+            description
+                "Last Reset time";
+        }
+
+        leaf bgp-connection  {
+            type string;
+            description
+                "BGP Peer is on same shared network";
+        }
+
+        leaf next-connect-timer  {
+            type uint32;
+            description
+                "BGP Peer FSM connect Timer";
+        }
+
+        leaf prefix-overflow  {
+            type string;
+            description
+                "Peer status prefix overflow";
+        }
+
+        leaf last-up-time  {
+            type string;
+            description
+                "Last Up time";
+        }
+
+        leaf last-read-time  {
+            type string;
+            description
+                "Last down time";
+        }
+
+        leaf link-type  {
+            type string;
+            description
+                "Peer link type";
+        }
+
+        leaf hop-away-count  {
+            type uint32;
+            description
+                "Number of hops External BGP peer away";
+        }
+
+        leaf router-id  {
+            type string;
+            description
+                "Remote router ID";
+        }
+
+        leaf receive-packet-count  {
+            type uint32;
+            description
+                "Received Packet counts";
+        }
+
+        leaf notification-in  {
+            type uint32;
+            description
+                "Notify input count";
+        }
+
+        leaf notification-out  {
+            type uint32;
+            description
+                "Notify output count";
+        }
+
+        leaf packet-in-queue  {
+            type uint32;
+            description
+                "Packet in queue";
+        }
+
+        leaf sent-packet-count  {
+            type uint32;
+            description
+                "Sent Packet counts";
+        }
+
+        leaf refresh-receive-packet-count  {
+            type uint32;
+            description
+                "Route Refresh input count";
+        }
+
+        leaf refresh-sent-packet-count  {
+            type uint32;
+            description
+                "Route Refresh output count";
+        }
+
+        leaf advertisement-interval  {
+            type uint32;
+            description
+                "Time between advertisement runs";
+        }
+
+        leaf hold-time-run  {
+            type uint32;
+            description
+                "Old time for this session";
+        }
+
+        leaf keepalive-interval-run  {
+            type uint32;
+            description
+                "Keepalive interval for this session";
+        }
+
+        leaf peer-capabilities  {
+            type string;
+            description
+                "Status for Peer capabilities";
+        }
+
+        leaf advertised-capability  {
+            type string;
+            description
+                "Dynamic Peer capabilities";
+        }
+
+        leaf advertised-capability-refresh  {
+            type string;
+            description
+                "Route Refresh Peer capabilities";
+        }
+
+        leaf no-interface-binding  {
+            type string;
+            description
+                "Peer flag no interface binding";
+        }
+
+        leaf advertised-additional-path-capability-send  {
+            type string;
+            description
+                "Add-Path Send Capability";
+        }
+
+        leaf advertised-additional-path-capability-rec  {
+            type string;
+            description
+                "Add-Path Receive Capability";
+        }
+
+        leaf advertised-capability-vpnv4-unicast  {
+            type string;
+            description
+                "Vpnv4 Unicast neighbour Capability";
+        }
+
+        list prefix {
+            key "entry-seq";
+            description
+                "List of peer prefixes and its related attributes";
+
+            leaf entry-seq  {
+                type uint32;
+                description
+                    "Prefix-list sequence number";
+            }
+
+            leaf entry-type  {
+                type string;
+                description
+                    "Prefix-list's entry type";
+            }
+
+            leaf entry-ge  {
+                type uint32;
+                description
+                    "Prefix-list entry ge";
+            }
+
+            leaf entry-le  {
+                type uint32;
+                description
+                    "Prefix-list entry le";
+            }
+
+            leaf prefix-length  {
+                type uint32;
+                description
+                    "Prefix length information";
+            }
+
+            leaf entry-prefix {
+                type string;
+                description
+                    "Prefix-list's prefix";
+            }
+        }
+
+        leaf advertised-capability-ipv4-labeled-unicast  {
+            type string;
+            description
+                "IPv4 Labeled Unicast neighbour Capability";
+        }
+
+        leaf advertised-capability-ipv6-labeled-unicast  {
+            type string;
+            description
+                "IPv6 Labeled Unicast neighbour Capability";
+        }
+
+        leaf advertised-capability-ipv6-unicast {
+            type string;
+            description
+                "IPv6 Unicast neighbour Capability";
+        }
+
+        leaf advertised-capability-vpnv6-unicast {
+            type string;
+            description
+                "VPNv6 Unicast neighbour Capability";
+        }
+        
+        leaf peer-flap-counter {
+            type uint32;
+            description
+                "Count for number of times a session goes down";
+        }
+    }
+
+    grouping peer-af-rtfilter-attrs {
+        description
+            "Grouping for Peer Address Family RT filter related attributes";
+
+        leaf rtfilter-sent {
+            type string;
+            description
+                "RT filter route targets sent";
+        }
+
+        leaf rtfilter-received {
+            type string;
+            description
+                "RT filter route targets received";
+        }
+
+    }
+
+    grouping bgp-af-attrs {
+        description
+            "Grouping for Bgp Address Family related attributes";
+
+        list redistribute {
+            when "../afi!='rtfilter'";
+            key "protocol";
+            description
+                "Inject routes from one routing process into another.
+                 Redistribution is used by routing protocols to advertise routes
+                 that are learned by some other means, such as by another routing
+                 protocol or by static routes";
+
+            leaf protocol  {
+                type  cn-l3-types:bgp-redistribute-type;
+                description
+                    "Protocol to redistribute into BGP";
+            }
+
+            leaf policy {
+                type leafref  {
+                    path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                }
+                description
+                    "Routing Policy to apply during redistribution";
+            }
+
+            list instance {
+                when "../protocol[.='ospf' or .='isis']";
+                key "tag";
+                description
+                    "Redistribute the routes from a specific OSPF/ISIS instance";
+                leaf tag {
+                    type string;
+                    description
+                        "Tag could be instance id of OSPFv2, OSPFv3 or ISIS";
+                }
+                leaf policy {
+                    type leafref  {
+                        path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                }
+                description
+                    "Routing Policy to apply during redistribution";
+             }
+          }
+
+        }
+    }
+
+    grouping network-af-attrs {
+        description
+            "Grouping for Bgp Address Family Networked routes attributes";
+
+        list network {
+            when "../afi!='rtfilter'";
+            key "address";
+            description
+                "Specify the network to be advertised by the BGP routing process";
+
+            leaf address  {
+                type inet:ip-prefix;
+                description
+                    "Network address to be announced in prefix/length format";
+            }
+
+            leaf policy {
+                type leafref  {
+                    path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                }
+                description
+                    "Routing Policy to apply to network";
+            }
+        }
+    }
+
+    grouping peer-vrf-attrs {
+        description
+            "Grouping for Peer in a Vrf and its related attributes";
+
+        leaf activate  {
+            type  boolean;
+            default false;
+            description
+                "Whether the BGP peer is enabled. In cases where the enabled
+                 leaf is set to false, the local system should not initiate
+                 connections to the neighbor, and should not respond to TCP
+                 connections attempts from the neighbor. If the state of the
+                 BGP session is ESTABLISHED at the time that this leaf is set
+                 to false, the BGP session should be ceased.";
+        }
+
+        leaf soft-reconfiguration-inbound  {
+            type  boolean;
+            default false;
+            description
+                "Store updates for inbound soft reconfiguration. Soft-reconfiguration may be used
+                in lieu of BGP route refresh capability. Using this enables local storage of all
+                the received routes and their attributes.";
+        }
+
+        leaf route-reflector-client  {
+            type  boolean;
+            default false;
+            description
+                "Configure the peer as a route reflector client.";
+        }
+
+        leaf allow-ebgp-vpn  {
+            type  boolean;
+            default false;
+            description
+                "Ebgp Peers only. Allow VPN Routes";
+        }
+
+        leaf allow-as-in  {
+            type  uint32 {
+                 range "1..10";
+            }
+            description
+                "Ebgp Peers only. Allow AS number <1-10>  advertise prefixes (routes)
+                 even when the source of the prefixes is from the same
+                 Autonomous System (AS) number.";
+        }
+
+        container prefix-limit {
+            description
+                "Configure the maximum number of prefixes that will be
+                accepted from a peer";
+
+            leaf maximum-prefixes  {
+                type  uint32 {
+                     range "1..4294967295";
+                }
+                description
+                    "Maximum number of prefixes <1-4294967295>
+                     Maximum number of prefixes that will be accepted
+                     from the neighbour";
+            }
+
+            leaf warning-only {
+                type boolean;
+                description
+                    "Using this option does not teardown the session, but
+                     instead throws a notification warning that the threshold
+                     has reached.";
+            }
+
+            leaf teardown-threshold {
+                type ciena-sys-tmet:ciena-system-decimal2-percent {
+                     range "1.00..100.00";
+                }
+                units "percent";
+                description
+                    "Teardown percentage value <1-100>
+                     Warning messages are logged and alerted to the admin
+                     when the number of prefixes exceeds this configured percentage
+                     of the maximum prefix limit.";
+            }
+            leaf idle-timeout {
+                type  uint32 {
+                     range "0..2400";
+                }
+                units minutes;
+                description
+                    "Idle-timeout (minimum 1 to maximum 2400 minutes) specifies the time period after which the session
+                     is allowed to re-establish. The value 0 represents no attempt to re-establish the session
+                     until a clear bgp neighbor command is issued to manually re-establish the session.";
+            }
+            leaf drop-excess {
+                type ciena-sys-tmet:ciena-system-decimal2-percent{
+                     range "1.00..100.00";
+                }
+                units "percent";
+                description
+                    "Indicates the percentage of the maximum prefix-limit value, which when exceeded,
+                     the excess routes are dropped";
+            }
+        }
+
+        list  prefix-list {
+            key "name direction";
+            max-elements 2;
+            description
+                "Container to attach prefix list to the neighbor";
+
+            leaf name  {
+                type leafref {
+                    path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                }
+                description
+                    "Prefix List name.  specify a prefix list for filtering BGP advertisements.";
+            }
+
+            leaf direction  {
+                type  cn-l3-types:bgp-distribute-list-action;
+                description
+                    "Direction of the filter (0=FILTER-IN |1=FILTER-OUT)";
+            }
+        }
+    }
+
+    grouping bgp-peer-adjacency-out-state-attrs {
+        description
+            "Grouping to show the peer adjacency out-bound routes.";
+
+        list next-hop {
+            key "address";
+            description
+                "Prefix nexthop";
+            leaf address  {
+                type  string {
+                    length "0..255";
+                }
+                description 
+                    "Nexthop address";
+            }
+            uses next-hop-run-time-attr;
+        }
+    }
+
+    grouping bgp-peer-adjacency-in-state-attrs {
+        description
+            "Grouping to show the peer adjacency inbound routes.";
+
+        list peer-adjacency-in {
+            key "address";
+            description
+                "List containing peer received-routes";
+            leaf address  {
+                type  string {
+                    length "0..255";
+                }
+                description 
+                    "Network address";
+            }
+            
+            list next-hop {
+                key "address";
+                description
+                    "List of prefix nexthops";
+                leaf address  {
+                    type  string {
+                        length "0..255";
+                    }
+                    description 
+                        "Nexthop address";
+                }
+                uses next-hop-run-time-attr;
+            }
+        }
+    }
+
+    grouping bgp-orf-state-attrs {
+        description
+            "Grouping to show the orf capabilities enabled.";
+
+        leaf orf-prefix-name {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Outbound Route Filter (ORF)";
+        }
+
+        leaf orf-prefix-sent {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Outbound Route Filter (ORF): sent";
+        }
+
+        leaf orf-prefix-count {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Number of orf received entries";
+        }
+
+        leaf orf-wait-refresh {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Peer status orf wait refresh";
+        }
+
+        leaf orf-prefix-type {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Orf type prefix list";
+        }
+
+        leaf orf-capability-send-mode {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Orf capability send-mode";
+        }
+
+        leaf orf-capability-receive-mode {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Orf capability receive-mode";
+        }
+
+        leaf orf-old-type-prefix {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Old type ORF prefix-list";
+        }
+
+        leaf orf-old-capability-send-mode {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Old type ORF prefix-list send mode";
+        }
+
+        leaf orf-old-capability-receive-mode {
+            type  string {
+                length "0..255";
+            }
+            description
+                "Old type ORF prefix-list receive mode";
+        }
+    }
+
+    grouping ls-node-attr-descriptor {
+        description
+            "BGP link-state NLRI node attribute descriptor.";
+
+        leaf multi-topology-id {
+            type uint16;
+            description
+                "Node NLRI multiple topology identifier.";
+        }
+
+        leaf node-flag-bits {
+            type bits {
+                bit node-abr { position 4; }
+                bit node-external { position 5; }
+                bit node-attached { position 6; }
+                bit node-overload { position 7; }
+            }
+            description
+                "Node NLRI node flag bits.";
+        }
+
+        leaf isis-area-address-id {
+            type string;
+            description
+                "Node NLRI ISIS area address ID.";
+        }
+
+        leaf node-name {
+            type string;
+            description
+                "Node NLRI IGP node name.";
+        }
+
+        leaf local-router-id {
+            type string;
+            description
+                "Node NLRI local router-id.";
+        }
+
+        leaf opaque-node-attr {
+            type string;
+            description
+                "Node NLRI opaque node attribute.";
+        }
+
+        container sr-capabilities {
+            description
+                "Node NLRI Segment Routing capabilities information.";
+
+            leaf flag {
+                type uint8;
+                description
+                    "Segment Routing capability flag.";
+            }
+
+            leaf range-size {
+                type uint32;
+                description
+                    "Segment Routing range size.";
+            }
+
+            leaf label-sid {
+                type uint32;
+                description
+                    "Segment Routing label SID.";
+            }
+        }
+
+        leaf sr-algorithm {
+            type uint8;
+            description
+                "Node NLRI Segment Routing algorithm information.";
+        }
+
+        container sr-local-block {
+            description
+                "Node NLRI Segment Routing local block information.";
+
+            leaf flag {
+                type uint8;
+                description
+                    "Segment Routing local block capability flag.";
+            }
+
+            leaf range-size {
+                type uint32;
+                description
+                    "Segment Routing local block range size.";
+            }
+
+            leaf label-sid {
+                type uint32;
+                description
+                    "Segment Routing local block label SID.";
+            }
+        }
+    }
+
+    grouping ls-link-attr-descriptor {
+        description
+            "BGP link-state NLRI link attribute descriptor.";
+
+        leaf local-node-router-id {
+            type inet:ip-address;
+            description
+                "Local node router ID in link attribute descriptor";
+        }
+
+        leaf remote-node-router-id {
+            type inet:ip-address;
+            description
+                "Remote node router ID in link attribute descriptor";
+        }
+
+        leaf admin-group {
+            type uint32;
+            description
+                "Admin-group (color) in link attribute descriptor";
+        }
+
+        leaf max-link-bw {
+            type string;
+            description
+                "Maximum link bandwidth that can be used on this link (from the
+                 system originating the LSP to its neighbors).";
+        }
+
+        leaf max-resv-bw {
+            type string;
+            description
+                "Maximum reserved bandwidth that can be reserved on this link.";
+        }
+
+        leaf unresv-bw {
+            type string;
+            description
+                "Amount of bandwidth reservable on this link.";
+        }
+
+        leaf mpls-protocol-mask {
+            type bits {
+                bit LDP { position 7; }
+                bit RSVP-TE { position 6; }
+            }
+            description
+                "MPLS protocol mask bits";
+        }
+
+        leaf te-metric {
+          type uint32;
+          description
+            "Traffic Engineering metric value for this link.";
+        }
+
+        leaf unidirectional-delay {
+          type uint32;
+          description
+            "Unidirectional delay value for this link.";
+        }
+
+        leaf minimum-delay {
+          type uint32;
+          description
+            "Minimum delay value for this link.";
+        }
+
+        leaf maximum-delay {
+          type uint32;
+          description
+            "Maximum delay value for this link.";
+        }
+
+        leaf variation-delay {
+          type uint32;
+          description
+            "Variation delay value for this link.";
+        }
+
+        leaf igp-metric {
+            type uint32;
+            description
+                "IGP metric value for this link.";
+        }
+
+        leaf-list srlg {
+          type uint32;
+          description
+            "Shared risk link group values for this link.";
+        }
+
+        leaf opaque-link-attr {
+            type string;
+            description
+                "Opaque link attribute TLV is an envelope that transparently
+                 carries optional Link Attribute TLVs advertised by router.";
+        }
+
+        container adj-sid {
+            description
+                "Segment Routing adjacency information";
+
+            leaf flags {
+                type uint8;
+                description
+                    "Segment Routing flag bits";
+            }
+
+            leaf weight {
+                type uint8;
+                description
+                    "Value represents the weight of Adjacency SID for the
+                     purpose of load balancing.";
+            }
+
+            leaf sid {
+                type uint32;
+                description
+                    "SID value of an Adjacency.";
+            }
+        }
+
+        container lan-adj-sid {
+            description
+                "Segment Routing LAN Adjacency information";
+
+            leaf flags {
+                type uint8;
+                description
+                    "Segment Routing LAN Adjacency flag bits";
+            }
+
+            leaf weight {
+                type uint8;
+                description
+                    "Value represents the weight of LAN Adjacency SID for the
+                     purpose of load balancing";
+            }
+
+            leaf neighbor-id {
+                type string;
+                description
+                    "Neighbor ID information where 6 octets for ISIS for system ID and 
+                     4 octets for OSPF for router ID of the neighbor.";
+            }
+
+            leaf sid {
+                type uint32;
+                description
+                    "SID value of an LAN Adjacency.";
+            }
+        }
+
+        container l2-bundle-member {
+            description
+                "Layer2 bundle member";
+
+            leaf l2-bundle-member-desc {
+                type uint32;
+                description
+                    "Layer2 bundle member description";
+            }
+
+            leaf link-attr {
+                type string;
+                description
+                    "Layer2 bundle member link attribute";
+            }
+        }
+    }
+
+    grouping ls-prefix-attr-descriptor {
+        description
+            "BGP link-state NLRI prefix attribute descriptor.";
+
+        leaf igp-flags {
+            type bits {
+                bit isis-up-down { position 7; }
+                bit ospf-no-unicast { position 6; }
+                bit ospf-local-address { position 5; }
+                bit ospf-propagate-nssa { position 4; }
+            }
+            description
+                "IGP flags map bits";
+        }
+
+        leaf igp-route-tag {
+            type string;
+            description
+                "IGP route tag TLV carries IGP tags of the prefix.";
+        }
+
+        leaf extended-igp-route-tag {
+            type string;
+            description
+                "Extended IGP route tag TLV carries ISIS Extended route tags of the prefix.";
+        }
+
+        leaf metric {
+            type uint32;
+            description
+                "Metric of the prefix in the IGP topology.";
+        }
+
+        leaf ospf-forwarding-addr {
+            type inet:ip-address;
+            description
+                "OSPF forwarding address as per the OSPF advertisement.";
+        }
+
+        leaf opaque-prefix-attr {
+            type string;
+            description
+                "Opaque prefix attribute TLV is an envelope that transparently carries prefix 
+                 Attribute advertised by a router.";
+        }
+
+        container prefix-sid {
+            description
+                "Prefix SID information";
+
+            leaf flags {
+                type uint8;
+                description
+                    "Prefix SID flag bits";
+            }
+
+            leaf algorithm {
+                type uint8;
+                description
+                    "Algorithm value used as part of Prefix SID advertisement.";
+            }
+
+            leaf sid {
+                type uint32;
+                description
+                    "Prefix SID value of an router.";
+            }
+        }
+
+        container range {
+            description
+                "SRMS range information";
+
+            leaf flags {
+                type uint8;
+                description
+                    "SRMS range flags bits";
+            }
+
+            leaf range-size {
+                type uint16;
+                description
+                    "Number of prefixes that are covered by the advertisement.";
+            }
+
+            leaf prefix-sid-mapping {
+                type string;
+                description
+                    "Prefix SID mapping information.";
+            }
+        }
+
+        leaf prefix-attr-flags {
+            type bits {
+                bit node-external { position 5; }
+                bit node-abr { position 4; }
+                bit node-attached { position 6; }
+                bit node-overload { position 7; }
+            }
+            description
+                "Segment Routing source router prefix address";
+        }
+
+        leaf source-router-id {
+            type inet:ip-address;
+            description
+                "Source router identifier of the originator of the prefix.";
+        }
+    }
+
+    grouping ls-statistics-grouping {
+        description
+            "Grouping of list bgp link-state statistics counters";
+
+        leaf total-count {
+            type uint32;
+            description
+                "Total link-state NLRI counter";
+        }
+
+        leaf node-count {
+            type uint32;
+            description
+                "Node link-state NLRI counter";
+        }
+
+        leaf link-count {
+            type uint32;
+            description
+                "Link link-state NLRI counter";
+        }
+
+        leaf prefix-count {
+            type uint32;
+            description
+                "Prefix link-state NLRI counter";
+        }
+    }
+
+    grouping bgp-state-attrs {
+        description
+            "Grouping to list bgp state related attributes";
+
+        uses bgp-attrs-state;
+
+        list address-family {
+            key "afi safi";
+            description
+                "List for Bgp address families and its related state information";
+
+            leaf afi  {
+                type leafref {
+                    path "/bgp:bgp/instance/address-family/afi";
+                }
+                description
+                    "Enter the IPv4, or VPNv4 address
+                     family mode allowing configuration of address-family specific parameters";
+            }
+
+            leaf safi  {
+                type leafref {
+                    path "/bgp:bgp/instance/address-family/safi";
+                }
+                description
+                    "Configure sub address family such as unicast";
+            }
+
+            list network {
+                key "address rd";
+                description
+                   "Specify the network to be advertised by the BGP routing process";
+
+                leaf address  {
+                   type string;
+                   description
+                      "The network advertised by the BGP routing process";
+                }
+
+                leaf rd {
+                    type string;
+                    description
+                        "Bgp Route Distinguisher 8 octet value";
+                }
+                uses nw-run-time-attr;
+            }
+         
+            list link-state {
+                when "../afi='link-state' and ../safi='link-state'";
+                key "nlri-type";
+                description
+                    "List of link-state NLRI information.";
+
+                leaf nlri-type {
+                    type enumeration {
+                        enum ls-nlri-node {
+                            value 1;
+                            description
+                                "BGP-LS NLRI type node";
+                        }
+                        enum ls-nlri-link {
+                            value 2;
+                            description
+                                "BGP-LS NLRI type link";
+                        }
+                        enum ls-nlri-prefix {
+                            value 3;
+                            description
+                                "BGP-LS NLRI type prefix";
+                        }
+                    }
+                }
+
+                list ls-proto {
+                    key "protocol-types identifier";
+                    description
+                        "Link-state NLRI protocol-types and identifier information";
+
+                    leaf protocol-types {
+                        type enumeration {
+                            enum ls-proto-isis-l1 {
+                                value 1;
+                                description
+                                    "BGP LS NLRI protocol type ISIS Level 1";
+                            }
+                            enum ls-proto-isis-l2 {
+                                value 2;
+                                description
+                                    "BGP LS NLRI protocol type ISIS Level 2";
+                            }
+                            enum ls-proto-ospfv2 {
+                                value 3;
+                                description
+                                    "BGP LS NLRI protocol type OSPFv2";
+                            }
+                            enum ls-proto-direct {
+                                value 4;
+                                description
+                                    "BGP LS NLRI protocol type direct";
+                            }
+                            enum ls-proto-static {
+                                value 5;
+                                description
+                                    "BGP LS NLRI protocol type static";
+                            }
+                            enum ls-proto-ospfv3 {
+                                value 6;
+                                description
+                                    "BGP LS NLRI protocol type OSPFv3";
+                            }
+                        }
+                    }
+
+                    leaf identifier {
+                        type uint64;
+                        description
+                            "BGP LS NLRI identifier.";
+                    }
+
+                    list local-node-descriptor {
+                        key "as-number ls-identifier area-id router-id dr-router-id iso-system-id";
+                        description
+                            "Local node NLRI descriptor";
+
+                        leaf as-number {
+                            type uint32;
+                            description
+                                "BGP link-state node NLRI BGP as number.";
+                        }
+
+                        leaf ls-identifier {
+                            type uint32;
+                            description
+                                "BGP link-state node identifier";
+                        }
+
+                        leaf area-id {
+                            type string;
+                            description
+                                "OSPF area address";
+                        }
+
+                        leaf router-id {
+                            type inet:ip-address;
+                            description
+                                "OSPF router id";
+                        }
+
+                        leaf dr-router-id {
+                            type inet:ip-address;
+                            description
+                                "OSPF dr-router id";
+                        }
+
+                        leaf iso-system-id {
+                            type string;
+                            description
+                                "ISIS system id";
+                        }
+
+                        container node-attributes {
+                            when "../../../nlri-type='ls-nlri-node'";
+                            uses ls-node-attr-descriptor;
+                        }
+
+                        list remote-node-descriptor {
+                            when "../../../nlri-type='ls-nlri-link'";
+                            key "as-number ls-identifier area-id router-id dr-router-id iso-system-id";
+                            description
+                                "Remote node descriptor when NLRI type is link";
+
+                            leaf as-number {
+                                type uint32;
+                                description
+                                    "BGP link-state node NLRI BGP as number.";
+                            }
+
+                            leaf ls-identifier {
+                                type uint32;
+                                description
+                                    "BGP link-state node identifier";
+                            }
+
+                            leaf area-id {
+                                type string;
+                                description
+                                    "OSPF area address";
+                            }
+                            leaf router-id {
+                                type inet:ip-address;
+                                description
+                                    "OSPF router ID";
+                            }
+
+                            leaf dr-router-id {
+                                type inet:ip-address;
+                                description
+                                    "OSPF dr-router ID";
+                            }
+
+                            leaf iso-system-id {
+                                type string;
+                                description
+                                    "ISIS system ID";
+                            }
+
+                            list link-descriptor {
+                                key "interface-address neighbor-address";
+                                description
+                                    "Link descriptor in link NLRI";
+
+                                leaf interface-address {
+                                    type inet:ip-address;
+                                    description
+                                        "Local interface address of link information";
+                                }
+
+                                leaf neighbor-address {
+                                    type inet:ip-address;
+                                    description
+                                        "Neighbor interface address of link information";
+                                }
+
+                                container link-attribute {
+                                    uses ls-link-attr-descriptor;
+                                }
+                            }
+                        }
+
+                        list prefix-descriptor {
+                            when "../../../nlri-type='ls-nlri-prefix'";
+                            key "prefix-length ip-prefix";
+                            description
+                                "Prefix NLRI descriptor";
+
+                            leaf prefix-length {
+                                type uint8;
+                                description
+                                    "Prefix length in prefix NLRI";
+                            }
+
+                            leaf ip-prefix {
+                                type inet:ip-prefix;
+                                description
+                                    "IP prefix in prefix NLRI";
+                            }
+
+                            container prefix-attributes {
+                                uses ls-prefix-attr-descriptor;
+                            }
+                        }
+                    }
+                }
+            }
+
+            container link-state-nlri-count {
+                when "../afi='link-state' and ../safi='link-state'";
+                uses ls-statistics-grouping;
+            }
+        }
+
+        container nexthop-tracking-state {
+            description
+                "BGP nexthop tracking state container";
+
+            uses nexthop-tracking-state;
+        }
+
+        container bgp-scan-parameters {
+            description
+                "BGP scan parameters container";
+
+            uses bgp-scan-parameters;
+        }
+
+        list vrf {
+            key "name";
+            description
+                "List of vrfs and its related state information";
+
+            leaf name  {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                description
+                    "Provides bgp address family to parent VRF binding.";
+            }
+
+            leaf route-distinguisher  {
+                type cn-l3-types:bgp-rd;
+                description
+                    "A route distinguisher is an 8-octet value used to distinguish
+                     routes from different BGP VPNs (RFC 4364). A route
+                     distinguisher consists of three fields: A 2-octet type field,
+                     an administrator field, and an assigned number field.
+                     According to the data formats for type 0, 1, and 2 defined in
+                     RFC4364, the encoding pattern is defined as:
+
+                     0:2-octet-asn:4-octet-number
+                     1:4-octet-ipv4addr:2-octet-number
+                     2:4-octet-asn:2-octet-number.
+                     2-octet-other-hex-number:6-octet-hex-number
+
+                     Some valid examples are: 0:100:100, 1:1.1.1.1:100, and
+                     2:1234567890:203.";
+            }
+
+            list route-target {
+                key "id";
+                description
+                    "Route Target list that takes route target id and direction";
+
+                leaf direction  {
+                    type  cn-l3-types:rt-direction;
+                    mandatory true;
+                    description
+                        "Route-target direction, that can be imported/exported for that particular route target id.";
+                }
+
+                leaf id  {
+                    type cn-l3-types:bgp-rt;
+                    description
+                        "A route target is an 8-octet BGP extended community
+                         initially identifying a set of sites in a BGP
+                         VPN (RFC 4364). However, it has since taken on a more
+                         general role in BGP route filtering.
+                         A route target consists of three fields:
+                         a 2-octet type field, an administrator field,
+                         and an assigned number field.
+                         According to the data formats for type 0, 1, and 2 defined in
+                         RFC4360 and RFC5668, the encoding pattern is defined as:
+
+                         0:2-octet-asn:4-octet-number
+                         1:4-octet-ipv4addr:2-octet-number
+                         2:4-octet-asn:2-octet-number.
+                         Some valid examples are: 0:100:100, 1:1.1.1.1:100, and
+                         2:1234567890:203.";
+                }
+            }
+
+            uses cn-l3-types:sr-policy-oper-grouping;
+            uses vrf-label-grouping;
+
+            list vrf-address-family {
+                key "afi safi";
+                description
+                    "List of vrf address families and its state related information";
+
+                leaf afi  {
+                    type  cn-l3-types:vrf-afi-type;
+                    description
+                        "Vrf afi, IPv4 family mode allowing configuration of address-family specific parameters";
+                }
+
+                leaf safi  {
+                    type  cn-l3-types:vrf-safi-type;
+                    description
+                        "Vrf Safi type.  configure sub address family such as unicast";
+                }
+
+                list peer {
+                    key "address adjacency-table";
+                    description
+                        "List of peers in a vrf and its related state information";
+
+                    leaf address  {
+                        type  string;
+                        description
+                            "Address of the BGP peer, either in IPv4 or IPv6";
+                    }
+
+                    leaf adjacency-table  {
+                        type  cn-l3-types:adjacency-table-type;
+                        description
+                           "Set adjacency-table-type as in/out/all or none";
+                    }
+
+                    leaf remote-as  {
+                        type  uint32;
+                        description
+                            "AS number of the peer.";
+                    }
+                                       
+                    uses peer-runtime-attr;
+                    uses bgp-orf-state-attrs;
+                    uses bgp-peer-adjacency-in-state-attrs;
+
+                    list peer-adjacency-out {
+                        key "address";
+                        description
+                            "peer advertised-routes";
+
+                        leaf address  {
+                            type  string {
+                                 length "0..255";
+                            }
+                            description
+                                "Prefix address";
+                        }
+                        uses bgp-peer-adjacency-out-state-attrs;
+                    }
+
+                    uses bgp-peer-graceful-restart-state-attrs;
+                    uses bgp-peer-af-graceful-restart-state-attrs;
+
+                    leaf update-group-id  {
+                        type  string;
+                        description
+                            "Update group ID assigned to peer.";
+                    }
+                }
+
+                list network {
+                    key "address";
+                    description
+                        "Specify the network to be advertised by the BGP routing process";
+
+                    leaf address  {
+                        type string;
+                        description
+                            "The network advertised by the BGP routing process";
+                    }
+                    uses nw-run-time-attr;
+                }
+            }
+
+            container nexthop-tracking-state {
+               description
+                  "BGP nexthop tracking state container";
+
+               uses nexthop-tracking-state;
+            }
+
+            container bgp-scan-parameters {
+               description
+                  "BGP scan parameters container";
+
+               uses bgp-scan-parameters;
+            }
+
+            container update-group-state {
+               description
+                  "BGP update group state container";
+
+               uses update-group-state;
+            } 
+        }
+
+        list l2vpn-vpls {
+            key "name";
+            description
+                "L2VPN VPLS list containing L2VPN instance related operation data such as RD, RT and VPLSID";
+
+            leaf name  {
+                type leafref {
+                    path "/l2vpn:l2vpn-services/l2vpn:l2vpn/l2vpn:name";
+                }
+                description
+                    "L2VPN services instance name.";
+            }
+
+            leaf route-distinguisher  {
+                type  cn-l3-types:bgp-rd;
+                description
+                    "Route distinguisher value. It uniquely generates L2VPN NLRI.";
+            }
+
+            list route-target {
+                key "id";
+                description
+                    "Route target list that takes route target ID and direction";
+
+                leaf direction  {
+                    type  cn-l3-types:rt-direction;
+                    mandatory true;
+                    description
+                        "Route-target direction, that can be imported/exported for that particular route target id.";
+                }
+
+                leaf id  {
+                    type  cn-l3-types:bgp-rt;
+                    description
+                        "Route-target id. Creates lists of import and export route-target
+                         extended communities for the L2VPN instance. It specifies a target VPN 
+                         extended community.Execute the once for each community. All routes with
+                         the specific route-target extended community are imported into all L2VPN
+                         instances with the same extended community as an import route-target.";
+                }
+            }
+
+            leaf vpls-id  {
+                type  cn-l3-types:bgp-vpls-id;
+                description
+                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain. 
+                     Manual configuration of this ID is optional because a default VPLS ID is generated 
+                     using the BGP autonomous system number and the configured VPN ID.
+                     A VPLS ID can be composed in one of three ways: with an autonomous system number and
+                     an arbitrary number or with an IP address and an arbitrary number.
+                     For example:
+                     •Enter type 0 , a colon, a 16-bit autonomous system number, a colon, and a 32-bit number.
+                     0:45000:3 or
+                     •Enter type 1 , a colon, a 32-bit IP address, a colon, and a 16-bit number.
+                     1:192.168.10.15:1 or
+                     •Enter type 2 , a colon, a 32-bit autonomous system number, a colon, and a 16-bit number.
+                     2:65536:3 .";
+            }
+            
+            list peer {
+                key "address";
+                description
+                    "List of auto discoverd peers under a L2VPN service instance.";
+
+                leaf address  {
+                    type inet:ip-address;
+                    description
+                        "Address of an auto discovered peer in IPv4";
+                }
+            }
+        }
+
+        list peer {
+            key "address";
+            description
+                "List of Bgp peers and its related state information";
+
+            leaf address  {
+                type string;
+                description
+                    "Address of the BGP peer, either in IPv4 or IPv6";
+            }
+
+             leaf remote-as  {
+                 type  uint32;
+                 description
+                    "AS number of the peer.";
+             }
+
+            list address-family {
+                key "afi safi adjacency-table";
+                description
+                    "List of Bgp peer address family such as vpnv4 and its related state information";
+
+                leaf afi  {
+                    type leafref {
+                        path "/bgp:bgp/instance/address-family/afi";
+                    }
+                    description
+                        "Enter the IPv4, or VPNv4 address
+                         family mode allowing configuration of address-family specific parameters";
+                }
+
+                leaf safi  {
+                    type leafref {
+                        path "/bgp:bgp/instance/address-family/safi";
+                    }
+                    description
+                        "Configure sub address family such as unicast";
+                }
+
+                leaf adjacency-table  {
+                    type  cn-l3-types:adjacency-table-type;
+                    description
+                       "Set adjacency-table-type as in/out/all or none";
+                }
+              
+                uses peer-runtime-attr;
+                leaf advertised-capability-rtfilter-unicast  {
+                    type string;
+                    description
+                       "RTFilter Unicast neighbor capability";
+                }
+                uses bgp-orf-state-attrs;
+                uses bgp-peer-adjacency-in-state-attrs;
+
+                list peer-adjacency-out {
+                    key "address rd";
+                    description
+                        "peer advertised-routes";
+
+                    leaf address  {
+                        type  string {
+                             length "0..255";
+                        }
+                        description
+                            "Prefix address";
+                    }
+
+                    leaf rd {
+                        type string;
+                        description
+                            "Bgp Route Distinguisher 8 octet value";
+                    }
+                    uses bgp-peer-adjacency-out-state-attrs;
+                }
+
+                uses peer-af-rtfilter-attrs;
+                uses bgp-peer-af-graceful-restart-state-attrs; 
+
+                leaf allow-ebgp-sr {
+                    type enumeration {
+                        enum enable {
+                            value 0;
+                            description
+                                "To allow prefix SID attribute from different SR domain";
+                        }
+                        enum disable {
+                            value 1;
+                            description
+                                "To forbid prefix SID attribute from different SR domain";
+                        }
+                    }
+                    description
+                        "EBGP Peers only. Allow/Forbid prefix SID attribute";
+                }
+
+                leaf update-group-id  {
+                    type  string;
+                    description
+                        "Update group ID assigned to peer.";
+                }
+            }
+            uses bgp-peer-graceful-restart-state-attrs;
+        }
+
+        container update-group-state {
+          description
+            "BGP update group state container";
+
+          uses update-group-state;
+        }
+
+    }
+   
+    typedef gr-flushed-stalepath-reason {
+        type enumeration {
+            enum no-fault {
+                value 0;
+                description
+                    "No stalepath has been flushed.";
+            }
+            enum stalepath-timer-expire {
+                value 1;
+                description
+                    "Stalepath timer has been expired.";
+            }
+            enum restart-timer-expire {
+                value 2;
+                description
+                    "Restart timer has been expired.";
+            }
+            enum end-of-rib-received {
+                value 3;
+                description
+                    "End-of-RIB(EOR) marker is received.";
+            }
+            enum session-down {
+                value 4;
+                description
+                   "BGP session is down";
+            }
+            enum peer-restarted {
+                value 5;
+                description
+                   "Peer restarted";
+            }
+            enum forwarding-state-not-preserved {
+                value 6;
+                description
+                   "Peer has not preserved the forwarding state for this AFI-SAFI";
+            }
+            enum graceful-restart-not-negotiated {
+                value 7;
+                description
+                    "Graceful restart is not negotiated with peer for this AFI-SAFI";
+            }
+        }   
+    }   
+        
+    grouping bgp-peer-graceful-restart-state-attrs {
+        description
+            "Grouping for peer graceful restart state attributes";
+  
+        leaf peer-restart-time {
+            type uint16;
+            description
+                "The period of time (advertised by the peer) that the
+                 peer expects a restart of a BGP session to take.";
+        }
+  
+        leaf peer-restarting {
+            type boolean;
+            description
+                "This flag indicates whether the remote neighbor is
+                 currently in the process of restarting, and hence
+                 received routes are currently stale.";
+        }
+
+        leaf last-graceful-restart-time {
+            type uint32;
+            description
+                "The field indicates the timestamp of last GR started.";
+        }
+    } 
+  
+    grouping bgp-peer-af-graceful-restart-state-attrs {
+        description
+            "Grouping for peer AF level graceful restart state attributes.";
+
+        leaf gr-capability-received {
+            type boolean;
+            description
+                "This leaf indicates whether the peer advertised the
+                 ability to support graceful-restart for this AFI-SAFI.";
+        }
+
+        leaf gr-capability-advertised {
+            type boolean;
+            description
+	        "This leaf indicates whether the ability to support
+                 graceful-restart has been advertised to the peer for this AFI-SAFI.";
+        }
+
+        leaf forwarding-state-preserved-received {
+            type boolean;
+            description
+                "If forwarding state preserved value is true, then this will denote that 
+                 the peer is able to preseve it's forwarding state on restart for this AFI-SAFI.";
+        }
+      
+        leaf end-of-rib-received {
+            type boolean;
+            description
+                "This field indicates weather End-of-RIB(EOR) marker has been received by 
+                 peer for this AFI-SAFI."; 
+        }
+        
+        leaf flushed-stalepath-count {
+            type uint32;
+            description
+                "Number of stale path flushed in last graceful restart.";
+        }
+
+        leaf flushed-stalepath-reason {
+            type gr-flushed-stalepath-reason;
+            description
+                "Reason of flushing stalepath in last graceful restart."; 
+        }
+    }
+
+    grouping srlr {
+        description
+            "Grouping for SR Label Range configuration.";
+        leaf lower-bound {
+            type uint32 {
+                range "16000..1048575";
+            }
+            description
+                "Lower value in the block.";
+        }
+
+        leaf upper-bound {
+            type uint32 {
+                range "16000..1048575";
+            }
+            description
+                "Upper value in the block.";
+        }
+    }
+
+    grouping srgb-cfg {
+        description
+            "Grouping for SR Label Range configuration.";
+        list srgb {
+            key "lower-bound upper-bound";
+            max-elements 1;
+            ordered-by user;
+            description
+                "List of global blocks to be advertised.";
+            uses srlr;
+        }
+    }
+
+    grouping bgp-segment-routing-state-attrs {
+        description
+            "Grouping to show BGP segment routing oper attributes.";
+        container bgp-segment-routing-state {
+           description
+               "BGP segment routing oper state.";
+ 
+            container summary {
+                description
+                    "BGP segment routing summary";
+                list srgb-ranges {
+                    key "lower-bound upper-bound";
+                    description
+                        "List of Ranges";
+                    leaf lower-bound {
+                        type uint32;
+                        description
+                            "Start range of the block";
+                    }
+
+                    leaf upper-bound {
+                        type uint32;
+                        description
+                            "End range of the block";
+                    }
+                }
+
+                leaf segment-routing-ipv4 {
+                    type enumeration {
+                        enum "enable" {
+                            value 0;
+                            description
+                                "BGP SR is enabled";
+                        }
+                        enum "disable" {
+                            value 1;
+                            description
+                                "BGP SR is disabled";
+                        }
+                    }
+                    description
+                        "BGP SR enable/disable";
+                }
+
+                leaf segment-routing-ipv6 {
+                    type enumeration {
+                        enum "enable" {
+                            value 0;
+                            description
+                                "BGP SR is enabled";
+                        }
+                        enum "disable" {
+                            value 1;
+                            description
+                                "BGP SR is disabled";
+                        }
+                    }
+                    description
+                        "BGP SR enable/disable";
+                }
+
+                leaf acceptable-prefixes-count {
+                    type uint32;
+                    description
+                        "Acceptable prefixes count.";
+                }
+
+                leaf conflicting-prefixes-count {
+                    type uint32;
+                    description
+                        "Conflicting prefixes count.";
+                }
+
+                leaf invalid-prefixes-count {
+                    type uint32;
+                    description
+                        "Invalid prefixes count.";
+                }
+            }
+
+            list prefix-sid {
+                key "label-index";
+                description
+                    "List of prefix SID";
+
+                leaf label-index {
+                    type uint32;
+                    description
+                        "BGP prefix SID index.";
+                }
+              
+                leaf state {
+                    type prefix-sid-state;
+                    description
+                        "Different states of prefix SID attribute";
+                }
+                               
+                list network {
+                    key "address";
+                    description
+                        "Specify the network to be advertised by the BGP routing process";
+
+                    leaf address  {
+                        type inet:ip-prefix;
+                        description
+                            "Network address to be announced in prefix/length format";
+                    }
+                   
+                    leaf-list next-hop {
+                        type string;
+                        description
+                            "List of Next-hop";
+                    }                    
+                }
+
+            }
+
+            container prefix-sid-invalid {
+                description
+                    "Invalid prefix SID in BGP SR.";
+                list network {
+                    key "address";
+                    description
+                        "Specify the network to be advertised by the BGP routing process";
+
+                    leaf address  {
+                        type inet:ip-prefix;
+                        description
+                            "Network address to be announced in prefix/length format";
+                    }
+
+                    leaf-list next-hop {
+                        type string;
+                        description
+                            "List of Next-hop";
+                    }
+                }
+           
+            }            
+        }     
+    }
+    grouping graceful-restart {
+        description
+            "Grouping for graceful restart config attributes.";
+
+        container graceful-restart {
+            description
+                "Container to enable graceful restart.";
+            leaf restart-time {
+                type  uint16 {
+                    range "1..3600";
+            }
+            units seconds;
+            description
+                "Estimated time (in seconds) for the local BGP speaker to
+                 restart a session. This value is advertised in the graceful
+                 restart BGP capability. This is a 12-bit value, referred to
+                 as Restart Time in RFC4724.";
+            }
+        }
+    }
+
+       
+    uses bgp-grouping;
+
+    rpc  bgp-clear {
+        description
+            "Rpc to clear various bgp attributes and states.";
+        input  {
+            leaf vrf-name  {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                default "default";
+                description
+                    "Set a particular Virtual Routing and Forwarding instance";
+            }
+
+            leaf afi  {
+                type  cn-l3-types:afi-type;
+                default all;
+                description
+                    "Set the address-family such as ipv4/ipv6";
+            }
+
+            leaf safi  {
+                type  cn-l3-types:safi-type;
+                default all;
+                description
+                    "Set sub address family such as unicast";
+            }
+
+            leaf clear-type  {
+                type cn-l3-types:clear-type;
+                default all;
+                description
+                    "Set the clear type such as all/peer/group ";
+            }
+
+            leaf clear-redistribute-protocol {
+                when "../clear-type= 'redistribute'";
+                type  cn-l3-types:clear-bgp-redistribute-type;
+                description
+                    "Set the protocol such as connected whose
+                     redistributed routes need to be cleared";
+            }
+
+            leaf clear-soft {
+                type cn-l3-types:clear-soft;
+                default none;
+                description
+                    "Set the soft reconfiguration type such as none/out/in";
+           }
+
+            leaf peer-address {
+                type inet:ip-address;
+                description
+                    "Set the ipv4-Address of BGP Peer";
+            }
+
+            leaf peer-group {
+                type string;
+                description
+                    "Set the name of BGP Peer Group";
+
+            }
+
+            leaf update-group {
+                type string;
+                description
+                    "Set the name of BGP update group";
+
+            }
+        }
+
+        output{
+            leaf response {
+                type string;
+                description
+                    "The response of bgp-clear-peer/ bgp-clear-peergroup,
+                     success or reason for failure";
+            }
+        }
+    }
+
+    notification bgp-peer-events {
+        description
+            "Defines bgp peer state on-change events and associated data used to publish change in the state of the bgp peer.";
+
+        list vrf {
+            description
+                "List of vrfs associated with bgp for notifications.";
+            leaf name  {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                description
+                    "Virtual Routing and Forwarding instance tied to a Peer.";
+            }
+            list peer {
+                description
+                    "Peer address for which the state change event is triggered.";
+
+                leaf address  {
+                    type leafref {
+                       path "/bgp:bgp/bgp:instance/bgp:peer/bgp:address";
+                    }
+                    description
+                        "Address of the BGP peer.";
+                }
+
+                leaf state {
+                   type string;
+                   description
+                      "Bgp peer current state.";
+                }
+
+                leaf reason {
+                   type string;
+                   description
+                      "Notification Error with code and subcode explaining why BGP peer state went down from ESTABLISHED.
+                       e.g Cease/Administratively Shutdown.";
+                }
+            }
+        }
+    }
+}

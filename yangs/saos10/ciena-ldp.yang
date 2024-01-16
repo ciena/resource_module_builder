@@ -1,0 +1,1760 @@
+module ciena-ldp {
+
+    namespace   "http://ciena.com/ns/yang/ciena/ciena-ldp";
+
+    prefix "ldp";
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ietf-yang-types {
+        prefix yang;
+    }
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+    import yuma-ncx {
+        prefix ncx;
+    }
+
+    import ciena-openconfig-if-ip {
+        prefix "cn-ip";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific LDP protocol
+
+        Copyright (c) 2018  Ciena Corporation.  All rights
+        reserved.
+
+        All information contained herein is, and remains the
+        property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained
+        from Ciena Corporation.";
+
+    revision "2022-10-04" {
+        description
+          "Changed the ldp-session-grouping last-state-change leaf type from
+           timeticks to date-and-time.";
+    }
+
+    revision "2022-03-08" {
+        description
+          "Add peer-reconnect-timeout and peer-recovery-time to ldp-session-grouping
+           Change labels for ldp session keepalive.";
+    }
+
+    revision "2021-09-08" {
+        description
+          "Add LDP Graceful Restart timers
+           Add Graceful Restart state leaf attribute for the FEC label.";
+    }
+
+    revision "2020-09-04" {
+        description
+           "Add interface name to LDP next hop attributes
+            Add LDP Graceful Restart operational state attributes.";
+    }
+
+    revision "2020-06-25" {
+        description
+           "Adding path type leaf for primary/backup route support";
+    }
+
+    revision "2018-11-14" {
+       description "Adding Targeted LDP.";
+    }
+
+    revision "2017-09-26" {
+        description
+          "Initial version of Ldp model.";
+    }
+
+    grouping ldp-interface-grouping {
+        description
+          "Ldp interface grouping.";
+
+        list interface {
+            key "name";
+            description
+              "Ldp interface config list.";
+
+            leaf name  {
+                type leafref {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                }
+                description
+                  "Refers to L3 interface name.";
+            }
+            uses ldp-interface-list-grouping;
+        }
+    }
+
+    grouping ldp-peer-grouping {
+        description
+          "Ldp peer list grouping.";
+
+        list peer {
+            key "lsr-id";
+            description
+              "List of peers.";
+
+            leaf lsr-id {
+                type inet:ipv4-address;
+                description
+                  "The LSR ID of the peer, to identify the globally
+                   unique LSR. This is the first four octets of the LDP
+                   ID.";
+            }
+
+            leaf password {
+                type cn-l3-types:string-max-256;
+                ncx:password;
+                description
+                  "Assigns an encrypted MD5 password to an LDP peer";
+            }
+        }
+    }
+
+    grouping transport-address-grouping {
+        description
+          "Transport address list grouping.";
+
+        container transport {
+            description
+              "Ldp transport address config container.";
+
+            leaf address {
+                type cn-l3-types:ip-addr;
+                description
+                  "The transport address advertised in LDP Hello messages.";
+            }
+        }
+    }
+
+    grouping ldp-interface-state-grouping {
+        description
+          "Ldp interfaces state grouping.";
+
+        list interface-state {
+            key "name";
+            description
+              "Ldp interface state list.";
+
+            leaf name  {
+                type string;
+                description
+                  "Ldp interface name.";
+            }
+
+            leaf primary-address  {
+                type inet:ipv4-address;
+                description
+                  "Primary address.";
+            }
+
+            leaf owner  {
+                type  uint8;
+                description
+                  "Ldp interface owner information.";
+            }
+
+            leaf interface-type  {
+                type  uint16;
+                description
+                  "Interface type information.";
+            }
+
+            leaf lsr-id  {
+                type inet:ipv4-address;
+                description
+                  "lsr-id state information.";
+            }
+
+            leaf label-merge-capability  {
+                type  string;
+                description
+                  "The merge capability aggregates multiple incoming flows with the same destination
+                   address into a single outgoing flow.This reduces the label-space shortage by sharing labels
+                   for different flows with the same destination,or the same FEC.";
+            }
+
+            leaf address-flag  {
+                type  uint8;
+                description
+                  "Ipv4 Address family flag.";
+            }
+
+            leaf enable-address-family  {
+                type  uint8;
+                description
+                  "Enabled Address Family on an interface.";
+            }
+        }
+    }
+
+    grouping ldp-fec-cb-grouping {
+        description
+          "Ldp fec cb grouping";
+
+        leaf address-family  {
+            type  uint8;
+            description
+              "Ldp address family.";
+        }
+
+        list ldp-route-target {
+            key "next-hop-address";
+            description
+              "Ldp route target list.";
+
+            leaf next-hop-address  {
+                type inet:ipv4-address;
+                description
+                  "Ldp route next hop address.";
+            }
+
+            leaf address-family  {
+                type  uint8;
+                description
+                  "Ldp address family.";
+            }
+
+            leaf type  {
+                type  uint32;
+                description
+                  "Ldp Address family type.";
+            }
+
+            leaf ifindex  {
+                type  uint32;
+                description
+                  "Interface index for ldp route target.";
+            }
+
+            leaf path-type {
+               type string;
+               description
+                  "Route target path type.";
+            }
+
+            leaf interface-name {
+               type string;
+               description
+                  "Interface name for LDP route target.";
+            }
+        }
+        uses ldp-fec-grouping;
+        uses fec-downstream-list-grouping;
+    }
+
+    grouping fec-downstream-list-grouping {
+        description
+          "Fec downstream list grouping";
+
+        list downstream {
+            key "index";
+            description
+              "Fec downstream list attributes.";
+
+            leaf index  {
+                type  uint32;
+                description
+                  "Downstream prefix index.";
+            }
+
+            leaf prefix  {
+                type string;
+                description
+                  "Downstream Prefix value.";
+            }
+
+            leaf label-request-id  {
+                type  uint32;
+                description
+                  "Downstream label request ID.";
+            }
+
+            leaf label  {
+                type  string;
+                description
+                  "Downstream Label value.";
+            }
+
+            leaf mapping-attribute  {
+                type  string;
+                description
+                  "Downstream mapping attribute.";
+            }
+
+            leaf egress-flag  {
+                type  boolean;
+                description
+                  "LSR egress/non egress flag.";
+            }
+
+            leaf label-received-flag  {
+                type  boolean;
+                description
+                  "Label received flag.";
+            }
+
+            leaf used-route-for-fec  {
+                type  boolean;
+                description
+                  "The routes used for the Forwarding equivalence class.";
+            }
+
+            leaf state  {
+                type  string;
+                description
+                  "Ldp Downstream state either Established or Not Established.";
+            }
+
+            leaf gr-state {
+                type cn-l3-types:ldp-gr-state;
+                description
+                  "Gives the GR state - fresh/stale of the associated FEC/label";
+            }
+
+            list next-hop {
+                key "address";
+                description
+                  "Next hop";
+
+                leaf address  {
+                    type string;
+                    description
+                      "Downstream nexthop address.";
+                }
+
+                leaf ifindex-next-hop  {
+                    type  uint32;
+                    description
+                      "Interface index for the next hop.";
+                }
+            }
+            uses ucb-list-grouping;
+        }
+    }
+
+    grouping ldp-fec-grouping {
+        description
+          "Ldp fec grouping";
+
+        container ldp-fec {
+            description
+                "Ldp fec container.";
+
+            leaf row-status  {
+                type  uint32;
+                description
+                  "Row represents a single LDP entity and this field represents its status.";
+            }
+
+            leaf storage-type  {
+                type  uint32;
+                description
+                  "The storage type for the conceptual row. Conceptual rows having the value
+                   'permanent(4)' need not allow write-access to any columnar objects in the row.";
+            }
+
+            leaf prefix  {
+                type inet:ipv4-prefix;
+                description
+                  "Ldp ipv4 prefix value.";
+            }
+
+            leaf address-prefix-length  {
+                type  uint32;
+                description
+                  "Ldp ipv4 Address prefix length.";
+            }
+
+            leaf address-type  {
+                type  string;
+                description
+                  "Ipv4 address type.";
+            }
+
+            leaf type  {
+                type  uint8;
+                description
+                  "Prefix type.";
+            }
+        }
+    }
+
+    grouping ldp-adjacency-grouping {
+        description
+          "Ldp adjacency grouping";
+
+        list adjacency {
+            key "prefix";
+            description
+              "Adjacency list.";
+
+            leaf prefix  {
+                type inet:ipv4-address;
+                description
+                  "Ldp adjacency prefix.";
+            }
+
+            leaf peer  {
+                type  string;
+                description
+                  "Provides Peer information.";
+            }
+
+            leaf peer-tcp  {
+                type  string;
+                description
+                  "Peer tcp information.";
+            }
+
+            leaf peer-address-type  {
+                type  uint32;
+                description
+                  "Peer address type.";
+            }
+
+            leaf interface-name  {
+                type  string;
+                description
+                  "Ldp adjacency interface name.";
+            }
+
+            leaf lsr-id  {
+                type inet:ipv4-address;
+                description
+                  "The LSR ID of the peer, as a portion of the peer LDP ID.";
+            }
+
+            leaf hello-holdtime-remaining  {
+                units seconds;
+                type  uint32;
+                description
+                  "The time remaining until the holdtime timer expires.";
+            }
+
+            leaf hello-holdtime  {
+                units seconds;
+                type  uint32;
+                description
+                  "The holdtime value learned from the adjacent LSR.";
+            }
+
+            leaf adjacency-type  {
+                type  uint32;
+                description
+                  "Adjacency type information.";
+            }
+
+            leaf address-family  {
+                type  uint8;
+                description
+                  "Address family type information.";
+            }
+
+            leaf auth-type  {
+                type  string;
+                description
+                  "LDP Auth type.";
+            }
+
+            leaf password  {
+                type  string;
+                description
+                  "LDP MD5 Auth password.";
+            }
+
+        }
+    }
+
+    grouping ldp-session-grouping {
+        description
+          "Ldp session grouping";
+
+        list ldp-session {
+            key "peer-address";
+            description
+              "Containing ldp session state information.";
+
+            leaf peer-address  {
+                type inet:ipv4-address;
+                description
+                  "Peer address.";
+            }
+
+            leaf upstream-count  {
+                type  uint32;
+                description
+                  "The number of upstream in a session.";
+            }
+
+            leaf downstream-count  {
+                type  uint32;
+                description
+                  "The number of downstream in a session.";
+            }
+
+            leaf peer-reconnect-timeout  {
+                units seconds;
+                type  uint32;
+                description
+                  "Specifies the time interval, in seconds, that the remote
+                   LDP peer advertises, asking the local router to wait for
+                   reconnection before clearing its tables.";
+            }
+
+            leaf peer-recovery-time  {
+                units seconds;
+                type  uint32;
+                description
+                  "Specifies the time interval, in seconds, that the remote
+                   LDP peer advertises, asking the local router to preserve
+                   its MPLS forwarding state after receiving the
+                   Initialization message from the restarted local LDP
+                   peer.";
+            }
+
+            leaf reconnect-timeout  {
+                units milliseconds;
+                type  uint32;
+                description
+                  "Specifies the time interval that the remote LDP peer
+                   must wait for the local LDP peer to reconnect after the
+                   remote peer detects the LDP communication failure.";
+            }
+
+            leaf recovery-time  {
+                units milliseconds;
+                type  uint32;
+                description
+                  "Specifies the time interval, in seconds, that the remote
+                   LDP peer preserves its MPLS forwarding state after
+                   receiving the Initialization message from the restarted
+                   local LDP peer.";
+            }
+
+            leaf reconnect-interval  {
+                units milliseconds;
+                type uint32;
+                description
+                  "Reconnect interval value.";
+            }
+
+            leaf peer-type  {
+                type  uint32;
+                description
+                  "Peer type value.";
+            }
+
+            leaf last-state-change  {
+                type  yang:date-and-time;
+                description
+                  "The time on the most recent occasion at which the session state
+                   changed.";
+            }
+
+            leaf keepalive-timeout  {
+                units seconds;
+                type  uint32;
+                description
+                  "The time interval after which an inactive LDP session
+                   terminates and the corresponding TCP session closes.
+                   Inactivity is defined as not receiving LDP packets from the
+                   peer.";
+            }
+
+            leaf keepalive-interval  {
+                units seconds;
+                type  uint32;
+                description
+                  "The interval between successive transmissions of keepalive
+                   packets. Keepalive packets are only sent in the absence of
+                   other LDP packets transmitted over the LDP session.";
+            }
+
+            leaf hello-holdtime  {
+                units seconds;
+                type  uint16;
+                description
+                   "LDP hello holdtime is the time interval, in which if no hellos
+                    are received from the LSR neighbor, LDP will terminate the session.";
+            }
+
+            leaf hello-interval  {
+                units seconds;
+                type  uint16;
+                description
+                    "The interval between 2 successive transmissions of hello packets.";
+            }
+
+            leaf discontinuity-time  {
+                units seconds;
+                type  uint32;
+                description
+                  "The time on the most recent occasion at which any one or
+                   more of this interface's counters suffered a
+                   discontinuity.  If no such discontinuities have occurred
+                   since the last re-initialization of the local management
+                   subsystem, then this node contains the time the local
+                   management subsystem re-initialized itself.";
+            }
+
+            leaf pdu-length  {
+                type  uint32;
+                description
+                  "Pdu length value.";
+            }
+
+            leaf current-state  {
+                type  string;
+                description
+                  "Representing the current operational status of the LDP session.";
+            }
+
+            leaf previous-state  {
+                type  uint8;
+                description
+                  "Representing the previous operational status of the LDP session.";
+            }
+
+            leaf role  {
+                type  string;
+                description
+                  "Contains information about whether ldp session is active or passive. ";
+            }
+
+            leaf label-advertisement-mode  {
+                type  cn-l3-types:ldp-label-advertisement-mode;
+                description
+                  "Label distribution advertisement mode.";
+            }
+
+            leaf label-retention-mode  {
+                type  cn-l3-types:ldp-label-retention-mode;
+                description
+                  "Label distribution retention mode.";
+            }
+
+            leaf fec-advertisement-enabled  {
+                type  uint8;
+                description
+                  "The advertisement of FEC is enable or disable.";
+            }
+
+            leaf tcp-established  {
+                type  uint8;
+                description
+                  "Contains information of tcp current state. Either it is established or not.";
+            }
+
+            leaf status-record  {
+                type  uint8;
+                description
+                  "Status record information.";
+            }
+
+            leaf interface-name  {
+                type  string;
+                description
+                  "Ldp interface name.";
+            }
+
+            leaf sync-status  {
+                type  string;
+                description
+                  "Sync status.";
+            }
+
+            leaf ldp-igp-sync-delay-timer  {
+                units seconds;
+                type  uint32;
+                description
+                  "Ldp interface sync delay timer value.";
+            }
+
+            leaf ldp-igp-sync-remaining-time  {
+                units seconds;
+                type  uint32;
+                description
+                  "Ldp igp syncronization remaining timer value.";
+            }
+
+
+            list remote-address {
+                key "prefix-address";
+                description
+                  "Remote addr";
+
+                leaf prefix-address  {
+                    type inet:ipv4-address;
+                    description
+                      "Prefix address.";
+                }
+            }
+
+            container id {
+                description
+                  "Ldp session id.";
+
+                leaf lsr-id  {
+                    type inet:ipv4-address;
+                    description
+                      "Contains lsr-id state information.";
+                }
+            }
+            uses ldp-adjacency-grouping;
+            uses ucb-list-grouping;
+            uses downstream-list-grouping;
+            container graceful-restart {
+               description
+                  "Graceful restart operational state parameters.";
+               uses graceful-restart-state-grouping;
+
+            }
+        }
+    }
+
+    grouping ucb-list-grouping {
+        description
+          "Ucb list grouping";
+
+        list upstream {
+            key "prefix";
+            description
+              "Upstream list.";
+
+            leaf prefix  {
+                type inet:ipv4-prefix;
+                description
+                  "Upstream prefix.";
+            }
+
+            leaf label-request-id  {
+                type  uint32;
+                description
+                  "Upstream label request id.";
+            }
+
+            leaf label  {
+                type  string;
+                description
+                  "Upstream label value.";
+            }
+
+            leaf request-attribute  {
+                type  string;
+                description
+                  "Upstream request attribute information.";
+            }
+
+            leaf state  {
+                type  string;
+                description
+                  "Upstream state information either Establisedor Not-Establised.";
+            }
+
+            leaf gr-state {
+                type cn-l3-types:ldp-gr-state;
+                description
+                  "Gives the GR state - fresh/stale of the associated FEC/label";
+            }
+        }
+    }
+
+    grouping downstream-list-grouping {
+        description
+          "downstream list grouping";
+
+        list downstream {
+            key "prefix";
+            description
+              "downstream list";
+
+            leaf prefix  {
+                type inet:ipv4-prefix;
+                description
+                  "Downstream prefix value.";
+            }
+
+            leaf label-request-id  {
+                type  uint32;
+                description
+                  "Label request id information.";
+            }
+
+            leaf label  {
+                type  string;
+                description
+                  "Downstream label value.";
+            }
+
+            leaf mapping-attr  {
+                type  string;
+                description
+                  "Downstream mapping attribute information.";
+            }
+
+            leaf label-released  {
+                type  uint8;
+                description
+                  "Label released sent information.";
+            }
+
+            leaf label-released-received  {
+                type  uint8;
+                description
+                  "Label released received information.";
+            }
+
+            leaf state  {
+                type  string;
+                description
+                  "Downstream state information either Establised or Not-Establised.";
+            }
+
+            list next-hop {
+                key "address";
+                description
+                  "Next hop list.";
+
+                leaf address  {
+                    type string;
+                    description
+                      "Next hop address.";
+                }
+
+                leaf ifindex-next-hop  {
+                    type  uint32;
+                    description
+                      "Interface index for the next hop address.";
+                }
+            }
+        }
+    }
+    
+    grouping graceful-restart-state-grouping {
+       description
+          "Grouping for graceful restart operational parameters.";
+
+       leaf peer-capability {
+          type boolean;
+          description
+             "Graceful restart capability state of peer.";
+       }
+        
+       leaf local-state {
+          type  cn-l3-types:ldp-session-state;
+          description
+             "Local graceful restart state.";
+       }
+
+       leaf interface-name {
+          type  string;
+          description
+             "Interface Name.";
+       }
+
+       leaf reconnect-time {
+          units seconds;
+          type  uint32;
+          description
+             "Reconnect-time for graceful restart in seconds. Specifies the time interval that
+              the remote LDP peer must wait for the local LDP peer to reconnect after the remote
+              peer detects the LDP communication failure.";
+       }
+
+       leaf recovery-time {
+          units seconds;
+          type  uint32;
+          description
+             "Recovery-time for graceful restart in seconds. Specifies the time interval that
+              the remote LDP peer preserves its MPLS forwarding state after receiving the 
+              initialization message from the restarted local LDP peer.";
+       }
+    }
+
+    grouping ldp-interface-list-grouping {
+        description
+          "Ldp interface list grouping";
+
+        leaf hello-interval  {
+            units seconds;
+            type  uint16 {
+                 range "5..1200";
+            }
+            description
+              "Hello interval per interface in seconds. This is the value
+               used to send hello messages.";
+        }
+
+        leaf hello-holdtime  {
+            units seconds;
+            type  uint16 {
+                 range "15..3600";
+            }
+            description
+              "Hold-time per interface specifies the time an LSR maintains its record
+               of hellos from a peer on not receiving another hello from that peer.";
+        }
+
+        leaf keepalive-interval  {
+            units seconds;
+            type  uint16 {
+                 range "10..21845";
+            }
+            description
+              "The Keepalive interval determines how often a message is sent over the session
+               to ensure that the keepalive timeout is not exceeded.If no LDP traffic is sent over the
+               session in this much time,a keepalive message is sent.";
+        }
+
+        leaf keepalive-timeout  {
+            units seconds;
+            type  uint16 {
+                 range "30..65535";
+            }
+            description
+              "After an Ldp session is established,messages must be exchanged periodically to ensure
+               that the session is still working.The keepalive timeout is the amount of time that the neighbor
+               LDP node waits before deciding that the session is failed.";
+        }
+
+        leaf ldp-igp-sync-delay-interval  {
+            units seconds;
+            type  uint32 {
+                 range "5..60";
+            }
+            description
+              "This field is used to configure a synchronization delay interval, that is, a delay for
+               notifications of LDP convergence to the IGP protocol used, which can be either IS-IS or OSPF.";
+        }
+
+        leaf enable-ipv4  {
+            type boolean;
+            default "false";
+            description
+              "Enabling LDP on ipv4 interface which is disabled by default.";
+        }
+    }
+
+    grouping gr-timers-grouping {
+         description
+          "Timers used in LDP graceful restart.";
+
+        container timers {
+            leaf neighbor-liveness {
+                when "/ldp:ldp/ldp:instance/ldp:graceful-restart/ldp:helper-enable = 'true'";
+                type uint32 {
+                    range "90..3600";
+                }
+                units seconds;
+                default "120";
+                description
+                   "Configures the amount of time a neighbor should retain its label-FEC bindings
+                    until the restarting LSR is able to exchange LDP messages again following a restart. 
+                    The actual time is the lesser of this timer value and the Reconnect Timeout value
+                    received in the neighbor's Fault Tolerant Session TLV.";
+            }
+
+            leaf max-recovery {
+                when "/ldp:ldp/ldp:instance/ldp:graceful-restart/ldp:helper-enable = 'true'";
+                type uint32 {
+                    range "90..3600";
+                }
+                units seconds;
+                default "120";
+                description
+                   "Configures the time the LSR is willing to retain its label-FEC bindings that it
+                    preserved across the restart. The time is from the moment the LSR sends the
+                    Initialization message that carries the Fault Tolerant (FT) Session TLV after
+                    restart. The actual time is the lesser of this timer value and the Recovery Time
+                    advertised by the neighbor in the FT Session TLV.";
+            }
+        }
+    }
+
+    grouping  ldp-grouping {
+        description
+          "Ldp grouping.";
+
+        list instance {
+            key "tag";
+            max-elements "1";
+            description
+              "Tag is default ldp instance.";
+
+            leaf tag  {
+                type string;
+                description
+                  "Maximum of one ldp instance is supported that is default instance.";
+            }
+            must "tag = 'default' " {
+                error-message "Only default instance is supported";
+            }
+
+            leaf lsr-id  {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/cn-ip:ipv4/cn-ip:addresses/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Specify the value to act as the LDP LSR ID.If this attribute
+                   is not specified, LDP uses the router ID as determined by the system.";
+            }
+
+            leaf hello-interval  {
+                units seconds;
+                type  uint16 {
+                     range "5..1200";
+                }
+                default "5";
+                description
+                  "Hello interval in seconds. This is the value
+                   used to send hello messages.";
+            }
+
+            leaf hello-holdtime  {
+                units seconds;
+                type  uint16 {
+                     range "15..3600";
+                }
+                default "15";
+                description
+                  "Hold-time specifies the time an LSR maintains its record of hellos from
+                   a peer on not receiving another hello from that peer.";
+            }
+
+            leaf keepalive-timeout  {
+                units seconds;
+                type  uint16 {
+                     range "30..65535";
+                }
+                default "30";
+                description
+                  "After an Ldp session is established,messages must be exchanged periodically
+                   to ensure that the session is still working.The keepalive timeout is the amount of time
+                   that the neighbor LDP node waits before deciding that the session is failed.";
+            }
+
+            leaf keepalive-interval  {
+                units seconds;
+                type  uint16 {
+                     range "10..21845";
+                }
+                default "10";
+                description
+                  "The Keepalive interval determines how often a message is sent over the session to ensure
+                   that the keepalive timeout is not exceeded.If no LDP traffic is sent over the session in
+                   this much time,a keepalive message is sent.";
+            }
+
+            leaf control-mode  {
+                type  cn-l3-types:ldp-label-control-mode;
+                default "ordered";
+                description
+                  "Used for label processing. Ordered processing sets the mode to strict chain of command.
+                   An LSR replies to a request packet from an LSR higher in the chain only after it receives
+                   a label from an LSR lower in the chain. Independent processing sets the mode to instant
+                   replies.";
+            }
+
+            leaf pw-status-tlv {
+                type boolean;
+                default "false";
+                description
+                      "Enabling pw-status-tlv to signal the pseudowire status which is disabled by default.";
+            }
+
+            leaf inter-area-lsp {
+                type boolean;
+                default "false";
+                description
+                      "Enable inter-area lsp which is disabled by default.";
+            }
+
+            container interfaces {
+                description
+                  "Ldp interfaces container.";
+                uses ldp-interface-grouping;
+            }
+
+            container target-ldp {
+                description
+                  "Targeted Ldp container.";
+                list peers {
+                   key "address";
+                   description
+                     "A targeted session is an LDP session between non-directly connected LSRs.";
+
+                   leaf address {
+                      type inet:ipv4-address;
+                      description
+                        "Target address is targeted IPv4 LDP peer mode";
+                   }
+
+                   leaf hello-interval {
+                      units seconds;
+                      type uint16 {
+                         range "1..21845";
+                      }
+                      default "15";
+                      description
+                        "Target Hello interval in seconds. This is the value
+                         used to send hello messages in target LDP.";
+                   }
+
+                   leaf hello-holdtime  {
+                      units seconds;
+                      type  uint16 {
+                         range "3..65535";
+                      }
+                      default "45";
+                      description
+                        "Target Hold-time specifies the time an LSR maintains its record of hellos from
+                         a peer on not receiving another hello from that peer for target LDP.";
+                   }
+                }
+            }
+
+            container peers {
+                description
+                  "Peers configuration attributes.";
+                uses ldp-peer-grouping;
+            }
+            uses transport-address-grouping;
+
+            container graceful-restart {
+                description
+                    "LDP graceful restart capabilities.";
+
+                leaf helper-enable {
+                    type boolean;
+                    description
+                        "Enable graceful restart helper mode, which is disabled by default.";
+                }
+                uses gr-timers-grouping;
+            }
+        }
+    }
+
+    grouping ldp-state-grouping {
+        description
+          "Ldp state grouping";
+
+        list instance {
+            key "tag";
+            max-elements "1";
+            description
+              "Ldp instance list.";
+
+            leaf tag {
+                type string;
+                description
+                  "Maximum of one ldp instance is supported that is default instance.";
+            }
+
+            leaf fec-ipv4-count  {
+                type  uint32;
+                description
+                  "Ipv4 prefix count.";
+            }
+
+            leaf session-up-count  {
+                type  uint32;
+                description
+                  "The number of sessions up.";
+            }
+
+            leaf session-count  {
+               type  uint32;
+               description
+                 "The number of sessions.";
+            }
+
+            leaf version  {
+                type  uint16;
+                description
+                  "Ldp version value.";
+            }
+
+            leaf entity-last-change  {
+                type  yang:timeticks;
+                description
+                  "The Entity last change information.";
+            }
+
+            leaf last-peer-change  {
+                type  yang:timeticks;
+                description
+                  "The last peer change information.";
+            }
+
+            leaf fec-last-change  {
+                type  yang:timeticks;
+                description
+                  "The last prefix change information";
+            }
+
+            leaf lsp-fec-change  {
+                type  yang:timeticks;
+                description
+                  "Lsp fec change information.";
+            }
+
+            leaf hello-holdtime  {
+                units seconds;
+                type  uint16;
+                description
+                  "Ldp global holdtime in seconds.";
+            }
+
+            leaf hello-interval  {
+                units seconds;
+                type  uint16;
+                description
+                  "Ldp global hello interval seconds.";
+            }
+
+            leaf keepalive-timeout  {
+                units seconds;
+                type  uint16;
+                description
+                  "Ldp global keepalive timeout seconds.";
+            }
+
+            leaf keepalive-interval  {
+                units seconds;
+                type  uint16;
+                description
+                  "Ldp global keepalive interval seconds.";
+            }
+
+            leaf lsr-id  {
+                type inet:ipv4-address;
+                description
+                  "Router ID.";
+            }
+
+            leaf targeted-session-count {
+                type uint32;
+                description
+                  "The number of targeted sessions.";
+            }
+
+            leaf targeted-session-up-count {
+                type uint32;
+                description
+                  "The number of targeted sessions up.";
+            }
+
+            list entity {
+                key "index";
+                description
+                  "Ldp entity.";
+
+                leaf index {
+                    type  uint32;
+                    description
+                      "Entity index.";
+                }
+
+                leaf interface-name {
+                    type  string;
+                    description
+                      "Displays the ldp interface name.";
+                }
+
+                leaf lsr-id  {
+                    type inet:ipv4-address;
+                    description
+                      "Router ID.";
+                }
+
+                leaf labelspace  {
+                    type  uint32;
+                    description
+                      "Displays the labelspace value.";
+                }
+
+                leaf transport-ipv4-address  {
+                    type inet:ipv4-address;
+                    description
+                      "Displays the tranport ipv4 address.";
+                }
+
+                leaf transport-address-type  {
+                    type  uint8;
+                    description
+                      "Displays the tranport address type.";
+                }
+
+                leaf label-distribution-advertisement-mode  {
+                    type  cn-l3-types:ldp-label-advertisement-mode;
+                    description
+                      "Label distribution-advertisment mode.";
+                }
+
+                leaf label-distribution-retention-mode  {
+                    type  cn-l3-types:ldp-label-retention-mode;
+                    description
+                      "Label ditribution retention mode.";
+                }
+
+                leaf label-distribution-control-mode  {
+                    type  cn-l3-types:ldp-label-control-mode;
+                    description
+                      "Label distribution control mode.";
+                }
+
+                leaf hello-holdtime  {
+                    units seconds;
+                    type  uint16;
+                    description
+                      "Ldp global holdtime value.";
+                }
+
+                leaf keepalive-timeout  {
+                    units seconds;
+                    type  uint16;
+                    description
+                      "Ldp global keepalive timeout value.";
+                }
+
+                leaf hello-interval  {
+                    units seconds;
+                    type  uint16;
+                    description
+                      "Ldp global hello interval value.";
+                }
+
+                leaf keepalive-interval  {
+                    units seconds;
+                    type  uint16;
+                    description
+                      "Ldp global keepalive interval value.";
+                }
+
+                leaf pdu-length  {
+                    type  uint16;
+                    description
+                      "Pdu length value.";
+                }
+
+                leaf reconnect-timeout  {
+                    units seconds;
+                    type  uint32;
+                    description
+                      "Specifies the time interval that the remote LDP peer
+                       must wait for the local LDP peer to reconnect after the
+                       remote peer detects the LDP communication failure.";
+                }
+
+                leaf loop-detect-status  {
+                    type  boolean;
+                    description
+                      "Loop detection status.";
+                }
+
+                leaf init-session-threshold  {
+                    type  uint32;
+                    description
+                      "init session thresold value.";
+                }
+
+                leaf path-vector-limit  {
+                    type  uint32;
+                    description
+                      "If the value of this object is 0 (zero) then Loop
+                       Dection for Path Vectors for this Peer is disabled.
+                       Otherwise, if this object has a value greater than
+                       zero, then Loop Dection for Path  Vectors for this
+                       Peer is enabled and the Path Vector Limit is this
+                       value.";
+                }
+
+                leaf hop-count-limit  {
+                    type  uint32;
+                    description
+                      "Hop count limit information.";
+                }
+
+                leaf tcp-port  {
+                    type  uint32;
+                    description
+                      "Tcp port number.";
+                }
+
+                leaf udp-discovery-port  {
+                    type  uint32;
+                    description
+                      "Ldp discovery runs udp port.This field provides udp port number.";
+                }
+
+                leaf notification-send  {
+                   type  uint32;
+                   description
+                     "The number of notification messages sent.";
+                }
+
+                leaf notification-received  {
+                    type  uint32;
+                    description
+                      "The number of notification messages received.";
+                }
+
+                leaf hello-send  {
+                    type  uint32;
+                    description
+                      "The number of hello messages sent.";
+                }
+
+                leaf hello-received  {
+                    type  uint32;
+                    description
+                      "The number of hello messages received.";
+                }
+
+                leaf initialization-send  {
+                    type  uint32;
+                    description
+                      "The number of  initialization messages sent.";
+                }
+
+                leaf initialization-received  {
+                    type  uint32;
+                    description
+                      "The number of initialization messages received.";
+                }
+
+                leaf keepalive-send  {
+                    type  uint32;
+                    description
+                      "The number of keepalive messages sent.";
+                }
+
+                leaf keepalive-received  {
+                    type  uint32;
+                    description
+                      "The number of keepalive messages received.";
+                }
+
+                leaf address-send  {
+                    type  uint32;
+                    description
+                      "The number of address messages sent.";
+                }
+
+                leaf address-received  {
+                    type  uint32;
+                    description
+                      "The number of address messages received.";
+                }
+
+                leaf address-withdraw-send  {
+                    type  uint32;
+                    description
+                      "The number of address-withdraw messages sent.";
+                }
+
+                leaf address-withdraw-received  {
+                    type  uint32;
+                    description
+                      "The number of address-withdraw messages received.";
+                }
+
+                leaf label-mapping-send  {
+                    type  uint32;
+                    description
+                      "The number of label-mapping messages sent.";
+                }
+
+                leaf label-mapping-received  {
+                    type  uint32;
+                    description
+                      "The number of label-mapping messages received.";
+                }
+
+                leaf label-request-send  {
+                    type  uint32;
+                    description
+                      "The number label request  sent count.";
+                }
+
+                leaf label-request-received  {
+                    type  uint32;
+                    description
+                      "The number of label request received count.";
+                }
+
+                leaf label-withdraw-send  {
+                    type  uint32;
+                    description
+                      "The number of  label withdrawl messages sent.";
+                }
+
+                leaf label-withdraw-received  {
+                    type  uint32;
+                    description
+                      "The number of label-withdraw messages received.";
+                }
+
+                leaf label-release-send  {
+                    type  uint32;
+                    description
+                      "The number of label release messages sent.";
+                }
+
+                leaf label-release-received  {
+                    type  uint32;
+                    description
+                      "The number of label release messages received.";
+                }
+
+                leaf request-abort-send  {
+                    type  uint32;
+                    description
+                      "The number of label-abort-request messages sent.";
+                }
+
+                leaf request-abort-received  {
+                    type  uint32;
+                    description
+                      "The number of label-abort-request messages received.";
+                }
+
+                leaf targeted-peer {
+                   type inet:ipv4-address;
+                   description
+                      "Display the targeted peer";
+                }
+
+                leaf target-hello-interval {
+                   units seconds;
+                   type uint16;
+                   description
+                      "Target LDP hello interval value";
+                }
+
+                leaf target-holdtime {
+                   units seconds;
+                   type uint16;
+                   description
+                     "Target LDP hold time value";
+                }
+
+                container mpls-statistics {
+                    description
+                      "Mpls Statistics container.";
+
+                    leaf attempted-sessions  {
+                        type  uint32;
+                        description
+                          "A count of the Session Initialization messages
+                           which were sent or received by this LDP Entity and
+                           were NAK'd.   In other words, this counter counts
+                           the number of session initializations that failed.";
+                    }
+
+                    leaf session-rejected-no-hello-errors  {
+                        type  uint32;
+                        description
+                          "A count of the Session Rejected/No Hello Error
+                           Notification Messages sent or received by
+                           this LDP Entity.";
+                    }
+
+                    leaf session-rejected-advertisement-errors  {
+                        type  uint32;
+                        description
+                          "A count of the Session Rejected/Parameters
+                           Max Pdu Length Error Notification Messages sent
+                           or received by this LDP Entity.";
+                    }
+
+                    leaf session-rejected-max-pdu-errors  {
+                        type  uint32;
+                        description
+                          "The total number of Session Rejected/Parameters Max Pdu
+                           Length Error Notification Messages sent or received by
+                           this LDP instance";
+                    }
+
+                    leaf session-rejected-label-range-errors  {
+                        type  uint32;
+                        description
+                          "A count of the Session Rejected/Parameters
+                           Label Range Notification Messages sent
+                           or received by this LDP Entity.";
+                    }
+
+                    leaf bad-ldp-identifier-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Bad LDP Identifier
+                           Fatal Errors detected by the session(s)
+                           (past and present) associated with this LDP Entity.";
+                    }
+
+                    leaf bad-pdu-length-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Bad PDU Length
+                           Fatal Errors detected by the session(s)
+                           (past and present) associated with this LDP Entity.";
+                    }
+
+                    leaf bad-message-length-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Bad Message
+                           Length Fatal Errors detected by the session(s)
+                           (past and present) associated with this LDP Entity.";
+                    }
+
+                    leaf bad-tlv-length-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Bad TLV
+                           Length Fatal Errors detected by the session(s)
+                           (past and present) associated with this LDP Entity.";
+                    }
+
+                    leaf malformed-tlv-value-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Malformed TLV
+                           Value Fatal Errors detected by the session(s)
+                           (past and present) associated with this
+                           LDP Entity.";
+                    }
+
+                    leaf keepalive-timer-expiry-errors  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Session Keep Alive
+                           Timer Expired Errors detected by the session(s)
+                           (past and present) associated with this LDP Entity.";
+                    }
+
+                    leaf shutdown-notification-received  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Shutdown Notifications
+                           received related to session(s) (past and present)
+                           associated with this LDP Entity.";
+                    }
+
+                    leaf shutdown-notification-sent  {
+                        type  uint32;
+                        description
+                          "This object counts the number of Shutdown Notfications
+                           sent related to session(s) (past and present)
+                           associated with this LDP Entity.";
+                    }
+                }
+                uses ldp-adjacency-grouping;
+                uses ldp-session-grouping;
+            }
+
+            list ipv4-prefix-fec-table {
+                key "ipv4-address";
+                description
+                  "Ipv4 prefix fec table.";
+
+                leaf ipv4-address  {
+                    type inet:ipv4-prefix;
+                    description
+                      "Ipv4 prefix address.";
+                }
+                uses ldp-fec-cb-grouping;
+            }
+
+            container interfaces-state {
+                description
+                  "Ldp interfaces state container.";
+                uses ldp-interface-state-grouping;
+            }
+        }
+    }
+
+    container ldp {
+        description
+          "Ldp config container.";
+        uses ldp-grouping;
+    }
+
+    container ldp-state {
+        config false;
+        description
+          "Ldp state container.";
+        uses ldp-state-grouping;
+    }
+
+    rpc ldp-clear-adjacency {
+        input  {
+            leaf address  {
+                type string;
+                description
+                  "Ldp Adjacency Ipv4 address.";
+            }
+        }
+        output{
+            leaf response {
+                type string;
+                description
+                  "The response could be 'success', or the reason for ldp-clear-adjacency failure";
+            }
+        }
+    }
+
+    rpc ldp-clear-session {
+          input  {
+            leaf address  {
+              type string;
+              description
+                "Ldp Session Ipv4 address.";
+            }
+        }
+
+        output{
+            leaf response {
+                type string;
+                description
+                  "The response could be 'success', or the reason for ldp-clear-session failure";
+            }
+        }
+    }
+
+    rpc ldp-clear-statistics {
+        output{
+            leaf response {
+                type string;
+                description
+                  "The response could be 'success', or the reason for ldp-clear-statistics failure";
+            }
+        }
+    }
+}

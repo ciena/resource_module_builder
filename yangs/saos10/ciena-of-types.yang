@@ -1,0 +1,1081 @@
+module ciena-of-types {
+   namespace "http://www.ciena.com/ns/yang/ciena-pn/ciena-of-types";
+   prefix "of-types";
+
+   import ietf-inet-types {
+      prefix "inet";
+   }
+
+   import ietf-yang-types {
+      prefix "yt";
+   }
+
+   import ciena-mef-logical-port {
+      prefix "mef-logical-port";
+   }
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   organization
+      "Ciena Corporation";
+    
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+    
+   description
+      "This YANG module provides YANG data types in support of Flow Based switch
+       configuration over protocols other than OpenFlow (e.g. NETCONF or gNMI).
+       These data models support direct forwarding plane configuration of a Ciena
+       packet switch using match/action tables, group tables, and packet-in/out.";
+
+   revision "2018-09-14" {
+      description
+         "Initial Version.";
+   }
+
+   typedef group-type {
+      type enumeration {
+         enum group-all {
+            description "Packet sent to all buckets for multicast/broadcast.";
+            value 0;
+         }
+         enum group-select {
+            description "Packet sent to one bucket based on has algorithm (e.g. ECMP).";
+            value 1;
+         }
+         enum group-indirect {
+            description "Packet sent to the one and only one bucket.";
+            value 2;
+         }
+         enum group-fast-failover {
+            description "Packet sent to the live (active) bucket.";
+            value 3;
+         }
+      }
+   }
+
+   typedef stats-collection {
+      type enumeration {
+         enum on;
+         enum off;
+      }
+   }
+   
+   typedef entry-status {
+      type enumeration {
+         enum pending;
+         enum added;
+         enum internal-error;
+      }
+   }
+
+   typedef priority {
+      type uint32;
+   }
+
+   typedef table-number {
+      type uint32;
+   }
+
+   typedef instance-number {
+      type uint32;
+   }
+
+   typedef name {
+      type string {
+         length "1..127";
+      }
+   }
+
+   typedef vfsi-id {
+      type uint32;
+   }
+
+   typedef entry-id {
+      type uint64;
+   }
+
+   typedef ethertype {
+      type uint16;
+   }
+
+   typedef ip-protocol {
+      type uint8;
+   }
+
+   typedef weight {
+      type uint32;
+   }
+
+   typedef queue-id {
+      type uint32;
+   }
+
+   typedef meter-id {
+      type uint32;
+   }
+
+   typedef experimenter {
+      type uint32;
+   }
+
+   typedef timeout {
+      type uint32;
+      units seconds;
+   }
+
+   typedef metadata {
+      type uint64;
+   }
+
+   typedef cookie {
+      type uint64;
+   }
+
+   typedef mac {
+      type yt:mac-address;
+   }
+
+   typedef mac-mask {
+      type yt:mac-address;
+   }
+
+   typedef l4-port {
+      type inet:port-number;
+   }
+
+   typedef ip-address-prefix {
+      type inet:ip-prefix;
+   }
+
+   typedef dscp {
+      type inet:dscp;
+   }
+
+   typedef ttl {
+      type uint8;
+   }
+
+   typedef field {
+      type uint32;
+   }
+
+   typedef ecn {
+      type uint8;
+   }
+
+   typedef icmpv4-type {
+      type uint8;
+   }
+
+   typedef icmpv4-code {
+      type uint8;
+   }
+
+   typedef icmpv6-type {
+      type uint8;
+   }
+
+   typedef icmpv6-code {
+      type uint8;
+   }
+
+   typedef arp-opcode {
+      type uint16;
+   }
+
+   typedef ip-address {
+      type inet:ip-address;
+   }
+
+   typedef ipv4-address {
+      type inet:ipv4-address;
+   }
+
+   typedef ipv6-address {
+      type inet:ipv6-address;
+   }
+
+   typedef ipv6-flow-label {
+      type uint32;
+   }
+
+   typedef ipv6-extension-header {
+      type uint16;
+   }
+
+   typedef tunnel-id {
+      type uint64;
+   }
+
+   typedef packet-in-reason {
+      type enumeration {
+         enum no-match {
+            value 0;
+            description
+               "No matching flow (table-miss flow entry).";
+         }
+         enum action {
+            value 1;
+            description
+               "Action explicitly output to controller.";
+         }
+         enum invalid-ttl {
+            value 2;
+            description
+               "Packet has invalid TTL.";
+         }
+      }
+   }
+
+   typedef raw-packet {
+      type binary {
+         length "1..65535";
+      }
+   }
+      
+   typedef packet-length {
+      type uint16;
+   }
+
+   grouping packet-data {
+      leaf length {
+         type of-types:packet-length;
+         description
+            "Length of data.";
+      }
+      leaf data {
+         type of-types:raw-packet;
+         description
+            "Raw packet data either received from or to be transmitted to port.";
+      }
+   }
+
+   grouping of-logical-port {
+
+      description
+         "Defines the logical view of the packet ingress or egress port.  This can
+          either be a SAOS logical port or the CONTROLLER reserved port.
+          We do not support all the OpenFlow reserved port like ALL, LOCAL, ANY.";
+
+      choice of-logical-port {
+         case all {
+            leaf all {
+               /* OFPP_ALL = 0xfffffffc */
+               type empty;
+            }
+         }
+         case controller {
+            leaf controller {
+               /* OFPP_CONTROLLER = 0xfffffffd */
+               type empty;
+            }
+            leaf controller-max-send-length {
+               type uint16;
+            }
+         }
+         case logical-port {
+            leaf logical-port {
+               type mef-logical-port:logical-port-ref;
+            }
+         }
+         case none {
+            leaf none {
+               /* for now... OFPP_MAX+1 = 0xffffff01 = NONE */
+               type empty;
+            }
+         }
+      }
+   }
+
+   typedef logical-port {
+      description
+         "The logical port for match criteria is a SAOS logical port reference.";
+      type mef-logical-port:logical-port-ref;
+   }
+
+   typedef physical-port {
+      description
+         "The physical port for match criteria is a SAOS OpenConfig interface reference."; 
+      type oc-if:base-interface-ref;
+   }
+
+   typedef tpid {
+      type enumeration {
+         enum tpid-8100 {
+            value 33024;
+         }
+         enum  tpid-88a8 {
+            value 34984;
+         }
+         enum  tpid-9100 {
+            value 37120;
+         }
+      }
+   }
+
+   typedef transform-pcp {
+      type enumeration {
+         enum pcp-0 {
+            value 0;
+         }
+         enum pcp-1 {
+            value 1;
+         }
+         enum pcp-2 {
+            value 2;
+         }
+         enum pcp-3 {
+            value 3;
+         }
+         enum pcp-4 {
+            value 4;
+         }
+         enum pcp-5 {
+            value 5;
+         }
+         enum pcp-6 {
+            value 6;
+         }
+         enum pcp-7 {
+            value 7;
+         }
+         enum map;
+      }
+      description
+         "Vid PCP value to use for PCP of vtag of tag-stack. 
+          0..7. 'map' means obtain the PCP value via cos-to-frame 
+          mapping. else no change to PCP.";
+   }
+
+   typedef transform-tc {
+      type enumeration {
+         enum tc-0 {
+            value 0;
+         }
+         enum tc-1 {
+            value 1;
+         }
+         enum tc-2 {
+            value 2;
+         }
+         enum tc-3 {
+            value 3;
+         }
+         enum tc-4 {
+            value 4;
+         }
+         enum tc-5 {
+            value 5;
+         }
+         enum tc-6 {
+            value 6;
+         }
+         enum tc-7 {
+            value 7;
+         }
+         enum map;
+      }
+      description
+         "MPLS TC/EXP value to use for the transform operation. 0..7. 'map' 
+          means obtain the MPLS TC value via cos-to-frame mapping.";
+   }
+
+   grouping vtag-stack {
+       description
+          "An vtag-stack describes a stack of one or more VLAN tags in a list.
+
+           Each member of the list describes matching criteria for a VLAN tag within the stack.
+           If only the outermost VLAN tag is to be considered, only one VLAN tag will be present.
+           If multiple vlan tags are to be considered, they will be considered from outermost to innermost in order,
+           and the tag-number determines the ordering; 1..N where 1=>outermost, N=>innermost.
+
+           The matching criteria for each VLAN tag is specified in each element of the list.
+           All aspects, TPID, VLAN tag and PCP are optional and their absence means don't care.
+           It is possible to match on any combination of the TPID, VLAN tag and PCP fields.
+           Ranges are also supported as follows;
+              - vid and vid-max if present specify the range of labels for the matching criteria.
+                   - if vid is present and vid-max is absent, a single vtag is used for the matching criteria.
+                    -if vid is absent and vid-max is present, the range of 0..vid-max is used
+              - pcp and pcp-max if present specificy the range of PCP values for the matching criteria
+                   - if pcp is present and pcp-max is absent, a single pcp value is used for the matching criteria.
+                    -if pcp is absent and pcp-max is present, the range of 0..pcp-max is used.";
+
+       list vtags {
+          key "vtag-number";
+
+          leaf vtag-number {
+             type uint8;
+             description
+                "vtag Number within the vtag-stack 1=> outermost, 2=> next etc..
+                 If no tpid or vid, vid-max or pcp, pcp-max leaf is present for a 
+                 vtag-number, it means any vtagged frame.";
+          }
+          leaf-list tpid {
+             type of-types:tpid;
+             description
+                "Optional list of vtag Tpid values for the vtag within the vtag stack.";
+          }
+          leaf vid {
+             type uint16 {
+                range "0..4095";
+             }
+             description
+                "Optional vtag Vid value for the vtag within the vtag stack.
+                 0 means untagged/priority-tagged.";
+          }
+          leaf vid-max {
+             type uint16 {
+                range "1..4095";
+             }
+             description
+                "Optional vtag Vid value for the vtag within the vtag stack.
+                 0 means untagged/priority-tagged.";
+          }
+          leaf pcp {
+             type uint8 {
+                range "0..7";
+             }
+             description
+                "Optional vtag PCP value for the vtag within the vtag stack.";
+          }
+          leaf pcp-max {
+             type uint8 {
+                range "0..7";
+             }
+             description
+                "For a range of PCP values, pcp-max gives PCP upper value for 
+                the range within Vlan tag within the vtag stack.  If pcp-max is 
+                present, but pcp is absent, pcp is assumed to be 0 (lower range value)."; 
+          }
+       }
+   }
+
+   typedef mpls-ethertype {
+      type enumeration {
+         enum mpls-ethertype-8847 {
+            value 34887;
+         }
+         enum mpls-ethertype-8848 {
+            value 34888;
+         }
+      }
+   }
+
+   grouping mpls-label-stack {
+       description
+          "An mpls-label-stack describes a stack of one or more MPLS Labels.
+
+           The mpls-ethertype is optional and singular for the label stack, If it is present,
+           it limits the matching of the label-stack to the mpls-ether-type specified; otherwise,
+           the mpls-ethertpye on the frame is not a factor for matching.
+
+           Each member of the list describes matching criteria for an MPLS Label within the stack.
+           If only the topmost MPLS Label is to be considered, only one MPLS Label will be present.
+           If multiple labels are to be considered, they will be considered from outermost to innermost in order,
+           and the label-number determines the ordering; 1..N where 1=>outermost, N=>innermost.
+
+           The matching criteria for each MPLS Label is specified in each element of the list.
+           All aspects, TC, Label, BOS are optional and their absence means don't care.
+           It is possible to match on any combination of the TC, Label and BOS fields.
+           Ranges are also supported as follows;
+              - label and label-max if present specify the range of labels for the matching criteria.
+                   - if label is present and label-max is absent, a single label is used for the matching criteria.
+                    -if label is absent and label-max is present, the range of 0..label-max is used
+              - tc and tc-max if present specificy the range of TC values for the matching criteria
+                   - if tc is present and tc-max is absent, a single tc value is used for the matching criteria.
+                    -if tc is absent and tc-max is present, the range of 0..tc-max is used.";
+
+       list mpls-labels {
+          key "label-number";
+
+          leaf label-number {
+             type uint8;
+             description
+                "Label Number within the mpls-label-stack 1=> outermost, 2=> next etc..
+                 If no label,label-max or tc,tc-max or bos leaf is present for a 
+                 label-number, it means any MPLS label.";
+          }          
+          leaf label {
+             type uint32 {
+                range "0..1048575";
+             }
+             description
+                "Optional MPLS Label value for the MPLS Label within the label stack.";
+          }
+          leaf label-max {
+             type uint32 {
+                range "1..1048575";
+             }
+             description
+                "Optional. For a range of label values, label-max gives MPLS Label upper 
+                 value for the range within MPLS Label within the label stack.
+                 If label-max is present, but label is absent, label is assumed to 
+                 be 0 (lower range value).";
+          }
+          leaf tc {
+             type uint8 {
+                range "0..7";
+             }
+             description
+                "Optional MPLS TC/EXP value for the MPLS Label within the label stack.";
+          }
+          leaf tc-max {
+             type uint8 {
+                range "1..7";
+             }
+             description
+                "Optional. For a range of TC values, tc-max gives MPLS TC/EXP upper 
+                 value for the range within MPLS Label within the label stack.
+                 If tc-max is present, but tc is absent, tc is assumed to 
+                 be 0 (lower range value).";
+          }
+          leaf bos {
+             type boolean;
+             description
+                "Optional Bottom of Stack indicator (BOS). Should only be present for 
+                 the most inner label of that mpls-label-stack.";
+          }
+       }
+       leaf-list mpls-ethertype {
+          type of-types:mpls-ethertype;
+          description
+          "Optional list of MPLS ethertype values for the mpls-label stack.";
+       }
+   }
+
+   grouping mpls-label-transforms {
+       description
+          "An mpls-label-transforms describes a list of transforms that can be performed on a stack of MPLS Labels.
+           The available transforms are generally, pop outermost label, push outermost label and swap outermost label.
+           When pushing an MPLS Label, all of MPLS Label and MPLS TC must be supplied.
+           Additionally the mpls-ethertype may optionally be supplied for the first MPLS label to specify the mpls-ethertype
+           to use for the complete MPLS stack of a frame.
+
+           Each member of the list describes transforms criteria for an MPLS Label within the stack and can either
+           push, pop or swap.
+              Pop transforms must always occur before any push or swap transforms on the list.
+              Swap transforms must always occur after any pop or push transforms on the list.
+              Push transforms must always after any pop or swap transforms on the list.
+
+           If only the topmost MPLS Label is to be considered, only one MPLS Label will be present.
+           If multiple labels are to be considered, they will be considered from outermost to innermost in order,
+           and the transform-number determines the ordering; 1..N where 1=>outermost, N=>innermost.
+           For a swap transform, only the topmost MPLS label can have this transform.
+
+           When pushing an MPLS Label, the TC value can be a specific TC value, or it can be mapped
+           Mapped means that the TC value is derived via cos-to-frame mapping of internal-cos and color to
+           an MPLS TC value.
+
+           When swapping an MPLS Label, the TC value can be a specific TC value, or it can be mapped
+           Mapped means that the TC value is derived via cos-to-frame mapping of internal-cos and color to
+           an MPLS TC value.";
+
+       list mpls-label-transforms {
+          key "transform-number";
+
+          leaf transform-number {
+             type uint8;
+             description
+                "Dependent on the transform operation, the transform numbers are
+                    pop => '1' represents pop outermost, '2' represents pop outermost, 
+                                      (always pop from outer in order)
+                    push => '1' represents push outermost, '2' represents push outermost
+                                      (always push to outer in order).
+                    swap => '1' represents swap outermost. '2' represents swap outermost 
+                                      (always swap outer)."; 
+          }
+
+          choice transform {
+             case push {
+                leaf push-mpls-ethertype {
+                   type of-types:mpls-ethertype;
+                   description
+                      "Optional MPLS-ethertype to use when pushing outermost MPLS 
+                       Label, else use a default.";
+                }
+                leaf push-mpls-label {
+                   type uint32 {
+                      range "0..1048575";
+                   }
+                   mandatory true;
+                   description
+                      "MPLS Label value to use for the push operation.";
+                }
+
+                leaf push-mpls-tc {
+                   type of-types:transform-tc;
+                   mandatory true;
+                   description
+                      "MPLS TC/EXP value to use for the push operation. 0..7. 'map' 
+                       means obtain the MPLS TC value via cos-to-frame mapping.";
+                }
+             }
+             case pop {
+                leaf pop-mpls-label {
+                   type empty;
+                   description
+                      "Pop the outermost MPLS Label.";
+                }
+                leaf pop-mpls-bos-action {
+                   type enumeration {
+                      enum pop-and-route;
+                      enum pop-and-forward;
+                   }
+                   description
+                      "If BOS is set for the pop operation, Optionally specify the forwarding action.
+                       pop-and-route means that after the pop of the last MPLS label, and a routing lookup of exposed IP frame is needed to forward.
+                       pop-and-forward means that after the pop of the last MPLS label, the forwarding decision is made based on the MPLS label that was popped.";
+                }
+             }
+             case swap {
+                leaf swap-mpls-label {
+                   type uint32 {
+                      range "0..1048575";
+                   }
+                   mandatory true;
+                   description
+                      "MPLS Out Label value to use for the swap operation.";
+                }     
+                leaf swap-mpls-tc {
+                   type of-types:transform-tc;
+                   description
+                      "MPLS TC/EXP value to use for the swap operation. 0..7. 'map' 
+                       means obtain the MPLS TC value via cos-to-frame mapping.";
+                }
+             }
+          }
+       }
+   }
+
+   grouping vtag-transforms {
+
+       description
+          "A vtag-transforms describes a list of transforms that can be performed on a stack of VLAN tags.
+           The available transforms are generally, pop outermost label, stamp a specific vtag and push outermost vtag.
+           When pushing a vtag, all of TPID, VID and PCP must be supplied, Additionally the DEI may optionally be supplied.
+           When stamping a vtag, each of the fields are optional and all can be present, any permutation allowing all or
+           subset of VLAN tag to be stamped.
+
+           Each member of the list describes transforms criteria for a VLAN tag within the stack and can be
+           push, stamp or pop. However, pop transforms must always occur before any stamp or push transforms on the list and
+           stamp transoforms must always occur before any push transforms on the list.
+
+           If only the outermost VLAN tag is to be considered, only one VLAN tag will be present.
+           If multiple tags are to be considered, they will be considered from outermost to innermost in order,
+           and the transform-number determines the ordering; 1..N where 1=>outermost, N=>innermost.
+
+           When pushing a VLAN tag, the PCP value can be a specific PCP value, or it can be mapped
+           Mapped means that the PCP value is derived via cos-to-frame mapping of internal-cos and color to
+           a PCP value.";
+
+       list vtag-transform {
+          key "transform-number";
+
+          leaf transform-number {
+             type uint8;
+             description
+                "Dependent on the transform operation, the transform numbers are
+                    stamp => '1' represents outermost tag, '2' next outermost (next inner)
+                    pop => '1' represents pop outermost, '2' represents pop outermost, (always pop from outer in order)
+                    push => '1' represents push outermost, '2' represents push outermost (always push to outer in order).";
+          }
+
+          choice transform {
+             case stamp {
+                leaf stamp-tpid {
+                   type of-types:tpid;
+                   description
+                      "Optional vtag-tpid to use when stamping tpid of vtag of 
+                       tag-stack, else no change to tpid.";
+                }
+                leaf stamp-vid {
+                   type uint16 {
+                      range "0..4095";
+                   }
+                   description
+                      "Optional Vid value to use for stamping vid of vtag of 
+                       tag-stack, else no change to vid.";
+                }     
+                leaf stamp-pcp {
+                   type of-types:transform-pcp;
+                   description
+                      "Vid PCP value to use for stamping PCP of vtag of tag-stack. 
+                       0..7. 'map' means obtain the PCP value via cos-to-frame 
+                       mapping. else no change to PCP.";
+                }
+                leaf stamp-dei {
+                   type enumeration {
+                      enum enabled;
+                      enum disabled;
+                   }
+                   description
+                      "Optional Vid DEI value to use for stamping DEI of vtag of 
+                       tag-stack. 0..1. absent => 0.";
+                }
+             }
+             case push {
+                leaf push-tpid {
+                   type of-types:tpid;
+                   description
+                      "Optional vtag-tpid to use when pushing outermost vtag, else use a default.";
+                }
+                leaf push-vid {
+                   type uint16 {
+                      range "0..4095";
+                   }
+                   mandatory true;
+                   description
+                      "Vid value to use for the push operation.";
+                }     
+                leaf push-pcp {
+                   type of-types:transform-pcp;
+                   mandatory true;
+                   description
+                      "Vid PCP value to use for the push operation. 0..7. 'map' 
+                       means obtain the PCP value via cos-to-frame mapping.";
+                }
+                leaf push-dei {
+                   type enumeration {
+                      enum enabled;
+                      enum disabled;
+                   }
+                   description
+                      "Optional Vid DEI value to use for the push operation. 0..1. 
+                       absent => 0.";
+                }
+             }
+             case pop {
+                leaf pop-vtag {
+                   type empty;
+                   description
+                      "Pop the outermost vtag.";
+                }
+             }
+          }
+       }
+   }
+
+   grouping of-set-fields {
+   
+      description
+         "These are the set fields that can be used in the action set to set
+          a particular field.
+          
+          The action-set can set or more fields, so all the leaf 
+          nodes below are optional.";
+          
+      leaf source-mac {
+         type of-types:mac;
+      }
+      leaf destination-mac {
+         type of-types:mac;
+      }
+      leaf dscp {
+         type of-types:dscp;
+      }
+      leaf ecn {
+         type of-types:ecn;
+      }
+      leaf ip-protocol {
+         type of-types:ip-protocol;
+      }
+      leaf ip-source-address {
+         type of-types:ip-address;
+      }
+      leaf ip-destination-address {
+         type of-types:ip-address;
+      }
+      leaf l4-source-port {
+         type of-types:l4-port;
+      }
+      leaf l4-destination-port {
+         type of-types:l4-port;
+      }
+      leaf ethertype {
+         type of-types:ethertype;
+      }
+      leaf icmpv4-type {
+         type of-types:icmpv4-type;
+      }
+      leaf icmpv4-code {
+         type of-types:icmpv4-code;
+      }
+      leaf icmpv6-type {
+         type of-types:icmpv6-type;
+      }
+      leaf icmpv6-code {
+         type of-types:icmpv6-code;
+      }
+      leaf arp-opcode {
+         type of-types:arp-opcode;
+      }
+      leaf arp-source-ip-address {
+         type of-types:ipv4-address;
+      }
+      leaf arp-target-ip-address {
+         type of-types:ipv4-address;
+      }
+      leaf arp-source-mac-address {
+         type of-types:mac;
+      }
+      leaf arp-target-mac-address {
+         type of-types:mac;
+      }
+      leaf ipv6-flow-label {
+         type of-types:ipv6-flow-label;
+      }
+      leaf ndp-target-ip-address {
+         type of-types:ipv6-address;
+      }
+      leaf ipv6-extension-header {
+         type of-types:ipv6-extension-header;
+      }
+      leaf ndp-source-mac-address {
+         type of-types:mac;
+      }
+      leaf ndp-target-mac-address {
+         type of-types:mac;
+      }
+   }
+
+   grouping of-flow-table-statistics {
+
+      description
+         "The statistics associated with a flow table (vs. a flow entry).";
+
+      leaf active-flow-count {
+         type yt:counter32;
+         description
+            "Number of Active Flow Table Entries.";
+      }
+   }
+
+   grouping of-flow-statistics {
+
+      description
+         "The statistics associated with each flow entry.";
+
+      leaf duration {
+         type yt:counter32;
+         description
+            "How long entry has been installed, in seconds.";
+      }
+
+      leaf rx-accepted-bytes {
+         type yt:counter64;
+         description
+            "Ingress accepted byte count. If applicable for this Flow Entry type.";
+      }
+
+      leaf rx-accepted-frames {
+         type yt:counter64;
+         description
+            "Ingress accepted frame count. If applicable for this Flow Entry type.";
+      }
+
+      leaf tx-forwarded-bytes {
+         type yt:counter64;
+         description
+            "Egress forwarded byte count. If applicable for this Flow Entry type.";
+      }
+
+      leaf tx-forwarded-frames {
+         type yt:counter64;
+         description
+            "Egress forwarded frame count. If applicable for this Flow Entry type.";
+      }
+
+      leaf rx-yellow-bytes {
+         type yt:counter64;
+         description
+            "Ingress yellow byte count. If applicable for this Flow Entry type.";
+      }
+
+      leaf rx-yellow-frames {
+         type yt:counter64;
+         description
+            "Ingress yellow frame count. If applicable for this Flow Entry type.";
+      }
+
+      leaf rx-dropped-bytes {
+         type yt:counter64;
+         description
+            "Ingress dropped byte count. If applicable for this Flow Entry type.";
+      }
+
+      leaf rx-dropped-frames {
+         type yt:counter64;
+         description
+            "Ingress dropped frame count. If applicable for this Flow Entry type.";
+      }
+   }
+
+   grouping of-group-statistics {
+
+      description
+         "The statistics associated with each group table entry.";
+
+      leaf reference-count {
+         type yt:counter32;
+         description
+            "Number of Flow Entries referencing this Group Entry.";
+      }
+
+      leaf duration {
+         type yt:counter32;
+         description
+            "How long entry has been installed, in seconds.";
+      }
+
+      leaf rx-bytes {
+         type yt:counter64;
+         description
+            "Group received byte count. If applicable for this Group Entry type.";
+      }
+
+      leaf rx-frames {
+         type yt:counter64;
+         description
+            "Group received frame count. If applicable for this Group Entry type.";
+      }
+
+      leaf tx-forwarded-bytes {
+         type yt:counter64;
+         description
+            "Group forwarded byte count. If applicable for this Group Entry type.";
+      }
+
+      leaf tx-forwarded-frames {
+         type yt:counter64;
+         description
+            "Group forwarded frame count. If applicable for this Group Entry type.";
+      }
+   }
+
+   grouping of-bucket-statistics {
+
+      description
+         "The statistics associated with each bucket of a group table entry.";
+
+      leaf duration {
+         type yt:counter32;
+         description
+            "How long bucket has been installed, in seconds.";
+      }
+
+      leaf rx-bytes {
+         type yt:counter64;
+         description
+            "Group Bucket received byte count. If applicable for this Group Entry type.";
+      }
+
+      leaf rx-frames {
+         type yt:counter64;
+         description
+            "Group Bucket received frame count. If applicable for this Group Entry type.";
+      }
+
+      leaf tx-forwarded-bytes {
+         type yt:counter64;
+         description
+            "Group Bucket forwarded byte count. If applicable for this Group Entry type.";
+      }
+
+      leaf tx-forwarded-frames {
+         type yt:counter64;
+         description
+            "Group Bucket forwarded frame count. If applicable for this Group Entry type.";
+      }
+   }
+
+   grouping action-set {
+
+      description
+         "As in the OpenFlow protocol, each packet has an associated set of actions
+          as the packet traverses the pipeline.  The actions in this action set are
+          applied at the end of the flow/group table processing (i.e. before the 
+          packet egresses the switch. The action set can zero or more actions, so all
+          the data below is optional. The action set can have at most one action 
+          of each type.  
+          
+          This grouping defines the actions (and their associated parameters) that
+          can be written to the action set in a flow table entry.  It also defines
+          the actions that can be immediately applied to a packet in a flow table
+          entry.";
+
+      container output {
+         uses of-types:of-logical-port;
+         description 
+            "Assign an egress port to the packet.";
+      }
+      leaf copy-ttl-out {
+         type empty;
+         description 
+            "Copy the TTL from the next-to-outermost to outermost header with a TTL.
+             Copy can be IP-to-IP, MPLS-to-MPLS, or MPLS-to-IP.";
+      }
+      leaf copy-ttl-in {
+         type empty;
+         description 
+            "Copy the TTL from the outermost to next-to-outermost header with a TTL.
+             Copy can be IP-to-IP, MPLS-to-MPLS, or IP-to-MPLS.";
+      }
+      leaf set-mpls-ttl {
+         type of-types:ttl;
+         description 
+            "Replace the existing MPLS TTL with the one specified here.";
+      }
+      leaf decrement-mpls-ttl {
+         type empty;
+         description 
+            "Decrement the existing MPLS TTL.";
+      }
+      container vtag-transforms {
+         uses of-types:vtag-transforms;
+         description
+            "Perform a list of VLAN related packet transforms.  Note that this is 
+             action is more general than the OpenFlow push-tag/stamp-tag/pop-tag action, allowing
+             multiple vtag operations in a single action.";
+      }
+      container mpls-transforms {
+         uses of-types:mpls-label-transforms;
+         description
+            "Perform a list of MPLS related packet transforms.  Note that this is 
+             action is more general than the OpenFlow push-tag/pop-tag action, allowing
+             multiple MPLS operations in a single action.";
+      }
+      leaf output-queue-value {
+         type of-types:queue-id;
+         description 
+            "Assign an egress queue to the packet.";
+      }
+      leaf set-nw-ttl {
+         type of-types:ttl;
+         description
+            "Replace the existing IPv4 TTL or IPv6 Hop Limit in the packet.";
+      }
+      leaf decrement-nw-ttl {
+         type empty;
+         description
+            "Decrement the existing IPv4 TTL or IPv6 Hop Limit in the packet.";
+      }
+      container set-field {
+         uses of-types:of-set-fields;
+         description
+            "Replace the specified header fields of the packet with the specified 
+             values.";
+      }
+      leaf experimenter {
+         type of-types:experimenter;
+      }
+   }
+}

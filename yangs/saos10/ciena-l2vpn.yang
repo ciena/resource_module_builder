@@ -1,0 +1,333 @@
+module ciena-l2vpn {
+    namespace   "http://ciena.com/ns/yang/ciena-l2vpn";
+    prefix "l2vpn";
+
+    import ietf-pseudowires {
+        prefix pw;
+    }
+
+    import ciena-mef-fd {
+        prefix "mef-fd";
+    }
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import yuma-ncx {
+        prefix ncx;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+       "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+         "This YANG module defines Ciena's specific l2vpn
+          protocol
+
+         Copyright (c) 2018  Ciena Corporation.  All rights
+         reserved.
+
+         All information contained herein is, and remains the
+         property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained
+         from Ciena Corporation.";
+
+    revision "2021-10-06" {
+         description
+               "1.Addition of pseudowire config parameters,
+                  VPN-ID and auto-discovery fields for support of BGP VPLS-AD
+                2.Addition of pwe-stats-enabled list for BGP VPLS-AD
+                3.Addition of tunnel-color for underlying transport for BGP VPLS-AD
+                4.Addition of fallback option for BGP VPLS-AD pseudowires
+                5.Addition of l2vpn service oper state container";
+    }
+
+    revision "2018-11-12" {
+         description
+               "Initial version of ciena-l2vpn config and state yang model";
+    }
+
+    typedef protocol-type {
+        type enumeration {
+            enum 'ldp' {
+               description
+                  "Protocol type is LDP signaling for VPLS-AD";
+            }
+        }
+    }
+
+    typedef cctype{
+        type bits {
+            bit cctype-1 {
+                position 0;
+                description
+                   "Set bit 0 to select cctype-1 (also known as PWE3 Control Word with 0001b as
+                    first nibble) for VPLS-AD signaled pseudowires";
+            }
+            bit cctype-2 {
+                position 1;
+                description
+                   "Set bit 1 to select cctype-2 (also known as MPLS Router Alert Label)
+                    for VPLS-AD signaled pseudowires";
+            }
+            bit cctype-3 {
+                position 2;
+                description
+                   "Set bit 2 to select cctype-3 (also known as MPLS PW Label with TTL == 1)
+                    for VPLS-AD signaled pseudowires";
+            }
+            bit cctype-4 {
+                position 3;
+                description
+                   "Set bit 3 to select cctype-4 (also known as MPLS Gal+Gach)
+                    for VPLS-AD signaled pseudowires";
+            }
+        }
+    }
+
+    typedef protocol {
+        type enumeration {
+            enum 'none' {
+               description
+                  "Set protocol none to disable auto-discovery in VPLS-AD";
+            }
+            enum 'bgp' {
+               description
+                  "Set protocol BGP to enable auto-discovery in VPLS-AD";
+            }
+       }
+    }
+    /* groupings */
+    grouping l2vpn-common-parameters-grp {
+        description
+              "L2VPN common parameters";
+
+        leaf mtu {
+           type uint16 {
+              range "576..16000";
+           }
+           default "1500";
+           units bytes;
+           description
+                 "This attribute sets the Maximum Transmission Unit(MTU) for a L2VPN service";
+        }
+
+        leaf service-type {
+           ncx:user-write "create";
+           type cn-l3-types:mpls-vpls-type;
+           default ethernet;
+           description
+                 "The service type as Vlan or Ethernet, Ethernet is default.";
+        }
+
+        leaf signaling-type {
+            ncx:user-write "create";
+            type protocol-type;
+            description
+                  "The signaling type to be used for L2VPN signaling in VPLS-AD";
+        }
+    }
+
+    /* L2VPN YANG MODEL */
+    container l2vpn-services {
+        description
+           "List of layer-2 VPN services instances.";
+        list l2vpn {
+           key "name";
+              description
+                    "L2VPN services instance";
+
+           leaf name {
+               type  string {
+                   length "1..255";
+               }
+               description
+                     "L2vpn-services instance name";
+           }
+
+           uses l2vpn-common-parameters-grp;
+
+           leaf forwarding-domain {
+               ncx:user-write "create";
+               type leafref {
+                   path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+               }
+               description
+                     "Mention the forwarding domain name";
+           }
+
+           leaf-list pseudowire {
+              type pw:pseudowire-ref;
+              description
+                 "Mention the pseudowire names required for l2vpn service";
+           }
+
+           leaf vc-mode-revertive {
+              type  boolean;
+              default "false";
+              description
+                 "If true, vc-mode-revertive is enabled.";
+           }
+
+           leaf control-word {
+              type boolean;
+              default "true";
+              description
+                 "Control-word is enabled by default for VPLS-AD signaled pseudowires";
+           }
+           leaf cc-types {
+              type cctype;
+              description
+                 "Used to set the CC Type for VPLS-AD signaled pseudowires";
+           }
+           leaf vpn-id {
+              type uint32;
+              description
+                 "User provided L2VPN VPN identifier for VPLS-AD";
+           }
+           leaf auto-discovery-protocol {
+              type protocol;
+              default "none";
+              description
+                 "User provided protocol to disable or enable auto-discovery in VPLS-AD ";
+           }
+           leaf pw-loadbalance {
+              type enumeration {
+                 enum "disabled" {
+                   value 0;
+                   description
+                      "Load balancing disabled";
+                 }
+                 enum "fat-pw" {
+                   value 1;
+                   description
+                      "Load balance using FAT label below PW label";
+                 }
+                 enum "entropy" {
+                   value 2;
+                   description
+                      "Load balance using ELI/EL above PW label";
+                 }
+              }
+              default "disabled";
+                 description
+                    "Used to set PW load balance parameter for VPLS-AD signaled pseudowires";
+           }
+           leaf fat-capability {
+              when "../pw-loadbalance = 'fat-pw'" {
+                 description
+                    "The fat-capability value is only applicable to the FAT PW load balance type";
+              }
+              type enumeration {
+                 enum "tx-rx" {
+                   value 0;
+                   description
+                      "Enable FAT label receiving and transmitting capability";
+                 }
+                 enum "rx" {
+                   value 1;
+                   description
+                      "Enable FAT label receiving capability";
+                 }
+                 enum "tx" {
+                   value 2;
+                   description
+                      "Enable FAT label transmitting capability";
+                 }
+              }
+              default tx-rx;
+                 description
+                    "Used to set FAT pseudowire capability for negotiation of VPLS-AD signaled pseudowires";
+           }
+           leaf-list pw-stats-enable {
+              type string {
+                 length "1..255";
+              }
+              description
+                 "List of stats enabled VPLS-AD pseudowire names";
+           }
+           leaf tunnel-color {
+              type uint32;
+              description
+                 "User provided tunnel-color for underlying transport";
+           }
+           leaf fallback {
+              type enumeration {
+                 enum disable {
+                 description
+                    "Specifies fallback as disable";
+                 }
+                 enum enable {
+                 description
+                    "Specifies fallback as enable";
+                 }
+              }
+              default "disable";
+              description
+                 "Fallback enable is used when the SR policy is down.
+                  The service will still continue to be up, but
+                  will fall back to labeled IGP shortest path.
+                  By default, the value is set to disable.";
+           }
+        }
+    }
+
+    container l2vpn-service-state {
+       config false;
+       description
+          "Layer-2 VPN service information";
+
+       list l2vpn {
+          key "name";
+          description
+             "Operational data for L2VPN";
+
+          leaf name {
+              type  string {
+                  length "1..255";
+              }
+              description
+                 "L2VPN services instance name";
+          }
+
+          leaf-list pseudowire {
+             type string;
+             description
+                "Pseudowire names attached in L2VPN service";
+          }
+       }
+    }
+
+    rpc vc-switchover {
+        input {
+            leaf from {
+               type pw:pseudowire-ref;
+                  description
+                     "Name of pseudowire in use.";
+            }
+            leaf to {
+               type pw:pseudowire-ref;
+               description
+                  "Name of pseudowire to be switched to.";
+            }
+        }
+        output {
+            leaf response {
+               type string;
+               description
+                   "The response could be 'success', or the reason for isis-clear-ip-route failure";
+            }
+        }
+    }
+}

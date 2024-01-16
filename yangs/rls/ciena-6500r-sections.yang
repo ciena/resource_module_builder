@@ -1,0 +1,152 @@
+module ciena-6500r-sections {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-sections";
+  prefix ciena-6500r-sections;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r section topology model. It contains the list of sections,
+     the ordered list of nodes in each section.";
+
+  revision 2021-04-27 {
+    version:version "version" {
+      version:string "2.0.0";
+    }
+    description
+      "Add pfg-name as a key for nodes and reverse-nodes lists";
+  }
+  revision 2020-07-22 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Import ietf-inet-types for the purposes of IP addresses RLS 2.1";
+  }
+  revision 2018-11-26 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Initial revision RLS 2.0/2.0.60";
+  }
+
+  grouping section-node-data {
+    leaf node-name {
+      type string;
+      description
+        "The name of the node in the section.";
+    }
+
+    leaf pfg-name {
+      type string;
+      description
+        "The name of PFG. The name of the OTS-EGRESS is, by convention, the same as the name of corresponding PFG.
+         It is being used for fault propagtaion and enables to match a given OTS-EGRESS to an OMS-EGRESS.
+         The OMS-EGRESS is at the tail of the section. It needs the exhaustive list of all the OTS-EGRESS
+         on the section mainly to set its FDI. ";
+    }
+
+    leaf line-out-port {
+      type instance-identifier;
+      description
+        "PFG line out port. It is also being used for fault propagation and enables to match a given OTS-EGRESS
+         to an OMS-EGRESS. It is not present on the tail-node. ";
+    }
+
+    leaf line-in-port {
+      type instance-identifier;
+      description
+        "PFG line in port. It is also being used for fault propagation and enables to match a given OTS-EGRSS
+         to an OMS-EGRESSIt is not present on the head-node. ";
+    }
+  }
+
+  list section {
+    key "section-name";
+    config false;
+    leaf section-name {
+      type ciena-6500r-types:object-name;
+      description
+        "The name of the section is, by convention, the name of the corresponding PFG.";
+    }
+
+    list node {
+      key "node-name pfg-name";
+      description
+        "List of nodes in the section in forward direction. When more than one node
+         is reported, they are in an ordered list.
+         This list includes the local node as the first entry.
+         The list is uni-directional, if there are multiple connections
+         to the same remote node, then the remote node will appear in
+         each section it is connected to.";
+      uses section-node-data;
+    }
+
+    list reverse-node {
+      key "node-name pfg-name";
+      description
+        "List of nodes in the section in the reverse direction. When more than one node
+         is reported, they are in an ordered list.
+         This list includes the tail node as the first entry.
+         The list is uni-directional, if there are multiple connections
+         to the same remote node, then the remote node will appear in
+         each section it is connected to. There is no reverse-node-list at the head-node. ";
+      uses section-node-data;
+    }
+
+    leaf complete {
+      type boolean;
+      description
+        "Indicates if the full section path has been built in the forward direction. ";
+    }
+
+    leaf reverse-complete {
+      type boolean;
+      description
+        "Indicates if the full section path is present in the reverse direction. ";
+    }
+
+    leaf section-type {
+      type enumeration {
+        enum "head" {
+          value 1;
+          description
+            "It indicates the head of the section.";
+        }
+        enum "middle" {
+          value 2;
+          description
+            "It indicates the middle of the section.";
+        }
+        enum "tail" {
+          value 3;
+          description
+            "It indicates the tail of the section.";
+        }
+      }
+    }
+  }
+}

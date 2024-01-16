@@ -1,0 +1,1603 @@
+module ciena-ppm {
+  namespace "http://www.ciena.com/ns/yang/ppm";
+  prefix "ppm";
+
+  import mef-cfm {
+    prefix "cfm";
+    revision-date 2012-04-16;
+  }
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import ciena-openconfig-interfaces {
+    prefix cn-oc-if;
+  }
+
+  import ciena-bfd {
+    prefix "bfd";
+  }
+
+  import ciena-bfd-ip-sh {
+    prefix "bfd-ip-sh";
+  }
+
+  import ciena-bfd-ip-mh {
+    prefix "bfd-ip-mh";
+  }
+
+  import ciena-mef-logical-port {
+    prefix mef-logical-port;
+  }
+
+  import ciena-mef-fp {
+    prefix "mef-fp";
+  }
+
+  import ietf-pseudowires {
+    prefix "pw";
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the YANG definition of Programable 
+     Policy Manager (PPM) parameters as per 
+     ciena-vlli-functional-specification.docx.
+
+     Copyright (c) 2022 Ciena Corporation.  All rights
+     reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2022-04-06" {
+    description
+      "Add MC-LAG support.";
+  }
+
+  revision "2021-09-08" {
+    description
+      "PPM Group and PW are supported. Add help strings for actions.";
+  }
+
+  revision "2020-10-12" {
+    description
+      "Timer, FP, and BFD next hop instance are supported.";
+  }
+
+  revision "2020-07-14" {
+    description
+      "bfd-ip-sh and bfd-ip-mh support.";
+  }
+
+  revision "2020-01-27" {
+    description
+      "Logical port support.";
+  }
+
+  revision "2019-05-09" {
+    description
+      "Initial Version.";
+    reference
+      "ciena-vlli-functional-specification.docx";
+  }
+
+  /*
+   * Type definitions
+   */
+
+  typedef last-event {
+    type enumeration {
+      enum unknown {
+        description "No defined previous event.";
+      }
+      enum external-fault {
+        description "The fault event external to PPM.";
+      }
+      enum external-recovery {
+        description "The recovery event external to PPM.";
+      }
+      enum admin-fault {
+        description "This is a PPM ADMIN fault event.";
+      }
+      enum admin-recovery {
+        description "This is a PPM ADMIN recovery event.";
+      }
+    }
+    description
+      "The last event for each instance.";
+  }
+
+  identity event-type {
+    description
+      "Base identity for PPM action types.";
+  }
+
+  identity fault {
+    base event-type;
+    description
+      "Defines fault action.";
+  }
+
+  identity recovery {
+    base event-type;
+    description
+      "Defines recovery action.";
+  }
+
+  identity condition-match {
+    base event-type;
+    description
+      "Defines actions for the advanced mode.";
+  }
+
+  identity condition-type {
+    description
+      "Base identity for PPM condition types.";
+  }
+
+  identity fault-condition {
+    base condition-type;
+    description
+      "Defines fault condition.";
+  }
+
+  identity recovery-condition {
+    base condition-type;
+    description
+      "Defines recovery condition.";
+  }
+
+  identity action-name {
+    description
+      "Base identity for set of PPM actions.";
+  }
+
+  identity shut {
+    base action-name;
+    description
+      "The action is instance down.";
+  }
+
+  identity unshut {
+    base action-name;
+    description
+      "The action is instance up.";
+  }
+
+  identity ccm-stop {
+    base action-name;
+    description
+      "The action is Continuity Check Message Stop.";
+  }
+
+  identity ccm-resume {
+    base action-name;
+    description
+      "The action is Continuity Check Message Resume.";
+  }
+
+  identity stop {
+    base action-name;
+    description
+      "The action will stop the instance session.";
+  }
+
+  identity start {
+    base action-name;
+    description
+      "The action will resume/start the instance session.";
+  }
+
+  identity block {
+    base action-name;
+    description
+      "The action will block two way traffic.";
+  }
+
+  identity unblock {
+    base action-name;
+    description
+      "The action will unblock two way traffic.";
+  }
+
+  identity flush {
+    base action-name;
+    description
+      "The action will flush MAC address.";
+  }
+
+  identity twamp-deny {
+    base action-name;
+    description
+      "The action will stop the TWAMP session.";
+  }
+
+  identity twamp-accept {
+    base action-name;
+    description
+      "The action will start the TWAMP session.";
+  }
+
+  identity pw-status-fault {
+    base action-name;
+    description
+      "The action supports a PW status fault action.";
+  }
+
+  identity pw-status-clear {
+    base action-name;
+    description
+      "The action supports a PW status clear action.";
+  }
+
+  identity mac-withdraw {
+    base action-name;
+    description
+      "The action supports MAC withdrawl on a PW.";
+  }
+
+  identity lacp-active {
+    base action-name;
+    description
+      "This action sets port active in lacp.";
+  }
+
+  identity lacp-inactive {
+    base action-name;
+    description
+      "This action sets port inactive in lacp.";
+  }
+
+  typedef action-bit-map {
+    type bits {
+      bit shut {
+        position 0;
+        description
+          "An interface is shut.";
+      }
+      bit unshut {
+        position 1;
+        description
+          "An interface is unshut.";
+      }
+      bit ccm-stop {
+        position 2;
+        description
+          "ccm message is stopped.";
+      }
+      bit ccm-resume {
+        position 3;
+        description
+          "ccm message is resumed";
+      }
+      bit stop {
+        position 4;
+        description
+          "An instance session is stopped.";
+      }
+      bit start {
+        position 5;
+        description
+          "An instance session is started.";
+      }
+      bit block {
+        position 6;
+        description
+          "An instance is blocked.";
+      }
+      bit unblock {
+        position 7;
+        description
+          "An instance is unblocked";
+      }
+      bit flush {
+        position 8;
+        description
+          "An instance is flushed.";
+      }
+      bit twamp-deny {
+        position 9;
+        description
+          "A TWAMP session is denied";
+      }
+      bit twamp-accept {
+        position 10;
+        description
+          "A TWAMP session is accepted";
+      }
+      bit pw-status-fault {
+        position 11;
+        description
+          "A PW instance is faulted";
+      }
+      bit pw-status-clear {
+        position 12;
+        description
+          "A PW instance is cleared";
+      }
+      bit mac-withdraw {
+        position 13;
+        description
+          "MAC withdrawl action is performed.";
+      }
+      bit lacp-active {
+        position 14;
+        description
+          "An interface is set to active in lacp.";
+      }
+      bit lacp-inactive {
+        position 15;
+        description
+          "An interface is set to inactive in lacp.";
+      }
+    }
+  }
+
+  grouping action-group-reference {
+    leaf action-group {
+      description
+        "A reference to a specific Action group.";
+      type leafref {
+        path "/ppm:ppm/ppm:config/ppm:action-group/ppm:name";
+      }
+    }
+  }
+
+  grouping instance-group-reference {
+    leaf instance-group {
+      description
+        "A reference to a specific instance group.";
+      type leafref {
+        path "/ppm:ppm/ppm:config/ppm:instance-group/ppm:name";
+      }
+    }
+  }
+
+  /*
+   * Data node definitions
+   */
+
+  container ppm {
+    description
+      "Programmable Policy Manager node which has both configuration and 
+       state nodes.";
+
+    container config {
+      description
+        "Defines configuration nodes in the tree.";
+
+      container global-state {
+        description
+          "Defines the PPM global state.";
+
+        leaf admin-status {
+          type enumeration {
+            enum enable {
+              description
+                "Enable PPM global status administratively";
+            }
+            enum disable {
+              description
+                "Disable PPM global status administratively.
+                 The PPM admin-status always starts in the enabled
+                 state until an explicit management action or
+                 configuration information is retained by the system
+                 and causes a transition to the disabled state";
+            }
+          }
+          default enable;
+          description
+            "Specifies if PPM is enabled or disabled globally.";
+        }
+      }
+
+      list ppm-timer {
+        key "name";
+        min-elements 0;
+        max-elements 64;
+        description
+          "The list of timer instances.";
+
+        leaf name {
+          type string {
+            length "1..45";
+          }
+          description
+            "The unique identifier of timer entry.";
+        }
+
+        leaf timeout {
+          type uint16 {
+            range 0..720;
+          }
+          default 300;
+          units "seconds";
+          description
+            "The timeout value in second. 0 is never expired.";
+        }
+      }
+
+      list action-group {
+        key "name";
+        description
+          "The list of PPM action groups.";
+
+        leaf name {
+          type string {
+            length "1..15";
+          }
+          description
+            "The unique identifier of action group entry.";
+        }
+
+        list type {
+          key "event precedence";
+          description
+            "The list of actions that an action-group can have.";
+
+          leaf event {
+            type identityref {
+              base event-type;
+            }
+            description
+              "Defines the type of PPM action.";
+          }
+
+          leaf precedence {
+            type uint8 {
+              range 1..8;
+            }
+            description
+              "The precedence number associated with each action.";
+          }
+
+          leaf action {
+            type identityref {
+              base action-name;
+            }
+            default shut;
+            description
+              "Defines the actual action.
+               shut             Shut down the instance
+               unshut           Unshut the instance
+               ccm-stop         Stop the Continuity Check Message 
+               ccm-resume       Resume the Continuity Check Message
+               stop             Stop the instance session
+               start            Start the instance session
+               block            Block the flow-point or logical-port instance
+               unblock          Unblock the flow-point or logical-port instance
+               flush            Flush dynamically learned MAC addresses
+               twamp-deny       Stop the TWAMP session
+               twamp-accept     Start the TWAMP session
+               pw-status-fault  Send the PW status fault
+               pw-status-clear  Clear the PW status fault
+               mac-withdraw     Withdraw dynamically learned MAC addresses
+               lacp-active      Signal subtending device that the interface is active
+               lacp-inactive    Signal subtending device that the interface is inactive";
+          }
+        }
+      }
+
+      list ppm-group {
+        key "name";
+        max-elements 64;
+        description
+          "The list of PPM groups.";
+
+        leaf name {
+          type string {
+            length "1..45";
+          }
+          description
+            "A name is associated with group.";
+        }
+
+        list logical-port-instance {
+          key "name";
+          description
+            "The list of logical port instances in a PPM group.";
+
+          leaf name {
+            type mef-logical-port:logical-port-ref;
+            description
+              "The name of the logical-port interface that is used as a unique
+               identifier.";
+          }
+        }
+
+        list fp-instance {
+          key "name";
+          description
+            "The list of FP instances in a PPM group.";
+
+          leaf name {
+            type mef-fp:fp-ref;
+            description
+              "A reference to a specific flow-point"; 
+          }
+        }
+
+        list pw-instance {
+          key "name";
+          description
+            "The list of pseudowire instances in a PPM group.";
+
+          leaf name {
+            type leafref  {
+              path "/pw:pseudowires/pw:pseudowire/pw:name";
+            }
+            description
+              "Pseudowire name."; 
+          }
+        }
+      }
+
+      list instance-group {
+        key "name";
+        description
+          "The list of PPM instance groups.";
+
+        leaf name {
+          type string {
+            length "1..45";
+          }
+          description
+            "A name is associated with group.";
+        }
+
+        leaf direction {
+          type enumeration {
+            enum unidirectional {
+              description
+                "The action will take place only from source to
+                 destination direction.";
+            }
+            enum bidirectional {
+              description
+                "The action will take place in either direction
+                 from source to destination or destination to 
+                 source.";
+            }
+          }
+          default unidirectional;
+          description
+            "Defines the direction of fault/recovery action between
+             source and destination.";
+        }
+
+        leaf trigger {
+          type enumeration {
+            enum any {
+              description
+                "Any action that happens on either side of source
+                 or destination instance will trigger the same action
+                 on the other instance.";
+            }
+            enum all {
+              description
+                "The instance will get triggered only when
+                 all actions get triggered on other side.";
+            }
+          }
+          default any;
+          description
+            "This indicates how fault action triggered.";
+        }
+
+        leaf force {
+          type enumeration {
+            enum none {
+              description
+                "No force status.";
+            }
+            enum fault {
+              description
+                "It indicates whether it is PPM force fault or
+                 the actual fault.";
+            }
+            enum recovery {
+              description
+                "It indicates whether it is PPM force recovery or
+                 the actual recovery.";
+            }
+          }
+          default none;
+          description
+            "It indicates about whether it are triggered by admin.";
+        }
+
+        leaf advanced-mode {
+          type boolean;
+          default false;
+          description
+            "Advanced mode if the value is true. PPM uses the condition in the instance-group.";
+        }
+
+        leaf default-block {
+          type boolean;
+          default false;
+          description
+            "FPs and logical-ports default is block if the value is true.";
+        }
+
+        leaf state {
+          type enumeration {
+            enum enable {
+              description
+                "Enable the PPM group administratively.";
+            }
+            enum disable {
+              description
+                "Disables the PPM on this group. The PPM admin
+                 status always starts in the disabled state until
+                 an explicit management action or configuration
+                 information is retained by the system and causes
+                 a transition to the enabled state.";
+            }
+          }
+          default disable;
+          description
+            "Specifies if instance group is enabled or disabled.";
+        }
+
+        leaf priority {
+          type uint32 {
+            range 1..max;
+          }
+          default 4096;
+          description
+            "The instance-group priority. A lower number has higher priority.";
+        }
+
+        list ppm-instance {
+          key "mode";
+          description
+            "The list of instances in an instance group.";
+
+          leaf mode {
+            type enumeration {
+              enum destination {
+                description
+                  "Defines the instance to be destination instance.";
+              }
+              enum source {
+                description
+                  "Defines the instance to be source instance.";
+              }
+            }
+            description
+              "The mode of instance whether it is applicable at
+               source or at destination.";
+          }
+
+          list logical-port-instance {
+            key "name";
+            description
+              "The list of logical port instances in an instance group.";
+
+            leaf name {
+              type mef-logical-port:logical-port-ref;
+              description
+                "The name of the logical-port interface that is used as a unique
+                 identifier.";
+            }
+
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list cfm-instance {
+            key "maintenance-domain maintenance-association maintenance-association-end-point";
+            description
+              "The list of cfm instances in an instance group.";
+                 
+            uses cfm:maintenance-association-end-point-reference;
+
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list ip-if-instance {
+            key "name";
+            description
+              "IP interface instances";
+
+            leaf name {
+              type cn-oc-if:ciena-openconfig-interface-ref;
+              must "/oc-if:interfaces/oc-if:interface[name = current()]" +
+                   "/oc-if:config/cn-oc-if:type = 'ip'" {
+                      error-message
+                      "Referenced interface must be of type 'ip'.";
+              }
+              description
+                "The name of the IP interface that is used as a unique
+                 identifier.";
+            }
+
+            uses ppm:action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list bfd-ip-sh-instance {
+            key "interface dest-addr";
+            description
+              "IP BFD single-hop instances";
+                 
+            leaf interface {
+              type leafref  {
+                path "/bfd:bfd/bfd-ip-sh:ip-sh/bfd-ip-sh:sessions/bfd-ip-sh:session/bfd-ip-sh:interface";
+              }
+              description
+                "L3 interface on which the BFD session is running.";
+            }
+             
+            leaf dest-addr {
+              type leafref  {
+                path "/bfd:bfd/bfd-ip-sh:ip-sh/bfd-ip-sh:sessions/bfd-ip-sh:session/bfd-ip-sh:dest-addr";
+              }
+              description
+                "IP address of the peer.";
+            }
+            
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list bfd-ip-mh-instance {
+            key "interface dest-addr";
+            description
+              "IP BFD multi-hop instances";
+                 
+            leaf interface {
+              type leafref  {
+                path "/bfd:bfd/bfd-ip-mh:ip-mh/bfd-ip-mh:session-groups/bfd-ip-mh:session-group/bfd-ip-mh:interface";
+              }
+              description
+                "L3 interface on which the BFD session is running.";
+            }
+             
+            leaf dest-addr {
+              type leafref  {
+                path "/bfd:bfd/bfd-ip-mh:ip-mh/bfd-ip-mh:session-groups/bfd-ip-mh:session-group/bfd-ip-mh:dest-addr";
+              }
+              description
+                "IP address of the peer.";
+            }
+            
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list fp-instance {
+            key "name";
+            description
+              "The list of FP instances in an instance group.";
+
+            leaf name {
+              type mef-fp:fp-ref;
+              description
+                "A reference to a specific flow-point"; 
+            }
+             
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list timer-instance {
+            key "name";
+            description
+              "The list of timer instances in an instance group.";
+
+            leaf name {
+              type leafref  {
+                path "/ppm:ppm/ppm:config/ppm:ppm-timer/ppm:name";
+              }
+              description
+                "A reference to a specific PPM timer"; 
+            }
+             
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list nh-ip-addr-instance {
+            key "ip-addr";
+            description
+              "The list of gateway or next hop instances in an instance group.";
+                 
+            leaf ip-addr {
+              type inet:ip-address;
+              description
+                "IP address of the next hop.";
+            }
+
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+
+          list pw-instance {
+            key "name";
+            description
+              "The list of pseudowire instances in an instance group.";
+                 
+            leaf name {
+             type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+              }
+              description
+                "Pseudowire name.";
+            }
+
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+          }
+
+          list ppm-group-instance {
+            key "name";
+            description
+              "The list of ppm-group instances in an instance group.";
+
+            leaf name {
+              type leafref  {
+                path "/ppm:ppm/ppm:config/ppm:ppm-group/ppm:name";
+              }
+              description
+                "A reference to a specific ppm-group"; 
+            }
+             
+            uses action-group-reference;
+
+            leaf priority {
+              type uint8 {
+                range 1..64;
+              }
+              description
+                "The priority associated with each instance in the instance-group.
+                 The lower number priority has the higher priority.";
+            }
+
+            leaf event-condition {
+              type identityref {
+                base condition-type;
+              }
+              description
+                "This is for the advanced mode only. If the event matches the defined condition.
+                 The advance action will be triggered.";
+            }
+
+          }
+        }
+      }
+    }
+
+    /*
+     * Operational state data nodes
+     */
+
+    container instance-groups-state {
+      config false;
+      description
+        "Data nodes for the operational state of instance groups.";
+
+      container global-counters {
+        description
+          "Defines the PPM global counters.";
+
+        leaf total-instance-groups {
+          type uint32;
+          description
+            "The number of the total configured instance-groups.";
+        }
+
+        leaf total-action-groups {
+          type uint32;
+          description
+            "The number of the total configured action-groups.";
+        }
+
+        leaf total-instances {
+          type uint32;
+          description
+            "The number of the total configured instances.";
+        }
+      }
+
+      list instance-group {
+        key "name";
+        description
+          "The list of PPM instance groups.";
+
+        leaf name {
+          type string {
+            length "1..45";
+          }
+          description
+            "Name of the group.";
+        }
+
+        leaf recovery-destination-counter {
+          type uint32;
+          description
+            "The number of recoveries on the destination side of
+             an instance group.";
+        }
+
+        leaf fault-destination-counter {
+          type uint32;
+          description
+            "The number of faults on the destination side of
+             an instance group.";
+        }
+
+        leaf recovery-source-counter {
+          type uint32;
+          description
+            "The number of recoveries on the source side of
+             an instance group.";
+        }
+
+        leaf fault-source-counter {
+          type uint32;
+          description
+            "The number of faults on the source side of
+             an instance group.";
+        }
+
+        leaf triggered-recovery-destination-action-counter {
+          type uint32;
+          description
+            "The number of recovery actions that have been triggered 
+            on the destination side of an instance group.";
+        }
+
+        leaf triggered-fault-destination-action-counter {
+          type uint32;
+          description
+            "The number of fault actions that have been triggered 
+            on the destination side of an instance group.";
+        }
+
+        leaf triggered-recovery-source-action-counter {
+          type uint32;
+          description
+            "The number of recovery actions that have been triggered 
+            on the source side of an instance group.";
+        }
+
+        leaf triggered-fault-source-action-counter {
+          type uint32;
+          description
+            "The number of fault actions that have been triggered 
+            on the source side of an instance group.";
+        }
+
+        leaf instance-counter {
+          type uint32;
+          description
+            "The number of the configured instances in the instance-group.";
+        }
+
+        list ppm-instance {
+          key "mode";
+          description
+            "The list of instances in an instance group.";
+
+          leaf mode {
+            type enumeration {
+              enum destination {
+                description
+                  "Defines the instance to be destination instance.";
+              }
+              enum source {
+                description
+                  "Defines the instance to be source instance.";
+              }
+            }
+            description
+              "The mode of instance whether it is applicable at
+               source or at destination.";
+          }
+
+          list logical-port-instance {
+            key "name";
+            description
+              "The list of logical port instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the port interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list cfm-instance {
+            key "maintenance-domain maintenance-association maintenance-association-end-point";
+            description
+              "The list of cfm instances in an instance group.";
+
+            leaf maintenance-domain {
+              type string;
+              description
+                "This grouping uniquely identifies a maintenance domain.";
+            }
+
+            leaf maintenance-association {
+              type string;
+              description
+                "This grouping uniquely identifies a maintenance association.";
+            }
+
+            leaf maintenance-association-end-point {
+              type uint16;
+              description
+                "This grouping uniquely identifies a maintenance association 
+                 end point.";
+            }
+
+            leaf status {
+              type last-event;
+              description
+                "The last event that occured on this instance.";
+            } 
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list ip-if-instance {
+            key "name";
+            description
+              "The list of ip interface instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the ip interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list bfd-ip-sh-instance {
+            key "interface dest-addr";
+            description
+              "The list of bfd-ip-sh instances in an instance group.";
+                 
+            leaf interface {
+              type string;
+              description
+                "L3 interface on which the BFD session is running.";
+            }
+             
+            leaf dest-addr {
+              type inet:ip-address;
+              description
+                "IP address of the peer.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list bfd-ip-mh-instance {
+            key "interface dest-addr";
+            description
+              "The list of bfd-ip-mh instances in an instance group.";
+                 
+            leaf interface {
+              type string;
+              description
+                "L3 interface on which the BFD session is running.";
+            }
+             
+            leaf dest-addr {
+              type inet:ip-address;
+              description
+                "IP address of the peer.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list fp-instance {
+            key "name";
+            description
+              "The list of FP interface instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the FP interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list timer-instance {
+            key "name";
+            description
+              "The list of timer interface instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the timer interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list nh-ip-addr-instance {
+            key "ip-addr";
+            description
+              "The list of gateway or next hop instances in an instance group.";
+                 
+            leaf ip-addr {
+              type inet:ip-address;
+              description
+                "IP address of the next hop.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list pw-instance {
+            key "name";
+            description
+              "The list of pw-instance interface instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the pw-instance interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+          list ppm-group-instance {
+            key "name";
+            description
+              "The list of ppm-group interface instances in an instance group.";
+
+            leaf name {
+              type string;
+              description
+                "The name of the ppm-group interface that is used as a unique
+                 identifier.";
+            }
+
+            leaf status {
+              type ppm:last-event;
+              description
+                "The last event that occured on this instance.";
+            }
+
+            leaf last-actions {
+              type action-bit-map;
+              description
+                "Bit map of a list of actions that currently are triggered on this instance.";
+            }
+          }
+
+        }
+      }
+
+      list ppm-group {
+        key "name";
+        description
+          "The list of PPM instance groups.";
+
+        leaf name {
+          type string {
+            length "1..45";
+          }
+          description
+            "Name of the group.";
+        }
+        leaf status {
+          type last-event;
+          description
+            "The last event that occured on this grouping.";
+        }
+        list logical-port-instance {
+          key "name";
+          description
+            "The list of logical port instances in an instance group.";
+
+          leaf name {
+            type string;
+            description
+              "The name of the port interface that is used as a unique
+               identifier.";
+          }
+
+          leaf status {
+            type last-event;
+            description
+              "The last event that occured on this instance.";
+          }
+        }
+        list fp-instance {
+          key "name";
+          description
+            "The list of FP interface instances in an instance group.";
+
+          leaf name {
+            type string;
+            description
+              "The name of the FP interface that is used as a unique
+               identifier.";
+          }
+
+          leaf status {
+            type ppm:last-event;
+            description
+              "The last event that occured on this instance.";
+          }
+        }
+        list pw-instance {
+          key "name";
+          description
+            "The list of pw-instance interface instances in an instance group.";
+
+          leaf name {
+            type string;
+            description
+              "The name of the ppm-instance interface that is used as a unique
+               identifier.";
+          }
+
+          leaf status {
+            type ppm:last-event;
+            description
+              "The last event that occured on this instance.";
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // RPCs
+  //
+
+  rpc clear-ppm-counter {
+    description
+      "Administratively clears the counters of an instance group.";
+
+    input {
+      uses instance-group-reference;
+    }
+  }
+
+  //
+  // Notifications
+  //
+
+  notification ppm-event {
+    description
+      "A notification of a specific intance about fault/recovery
+       action.";
+
+    container event {
+      description
+        "Data definitions related to event on a specific instance.";
+
+      leaf group-name {
+        type string {
+          length "1..45";
+        }
+        description
+          "The instance group name.";
+      }
+
+      leaf instance-name {
+        type string {
+          length "1..45";
+        }
+        description
+          "This is a port or cfm instance of the instance group.";
+      }
+
+      leaf action-category {
+        type identityref {
+          base event-type;
+        }
+        description
+          "The PPM action type i.e., either fault or recovery.";
+      }
+
+      leaf action {
+        type identityref {
+          base action-name;
+        }
+        description
+          "The actual PPM action that occured on the instance.";
+      }
+    }
+  }
+}

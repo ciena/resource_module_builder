@@ -1,0 +1,295 @@
+module ciena-osrp-osrp-node {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-node";
+  prefix osrp-node;
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's OSRP NODE
+     object model for the 6500r platform";
+
+  revision 2021-04-20 {
+    ciena-common-version:string "1.5.1";
+    description
+      "Added 0 to range of rx-degrade-holdoff-timer and rx-correlation-holdoff-timer.";
+  }
+  revision 2021-02-11 {
+    ciena-common-version:string "1.5.0";
+    description
+      "batching-duration range added";
+  }
+  revision 2021-02-05 {
+    ciena-common-version:string "1.4.1";
+    description
+      "Parmeters name changed.";
+  }
+  revision 2020-12-08 {
+    ciena-common-version:string "1.4.0";
+    description
+      "Added range in low-priority-holdoff-config timer, rx-degrade-holdoff-timer and rx-down-holdoff-timer.";
+  }
+  revision 2020-10-23 {
+    ciena-common-version:string "1.3.0";
+    description
+      "Rx-faultholdoff config addition.";
+  }
+  revision 2020-10-05 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Corrected parameter names.";
+  }
+  revision 2020-08-10 {
+    ciena-common-version:string "1.1.0";
+    description
+      "osrp-batching-config added.";
+  }
+  revision 2020-05-11 {
+    ciena-common-version:string "1.0.1";
+    description
+      "Added shelf-ip-address, zmq-port, zmq-public-port.";
+  }
+  revision 2019-09-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+  revision 2019-04-25 {
+    description
+      "Initial revision.";
+  }
+
+  grouping ciena-osrp-osrp-node-mount {
+    list osrp-node {
+      key "key";
+      leaf key {
+        type ciena-osrp-types:node-key;
+        mandatory true;
+        description
+          "Key name of Osrp Node.";
+      }
+
+      container blocked-node-config {
+        leaf admin-state {
+          type enumeration {
+            enum "unlocked";
+            enum "locked";
+          }
+          description
+            "Specifies the blocked node feature's administrative state.";
+        }
+
+        leaf feature {
+          type ciena-osrp-types:yes-no;
+          default "yes";
+          description
+            "Specifies if node blocking is allowed.";
+        }
+      }
+
+      leaf debug-id {
+        type ciena-osrp-types:port-num;
+        config false;
+        description
+          "Process ID required for debugging .";
+      }
+
+      leaf function-type {
+        type ciena-osrp-types:functional-group-type;
+        config false;
+        description
+          "Functional type OSRP Node.";
+      }
+
+      container low-priority-holdoff-config {
+        leaf control-line-state {
+          type ciena-osrp-types:yes-no;
+          default "no";
+          description
+            "Specifies the control behavior for releasing low priority connections after the hold-off timer expiry by checking the line state.";
+        }
+
+        leaf feature {
+          type ciena-osrp-types:yes-no;
+          default "yes";
+          description
+            "Specifies if low priority connections hold-off release when a line goes down.";
+        }
+
+        leaf timer {
+          type ciena-osrp-types:timeperiod-msec {
+            range "0..3600000";
+          }
+          default "300000";
+          description
+            "Specifies low prioirity connection release hold-off time in milliseconds. Range 0-3600000 (0-1hr). Default 5mins.";
+        }
+      }
+
+      leaf node-address {
+        type ciena-osrp-types:node-address-type;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node address of 22 bytes (44 hexadecimal chars).";
+      }
+
+      leaf node-id {
+        type ciena-osrp-types:node-id-type;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node Id.";
+      }
+
+      leaf node-name {
+        type ciena-osrp-types:node-name;
+        config false;
+        description
+          "OSRP Node Name.";
+      }
+
+      leaf node-type {
+        type ciena-osrp-types:node-type;
+        config false;
+        description
+          "OSRP Node Type.";
+      }
+
+      leaf operational-state {
+        type enumeration {
+          enum "enabled";
+          enum "disabled";
+        }
+        config false;
+        description
+          "Operational state of the node.";
+      }
+
+      leaf pce-support {
+        type ciena-osrp-types:pce-ext-int;
+        default "internal";
+        description
+          "Flag to indicate PCE component is external (dis-aggregated) or internal (grouped with osrp). Default internal.";
+      }
+
+      container rx-fault-holdoff-config {
+        leaf rx-degrade-holdoff-timer {
+          type ciena-osrp-types:timeperiod-msec {
+            range "0 | 10000..900000";
+          }
+          default "900000";
+          description
+            "Specifies Call release hold-off time in milliseconds due to rx-degrade conditions (LOF or LOC).
+             Range 10000-900000 (10secs-15mins) or 0 (ignores Rx fault). Default 15mins.";
+        }
+
+        leaf rx-correlation-holdoff-timer {
+          type ciena-osrp-types:timeperiod-msec {
+            range "0 | 10000..900000";
+          }
+          default "30000";
+          description
+            "Specifies Rx correlation hold-off time in milliseconds due to rx-down conditions (LOS or LOCh).
+             Range 10000-900000 (10secs-15mins) or 0 (ignores Rx fault). Default 30secs";
+        }
+      }
+
+      container osrp-comms-inventory {
+        leaf shelf-ip-address {
+          type ciena-osrp-types:ip-address;
+          config false;
+          description
+            "The shelf IP address (Format: n.n.n.n).";
+        }
+
+        leaf rest-port {
+          type ciena-osrp-types:port-num;
+          config false;
+          description
+            "Port to access via REST call.";
+        }
+
+        leaf udp-port {
+          type ciena-osrp-types:comms-port-num;
+          config true;
+          description
+            "Local UDP port for PNNI routing.";
+        }
+
+        leaf zmq-port {
+          type ciena-osrp-types:port-num;
+          config false;
+          description
+            "Port to access via ZeroMQ message transfer protocol.";
+        }
+
+        leaf zmq-public-port {
+          type ciena-osrp-types:port-num;
+          config false;
+          description
+            "Public port to access via ZeroMQ message transfer protocol .";
+        }
+      }
+
+      container osrp-batching-config {
+        description
+          "Configuration for Batching at OSRP.";
+        leaf batching-level {
+          type ciena-osrp-types:batching-level;
+          description
+            "Specifies the level of batching enabled (i.e. None/Level-1/Level-2/All).";
+        }
+
+        leaf batching-duration {
+          type ciena-osrp-types:timeperiod-msec {
+            range "50..60000";
+          }
+          default "1000";
+          description
+            "Specifies the duration of batching in Level-1(ConnBatchManager). Min: 50ms. Max: 60000ms. Default: 1000ms.";
+        }
+
+        leaf batch-window-duration {
+          type ciena-osrp-types:timeperiod-msec;
+          default "250";
+          description
+            "Specifies the duration of slidingWindow in Level-1(ConnBatchManager). Min: 50ms. Default: 250ms.";
+        }
+
+        leaf jobs-per-batch-threshold {
+          type uint32;
+          default "0";
+          description
+            "Specifies the JobsPerBatchThreshold in Level-1(ConnBatchManager). 0 value means NoLimit. Default: 0.";
+        }
+      }
+
+      leaf synchronization-state {
+        type ciena-osrp-types:node-synchronization-state;
+        config false;
+        description
+          "State of OSRP node during SSM Phases.";
+      }
+    }
+  }
+
+  grouping ciena-osrp-osrp-node-mount-actions;
+
+  uses ciena-osrp-osrp-node-mount;
+}

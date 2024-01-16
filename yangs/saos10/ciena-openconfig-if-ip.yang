@@ -1,0 +1,449 @@
+module ciena-openconfig-if-ip {
+  namespace "http://ciena.com/ns/yang/ciena-openconfig-if-ip";
+  prefix cn-ip;
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+  import ietf-yang-types { prefix yang; }
+  import ietf-inet-types { prefix inet; revision-date 2013-07-15; }
+  import ciena-openconfig-interfaces { prefix cn-if; }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the Ciena proprietary YANG deviations
+     of the standard openconfig-if-ip YANG module.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision "2021-06-30" {
+   description
+      "Added IPv6 address configuration support for point-to-point interface.";
+  }
+
+  revision "2021-03-16" {
+    description
+      "Added IP point-to-point feature.
+       Added support for point-to-point interface.";
+  }
+
+  revision "2020-02-17" {
+    description
+      "Added IP unnumbered feature.
+       Added support for tunnel interface.";
+  }
+  
+  revision "2018-02-28" {
+    description
+      "Initial version";
+    reference
+     "";
+  }
+
+  // typedef statements
+
+  typedef ip-address-origin {
+    type enumeration {
+      enum OTHER {
+      description
+        "None of the following.";
+      }
+      enum STATIC {
+        description
+          "Indicates that the address has been statically
+          configured - for example, using NETCONF or a Command Line
+          Interface.";
+      }
+      enum DHCP {
+        description
+          "Indicates an address that has been assigned to this
+          system by a DHCP server.";
+      }
+      enum LINK_LAYER {
+        description
+          "Indicates an address created by IPv6 stateless
+          autoconfiguration that embeds a link-layer address in its
+          interface identifier.";
+      }
+      enum RANDOM {
+        description
+          "[adapted from RFC 7277]
+
+          Indicates an address chosen by the system at
+          random, e.g., an IPv4 address within 169.254/16, an
+          RFC 4941 temporary address, or an RFC 7217 semantically
+          opaque address.";
+        reference
+          "RFC 4941: Privacy Extensions for Stateless Address
+                     Autoconfiguration in IPv6
+          RFC 7217: A Method for Generating Semantically Opaque
+                    Interface Identifiers with IPv6 Stateless
+                    Address Autoconfiguration (SLAAC)";
+      }
+    }
+    description
+      "The origin of an address.";
+  }
+
+  typedef neighbor-origin {
+    type enumeration {
+      enum OTHER {
+        description
+          "None of the following.";
+      }
+      enum STATIC {
+        description
+          "Indicates that the mapping has been statically
+           configured - for example, using NETCONF or a Command Line
+           Interface.";
+       }
+       enum DYNAMIC {
+         description
+           "[adapted from RFC 7277]
+
+           Indicates that the mapping has been dynamically resolved
+           using, e.g., IPv4 ARP or the IPv6 Neighbor Discovery
+           protocol.";
+       }
+     }
+     description
+       "The origin of a neighbor entry.";
+  }
+  augment /oc-if:interfaces/oc-if:interface {
+     container ipv4 {
+       description
+         "Parameters for the IPv4 address family.";
+
+     container addresses {
+       when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='ip-tunnel' or .='point-to-point']";
+       description
+         "Enclosing container for address list";
+
+       list address {
+         key "ip";
+         max-elements 1;
+         description
+           "The list of configured IPv4 addresses on the interface.";
+
+         leaf ip {
+           type leafref {
+             path "../config/ip";
+           }
+           description "References the configured IP address";
+         }
+
+         container config {
+           description "Configuration data for each configured IPv4
+           address on the interface";
+
+           uses ipv4-address-config;
+
+         }
+         container state {
+
+           config false;
+             description "Operational state data for each IPv4 address
+             configured on the interface";
+
+           uses ipv4-address-config;
+           uses ipv4-address-state;
+         }
+       }
+     }
+
+     container unnumbered {
+        when "../../oc-if:config/cn-if:type = 'ip-unnumbered'";
+        description
+          "Parameters for the IPv4 unnumbered configuration";
+
+        container config {
+           description 
+              "Configuration data for each configured 
+              unnumbered interface";
+
+           uses ipv4-unnumbered;
+        }
+        container state {
+
+           config false;
+              description 
+                 "Operational state data for each IPv4 address
+                 configured on the interface";
+
+           uses ipv4-unnumbered;
+
+           leaf borrowed-ip {
+              type inet:ipv4-address-no-zone;
+              description
+                 "The borrowed IPv4 address on unnumbered interface.";
+           }
+
+           leaf prefix-length {
+              type uint8 {
+                 range "0..32";
+              }
+              description
+                 "The length of the subnet prefix.";
+           }
+        }        
+     }
+
+     container neighbors {
+       when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='ip-unnumbered' or .='point-to-point']";
+       description
+         "Enclosing container for neighbor list";
+
+       list neighbor {
+         key "ip";
+         max-elements 8;
+         description
+           "A list of mappings from IPv4 addresses to
+           link-layer addresses.
+
+           Entries in this list are used as static entries in the
+           ARP Cache.";
+         reference
+           "RFC 826: An Ethernet Address Resolution Protocol";
+
+         leaf ip {
+           type leafref  {
+             path "../config/ip";
+           }
+           description "References the configured IP address";
+         }
+
+         container config {
+           description "Configuration data for each configured IPv4
+           address on the interface";
+
+           uses ipv4-neighbor-config;
+
+         }
+       }
+     }
+   }
+   container ipv6 {
+     description
+       "Parameters for the IPv6 address family.";
+
+     container addresses {
+       when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='point-to-point']";
+       description
+         "Enclosing container for address list";
+
+       list address {
+         max-elements 1;
+         key "ip";
+         description
+           "The list of configured IPv6 addresses on the interface.";
+
+         leaf ip {
+           type leafref {
+             path "../config/ip";
+           }
+           description "References the configured IP address";
+         }
+
+         container config {
+           description
+             "Configuration data for each IPv6 address on
+             the interface";
+
+           uses ipv6-address-config;
+
+         }
+         container state {
+
+           config false;
+           description
+             "State data for each IPv6 address on the
+             interface";
+
+           uses ipv6-address-config;
+           uses ipv6-address-state;
+         }
+       }
+     }
+
+     container neighbors {
+       when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='point-to-point']";
+       description
+         "Enclosing container for list of IPv6 neighbors";
+
+       list neighbor {
+         key "ip";
+         max-elements 8;
+         description
+           "List of IPv6 neighbors";
+
+         leaf ip {
+           type leafref {
+             path "../config/ip";
+           }
+           description
+             "References the configured IP neighbor address";
+         }
+
+         container config {
+           description "Configuration data for each IPv6 address on
+           the interface";
+
+           uses ipv6-neighbor-config;
+
+         }
+       }
+     }
+   }
+ }
+
+  grouping ipv4-address-config {
+
+    description
+      "Per IPv4 adresss configuration data for the
+      interface.";
+
+    leaf ip {
+      type inet:ipv4-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The IPv4 address on the interface.";
+    }
+
+    leaf prefix-length {
+      type uint8 {
+        range "0..32";
+      }
+    mandatory true;
+    description
+      "[adapted from IETF IP model RFC 7277]
+
+      The length of the subnet prefix.";
+    }
+  }
+
+  grouping ipv4-unnumbered {
+
+     description
+        "Per IPv4 adresss configuration data for the
+        interface.";
+
+     leaf interface-ref {
+        type leafref{
+           path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+           "Reference to donor interface";
+     }
+  }
+
+  grouping ipv4-address-state {
+    description
+      "State variables for IPv4 addresses on the interface";
+
+    leaf origin {
+      type cn-ip:ip-address-origin;
+      description
+        "The origin of this address, e.g., statically configured,
+         assigned by DHCP, etc..";
+    }
+  }
+
+  grouping ipv4-neighbor-config {
+    description
+      "[adapted from IETF IP model RFC 7277]
+
+      Per IPv4 neighbor configuration data. Neighbor
+      entries are analagous to static ARP entries, i.e., they
+      create a correspondence between IP and link-layer addresses";
+
+    leaf ip {
+      type inet:ipv4-address-no-zone;
+      description
+        "The IPv4 address of the neighbor node.";
+    }
+
+    leaf link-layer-address {
+      type yang:phys-address;
+      mandatory true;
+      description
+       "The link-layer address of the neighbor node.";
+    }
+  }
+
+  grouping ipv6-address-config {
+    description "Per-address configuration data for IPv6 interfaces";
+
+    leaf ip {
+      type inet:ipv6-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The IPv6 address on the interface.";
+    }
+
+    leaf prefix-length {
+      type uint8 {
+        range "0..128";
+      }
+      mandatory true;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The length of the subnet prefix.";
+    }
+  }
+
+  grouping ipv6-address-state {
+    description
+      "Per-address operational state data for IPv6 interfaces";
+
+    leaf origin {
+      type cn-ip:ip-address-origin;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The origin of this address, e.g., static, dhcp, etc.";
+    }
+  }
+
+  grouping ipv6-neighbor-config {
+    description
+      "Per-neighbor configuration data for IPv6 interfaces";
+
+    leaf ip {
+      type inet:ipv6-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The IPv6 address of the neighbor node.";
+    }
+
+    leaf link-layer-address {
+      type yang:phys-address;
+      mandatory true;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The link-layer address of the neighbor node.";
+    }
+  }
+}

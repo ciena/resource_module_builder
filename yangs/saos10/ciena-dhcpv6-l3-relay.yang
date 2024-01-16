@@ -1,0 +1,478 @@
+module ciena-dhcpv6-l3-relay {
+  yang-version "1";
+  namespace "http://ciena.com/dhcpl3relay/yang/ciena-dhcpv6-l3-relay";
+  prefix "ciena-dhcpv6-l3-relay";
+  
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-types {
+    prefix ciena-type;
+  }
+    
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-vrf {
+    prefix "vrf";
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the Ciena proprietary YANG deviations 
+     of the openconfig-interfaces YANG module.
+
+     Copyright (c) 2022 Ciena Corporation.  All rights reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2022-05-19" {
+    description
+      "DHCPv6 L3 relay agent Initial version.
+       Restricting DHCPv6 servers max count on a relay instance to 8.";
+    reference
+      "RFC 8415";
+  }
+  
+  //dhcpv6-l3-relay types
+  identity interface-id-type {
+    description
+      "Type for interface-ID-type.";
+  }
+
+  identity interface-name {
+    base "interface-id-type";
+    description
+      "Set interface-ID-type to use interface-name.";
+  }
+
+  identity interface-descr-string {
+    base "interface-id-type";
+    description
+      "Set interface-ID-type to use an user configured
+      interface description string.";
+  }
+
+  identity dhcpv6-remote-id-type {
+    description
+      "Type for DHCPv6 remote ID option 37.";
+  }
+  
+  identity dhcpv6-remote-id-vlan-port-duid {
+    base "dhcpv6-remote-id-type";
+    description
+      "Set DHCPv6 remote ID which includes VLAN ID(2 byte), port number(1 byte)
+      and system’s DHCP Unique Identifier(DUID-EN) which contains
+      chassis serial no.";
+  }
+
+  identity dhcpv6-remote-id-string {
+    base "dhcpv6-remote-id-type";
+    description
+      "Set DHCPv6 remote ID to be used as user configured remote ID string.";
+  }
+
+  //containers
+  grouping dhcpv6-remote-id {
+    leaf dhcpv6-remote-id-type {
+      type identityref {
+        base dhcpv6-remote-id-type;
+      }
+      description
+        "Use to specify remote ID option as dhcpv6-remote-id-vlan-port-duid
+        or dhcpv6-remote-ID-string. If not configured, then
+        dhcpv6-remote-ID-vlan-port-duid will be used as default remote ID option";
+    }
+    leaf remote-id-string {
+      type string {
+        length "0..64";
+      }
+      description
+        "The string value for remote ID configured by user.";
+    }
+  }
+
+  grouping interface-id {
+    leaf interface-id-type {
+      type identityref {
+        base interface-id-type;
+      }
+      description
+        "Use to specify interface ID as interface-name or interface-descr-string.
+        If not configured, then interface-name will be used as default interface ID option";
+    }
+  }
+
+  grouping relay-agent-ipv6-stats {
+      description
+        "DHCPv6 L3 relay agent message statistics";
+
+      leaf dhcpv6-solicit-received {
+        type uint32;
+        description
+          "Number of DHCPv6 solicit messages received from clients
+           by the relay agent";
+      }
+
+      leaf dhcpv6-decline-received {
+        type uint32;
+        description
+          "Number of DHCPv6 decline messages received from
+           clients by the relay agent";
+      }
+
+      leaf dhcpv6-request-received {
+        type uint32;
+        description
+          "Number of DHCPv6 request messages received from clients
+        by the relay agent";
+      }
+
+      leaf dhcpv6-release-received {
+        type uint32;
+        description
+          "Number of DHCPv6 release messages received from clients
+           by the relay agent";
+      }
+
+      leaf dhcpv6-confirm-received {
+        type uint32;
+        description
+          "Number of DHCPv6 confirm messages received from clients
+           by the relay agent";
+      }
+      
+      leaf dhcpv6-renew-received {
+        type uint32;
+        description
+          "Number of DHCPv6 renew messages received from clients
+           by the relay agent";
+      }
+
+      leaf dhcpv6-rebind-received {
+        type uint32;
+        description
+          "Number of DHCPv6 rebind messages received from clients
+           by the relay agent";
+      }
+
+      leaf dhcpv6-info-request-received {
+        type uint32;
+        description
+          "Number of DHCPv6 information requests messages received from
+        clients by the relay agent";
+      }
+      
+      leaf dhcpv6-relay-forw-received {
+         type uint32;
+         description
+           "Number of Relay-forward messages received by relay agent
+            client side interface from other relay agent.";
+       }
+
+      leaf dhcpv6-relay-forw-sent {
+        type uint32;
+        description
+          "Number of DHCPv6 relay-forward messages sent to servers
+           by the relay agent";
+      }
+
+      leaf dhcpv6-relay-reply-received {
+        type uint32;
+        description
+          "Number of DHCPv6 relay reply messages received from servers
+           by the relay agent";
+      }
+
+      leaf dhcpv6-advertise-sent {
+        type uint32;
+        description
+          "Number of DHCPv6 advertise messages sent to clients by
+           the relay agent";
+      }
+
+      leaf dhcpv6-reply-sent {
+        type uint32;
+        description
+          "Number of DHCPv6 reply messages sent to clients by
+           the relay agent";
+      }
+
+      leaf dhcpv6-reconfigure-sent {
+        type uint32;
+        description
+          "Number of DHCPv6 reconfigure messages sent to clients by
+           the relay agent";
+      }
+      leaf dhcpv6-relay-reply-sent {
+        type uint32;
+        description
+          "Number of DHCPv6 relay reply messages sent to client side
+           interface for another relay agent";
+      }
+    }  // grouping relay-agent-ipv6-stats
+
+  grouping relay-agent-ipv6-error-stats {
+    description
+      "Error message statistics for DHCPv6 relay";
+
+    leaf total-dropped-count {
+      type uint32;
+      description
+        "Total number of DHCPv6 packets dropped by the relay agent";
+    }
+
+    leaf invalid-client-opcode-drop {
+      type uint32;
+      description
+        "Number of DHCPv6 packets dropped at client interfaces 
+         due to an invalid message type";
+    }
+
+    leaf invalid-client-options-drop {
+      type uint32;
+      description
+        "Number of DHCPv6 packets dropped at client interfaces due to invalid options
+         like Hop count limit exceeded, packet validation failure etc";
+    }
+    
+    leaf invalid-server-opcode-drop {
+      type uint32;
+      description
+        "Number of DHCPv6 packets dropped at server interfaces 
+         due to an invalid message type";
+    }
+
+    leaf invalid-server-options-drop {
+      type uint32;
+      description
+        "Number of DHCPv6 packets dropped at server interfaces due to invalid options";
+    }
+  }
+
+  grouping dhcpv6-relay-ip-interface {
+    list ip-interface {
+      key "interface-name";
+        description
+          "A list of the DHCPv6 L3 relay IP interfaces.";
+        leaf interface-name {
+          type oc-if:base-interface-ref;
+          description
+            "The name of the IP interface.";
+        }
+        leaf ip-interface-enabled {
+          type boolean;
+             default false;
+          description
+            "Use to enable/disable IP interface.";
+        }
+        leaf server-facing-interface {
+          type boolean;
+             default false;
+          description
+            "Use to identify DHCPv6 server facing IP interface in IP network.
+             This attribute is not applicable for 6VPE/6PE network";
+        }
+        leaf interface-id-string {
+          type string {
+            length "0..64";
+          }
+          description
+            "User configured string value for interface description.";
+        }
+
+    }//ip-interfaces
+  }
+
+  grouping agent-options-ipv6-common-config {
+    description
+      "Configuration data for DHCPv6 options";
+
+    leaf enable-interface-id {
+      type boolean;
+         default false;
+      description
+        "Enables DHCPv6 OPTION_INTERFACE_ID (18) to identify the
+         interface on which the client message was received.";
+      reference
+        "IETF RFC 8415 - Dynamic Host Configuration Protocol for
+        IPv6 (DHCPv6)";
+    }
+    uses interface-id;
+
+    leaf enable-client-link-layer-address {
+      type boolean;
+         default false;
+      description
+        "Enables DHCPv6 OPTION_CLIENT_LINKLAYER_ADDR (79) to insert
+         the DHCPv6 client link-layer address in the packets that relay
+         sends to a DHCPv6 server.";
+      reference
+        "IETF RFC 6939 - Dynamic Host Configuration Protocol for
+        IPv6 (DHCPv6)";
+    }
+
+    leaf enable-remote-id {
+      type boolean;
+         default false;
+      description
+        "Sets DHCPv6 OPTION_REMOTE_ID (37) option to relayed relay forward
+         packets to DHCPv6 server.This vendor specific option  used to 
+         encode as vlan-id, port number followed by DUID or user configured remote id string.";
+      reference
+        "IETF RFC 4649 - Dynamic Host Configuration Protocol for
+        IPv6 (DHCPv6) Relay Agent Remote-ID Option";
+    }
+
+    uses dhcpv6-remote-id;
+
+    leaf enable-vss-option {
+      type boolean;
+         default false;
+      description
+         "Enables DHCPv6 VSS option OPTION_VSS (68) in relay forward and 
+         relay reply messages going between the DHCPv6 relay and server.
+         This option is used by the relay agent to tell the VPN for every 
+         DHCPv6 request it passes on to the DHCPv6 server.
+         VRF name is used as the VPN identifier in VSS Information.";
+      reference
+        "IETF RFC 6607 - Virtual Subnet Selection Options for DHCPv4 and
+         DHCPv6";
+    }
+
+  }
+
+  // typedef statements
+
+  container dhcpv6-l3-relay-agent {
+    description
+      "Top-level grouping for each DHCPv6 L3 relay.";
+
+    list instance {
+      key "relay-name";
+      max-elements 10;
+      description
+        "A list of DHCPv6 L3 relay instances.";
+      leaf relay-name {
+        type string {
+          length "0..128";
+        }
+        description
+          "The name of an individual DHCPv6 L3 relay instance.";
+      }
+      leaf admin-enabled {
+        type boolean;
+           default false;
+        description
+          "Use to enable/disable DHCPv6 L3 relay.";
+      }
+      leaf vrf-name {
+        type leafref {
+          path "/vrf:vrf/vrf:vrfName";
+        }
+        description
+          "Set a particular Virtual Routing and Forwarding instance
+           for DHCPv6 L3 relay";
+      }
+      leaf preferred-source-ipv6-interface {
+         type oc-if:base-interface-ref;
+         description
+            "When sending DHCPv6 relay-forward packets towards DHCPv6 server, the first
+             IPv6 address on this inteface will be used as their source address.
+             Interface must belong to the same VRF as relay";
+      }
+      leaf-list dhcpv6-server-addresses {
+        type inet:ipv6-address;
+        max-elements 8;
+        description
+          "A list of DHCPv6 servers. The list of addresses should include
+           the IPv6 unicast addresses.
+           In case DHCPv6-server-addresses has not been explicitly configured,
+           it must use the All_DHCP_Servers multicast address as the default.";
+      }
+      leaf dscp {
+        type inet:dscp;
+           default 24;
+        description
+           "IP DSCP value to use for the relay generated packets.";
+      }
+
+      uses agent-options-ipv6-common-config;
+      uses dhcpv6-relay-ip-interface;
+    }//dhcpv6-relay-instance
+  }//dhcpv6-relay-agent
+
+  container dhcpv6-l3-relay-agent-state {
+    config false;
+    description
+      "Top-level grouping for DHCPv6 L3 relay state.";
+
+    list instance {
+      key "relay-name";
+      description
+        "A list of DHCPv6 L3 relay instances.";
+      leaf relay-name {
+        type string {
+          length "0..128";
+        }
+        description
+          "The name of an individual DHCPv6 L3 relay instance.";
+      }
+      leaf oper-status {
+        type ciena-type:oper-state;
+        description
+          "The operational state of the DHCPv6 L3 relay instance.";
+      }
+      leaf status-message {
+        type string;
+        description
+          "The current status of the DHCPv6 L3 relay instance.";
+      }
+
+      uses relay-agent-ipv6-stats;
+      uses relay-agent-ipv6-error-stats;
+    }
+  }//dhcpv6-l3-relay-agent-state
+
+  rpc dhcpv6-relay-agent-stats-clear {
+    description
+      "Clear DHCPv6 L3 relay statistics.";
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of DHCPv6 relay agent statistics clear operation.";
+      }
+    }
+  }
+}

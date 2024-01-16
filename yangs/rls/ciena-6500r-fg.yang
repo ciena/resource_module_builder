@@ -1,0 +1,142 @@
+module ciena-6500r-fg {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-fg";
+  prefix fg-base-defs;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This modules describes Ciena's Photonic Topology fg-base defs for the 6500r platform";
+
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "6500R Release 1.1";
+  }
+  revision 2018-09-05 {
+    description
+      "6500R Release 1.0";
+  }
+
+  identity TYPE {
+    description
+      "This identity BASE identifies the type of a logical/functional group";
+  }
+
+  identity ROLE {
+    description
+      "This identity BASE identifies a ROLE within a FG";
+  }
+
+  identity ATTR {
+    description
+      "This identity BASE identifies a management attribute";
+  }
+
+  identity ROLE-ATTR {
+    base ATTR;
+    description
+      "This identifies a ROLE management attributes";
+  }
+
+  grouping role {
+    description
+      "A logical/functional role";
+    leaf logic-role {
+      type identityref {
+        base ROLE;
+      }
+    }
+
+    list attrs {
+      key "role-attr";
+      description
+        "Attributes related to this ROLE. It can be a state, configurable field, etc";
+      leaf role-attr {
+        type identityref {
+          base ATTR;
+        }
+      }
+
+      leaf value {
+        type string;
+      }
+    }
+
+    list objects {
+      key "object-id";
+      description
+        "List of objects that implement/fulfill the role";
+      leaf object-id {
+        type instance-identifier;
+        description
+          "Identifies objects that have the same logical/functional role";
+      }
+
+      list attrs {
+        key "obj-attr";
+        description
+          "Attributes related to this OBJECT. It can be a state, configurable field, etc";
+        leaf obj-attr {
+          type identityref {
+            base ATTR;
+          }
+        }
+
+        leaf value {
+          type string;
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-fg-mount {
+    list functional-group {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "Name to be used to access the functional group";
+      }
+
+      leaf type {
+        type identityref {
+          base TYPE;
+        }
+      }
+
+      list attrs {
+        key "fg-attr";
+        description
+          "Attributes related to this FG. It can be a state, configurable field, etc";
+        leaf fg-attr {
+          type identityref {
+            base ATTR;
+          }
+        }
+
+        leaf value {
+          type string;
+        }
+      }
+
+      list roles {
+        key "logic-role";
+        min-elements 1;
+        uses fg-base-defs:role;
+      }
+    }
+  }
+
+  grouping ciena-6500r-fg-mount-actions;
+
+  uses ciena-6500r-fg-mount;
+}

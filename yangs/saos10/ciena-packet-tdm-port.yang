@@ -1,0 +1,1529 @@
+module ciena-packet-tdm-port {
+
+  namespace "http://www.ciena.com/ns/yang/ciena-packet-tdm-port";
+  prefix tdm-port;
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ciena-packet-xcvr {
+    prefix xcvr;
+  }
+
+  import ietf-yang-types {
+    prefix yt;
+  }
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+    Hanover, Maryland 21076
+    U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data definition for the
+    management of TDM interfaces.
+
+    Copyright (c) 2019 Ciena Corporation.  All rights
+    reserved.
+
+    All information contained herein is, and remains
+    the property of Ciena Corporation. Dissemination of this
+    information or reproduction of this material is strictly
+    forbidden unless prior written permission is obtained from
+    Ciena Corporation.";
+
+  revision "2021-01-28" {
+    description
+      "Added vlan-mismatch and section-trace-misconfiguration to alarm-bit-map";
+  }
+
+  revision "2019-10-17" {
+    description
+      "Initial version.";
+    reference
+      "Ciena Functional Specification.";
+  }
+
+
+  /*
+   * typedefs 
+   */
+
+  typedef tdm-port-ref {
+    type leafref {
+      path "/tdm-port:tdm-ports/tdm-port:tdm-port/tdm-port:name";
+    }
+    description
+      "Reference to a specific TDM port instance.";
+  }
+
+  typedef tdm-port-name {
+    type string {
+      length "1..255";
+    }
+    description
+      "A text string of up to 255 characters.";
+  }
+
+  typedef tdm-port-mode {
+    type enumeration {
+      enum ds1-e1 {
+        description 
+          "DS1-E1";
+      }
+      enum ds3-e3 {
+        description
+          "DS3-E3";
+      }
+      enum oc3-stm1 {
+        description
+          "OC3-STM1";
+      }
+      enum oc12-stm4 {
+        description
+          "OC12-STM4";
+      }
+      enum oc48-stm16 {
+        description
+          "OC48-STM16";
+      }
+    }
+    description
+      "Mode of a TDM port.";
+  }
+
+  typedef tdm-port-type {
+    type enumeration {
+      enum fixed {
+        description 
+          "Fixed TDM port.";
+      }
+      enum smart-sfp {
+        description
+          "Smart TDM SFP.";
+      }
+      enum native {
+        description
+          "OC48 FRU port in Native TDM mode.";
+      }
+    }
+    description
+      "Type of a TDM port.";
+  }
+
+  typedef tdm-port-oper-category {
+    type enumeration {
+      enum e1 {
+        description
+          "Fixed port on TDM FRU operating as E1.";
+      }
+      enum ds1 {
+        description
+          "Fixed port on TDM FRU operating as DS1.";
+      }
+      enum sfp-e1 {
+        description
+          "Smart SFP operating as E1.";
+      }
+      enum sfp-ds1 {
+        description
+          "Smart SFP operating as DS1.";
+      }
+      enum oc3 {
+        description
+          "Smart SFP operating as OC3.";
+      }
+      enum oc12 {
+        description
+          "Smart SFP operating as OC12.";
+      }
+      enum ds3 {
+        description
+          "Smart SFP operating as DS3.";
+      }
+      enum oc48-fru-ds1 {
+        description
+          "OC48 FRU fixed DS1/E1 port operating as DS1.";
+      }
+      enum oc48-fru-e1 {
+        description
+          "OC48 FRU fixed DS1/E1 port operating as E1.";
+      }
+      enum oc48-fru-oc3 {
+        description
+          "OC48 FRU native port operating as OC3.";
+      }
+      enum oc48-fru-oc12 {
+        description
+          "OC48 FRU native port operating as OC12.";
+      }
+      enum oc48-fru-oc48 {
+        description
+          "OC48 FRU native port operating as OC48.";
+      }
+      enum oc48-fru-ds3 {
+        description
+          "OC48 FRU fixed port operating as DS3.";
+      }
+      enum sfp-oc48 {
+        description
+          "Smart SFP operating as OC48.";
+      }
+      enum stm1 {
+        description
+          "Smart SFP operating as STM1.";
+      }
+      enum stm4 {
+        description
+          "Smart SFP operating as STM4.";
+      }
+      enum sfp-stm16 {
+        description
+          "Smart SFP operating as STM16.";
+      }
+      enum oc48-fru-e3 {
+        description
+          "OC48 FRU fixed port operating as E3.";
+      }
+      enum oc48-fru-stm1 {
+        description
+          "OC48 FRU native port operating as STM1.";
+      }
+      enum oc48-fru-stm4 {
+        description
+          "OC48 FRU native port operating as STM4.";
+      }
+      enum oc48-fru-stm16 {
+        description
+          "OC48 FRU native port operating as STM16.";
+      }
+    }
+    description
+      "The category of a TDM port. TDM ports are categorized by a combination of physical HW type, port-mode, and the global mode(ANSI/ETSI).";
+  }
+
+  typedef channel-id {
+    type uint32 {
+      range 0..1343;
+    }
+    description
+      "Channel ID.";
+  }
+
+  typedef alarm-bit-map {
+    type bits {
+      bit los {
+        position 0;
+        description 
+          "LOS";
+      }
+      bit ais {
+        position 1;
+        description 
+          "AIS";
+      }
+      bit lof {
+        position 2;
+        description 
+          "LOF";
+      }
+      bit lom {
+        position 3;
+        description 
+          "LOM";
+      }
+      bit rai {
+        position 4;
+        description 
+          "RAI";
+      }
+      bit loc {
+        position 5;
+        description 
+          "LOC";
+      }
+      bit llpbk {
+        position 6;
+        description 
+          "TLPBK";
+      }
+      bit rlpbk {
+        position 7;
+        description 
+          "FLPBK";
+      }
+      bit tim {
+        position 8;
+        description 
+          "Trace Identifier Mismatch";
+      }
+      bit xcvr-df {
+        position 9;
+        description 
+          "Device failure";
+      }
+      bit xcvr-ht {
+        position 10;
+        description 
+          "High Temperature";
+      }
+      bit xcvr-ndf {
+        position 11;
+        description 
+          "No Device Found";
+      }
+      bit xcvr-dnr {
+        position 12;
+        description 
+          "Device Not Reachable";
+      }
+      bit xcvr-dnready {
+        position 13;
+        description 
+          "Device Not Ready";
+      }
+      bit xcvr-mdf {
+        position 14;
+        description 
+          "Multiple Devices Found";
+      }
+      bit xcvr-wdp {
+        position 15;
+        description 
+          "Wrong Device Present";
+      }
+      bit xcvr-unsupport {
+        position 16;
+        description 
+          "Unsupported Device Present";
+      }
+      bit xcvr-dinit {
+        position 17;
+        description 
+          "Device initializing";
+      }
+      bit ecid-mismatch {
+        position 18;
+        description 
+          "ECID mismatch";
+      }
+      bit wrong-dmac {
+        position 19;
+        description 
+          "Wrong DMAC";
+      }
+      bit prbs {
+        position 20;
+        description 
+          "PRBS Not Detected";
+      }
+      bit xcvr-fwupgrade {
+        position 21;
+        description 
+          "Firmware upgrade required";
+      }
+      bit wrong-clk-mode {
+        position 22;
+        description 
+          "Wrong clock mode";
+      }
+      bit sd {
+        position 23;
+        description 
+          "Signal Degrade";
+      }
+      bit sf {
+        position 24;
+        description 
+          "Signal Fail";
+      }
+      bit idle {
+        position 25;
+        description 
+          "Idle";
+      }
+      bit device-failure {
+        position 26;
+        description 
+          "Device Failure";
+      }
+      bit prbs-misconfiguration {
+        position 27;
+        description 
+          "PRBS Misconfiguration";
+      }
+      bit loopback-misconfiguration {
+        position 28;
+        description 
+          "Loopback Misconfiguration";
+      }
+      bit signal-fail-degrade-misconfiguration {
+        position 29;
+        description 
+          "Signal Fail/Degrade Misconfiguration";
+      }
+      bit vlan-mismatch {
+        position 30;
+        description
+          "VLAN Mismatch";
+      }
+      bit section-trace-misconfiguration {
+        position 31;
+        description
+          "Section trace misconfiguration";
+      }
+    }
+    description
+      "Bit map of alarms currently active on this TDM port.";
+  }
+
+  typedef tdm-clock-mode {
+    type enumeration {
+      enum internal {
+        description
+          "internal";
+      }
+      enum recovered {
+        description
+          "recovered";
+      }
+      enum adaptive {
+        description
+          "adaptive";
+      }
+      enum dcr {
+        description
+          "dcr";
+      }
+      enum epar {
+        description
+          "epar";
+      }
+    }
+    description
+      "TDM clock mode.";
+  }
+
+  typedef tdm-port-status {
+    type enumeration {
+      enum unknown {
+        description
+          "Unknown";
+      }
+      enum down {
+        description
+          "Down";
+      }
+      enum up {
+        description
+          "Up";
+      }
+      enum errors {
+        description
+          "Up/errors";
+      }
+      enum maint {
+        description
+          "Maintenance";
+      }
+    }
+    description
+      "Operational state of TDM port.";
+  }
+
+  /*
+   * Config data
+   */
+
+  container tdm-ports {
+    description
+      "TDM port configuration data.";
+
+    list tdm-port {
+      key "name";
+      description   
+        "TDM port name.";
+
+      leaf name {
+        type tdm-port-name;
+        description 
+          "A Name used to identify the TDM port.";
+      }
+
+      leaf admin-state {
+        when "../type[.='native' or .='fixed']";
+        type ciena:admin-state;
+        default disabled;
+        description
+          "Used to Enable/Disable the TDM port.";
+      }
+
+      leaf type {
+        type tdm-port-type;
+        mandatory true;
+        description
+          "Specifies the type of TDM port.";
+      }
+
+      leaf port-mode {
+        type tdm-port-mode;
+        mandatory true;
+        description
+          "Mode of the TDM port.";
+      }
+
+      leaf parent-id {
+        when "../type[.='smart-sfp' or .='native']";
+        type leafref {
+          path "/xcvr:xcvrs/xcvr:xcvr/xcvr:xcvr-id";
+        }
+        mandatory true;
+        description 
+          "Reference to the name of the transceiver associated with this Smart TDM SFP.";
+      }
+
+      leaf ettp-id {
+        type oc-if:base-interface-ref;
+        mandatory true;
+        description
+          "Reference to the ETTP associated with this TDM port.";
+      }
+
+      leaf src-address {
+        when "../type='smart-sfp'";
+        type enumeration {
+          enum port {
+            description
+              "Use the port MAC as the source address.";
+          }
+          enum sfp-factory {
+            description
+              "Use the SFP factory-MAC as the source address.";
+          }
+        }
+        default  sfp-factory;
+        description
+          "Source of MAC address to be used.";
+      }
+
+      leaf clock-mode {
+        type tdm-clock-mode;
+        description 
+          "Clock mode";
+      }
+
+      leaf loopback-mode {
+        type enumeration {
+          enum none {
+            description
+              "Loopback is disabled.";
+          }
+          enum facility {
+            description
+              "facility (towards the TDM port).";
+          }
+          enum terminal {
+            description
+              "terminal (towards the packet Network).";
+          }
+        }
+        default none;
+        description
+          "Loopback mode";
+      }
+
+      leaf loopback-type {
+        type enumeration {
+          enum port {
+            description
+              "port";
+          }
+          enum ds0-e0 {
+            description
+              "ds0-e0";
+          }
+          enum ds1-e1 {
+            description
+              "ds1-e1";
+          }
+          enum ds3-e3 {
+            description
+              "ds3-e3";
+          }
+          enum sts1-vc3 {
+            description
+              "sts1-vc3";
+          }
+          enum sts3c-vc4c { 
+            description
+              "sts3c-vc4c";
+          }
+          enum sts12c-vc4-4c { 
+            description
+              "sts12c-vc4-4c";
+          }
+          enum sts48c-vc4-16c { 
+            description
+              "sts48c-vc4-16c";
+          }
+        }
+        description 
+          "Channel type for loopback can be set independently, as we can perform loopback even when no pseudowires exist.";
+      }
+
+      leaf loopback-channel {
+        type channel-id;
+         description
+           "Channel to be looped back. The channel is not used when loopback-type is set to port loopback.";
+      }
+
+      leaf prbs-insert {
+        type enumeration {
+          enum none {
+            description
+              "Disable PRBS insertion.";
+          }
+          enum line {
+            description
+              "Insert at line side.";
+          }
+          enum network {
+            description
+              "Insert at network side.";
+          }
+        }
+        default none;
+        description 
+          "Controls the insertion of PRBS on an individual channel. 
+         PRBS can only be inserted on an individual channel on the TDM port at any point in time.";
+      }
+
+      leaf prbs-insert-channel {
+        type channel-id;
+        description
+          "Channel on which to insert the PRBS signal.";
+      }
+
+      leaf prbs-monitor {
+        type enumeration {
+          enum none {
+            description
+              "Disable PRBS monitoring.";
+          }
+          enum line {
+            description
+              "Monitor for PRBS signal from line side.";
+          }
+          enum network {
+            description
+              "Monitor for PRBS signal from network side.";
+          }
+        }
+        default none;
+        description 
+          "Controls the monitoring of PRBS on an individual channel. 
+          PRBS can only be monitored on an individual channel on the TDM port at any point in time.";
+      }
+
+      leaf prbs-monitor-channel {
+        type channel-id;
+        description
+          "PRBS monitor channel";
+      }
+
+      leaf e1-framing {
+        when "../port-mode='ds1-e1' and ../type='fixed'";
+        type enumeration {
+          enum unframed {
+            description
+              "unframed";
+          }
+          enum basic {
+            description
+              "basic";
+          }
+          enum crc-multiframe {
+            description
+              "CRC multiframe";
+          }
+        }
+        default unframed;
+        description 
+          "E1 framing mode.";
+      }
+      
+      leaf e1-line-code {
+        when "../port-mode='ds1-e1' and ../type='fixed'";
+        type enumeration {
+          enum ami {
+            description
+              "ami";
+          }
+          enum hdb3 {
+            description
+              "hdb3";
+          }
+        }
+        default hdb3;
+        description
+          "E1 line encoding.";
+      }
+
+      leaf ssm-location {
+         when "../port-mode='ds1-e1' and ../type='fixed'";
+         type enumeration {
+           enum none {
+             description
+               "SSM is disabled.";
+           }
+           enum sa4 {
+             description
+               "sa4";
+           }
+           enum sa5 {
+             description
+               "sa5";
+           }
+           enum sa6 {
+             description
+               "sa6";
+           }
+           enum sa7 {
+             description
+               "sa7";
+           }
+           enum sa8 {
+             description
+               "sa8";
+           }
+        }
+        default sa8;
+        description
+          "Synchronization Status Message (SSM), when enabled will contribute to the clock selection algorithm.
+          A value of none, indicates SSM is disabled. Other values are used to specify which spare bit is used.";
+      }
+
+      leaf ds1-framing {
+        when "../port-mode='ds1-e1' and ../type='fixed'";
+        type enumeration {
+          enum unframed {
+            description
+              "unframed";
+          }
+          enum super-frame {
+            description 
+              "super-frame";
+          }
+          enum extended-super-frame {
+            description 
+              "extended super-frame";
+          }
+        }
+        default unframed;
+        description 
+          "DS1 framing mode.";
+      }
+
+      leaf ds1-line-code {
+        when "../port-mode='ds1-e1' and ../type='fixed'";
+        type enumeration {
+          enum ami {
+            description
+              "ami";
+          }
+          enum b8zs {
+            description
+              "b8zs";
+          }
+        }
+        default b8zs;
+        description
+          "DS1 line encoding.";
+      }
+
+      leaf line-build-out {
+         when "../port-mode='ds1-e1'";
+         type enumeration {
+           enum 133 {
+             description
+               "below 133";
+           }
+           enum 266 {
+             description
+               "133-266";
+           }
+           enum 399 {
+             description
+               "266-399";
+           }
+           enum 533 {
+             description
+               "399-533";
+           }
+           enum 655 {
+             description
+               "533-655";
+           }
+         }
+         default 133;
+         description
+           "Line build out";
+      }
+
+      leaf loopcode-admin-state {
+        when "../port-mode='ds1-e1' and ../type='fixed'";
+        type ciena:admin-state;
+        default disabled;
+        description
+          "Enable/Disable transmission of loopcode codeword.";
+      }
+
+      leaf loopcode-codeword {
+        when "../port-mode='ds1-e1' and ../type='fixed' and ../ds1-framing[.='super-frame' or .='extended-super-frame']";
+        type enumeration {
+          enum idle {
+            description
+              "idle";
+          }
+          enum universal-loopback-deactivate {
+            description
+              "universal loopback deactivate";
+          }
+          enum network-side-loopback-activate {
+            description
+              "network side loopback activate";
+          }
+          enum network-side-loopback-deactivate {
+            description
+              "network side loopback deactivate";
+          }
+          enum line-loopback-activate {
+            description
+              "line loopback activate";
+          }
+          enum line-loopback-deactivate {
+            description
+              "line loopback deactivate";
+          }
+          enum niu-loopback-activate {
+            description
+              "niu loopback activate";
+          }
+          enum niu-loopback-deactivate {
+            description
+              "niu loopback deactivate";
+          }
+          enum loopback-retention {
+            description
+              "loopback retention";
+          }
+        } 
+        default idle;
+        description
+          "Loopcode codeword transmitted in the A and B bits of the Superframe or Extended Superframe.";
+      } 
+
+      leaf ds3-framing {
+        when "../port-mode='ds3-e3' and ../type='fixed'";
+        type enumeration {
+          enum unframed {
+            description
+              "unframed";
+          }
+          enum cbit {
+            description
+              "c-bit parity";
+          }
+          enum m13 {
+            description
+              "M13";
+          }
+        }
+        default unframed;
+        description 
+          "DS3 framing mode";
+      }
+
+      leaf e3-framing {
+        when "../port-mode='ds3-e3' and ../type='fixed'";
+        type enumeration {
+          enum unframed {
+            description
+              "unframed";
+          }
+          enum g751 {
+            description
+              "G.751";
+          }
+        }
+        default unframed;
+        description 
+          "E3 framing mode";
+      }
+
+      leaf cable-length {
+        when "../port-mode='ds3-e3'";
+        type enumeration {
+          enum normal {
+            description
+              "0..225 feet";
+          }
+          enum extended {
+            description
+              "225 .. 400 feet";
+          }
+        }
+        default normal;
+        description
+          "Cable length";
+      }
+
+      leaf section-trace {
+        when "../port-mode[.='oc3-stm1' or .='oc12-stm4' or .='oc48-stm16']";
+        type string {
+          length "1..15";
+        }
+        description 
+          "The SONET overhead J0 byte can be used to communicate this Device ID information.
+         This fixed-length string transmits from the SDH/SONET equipment that originates the signal.
+         This repeating ID information is used by the receiving equipment that terminates the 
+         SDH/SONET signal, to verify that it is receiving from the intended transmitter.
+         If no section-trace value is set, the J0 byte will transmit the default pattern of 01[H].";
+      }
+
+      leaf signal-degrade {
+        when "../port-mode[.='oc3-stm1' or .='oc12-stm4' or .='oc48-stm16']";
+        type uint32 {
+          range "5..9";
+        }
+        description
+          "Bit Error Rate (BER) threshold at which a Signal Degrade fault is raised against the TDM port.
+         For example, if the value is set to 6 and the BER exceeds 10 to the -6 for a specified interval,
+         an SD fault will be raised against this TDM port.
+         If this leaf is not set, no SD faults will be raised on this port.";
+      }
+
+      leaf signal-fail {
+        when "../port-mode[.='oc3-stm1' or .='oc12-stm4' or .='oc48-stm16']";
+        type uint32 {
+          range "3..5";
+        }
+        description
+          "Bit Error Rate (BER) threshold at which a Signal Fail fault is raised against the TDM port.
+         For example, if the value is set to 3 and the BER exceeds 10 to the -3 for a specified interval,
+         an SF fault will be raised against this TDM port.
+         If this leaf is not set, no SF faults will be raised on this port.";
+      }
+    }
+  }
+
+  /*
+   * Operational data
+   */
+
+  container tdm-ports-state {
+
+    config false;
+
+    list tdm-port {
+      key "name";
+      description   
+        "TDM port name.";
+
+      leaf name {
+        type tdm-port-name;
+        description 
+          "A Name used to identify the TDM port.";
+      }
+
+      leaf oper-state {
+        type tdm-port-status;
+        description
+          "Operational state of the TDM port.";
+      }
+
+      leaf oper-category {
+        type tdm-port-oper-category;
+        description
+          "TDM port category - location of port (FRU/front-panel) and its current mode.";
+      }
+
+      leaf sfp-mac {
+        when "../oper-category[.='sfp-ds1' or .='sfp-e1' or .='oc3' or .='oc12' or .='ds3']";
+        type yt:mac-address;
+        description
+          "MAC address of the smart SFP.";
+      }
+
+      leaf firmware-oper-state {
+        when "../oper-category[.='sfp-ds1' or .='sfp-e1' or .='oc3' or .='oc12' or .='ds3']";
+        type enumeration {
+          enum ok {
+            description
+              "Upgrade not required";
+          }
+          enum incompatible {
+            description
+              "Incompatible firmware";
+          }
+          enum upgrade-required {
+            description
+              "Firmware upgrade required";
+          }
+          enum upgrade-complete {
+            description
+              "Firmware upgrade complete";
+          }
+          enum upgrade-error {
+            description
+              "Firmware upgrade error";
+          }
+          enum upgrade-aborted {
+            description
+              "Firmware upgrade aborted";
+          }
+          enum newer-version-available {
+            description
+              "Newer firmware version available";
+          }
+          enum not-manageable {
+            description
+              "Device not manageable";
+          }
+        }
+        description
+          "Operational state of the TDM Port.";
+      }
+
+      leaf packet-processor-oper-state {
+        when "../oper-category[.='sfp-ds1' or .='sfp-e1' or .='oc3' or .='oc12' or .='ds3']";
+        type enumeration {
+          enum ok {
+            description
+              "No upgrade required";
+          }
+          enum newer-version-available {
+            description
+              "Newer version of packet processor sw is available";
+          }
+          enum upgrade-in-progress {
+            description
+              "Packet processor sw upgrade in progress";
+          }
+          enum upgrade-complete {
+            description
+              "Packet processor sw upgrade complete";
+          }
+          enum upgrade-error {
+            description
+              "Packet processor sw upgrade error";
+          }
+        }
+        description
+          "Operational state of the packet processor.";
+      }
+
+      leaf active-alarms {
+        type alarm-bit-map;
+        description
+          "Bit map of alarm conditions currently active on this TDM port."; 
+      }
+
+      leaf-list channels-assigned {
+        type channel-id;
+        description
+          "List of channels used on this TDM port.";
+      }
+
+      leaf code-violations-line {
+        type uint64; 
+        description
+          "Code violations, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port and DS1 fixed port.";
+      }
+
+      leaf errored-seconds-line {
+        type uint64; 
+        description
+          "Errored seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port, DS1 smart SFP and DS1 fixed port.";
+      }
+
+      leaf severely-errored-seconds-line {
+        type uint64; 
+        description
+          "Severely errored seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port, DS1 smart SFP and DS1 fixed port.";
+      }
+
+      leaf los-seconds-line {
+        type uint64; 
+        description
+          "LOS, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 native port, DS1 smart SFP and DS1 fixed port.";
+      }
+
+      leaf unavailable-seconds-line {
+        type uint64; 
+        description
+          "Unavailable seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS1 smart SFP and DS1 fixed port.";
+      }
+
+      leaf ais-seconds-line {
+        type uint64; 
+        description
+          "AIS seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+
+      leaf available-seconds-line {
+        type uint64; 
+        description
+          "Available seconds, line. This statistic is available on DS1 smart SFP, DS1 native port and DS3 native port.";
+      }
+
+      leaf total-time-line {
+        type uint64; 
+        description
+          "Total time, line. This statistic is available on DS1 smart SFP, DS1 native port and DS3 native port.";
+      }
+
+      leaf code-violations-p-bit {
+        type uint64; 
+        description
+          "Code violations, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf errored-seconds-p-bit {
+        type uint64; 
+        description
+          "Errored seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf severely-errored-seconds-p-bit {
+        type uint64; 
+        description
+          "Severely errored seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf unavailable-seconds-p-bit {
+        type uint64; 
+        description
+          "Unavailable seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf severely-errored-frame-ais-seconds {
+        type uint64; 
+        description
+          "Severely errored frame AIS seconds. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP, DS1 native port and
+           DS3 native port.";
+      }
+
+      leaf available-seconds-p-bit {
+        type uint64; 
+        description
+          "Available seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf total-time-p-bit {
+        type uint64; 
+        description
+          "Total time, p-bit. This statistic is available on DS3 smart SFP and DS3 native port.";
+      }
+
+      leaf code-violations-section {
+        type uint64; 
+        description
+          "Code violations, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+
+      leaf errored-seconds-section {
+        type uint64; 
+        description
+          "Errored seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+
+      leaf severely-errored-seconds-section {
+        type uint64; 
+        description
+          "Severely errored seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+
+      leaf severely-errored-frame-seconds-section {
+        type uint64; 
+        description
+          "Severely errored frame seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+
+      leaf errored-blocks {
+        type uint64; 
+        description
+          "Errored blocks. This statistic is available on E1 native port.";
+      }
+       
+      leaf background-block-errors {
+        type uint64; 
+        description
+          "Background block errors. This statistic is available on E1 native port.";
+      }
+      
+      leaf errored-seconds { 
+        type uint64; 
+        description
+          "Errored seconds. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+      
+      leaf severely-errored-seconds { 
+        type uint64; 
+        description
+          "Severely errored seconds. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+
+      leaf unavailable-seconds { 
+        type uint64; 
+        description
+          "Unavailable seconds. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+
+      leaf total-time-seconds { 
+        type uint64; 
+        description
+          "Total time seconds. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+
+      leaf invalid-data-flag {
+        type uint64; 
+        description
+          "Invalid Data flag. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+
+      leaf loopback-code-violations-line {
+        type uint64; 
+        description
+          "Loopback code violations, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port and DS1 fixed port when port loopback is enabled.";
+      }
+
+      leaf loopback-errored-seconds-line {        
+        type uint64; 
+        description
+          "Loopback errored seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port, DS1 smart SFP and DS1 fixed port when port loopback is enabled.";
+      }
+
+      leaf loopback-severely-errored-seconds-line {
+        type uint64; 
+        description
+          "Loopback severely errored seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 fixed port, DS1 smart SFP and DS1 fixed port when port loopback is enabled.";
+      }
+
+      leaf loopback-los-seconds-line {
+        type uint64; 
+        description
+          "Loopback LOS seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, DS3 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS3/E3 native port, DS1 smart SFP and DS1 fixed port when port loopback is enabled.";
+      }
+
+      leaf loopback-unavailable-seconds-line {
+        type uint64; 
+        description
+          "Loopback unavailable seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP,
+           DS1 smart SFP and DS1 fixed port when port loopback is enabled.";
+      }
+
+      leaf loopback-ais-seconds-line {
+        type uint64; 
+        description
+          "Loopback AIS seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-available-seconds-line {
+        type uint64; 
+        description
+          "Loopback available seconds, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-total-time-line {
+        type uint64; 
+        description
+          "Loopback total time, line. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-code-violations-p-bit {
+        type uint64; 
+        description
+          "Loopback code violations, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-errored-seconds-p-bit {
+        type uint64; 
+        description
+          "Loopback errored seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-severely-errored-seconds-p-bit {
+        type uint64; 
+        description
+          "Loopback severely errored seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-unavailable-seconds-p-bit {
+        type uint64; 
+        description
+          "Loopback available seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-severely-errored-frame-ais-seconds {
+        type uint64; 
+        description
+          "Loopback severely errored frame AIS seconds. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP, OC48/STM16 native SFP, DS1 native port and
+           DS3 native port when port loopback is enabled.";
+      }
+
+      leaf loopback-available-seconds-p-bit {
+        type uint64; 
+        description
+          "Loopback available seconds, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-total-time-p-bit {
+        type uint64; 
+        description
+          "Loopback total time, p-bit. This statistic is available on DS3 smart SFP and DS3 native port when port
+           loopback is enabled.";
+      }
+
+      leaf loopback-code-violations-section {
+        type uint64; 
+        description
+          "Loopback code violations, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-errored-seconds-section {
+        type uint64; 
+        description
+          "Loopback errored seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-severely-errored-seconds-section {
+        type uint64; 
+        description
+          "Loopback severely errored seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-severely-errored-frame-seconds-section {
+        type uint64; 
+        description
+          "Loopback severely errored frame seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback
+           is enabled.";
+      }
+
+      leaf loopback-errored-blocks {
+        type uint64; 
+        description
+          "Loopback errored blocks. This statistic is available on E1 native port when port loopback is enabled.";
+      }
+       
+      leaf loopback-background-block-errors {
+        type uint64; 
+        description
+          "Loopback background block errors. This statistic is available on E1 native port when port loopback is enabled.";
+      }
+      
+      leaf loopback-errored-seconds {
+        type uint64; 
+        description
+          "Loopback errored seconds. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+      
+      leaf loopback-severely-errored-seconds { 
+        type uint64; 
+        description
+          "Loopback severely errored seconds. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+
+      leaf loopback-unavailable-seconds { 
+        type uint64; 
+        description
+          "Loopback available seconds. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+
+      leaf loopback-total-time-seconds { 
+        type uint64; 
+        description
+          "Loopback total time seconds. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+
+      leaf loopback-invalid-data-flag {
+        type uint64; 
+        description
+          "Loopback invalid data flag. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+      leaf los-seconds-section {
+        type uint64;
+        description
+          "LOS seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP.";
+      }
+      leaf loopback-los-seconds-section {
+        type uint64;
+        description
+          "Loopback LOS seconds, section. This statistic is available on OC3/STM1 smart SFP, OC12/STM4 smart SFP,
+           OC48/STM16 smart SFP, OC3/STM1 native SFP, OC12/STM4 native SFP and OC48/STM16 native SFP when port loopback is 
+           enabled.";
+      }
+      leaf available-seconds { 
+        type uint64; 
+        description
+          "Available seconds. This statistic is available on E1 smart SFP and E1 native port.";
+      }
+      leaf loopback-available-seconds { 
+        type uint64; 
+        description
+          "Loopback available seconds. This statistic is available on E1 smart SFP and E1 native port when port loopback is
+           enabled.";
+      }
+      leaf number-of-channels {
+        type uint16;
+        description
+          "Number of channels on this TDM port.";
+      }
+    }
+
+    description
+      "TDM port operational data.";
+  }
+
+  /*
+   * RPC Operations
+   */
+
+  rpc tdm-port-clear-statistics {
+    description
+      "Clear the statistics/counters of the targeted TDM port.";
+
+    input {
+      leaf tdm-port-id {
+        type leafref {
+          path "/tdm-port:tdm-ports/tdm-port:tdm-port/tdm-port:name";
+        }
+        mandatory "true";
+        description
+          "Name of a TDM port to clear counters for.";
+      }
+    }
+    output {
+      leaf status {
+        type enumeration {
+          enum accepted {
+            description
+              "Clear statistics command was accepted.";
+          }
+          enum rejected {
+            description
+              "Clear statistics command was rejected.";
+          }
+        }
+        description
+          "status of the request";
+      }
+      leaf status-message {
+        type string;
+        description
+          "Description of the status returned.";
+      }
+    }
+  }
+
+
+  /*
+   * Notifications
+   */
+
+  notification oper-state-change {
+    leaf name {
+      type tdm-port-name;
+      description
+        "Name of the TDM port associated with this notification.";
+    }
+
+    leaf oper-state {
+      type tdm-port-status;
+      description
+        "New operational state of the port.";
+    }
+
+    description
+      "Change in the operational state of the TDM port.";
+  }
+
+  notification alarm-state-change {
+    leaf name {
+      type tdm-port-name;
+      description
+        "Name of the TDM port associated with this notification.";
+    }
+
+    leaf alarm-state {
+      type alarm-bit-map;
+      description
+        "Bit map of currently active alarms on this TDM port.";
+    }
+    
+    description
+      "Alarm state change.";
+  }
+}

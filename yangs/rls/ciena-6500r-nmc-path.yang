@@ -1,0 +1,161 @@
+module ciena-6500r-nmc-path {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-nmc-path";
+  prefix nmcpath;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module implements a construct to represent a stitched path of nmc elements.";
+
+  revision 2020-04-02 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "6500r-series Release 2.0.50
+       Introduced minimal";
+  }
+  revision 2019-05-11 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "6500r-series Release 1.1
+       Added nmcpath yang model";
+  }
+  revision 2019-05-09 {
+    description
+      "Initial revision";
+  }
+
+  list nmc-path {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "This is a path that is constituted by nmc elements";
+    }
+
+    leaf owner {
+      type string;
+      description
+        "This identifies the provisioning ownership";
+    }
+
+    leaf from {
+      type instance-identifier;
+      mandatory true;
+      description
+        "From port identifier";
+    }
+
+    leaf to {
+      type instance-identifier;
+      mandatory true;
+      description
+        "To port identifier";
+    }
+
+    leaf center-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Center frequency of each network media channel element";
+    }
+
+    leaf spectral-width {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Spectral width of each network media channel element";
+    }
+
+    leaf user-label {
+      type string;
+      description
+        "User provisioned label";
+    }
+
+    leaf nmc-network-id {
+      type string;
+      description
+        "Network unique identifier of the end-to-end network media channel this path relates to";
+    }
+
+    leaf minimal {
+      type boolean;
+      default "false";
+      description
+        "indicates if minimal(only on WSS switch links) nmc provisioning is used ";
+    }
+
+    list path {
+      key "element";
+      leaf element {
+        type instance-identifier;
+        description
+          "The identifer of the path element";
+      }
+    }
+  }
+
+  rpc get-stitched-nmc {
+    input {
+      leaf from {
+        type instance-identifier;
+        description
+          "identifies the From port of a path. this is mandatory.";
+      }
+
+      leaf to {
+        type instance-identifier;
+        description
+          "identifies the To port of a path. this is optional. if not provided, it will be the node boundary line out.";
+      }
+
+      leaf center-freq {
+        type common-types:frequency;
+        description
+          "Center frequency of the network media channel channel";
+      }
+
+      leaf nmc-network-id {
+        type string;
+        description
+          "Network unique identifier of the end-to-end network media channel";
+      }
+    }
+
+    output {
+      list path {
+        key "element";
+        leaf element {
+          type instance-identifier;
+          description
+            "The identifer of the path element.";
+        }
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

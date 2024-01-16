@@ -1,0 +1,252 @@
+module ciena-6500r-links {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-links";
+  prefix links;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-6500r-mc {
+    prefix mc;
+  }
+
+  import ciena-pro-fiber-types {
+    prefix fiber-types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+
+  import ietf-yang-types {
+    prefix ietf-yang-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's link object for the 6500r-Series platform";
+
+  revision 2021-06-03 {
+    version:version "version" {
+      version:string "1.5.0";
+    }
+    description
+      "Introduce a new boolean flag ciena-interop";
+  }
+  revision 2021-05-04 {
+    version:version "version" {
+      version:string "1.4.1";
+    }
+    description
+      "Move the uses condition to apply to the whole list.";
+  }
+  revision 2020-10-29 {
+    version:version "version" {
+      version:string "1.4.0";
+    }
+    description
+      "introduce baseline-transmission-profile list in logical-line fibers";
+  }
+  revision 2020-09-08 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "6500r-series Release 2.1.0
+       introduce diagnostic container
+       use ciena-pro-link";
+  }
+  revision 2020-06-22 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "6500r-series Release 2.0.6
+       remove config false for leaf object-name";
+  }
+  revision 2020-06-12 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "6500r-series Release 2.0.6
+       Introduced pinch-compensation-threshold";
+  }
+
+  grouping line-fiber-attributes {
+    leaf fiber-type {
+      type leafref {
+        path "/fiber-types:fiber-type/fiber-types:fiber-type";
+      }
+      default "unknown";
+    }
+
+    leaf egress-fiber-type {
+      type leafref {
+        path "/fiber-types:fiber-type/fiber-types:fiber-type";
+      }
+      description
+        "Optional parameter indicates the egress fiber type used for Raman gain calibration";
+    }
+  }
+
+  grouping baseline-transmission-profile-desc {
+    leaf timestamp {
+      type ietf-yang-types:date-and-time;
+      description
+        "The time that the baseline was set";
+    }
+
+    leaf freq-min {
+      type ciena-6500r-types:frequency;
+      description
+        "Minimum frequency of the spectrum";
+    }
+
+    leaf freq-max {
+      type ciena-6500r-types:frequency;
+      description
+        "Maximum frequency of the spectrum";
+    }
+
+    leaf bin-size {
+      type ciena-6500r-types:frequency;
+      description
+        "Bin size of the spectrum";
+    }
+
+    leaf bin-spacing {
+      type ciena-6500r-types:frequency;
+      description
+        "Bin spacing of the spectrum";
+    }
+
+    leaf band {
+      type ciena-6500r-types:band-occupancy;
+      description
+        "band type of the spectrum";
+    }
+
+    list power-deltas {
+      key "index";
+      leaf index {
+        type uint16;
+        description
+          "Bin Index";
+      }
+
+      leaf power-delta {
+        type ciena-6500r-types:power;
+        units "dB";
+        description
+          "The power-delta within bin-size";
+      }
+    }
+  }
+
+  grouping ciena-6500r-links-mount {
+    list link {
+      key "name";
+      uses ciena-pro-link:link;
+
+      uses line-fiber-attributes {
+        when "../link-type = line-fiber";
+      }
+
+      list baseline-transmission-profile {
+        when "../link-type = logical-line-fiber";
+        key "band";
+        uses baseline-transmission-profile-desc;
+      }
+
+      list mc {
+        key "name";
+        uses mc:media-channel;
+      }
+
+      leaf ciena-interop {
+        type boolean;
+        default "false";
+        description
+          "Set to indicate a connection to a non-RLS Ciena device";
+      }
+    }
+  }
+
+  grouping ciena-6500r-links-mount-actions {
+    action take-baseline {
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "identifies the instance(link) where to take the baseline";
+        }
+      }
+
+      output {
+        list loss {
+          when "../ciena-pro-link:link-type = line-fiber or ../ciena-pro-link:link-type = logical-line-fiber";
+          key "spectral-type loss-type";
+          uses ciena-pro-link:loss-desc;
+
+          uses ciena-pro-link:loss-value;
+        }
+
+        leaf measured-physical-loss-baseline {
+          type ciena-6500r-types:loss-dB-1-precision;
+          description
+            "The baseline loss of the link.";
+        }
+
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+  }
+
+  uses ciena-6500r-links-mount;
+
+  rpc take-baseline {
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "identifies the instance(link) where to take the baseline";
+      }
+    }
+
+    output {
+      list loss {
+        when "../ciena-pro-link:link-type = line-fiber or ../ciena-pro-link:link-type = logical-line-fiber";
+        key "spectral-type loss-type";
+        uses ciena-pro-link:loss-desc;
+
+        uses ciena-pro-link:loss-value;
+      }
+
+      leaf measured-physical-loss-baseline {
+        type ciena-6500r-types:loss-dB-1-precision;
+        description
+          "The baseline loss of the link.";
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

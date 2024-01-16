@@ -1,0 +1,126 @@
+module ciena-6500r-channel-ctrl-manager {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-channel-ctrl-manager";
+  prefix channel-ctrl-manager;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  import ciena-6500r-types {
+    prefix types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's channel control manager";
+
+  revision 2020-10-09 {
+    description
+      "Added new block-demux-pixels action";
+    reference
+      "1.0.0";
+  }
+  revision 2020-04-01 {
+    description
+      "6500r-series Release 2.0";
+  }
+
+  typedef actions {
+    type enumeration {
+      enum "none" {
+        description
+          "no action";
+      }
+      enum "load-ase" {
+        description
+          "initiate ase loading for bands C and L";
+      }
+      enum "block-demux-pixels" {
+        description
+          "initiate blocking DEMUX pixels";
+      }
+    }
+  }
+
+  typedef states {
+    type enumeration {
+      enum "standby" {
+        description
+          "manager is initial state and ready to take actions";
+      }
+      enum "in-progress" {
+        description
+          "action is in-progress";
+      }
+      enum "complete" {
+        description
+          "action is completed";
+      }
+    }
+  }
+
+  list ccs-mgr {
+    key "name";
+    leaf name {
+      type common-types:object-name;
+      description
+        "name of the channel control manager";
+    }
+
+    leaf current-action {
+      type actions;
+      config false;
+      description
+        "The action that the manager is currently performing";
+    }
+
+    leaf state {
+      type states;
+      config false;
+      description
+        "Current state of the manager";
+    }
+
+    uses types:admin-state;
+  }
+
+  rpc operate-ccs-manager {
+    description
+      "perform operation based on the provided action";
+    input {
+      leaf instance {
+        type common-types:object-name;
+        description
+          "instance Id of the parent PFG";
+      }
+
+      leaf action {
+        type actions;
+        description
+          "action to perform";
+      }
+    }
+
+    output {
+      leaf action-in-progress {
+        type actions;
+        description
+          "curent action in progress";
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

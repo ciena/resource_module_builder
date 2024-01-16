@@ -1,0 +1,293 @@
+module ciena-osrp-osrp-network-topology {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-network-topology";
+  prefix osrp-network-topology;
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's OSRP Network Topology
+     for the 6500r platform";
+
+  revision 2021-02-05 {
+    ciena-common-version:string "1.0.3";
+    description
+      "Parameters name changed to osrp-comms-inventory, remote-link-inventory.";
+  }
+  revision 2020-11-05 {
+    ciena-common-version:string "1.0.2";
+    description
+      "All leafs and containers made as config : false.";
+  }
+  revision 2020-05-11 {
+    ciena-common-version:string "1.0.1";
+    description
+      "Added shelf-ip-address, zmq-port & public-zmq-port as they are flooded items.";
+  }
+  revision 2019-12-11 {
+    ciena-common-version:string "1.0.1";
+    description
+      "Added fields for node and link.";
+  }
+  revision 2019-09-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       Initial Revision.";
+  }
+
+  grouping ciena-osrp-osrp-network-topology-mount {
+    list osrp-network-topology {
+      key "node-name";
+      config false;
+      leaf node-name {
+        type ciena-osrp-types:node-name;
+        config false;
+        mandatory true;
+        description
+          "Node name of Remote/Neighbor Osrp Node.";
+      }
+
+      leaf function-type {
+        type ciena-osrp-types:functional-group-type;
+        config false;
+        description
+          "Functional type OSRP Node.";
+      }
+
+      leaf oper-state {
+        type ciena-osrp-types:state;
+        config false;
+        mandatory true;
+        description
+          "Specifies the blocked node feature's administrative state.";
+      }
+
+      leaf locality {
+        type enumeration {
+          enum "local";
+          enum "neighbor";
+          enum "remote";
+        }
+        config false;
+        mandatory true;
+        description
+          "Specifies the locality of node.";
+      }
+
+      leaf node-address {
+        type ciena-osrp-types:node-address-type;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node address of 22 bytes (44 hexadecimal chars).";
+      }
+
+      leaf node-id {
+        type ciena-osrp-types:node-id-type;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node ID.";
+      }
+
+      leaf node-type {
+        type ciena-osrp-types:node-type;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node Type.";
+      }
+
+      leaf regen-availability {
+        type ciena-osrp-types:availability;
+        config false;
+        mandatory true;
+        description
+          "Specifies if regen bank available.";
+      }
+
+      leaf regen-count {
+        type uint16;
+        config false;
+        description
+          "Specifies the count of the available regen banks.
+           Present only if the regen-availability is available.";
+      }
+
+      leaf node-fsm-state {
+        type enumeration {
+          enum "down";
+          enum "negotiating";
+          enum "exchange";
+          enum "loading";
+          enum "full";
+          enum "not-applicable";
+        }
+        config false;
+        mandatory true;
+        description
+          "State of the FSM (Finite State Machine) for the neighboring peer node,
+           with respect to the node where this command is issued. Applicable only for neighbor nodes.";
+      }
+
+      leaf node-version {
+        type uint16;
+        config false;
+        mandatory true;
+        description
+          "OSRP Node Software Version.";
+      }
+
+      container osrp-comms-inventory {
+        config false;
+        leaf shelf-ip-address {
+          type ciena-osrp-types:ip-address;
+          config false;
+          description
+            "The shelf IP address (Format: n.n.n.n).";
+        }
+
+        leaf zmq-port {
+          type ciena-osrp-types:port-num;
+          config false;
+          description
+            "Port to access via ZeroMQ message transfer protocol.";
+        }
+
+        leaf zmq-public-port {
+          type ciena-osrp-types:port-num;
+          config false;
+          description
+            "Public port to access via ZeroMQ message transfer protocol .";
+        }
+      }
+
+      list osrp-link {
+        key "name";
+        config false;
+        uses node-link-common;
+
+        container remote-link-inventory {
+          uses node-link-common;
+        }
+      }
+    }
+  }
+
+  grouping ciena-osrp-osrp-network-topology-mount-actions;
+
+  grouping node-link-common {
+    leaf name {
+      type ciena-osrp-types:link-key;
+      config false;
+      mandatory true;
+      description
+        "Name of osrp link.";
+    }
+
+    leaf admin-weight {
+      type uint32;
+      default "5040";
+      config false;
+      description
+        "Administrative weight which specifies the level of importance given to the OSRP link.";
+    }
+
+    leaf advertised-bandwidth {
+      type string {
+        length "3..10";
+      }
+      config false;
+      description
+        "Advertised bandwidth (Ratio of advertised-bandwidth vs maximum-bandwidth). Max. 1536:1536. Format [AdvBW:MaxBW]";
+    }
+
+    leaf grid-type {
+      type ciena-osrp-types:grid-type;
+      config false;
+      description
+        "Type of supported Grid on the link.";
+    }
+
+    leaf hello-state {
+      type enumeration {
+        enum "not-applicable";
+        enum "down";
+        enum "attempt";
+        enum "one-way-inside";
+        enum "two-way-inside";
+        enum "one-way-outside";
+        enum "two-way-outside";
+      }
+      config false;
+      description
+        "State of the Hello protocol finite state machine.";
+    }
+
+    leaf interface-id {
+      type uint32;
+      config false;
+      description
+        "Interface id of the link.";
+    }
+
+    leaf label {
+      type ciena-osrp-types:label;
+      config false;
+    }
+
+    leaf node-address {
+      type ciena-osrp-types:node-address-type;
+      config false;
+      description
+        "OSRP Node ID of remote link of 22 bytes (44 hexadecimal chars).";
+    }
+
+    leaf node-name {
+      type ciena-osrp-types:node-name;
+      config false;
+      description
+        "Name of the remote node.";
+    }
+
+    leaf-list prot-bundle-ids {
+      type uint32;
+      config false;
+      description
+        "List of up to 20 protection bundles to which the OSRP link belongs.";
+    }
+
+    leaf state {
+      type ciena-osrp-types:state;
+      config false;
+      description
+        "State of Osrp link.";
+    }
+
+    leaf spectrum-snapshot {
+      type string {
+        length "11..384";
+      }
+      config false;
+      description
+        "Spectrum available on link.";
+    }
+  }
+
+  uses ciena-osrp-osrp-network-topology-mount;
+}

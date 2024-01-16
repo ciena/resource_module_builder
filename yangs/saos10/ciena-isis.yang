@@ -1,0 +1,4594 @@
+module ciena-isis {
+  namespace   "http://ciena.com/ns/yang/ciena-isis";
+  prefix "isis";
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+
+  import ciena-l3-types {
+    prefix cn-l3-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-routing-policy {
+    prefix "rt-pol";
+  }
+
+  import ciena-bfd-types {
+    prefix "bfd-types";
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's specific Intermediate System - Intermediate System (IS-IS) protocol
+
+     Copyright (c) 2018  Ciena Corporation.  All rights
+     reserved.
+
+     All information contained herein is, and remains the
+     property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+  revision "2022-07-27" {
+    description
+      "Modified the max range of rib-update-delay timer to 60 seconds.
+       Added 32-bit admin tag sub-TLV (1) for IPv6 Reachability TLV 236.";
+  }
+
+  revision "2021-11-10" {
+    description
+       "Added new sub-container for min-max-unidirectional-link-delay 
+        and unidirectional-link-delay-variation stlv in isis-state 
+        extended-is-reachability TLV.
+        Added state for Seamless BFD.
+        Added config for BGP-LS ID.";
+  }
+
+  revision "2021-10-27" {
+    description 
+      "Added Multi Instance IS-IS support in default VRF.
+       Added event-type and link-info parameters in IS-IS microloop-avoidance operational state.
+       Changed the microloop-avoidance rib-update-delay range minimum value to 1 from 0.";
+  }
+
+  revision "2021-08-02" {
+    description
+       "Changed the metric leaves in ISIS state IPv4 internal and external reachability to uint32.";
+  }
+
+  revision "2021-07-19" {
+    description
+       "Added new sub-container to enable BFD for IPv6 address family per interface level.";
+  }
+
+  revision "2020-10-28" {
+    description
+       "Added new sub-container for unidirectional-link-delay stlv in 
+        isis-state extended-is-reachability tlv.
+       Changed max-link-bw, max-reservable-bw and unreserved-bandwidth stlv's 
+       discription to show unit as bytes per second.
+       Added new container link-identifiers for link-local-id and link-remote-id stlv
+       in isis-state extended-is-reachability tlv.
+       Replaced interface-ip-address with link-local-id and neighbor-ip-address with
+       link-remote-id in shared-risk-link-group tlv to allow both numbered and
+       unnumbered interfaces.
+       Added ipv4-te-routerid in isis-state lspdb-tlv.
+       Added node-msd leaf in segment-routing-state sr-capability.
+       Changed priority as key in unreserved-bandwidth list.
+       Added a new notification for IS-IS n-flag mismatch event.
+       Added new sub-container for force-php in segment-routing.";
+  }
+
+  revision "2020-08-23" {
+    description
+      "Added feature conditions -
+        fast-reroute, graceful-restart, lfa, remote-lfa
+        ldp-igp-sync, prefix-tag, multi-topology, admin-control
+        extended-auth
+       Added Area Authentication (LSP/SNP auth) for level-1,
+       Added Domain Authentication (LSP/SNP) for level-2,
+       Added auth-type and send-only for level-1 and level-2 for interface,
+       Added leaf GR recovery-time in both level-1 and level-2,
+       Added restart-capable, max-recovery-time, max-restart-time for graceful-restart,
+       Added support for admin-state in instance and interface container,
+       Added Notifications for SNMP traps,
+       Added SRLG TLV in LSP DB,
+       Added STLV for TE support in IS-Extended in LSP DB.
+       Added ISIS instance notification object for syslog.
+       Updated ciena ISIS yang model with ISIS state summary container.
+       Added interface authentication to ISIS summary container.
+       Added micro-loop avoidance state parameters.
+       Added MTID to Lsbdb-tlv in ISIS state.
+       Added interface wide metric in ISIS summary container.
+       Added restriction to block whitespaces in the ISIS instance tag.
+       Modified the max-element interface restriction to 254 interfaces.";
+  }
+  
+  revision "2020-02-12" {
+    description
+      "Updated ciena-isis yang model with changes for isis-sr label range. 
+       Added new leaf for system-id in isis-state lspdb-tlv.
+       Added support for ISIS IPv6.
+       Added neighbor state event for Telemetry.
+       Adding metric fields to interface state.
+       Added max-elements restriction to allow 255 interfaces.
+       Adding ipv4-unicast-default-disable to enable IPv4 AF on interface by default.
+       Added Isis Multi Topology containers for IPv4 and IPv6 in isis-state lspdb-tlv.
+       Added Isis micro-loop avoidance parameters.
+       Adding router-ip and tag as key in sr capability oper data";
+  }
+  revision "2018-07-12" {
+    description
+      "Initial version of ciena-isis config, state and rpc yang model";
+  }
+
+  /* Feature definitions */
+  feature bfd {
+    description
+      "Support for BFD detection of IS-IS neighbor reachability.";
+    reference
+      "RFC 5880 - Bidirectional Forwarding Detection
+       RFC 5881 - Bidirectional Forwarding Detection for IPv4 and IPv6 (Single Hop)";
+  }
+  feature admin-control {
+     description
+        "Administrative control of the protocol state.";
+  }
+  feature graceful-restart {
+     description
+        "IS-IS graceful restart support.";
+     reference "RFC5306 - Restart Signaling in IS-IS";
+  }
+
+  feature extended-auth {
+     description
+        "IS-IS extended auth support include 
+         send-only, SNP authentication and auth-type configuration.";
+  }
+   
+  /* All below features are 6500 unsupported */
+  feature ldp-igp-sync {
+     description
+        "Support for LDP IGP synchronization.";
+     reference "RFC5443 - LDP IGP Synchronization.";
+  }
+  feature fast-reroute {
+     description
+        "Support for IP Fast Reroute (IP-FRR).";
+  }
+  feature lfa {
+     description
+        "Support for Loop-Free Alternates (LFAs).";
+     reference "RFC5286 - Basic Specification of IP Fast-Reroute:
+        Loop-free Alternates";
+  }
+  feature remote-lfa {
+     description
+        "Support for Remote Loop-Free Alternates (R-LFAs).";
+     reference "RFC7490 - Remote Loop-Free Alternate Fast Reroute";
+  }
+  feature multi-topology {
+     description
+        "Support for Multiple-Topology Routing (MTR).";
+     reference "RFC5120 - M-IS-IS: Multi Topology Routing in IS-IS";
+  }
+  feature prefix-tag {
+     description
+        "Support for 32-bit prefix tag";
+     reference "RFC5130 - A Policy Control Mechanism in
+                IS-IS Using Administrative Tags";
+  }
+
+  grouping neighbor-attributes {
+    description
+      "Neighbor state data";
+
+    list area-address {
+      key "area-index";
+        description
+          "Area Address(es)";
+      leaf area-index {
+        type  int8;
+        description
+          "List of areas supported by the protocol instance.";
+      }
+
+      leaf address {
+        type  string {
+            length "0..255";
+        }
+        description
+          "Neighbor Area Address.";
+      }
+    }
+
+    list ip-address {
+      key "ip-index";
+        description
+          "List of ip addresses supported by the protocol instance.";
+      leaf ip-index {
+        type  int8;
+        description
+          "Neighbor IP Index that identifies the ip-address";
+      }
+
+      leaf address {
+        type  inet:ipv4-address;
+        description
+          "Neighbor Address";
+      }
+    }
+
+    list ipv6-address {
+      key "ip-index";
+        description
+          "List of IPv6 addresses supported by the protocol instance.";
+      leaf ip-index {
+        type int8;
+        description
+          "Neighbor IP Index that identifies the IPv6 address";
+      }
+
+      leaf ipv6-address {
+        type inet:ipv6-address;
+        description
+          "Neighbor IPv6 Address";
+      }
+    }
+  }
+   
+  grouping admin-control {
+     leaf admin-state {
+        if-feature admin-control;
+        type boolean;
+        default "true";
+        description
+           "Enable/Disable the protocol.";
+     }
+     description
+        "Grouping for admin control.";
+  }
+
+  grouping isis-state-grouping{
+    description
+      "Interface state configuration grouping";
+      list interface-state {
+        key "name";
+        description
+          "ISIS interface related operations";
+
+      leaf name {
+        type  string;
+        description
+          "Interface Name tied to the ISIS instance";
+      }
+
+      leaf index {
+        type  string;
+        description
+          "Interface Index of the ISIS ";
+      }
+
+      leaf instance-tag {
+        type  string;
+        description
+          "Protocol instance Tag";
+      }
+
+      leaf interface-type {
+        type  string;
+        description
+          "Type of adjacency to be established on the interface. This
+          dictates the type of hello messages that are used.";
+      }
+
+      leaf level-type {
+        type  string;
+        description
+          "Level of an IS-IS node - can be level-1,
+          level-2 or level-1-2.";
+      }
+
+      leaf local-circuit-id {
+        type  string;
+        description
+          "Local Circuit Id";
+      }
+
+      leaf extended-circuit-id {
+        type  string;
+        description
+          "Extended circuit-id of the interface.";
+      }
+
+      leaf local-snpa {
+        type  string;
+        description
+          "This type defines the Subnetwork Point
+          of Attachement (SNPA) format";
+      }
+
+      list connected-ipv4 {
+        key "ipv4-address";
+        description
+          "List of connected IP interface address";
+        leaf ipv4-address  {
+          type  inet:ipv4-prefix;
+          description
+            "IP interface address";
+        }
+      }
+
+      list connected-ipv6 {
+        key "ipv6-address";
+        description
+          "List of connected IPv6 interface address";
+        leaf ipv6-address  {
+          type inet:ipv6-prefix;
+          description
+            "IPv6 interface address";
+        }
+      }
+
+      list bandwidth-at-priority {
+        key "bandwidth-priority";
+        description
+          "Bandwidth-at-priority state attributes";
+        leaf bandwidth-priority  {
+          type  uint32;
+          description
+            "Bandwidth priority value";
+        }
+        leaf bandwidth-available {
+          type  string; 
+          description
+            "Bandwidth available";
+        }
+      } 
+
+      list level {
+        key "level-index";
+        description
+          "Level state data for interface";
+
+        leaf level-index {
+          type  cn-l3-types:isis-iflevel;
+          description
+            "Interface level index";
+        }
+
+        leaf next-hello {
+          type  string;
+          description
+            "Interface Next Hello attribute";
+        }
+
+        leaf level-mtu {
+          type  uint32;
+          description
+            "Maximum size of an LSP PDU in bytes.";
+        }
+
+        leaf level-flag {
+          type  uint8;
+          description
+            "Interface level flag";
+        }
+
+        leaf state {
+          type  uint8;
+          description
+            "This leaf describes the state of the interface";
+        }
+
+        leaf circuit-id {
+          type  string;
+          description
+            "Circuit-id of the interface.";
+        }
+
+        leaf neighbor-count {
+          type  int32;
+          description
+            "Interface neighbor count";
+        }
+
+        leaf adjacency-neighbor-count {
+          type  int32;
+          description
+            "Interface adjacency neighbor count";
+        }
+
+        leaf next-csnp {
+          type  string;
+          description
+            "Interface Next Csnp";
+        }
+
+        leaf auth-type {
+          type  string;
+          description
+            "Interface authentication type (MD5)";
+        }
+
+        leaf password {
+          type  string;
+          description
+            "MD5 authentication password";
+        }
+
+        leaf metric {
+          type  uint32;
+          description
+            "IS-IS interface metric";
+        }
+
+        leaf wide-metric {
+          type  uint32;
+          description
+            "IS-IS interface wide metric";
+        }
+
+        container event-counters {
+          description
+            "Event counter attributes.";
+
+          leaf adjacency-changes {
+            type  uint32;
+            description
+              "The number of times an adjacency state change has
+               occured on this interface.";
+          }
+
+          leaf adjacency-number {
+            type  uint32;
+            description
+              "The number of adjacencies on this interface.";
+          }
+
+          leaf init-fails {
+            type  uint32;
+            description
+              "The number of times initialization of this
+               interface has failed. This counts events such
+               as PPP NCP failures. Failures to form an
+               adjacency are counted by adjacency-rejects.";
+          }
+
+          leaf adjacency-rejects {
+            type  uint32;
+            description
+              "The number of times an adjacency has been
+              rejected on this interface.";
+          }
+
+          leaf id-len-mismatch {
+            type  uint32;
+            description
+              "The number of times an IS-IS PDU with an ID
+               field length different from that for this
+               system has been received on this interface.";
+          }
+
+          leaf max-area-addresses-mismatch {
+            type  uint32;
+            description
+              "The number of times an IS-IS PDU has been
+               received on this interface with the
+               max area address field differing from that of
+               this system.";
+          }
+
+          leaf authentication-type-fails {
+            type  uint32;
+            description
+              "Number of authentication type mismatches.";
+          }
+
+          leaf authentication-fails {
+            type  uint32;
+            description
+              "Number of authentication key failures.";
+          }
+
+          leaf lan-dis-changes {
+            type  uint32;
+            description
+              "The number of times the DIS has changed on this
+               interface at this level. If the interface type is
+               point-to-point,the count is zero.";
+          }
+
+          leaf state-change {
+            type  uint32;
+            description
+              "This leaf describes the state change of the interface.";
+          }
+
+          leaf hello-in {
+            type  uint32;
+            description
+              "Received hello PDUs.";
+          }
+
+          leaf hello-out {
+            type  uint32;
+            description
+              "Sent hello PDUs.";
+          }
+
+          leaf hello-is {
+            type  uint32;
+            description
+              "Hello ISH PDUs";
+          }
+
+          leaf hello-es {
+            type  uint32;
+            description
+              "Hello ESH PDUs";
+          }
+
+          leaf lsp-in {
+            type  uint32;
+            description
+              "Received LSP PDUs.";
+          }
+
+          leaf lsp-out {
+            type  uint32;
+            description
+              "Sent LSP PDUs.";
+          }
+
+          leaf csnp-in {
+            type  uint32;
+            description
+              "Received CSNP PDUs";
+          }
+
+          leaf csnp-out {
+            type  uint32;
+            description
+              "Sent CSNP PDUs.";
+         }
+
+         leaf psnp-in {
+           type  uint32;
+           description
+             "Received PSNP PDUs.";
+         }
+
+         leaf psnp-out {
+           type  uint32;
+           description
+             "Sent PSNP PDUs.";
+         }
+
+         leaf unknown-in {
+           type  uint32;
+           description
+             "Received unknown PDUs.";
+         }
+
+         leaf unknown-out {
+           type  uint32;
+           description
+             "Sent unknown PDUs";
+         }
+         }
+       }
+
+       leaf ldp-igp-sync-status {
+         type string;
+         description
+           "Status of ldp-igp-sync (Configured or Not Configured)";
+       }
+
+       list neighbor-lan {
+         key "source-id-lan";
+         description
+           "Attributes of an IS-IS lan neighbor.";
+            leaf source-id-lan {
+              type  string;
+              description
+                "Source id of the neighbor-lan";
+            }
+
+           leaf neighbor-system-type {
+             type  string;
+             description
+               "Level capability of neighboring system";
+           }
+
+           leaf adjacency-flags {
+             type  cn-l3-types:isis-nbr-adj;
+               description
+                 "The system provided neighbor adjacency flags";
+           }
+
+           leaf mac {
+             type  string;
+             description
+               "Neighbor mac address";
+           }
+
+           leaf level-proto-supported {
+             type  string;
+             description
+               "Neighour level proto supported by the instance";
+           }
+
+           leaf topology-type {
+             type  string;
+             description
+               "Neighbor topology type suppored by the instance  ";
+           }
+
+           leaf last-uptime {
+             type  string;
+             description
+               "When the adjacency most recently entered state 'up', measured in hundredths of a
+                second since the last reinitialization of the network management subsystem.
+                The value is 0 if the adjacency has never been in state 'up'.";
+           }
+
+           leaf proto {
+             type  string;
+             description
+               "Neighbor proto supported by the instance";
+           }
+
+           list neighbor-level {
+             key "level-index";
+             description
+               "Neighbor level context attributes";
+             leaf level-index {
+               type  cn-l3-types:isis-level-type;
+               description
+                 "Neighbor level of an IS-IS node - can be level-1, level-2";
+             }
+
+             leaf state {
+               type  cn-l3-types:isis-state;
+               description
+                 "This leaf describes the state of the neighbor.";
+             }
+
+             leaf adjacency-id {
+               type  uint32;
+               description
+                 "Neighbor adjacency id";
+             }
+
+             leaf hold-timer {
+               type  string;
+               description
+                 "The holding time in seconds for this adjacency. This value is based on
+                  received hello PDUs and the elapsed
+                  time since receipt.";
+             }
+
+             leaf neighbor-priority {
+               type  uint8;
+               description
+                 "Priority of the neighboring IS for becoming the DIS.";
+             }
+           }
+           uses neighbor-attributes;
+        }
+
+        list neighbor-p2p {
+          max-elements 1;
+          key "neighbor-index";
+          description
+            "Attributes of an IS-IS p2p neighbor.";
+
+          leaf neighbor-index {
+            type  uint8;
+            description
+              "Neighbor Index";
+          }
+
+          leaf sourceid-p2p {
+            type  string;
+            description
+              "Source id of the neighbor-lan";
+          }
+
+          leaf circuit-id {
+            type  string;
+            description
+              "Circuit-id of neighbor";
+          }
+
+          leaf p2p-neighbor-state {
+            type  string;
+            description
+              "This leaf describes the state of the neighbor.";
+          }
+
+          leaf hold-timer {
+            type  string;
+            description
+              "The holding time in seconds for this adjacency. This value is based on
+               received hello PDUs and the elapsed
+               time since receipt.";
+          }
+
+          leaf adjacency-type {
+            type  string;
+            description
+              "Adjacency Type of p2p neighbor";
+          }
+
+          leaf adjacency-flags {
+            type  cn-l3-types:isis-nbr-adj;
+            description
+              "The system provided neighbor adjacency flags";
+          }
+
+          leaf mac {
+            type  string;
+            description
+              "Neighbor mac address";
+          }
+
+          leaf level-proto-supported {
+            type  string;
+            description
+              "Neighour level proto supported by the instance";
+          }
+
+          leaf topology-type {
+            type  string;
+            description
+              "Neighbor topology type suppored by the instance  ";
+          }
+
+          leaf last-uptime {
+            type  string;
+            description
+              "When the adjacency most recently entered state 'up', measured in hundredths of a
+               second since the last reinitialization of the network management subsystem.
+               The value is 0 if the adjacency has never been in state 'up'.";
+          }
+
+          leaf proto {
+            type  string;
+            description
+              "Neighbor proto supported by the instance";
+          }
+          uses neighbor-attributes;
+        }
+      }
+  }
+
+  grouping isis-instance-config {
+  leaf distance {
+    type  uint8 {
+    range "1..255";
+  }
+  default "115";
+  description
+    "The administrative distance assigned to routes
+     discovered by the IS-IS protocol,";
+  }
+
+  leaf dynamic-hostname {
+    type  boolean;
+    default "false";
+    description
+      "If TRUE, dynamic hostname resolution is enabled, and system IDs will always be
+       displayed by show and debug output.";
+  }
+
+  leaf-list net {
+    type  cn-l3-types:net;
+    max-elements 3;
+    description
+      "System-id of the node.";
+  }
+
+  leaf level-type {
+    type  cn-l3-types:isis-level-types;
+    default "level-1-2";
+    description
+      "Level of an IS-IS node - can be level-1, level-2 or level-1-2.";
+  }
+
+  leaf ispf-levels {
+    type  cn-l3-types:isis-level-types;
+    description
+      "The i-spf level of an IS-IS node - can be level-1, level-2 or level-1-2.";
+  }
+
+  leaf lsp-refresh {
+    type  uint16 {
+      range "1..65535";
+  }
+  default "900";
+  units seconds;
+  description
+    "Refresh interval of the router's LSPs";
+  }
+  leaf lsp-lifetime {
+    type  uint16 {
+      range "350..65535";
+  }
+  default "1200";
+  units seconds;
+  description
+    "Lifetime of the router's LSPs in seconds.";
+  }
+
+  leaf metric-style {
+    type  cn-l3-types:metric-style;
+    default "wide";
+    description
+      "Metric style global configuration";
+  }
+
+  container overload {
+    description
+      "Router protocol instance overload state configuration";
+    leaf suppress {
+      type  cn-l3-types:isis-suppress;
+      description
+        "Overload bit flags";
+    }
+
+    leaf on-startup {
+      type  cn-l3-types:isis-onstartup;
+      description
+        "Overload interval after reboot";
+    }
+
+    leaf timeout {
+      when "../on-startup='time-out'";
+      type uint32 {
+        range "5..86400";
+      }
+      units seconds;
+      description
+        "Applicable only when on-startup is set to time-out.";
+    }
+  }
+
+  container microloop-avoidance {
+    if-feature lfa;
+    description
+      "ISIS microloop-avoidance configuration.";
+    leaf enable {
+      type boolean;
+      default "false";
+      description
+        "Enable/disable microloop avoidance for protected prefixes.";
+    }
+ 
+    leaf rib-update-delay {
+      type uint32 {
+        range "1..60000";
+      }
+      default "5000";
+      units milliseconds;
+      description
+        "Set route download delay for microloop avoidance on local interfaces.";
+    }
+  } 
+
+  list passive {
+    key "passive-if-name";
+    description
+      "Indicates whetherthe interface is in passive mode (IS-IS
+       not running but network is advertised).";
+
+    leaf passive-if-name {
+      type leafref {
+        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+      }
+      description
+        "Interface name";
+    }
+  }
+
+  container level-1 {
+    description
+      "Level-1 specific configuration";
+    leaf lsp-gen-interval {
+      type uint8 {
+        range "1..120";
+      }
+      default "30";
+        units seconds;
+        description
+          "Set minimum interval before regenerating the same LSP.
+           The smaller the interval, the faster the convergence.";
+    }
+
+    leaf spf-min-delay {
+      type uint32 {
+        range "0..2147483647";
+      }
+      default "500";
+      units milliseconds;
+      description
+        "Minimum delay between receiving a change to SPF calculation";
+    }
+
+    leaf spf-max-delay {
+      type uint32 {
+        range "0..2147483647";
+      }
+      default "50000";
+      units milliseconds;
+      description
+        "Maximum delay between receiving a change to SPF calculation";
+    }
+
+    leaf lsp-mtu {
+      type uint16 {
+        range "512..1492";
+      }
+      default "1492";
+      units "bytes";
+      description
+        "Maximum size of an LSP PDU";
+    }
+
+    leaf recovery-time {
+       if-feature graceful-restart;
+       type uint16 {
+          range "5..3600";
+       }
+       default "60";
+       units seconds;
+       description
+          "Graceful restart T2 timer (level DB sync recovery time)";
+    }
+
+    container area-auth {
+       description
+          "Area authentication specific configuration";
+
+       leaf auth-type {
+       if-feature extended-auth;
+          type  cn-l3-types:isis-auth-mode;
+          description
+             "Interface authentication type (MD5/text)";
+       }
+
+       leaf password {
+          type string {
+             length "1..80";
+          }
+          ncx:password;
+          description
+             "MD5/text authentication password";
+       }
+
+       leaf snp-auth {
+       if-feature extended-auth;
+          type boolean;
+          description
+             "Authenticate SNP PDUs";
+       }
+
+       leaf send-only {
+       if-feature extended-auth;
+          type boolean;
+          description
+             "Only send encrypted packets, ignore auth on received PDUs";
+       }
+    }
+
+  }
+
+  container level-2 {
+    description
+      "Level-2 specific configuration";
+
+    leaf lsp-gen-interval {
+      type uint8 {
+        range "1..120";
+      }
+      default "30";
+      units seconds;
+      description
+        "Set minimum interval before regenerating the same LSP.
+         The smaller the interval, the faster the convergence.";
+    }
+
+    leaf spf-min-delay {
+      type uint32 {
+        range "0..2147483647";
+      }
+      default "500";
+      units milliseconds;
+      description
+        "Minimum delay between receiving a change to SPF calculation";
+    }
+
+    leaf spf-max-delay {
+      type uint32 {
+        range "0..2147483647";
+      }
+      default "50000";
+      units milliseconds;
+      description
+        "Maximum delay between receiving a change to SPF calculation";
+    }
+
+    leaf lsp-mtu {
+      type uint16 {
+        range "512..1492";
+      }
+      default "1492";
+      units "bytes";
+      description
+        "Maximum size of an LSP PDU";
+    }
+
+    leaf recovery-time {
+       if-feature graceful-restart;
+       type uint16 {
+          range "5..3600";
+       }
+       default "60";
+       units seconds;
+       description
+          "Graceful restart T2 timer (level DB sync recovery time)";
+    }
+
+    container domain-auth {
+       description
+          "Domain authentication specific configuration";
+
+       leaf auth-type {
+       if-feature extended-auth;
+          type  cn-l3-types:isis-auth-mode;
+          description
+             "Interface authentication type (MD5/text)";
+       }
+
+       leaf password {
+          type string {
+             length "1..80";
+          }
+          ncx:password;
+          description
+             "MD5/text authentication password";
+       }
+
+       leaf snp-auth {
+       if-feature extended-auth;
+          type boolean;
+          description
+             "Authenticate SNP PDUs";
+       }
+
+       leaf send-only {
+       if-feature extended-auth;
+          type boolean;
+          description
+             "Only send encrypted packets, ignore auth on received PDUs";
+       }
+    }
+  }  
+
+  grouping inter-level-redistribute-config
+  {
+    list level {
+      key "type";
+      description
+        "IS-IS protocol redistribute configuration";
+
+      leaf type {
+        type cn-l3-types:type;
+        description
+          "Redistributes from level 1to2 or level 2to1";
+      }
+
+      leaf prefix-list {
+        type leafref {
+          path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+        }
+        description
+          "Refers to a prefix list name";
+      }
+    }
+  }
+
+  grouping protocol-redistribute-config
+  {
+    list protocol {
+      key "name";
+      description
+        "Redistribute routes from static, bgp, ospf, connected into IS-IS levels";
+
+      leaf name {
+        type  cn-l3-types:protocol-name;
+        description
+          "Source protocol name to redistribute from (bgp, ospf, static, connected)";
+      }
+
+      leaf level {
+        type cn-l3-types:isis-level-types;
+        default "level-2";
+        description
+          "IS-IS level";
+      }
+
+      leaf metric {
+        type uint32 {
+          range "0..4261412864";
+        }
+      default "0";
+      description
+        "IS-IS metric";
+      }
+
+      leaf policy {
+        type leafref {
+          path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+        }
+        description
+          "Refers to an existing policy name";
+      }
+    }
+  }
+
+  container proto-ipv4 {
+    description
+      "IS-IS protocol IPv4 redistribute configuration";
+
+    container redistribute {
+      description
+        "IS-IS protocol IPv4 redistribute configuration";
+
+      uses inter-level-redistribute-config;
+
+      leaf origin {
+        type cn-l3-types:isis-origin-type;
+        description
+          "Origin type: originate or originate-always";
+      } 
+
+      leaf policy {
+        when "../origin='originate'";
+        type leafref {
+          path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+        }
+        description
+          "Refers to an existing policy name";
+      }
+
+      uses protocol-redistribute-config;
+    }
+
+    list summary-address {
+      key "address";
+      description
+        "List of summary address used for route summarization";
+
+      leaf address {
+        type inet:ipv4-prefix;
+        description
+          "IP network prefix";
+      }
+
+      leaf level {
+        type cn-l3-types:isis-summary-level;
+        default "level-2";
+        description
+          "Summarize into level-1 area or both area and sub-domain or level-2 sub-domain";
+      }
+
+      leaf metric {
+        type uint8 {
+          range "1..63";
+      }
+      mandatory true;
+      description
+        "Metric used for the summarized address";
+      }
+    }
+  }
+
+  container proto-ipv6 {
+    description
+      "IS-IS protocol IPv6 redistribute configuration";
+
+    container redistribute {
+      description
+        "IS-IS protocol IPv6 redistribute configuration";
+
+      uses inter-level-redistribute-config;
+
+      leaf distance {
+        type  uint8 {
+          range "1..255";
+        }
+        default "115";
+        description
+          "The administrative distance assigned to routes discovered by the IS-IS protocol,";
+      }
+
+      leaf adjacency-check {
+        type boolean;
+        description
+          "Suppress checking of consistent AF support on received IIHs";
+      }
+
+      leaf origin {
+        type cn-l3-types:isis-v6-origin-type;
+        description
+          "Origin type: originate";
+      } 
+
+      leaf policy {
+        type leafref {
+          path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+        }
+        description
+          "Refers to an existing policy name";
+      }
+
+      uses protocol-redistribute-config;
+    }
+
+    list summary-address {
+      key "address";
+      description
+        "List of summary address used for route summarization";
+
+      leaf address {
+        type inet:ipv6-prefix;
+        description
+          "IP network prefix";
+      }
+
+      leaf level {
+        type cn-l3-types:isis-summary-level;
+        default "level-2";
+        description
+          "Summarize into level-1 area or both area and sub-domain or level-2 sub-domain";
+      }
+
+      leaf metric {
+        type uint8 {
+          range "1..63";
+      }
+      mandatory true;
+      description
+        "Metric used for the summarized address";
+      }
+    }
+  }
+
+  list multi-topology {
+    if-feature multi-topology;
+    key "level";
+    description
+      "Support for Multiple-Topology Routing (MTR), RFC5120 - M-IS-IS: Multi Topology Routing in IS-IS";
+
+    leaf level {
+        type cn-l3-types:isis-level-types;
+        description
+          "Level of an IS-IS multitoplogy support";
+    }
+
+    leaf transition{
+      type boolean;
+      description
+        "Specify to accept and generate both IS-IS IPv6 and multi-topology IPv6 TLVs";
+    }
+  }
+
+  container distribute  {
+    description
+      "Distribute information to another routing protocol";
+
+    leaf protocol  {
+      type cn-l3-types:isis-distribute-type;
+      description
+        "Protocol name to which information to be dstributed";
+    }
+
+    leaf throttle  {
+      when "../protocol='bgp-ls'";
+      type uint8 {
+        range "5..20";
+      }
+      units seconds;
+      description
+        "Throttle timer for distributing information to another routing protocol";
+    }
+
+    leaf bgp-ls-id {
+      when "../protocol='bgp-ls'";
+      type uint32;
+      description
+        "BGP-LS ID configuration";
+    }
+  }
+
+  container fast-reroute {
+    description
+      "Configurations for ISIS LFA fast reroute";
+    if-feature fast-reroute;
+    leaf hold-timer  {
+      type uint32 {
+        range "100..100000";
+      }
+      default "1000";
+      units milliseconds;
+      description
+        "Hold timer in msec when packet forwarding through LFA is in effect";
+    }
+
+    list level {
+      key "level-type";
+      description
+        "Enable/disable LFA for ISIS level-1 or level-2";
+      leaf level-type {
+         type cn-l3-types:isis-level-type;
+         description
+           "Level of an IS-IS node, either level-1 or level-2";
+      }
+
+    container lfa {
+       description
+         "IS-IS LFA fast-reroute";    
+       if-feature lfa;
+       leaf per-prefix-enable {
+         type boolean;
+         default "false";
+         description
+           "Enables/disables LFA FRR";
+       }
+
+       list preference {
+          key "address-family";
+          description
+            "Preference for each of the LFA options";
+          leaf address-family {
+            type cn-l3-types:isis-ip-address-family;
+            description
+              "IPv4 or IPv6 address family";
+          }
+
+        list priority {
+           key "tie-breaker";
+             description
+               "Sets the priority value for each tie-breaker, lower value higher priority";
+             leaf tie-breaker {
+               type cn-l3-types:isis-frr-tie-breaker;
+               description
+                 "Tie-breakers used to select the best alternate route";
+             }
+
+             leaf value  {
+               type uint32 {
+                 range "1..255";
+               }
+               description
+                 "Priority value associated with the tie-breaker";
+             }
+         }
+      }
+
+      container remote-lfa {
+         if-feature remote-lfa;
+         when "../per-prefix-enable='true'";
+         description
+           "Configurations for remote ISIS LFA fast reroute";
+         leaf per-prefix-enable {
+            type boolean;
+            default "false";
+            description
+              "Enables/disables remote LFA FRR";
+         }
+
+         leaf tunnel-cost  {
+           type uint32 {
+             range "1..16777214";
+           }
+           default "30";
+           description
+             "Maximum cost of the repair tunnel.";
+         }
+
+         list protection {
+           key "protection-type";
+           description
+             "Protection provided to the repair tunnel";
+
+           leaf protection-type {
+             type cn-l3-types:isis-rlfa-protection-type;
+             description
+               "The protection type";
+           }
+           leaf enable  {
+             type boolean;
+             default "false";
+             description
+               "Enable/disable the protection type";
+           }
+         }
+      }
+
+      container ti-lfa {
+        when "../per-prefix-enable='true'";
+        description
+          "Configurations for ISIS TI-LFA fast reroute";
+         leaf per-prefix-enable {
+           type boolean;
+           default "false";
+           description
+             "Enables/disables topology independent FRR";
+         }
+       }
+     }
+    }
+  }
+  }
+
+  grouping isis-interface-config {
+    leaf interface-type {
+    type  cn-l3-types:isis-interface-type;
+    default broadcast;
+    description
+      "Type of adjacency to be established on the interface. This
+       dictates the type of hello messages that are used.";
+    }
+
+    leaf level-type {
+      type cn-l3-types:isis-level-types;
+      default "level-1-2";
+      description
+        "Level of an IS-IS node - can be level-1, level-2 or level-1-2.";
+    }
+
+    leaf lsp-interval {
+      type uint32 {
+        range "1..4294967295";
+      }
+      default "33";
+      units milliseconds;
+      description
+        "Interval between LSP transmissions.";
+    }
+
+    leaf lsp-retransmit-interval {
+      type uint16 {
+        range "1..65535";
+      }
+      default "5";
+      units seconds;
+      description
+        "Interval between LSP retransmissions.";
+    }
+
+    leaf hello-padding {
+      type boolean;
+      default "true";
+      description
+        "IS-IS Hello-padding activation - enabled by default.";
+    }
+
+    leaf ipv4-unicast-default-disable {
+      type boolean;
+      default "false";
+      description
+        "Set this flag (to true) to disable default config for IPv4 AF on interface.";
+    }
+
+    container address-families {
+      description
+        "Address families that takes Afi and Safi related configuration in interface mode";
+
+      list address-family {
+        key "afi safi";
+        description
+          "List IS-IS Address Family that takes Afi and Safi related configuration";
+        
+        leaf afi {
+          type  cn-l3-types:isis-afi-type;
+          description
+            "Enter the IPv4, or IPv6 address
+            family mode allowing configuration of Address-family specific parameters";
+        }
+
+        leaf safi{
+          type  cn-l3-types:isis-safi-type;
+          description
+            "Configure sub address family such as unicast";
+        }
+      }
+    }
+  
+    list ldp-igp-sync {
+      if-feature ldp-igp-sync;
+      description
+       "Enables IGP/LDP synchronization";
+      max-elements 1;
+      key "level-type";
+
+      leaf level-type {
+        type cn-l3-types:isis-level-types;
+        description
+          "Enable MPLS LDP Synchronization for an
+           IS-IS level - can be level-1, level-2 or level-1-2.";
+      }
+
+      leaf hold-down {
+        type union{
+          type uint32 {
+            range "1..69999";
+          }
+
+          type enumeration {
+            enum infinite {value 70000;}
+          }
+        }
+        mandatory true;
+        units seconds;
+        description
+          "Hold-down timer for the ISIS ldp-igp synchronization configuration";
+      }
+    }
+
+    container level-1 {
+      description
+        "Interface level-1 specific configuration";
+
+      leaf hello-interval {
+        type uint16 {
+          range "1..65535";
+        }
+        default "10";
+        units seconds;
+        description
+          "Interval between hello messages";
+      }
+
+      leaf hello-multiplier {
+        type uint8 {
+          range "2..100";
+        }
+        default "3";
+        units seconds;
+        description
+          "Number of missed hello messages prior to adjacency down grouping.";
+      }
+
+      leaf csnp-interval {
+        type uint16 {
+          range "1..65535";
+        }
+        default "10";
+        units seconds;
+        description
+          "Interval between CSNP messages.";
+      }
+
+      leaf priority {
+        type uint8 {
+          range "0..127";
+        }
+        default "64";
+        description
+          "Priority for DIS election.";
+      }
+
+      leaf metric {
+        type uint8 {
+          range "1..63";
+        }
+        default "10";
+        description
+          "Narrow metric IS-IS interface configuration.";
+      }
+
+      leaf wide-metric {
+        type uint32 {
+          range "1..16777214";
+        }
+        default "10";
+        description
+          "Wide-metric configuration";
+      }
+
+      leaf password {
+        type string {
+          length "1..80";
+        }
+        ncx:password;
+        description
+          "Password string for interface authentication using HMAC-MD5";
+      }
+
+      leaf tag  {
+        if-feature prefix-tag;
+        type  uint32 {
+          range "1..4294967295";
+        }
+        description
+          "Level-1 tag for LSPs sent out advertising routes for networks directly connected to an interface.";
+       }
+
+       leaf lfa-candidate-enable {
+         type boolean;
+         description
+           "Enable/disable the interface from being used as LFA for a level-1 primary route";
+         default "true";
+       }
+
+       leaf auth-type {
+          if-feature extended-auth;
+          type  cn-l3-types:isis-auth-mode;
+          description
+             "Interface authentication type (MD5/text)";
+       }
+
+       leaf send-only {
+          if-feature extended-auth;
+          type boolean;
+          description
+             "Only send encrypted packets, ignore auth on received PDUs";
+       }
+
+    }
+
+    container level-2 {
+      description
+        "Interface level-2 specific configuration";
+
+      leaf hello-interval {
+        type uint16 {
+          range "1..65535";
+        }
+        default "10";
+        units seconds;
+        description
+          "Interval between hello messages";
+      }
+
+      leaf hello-multiplier {
+        type uint8 {
+          range "2..100";
+        }
+        default "3";
+        units seconds;
+        description
+          "Number of missed hello messages prior to adjacency down grouping.";
+      }
+
+      leaf csnp-interval {
+        type uint16 {
+          range "1..65535";
+        }
+        default "10";
+        units seconds;
+        description
+        "Interval between CSNP messages.";
+      }
+
+      leaf priority {
+        type uint8 {
+          range "0..127";
+        }
+        default "64";
+        description
+          "Priority for DIS election.";
+      }
+
+      leaf metric {
+        type uint8 {
+          range "1..63";
+        }
+        default "10";
+        description
+          "Narrow metric configuration.";
+     }
+
+     leaf wide-metric {
+       type uint32 {
+         range "1..16777214";
+       }
+       default "10";
+       description
+         "Wide-metric configuration";
+     }
+
+     leaf password {
+       type string {
+         length "1..80";
+       }
+       ncx:password;
+       description
+         "Password string for interface authentication using HMAC-MD5";
+     }
+
+     leaf tag  {
+       if-feature prefix-tag;
+       type  uint32 {
+         range "1..4294967295";
+       }
+       description
+         "Level-2 tag for LSPs sent out advertising routes for networks directly connected to an interface.";
+     }
+
+     leaf lfa-candidate-enable {
+       type boolean;
+       description
+         "Enable/disable the interface from being used as LFA for a level-2 primary route";
+       default "true";
+     }
+
+     leaf auth-type {
+        if-feature extended-auth;
+        type  cn-l3-types:isis-auth-mode;
+        description
+           "Interface authentication type (MD5/text)";
+     }
+
+     leaf send-only {
+        if-feature extended-auth;
+        type boolean;
+        description
+           "Only send encrypted packets, ignore auth on received PDUs";
+     }
+
+   }
+
+    container bfd {
+      if-feature bfd;
+      description
+         "Configure bidirectional forwarding detection for address family IPv4 for ISIS.";
+      uses bfd-types:client-cfg-parms;
+    }
+
+    container bfd-ipv6 {
+      if-feature bfd;
+      description
+         "Configure bidirectional forwarding detection for address family IPv6 for ISIS.";
+      uses bfd-types:client-cfg-ipv6-parms;
+    }
+
+    uses admin-control;
+  }
+
+  grouping srlr {
+    description
+      "Grouping for SR Label Range configuration.";
+    leaf lower-bound {
+      type uint32 {
+        range "16000..1048575";
+      }
+      description
+        "Lower value in the block.";
+    }
+    leaf upper-bound {
+      type uint32 {
+        range "16000..1048575";
+      }
+      description
+        "Upper value in the block.";
+    }
+  }
+  grouping srgb-cfg {
+    description
+      "Grouping for SR Label Range configuration.";
+     list srgb {
+       key "lower-bound upper-bound";
+       max-elements 1;
+       ordered-by user;
+       description
+       "List of global blocks to be advertised.";
+       uses srlr;
+     }
+  }
+
+  grouping sr-state-grouping {
+    description
+      "Grouping for SR global state configuration.";
+     list sr-states {
+       key "tag";
+       description
+         "ISIS SR state show";
+       leaf tag {
+         type leafref {
+           path "/isis:isis/isis:instance/isis:tag";
+         }
+         description
+           "ISIS Instance Area Tag";
+       }
+
+       leaf state {
+         type string {
+           length "0..255";
+         }
+         config false;
+         description
+           "sr state enabled/disabled";
+       }
+
+       leaf operstate {
+         type string {
+           length "0..255";
+         }
+         config false;
+         description
+           "SR oper state enabled/disabled";
+       }
+     }
+  }
+  
+  grouping microloop-avoidance-state-grouping {
+      description
+         "Grouping of ISIS Microloop state elements.";
+      
+      leaf enable {
+         type boolean;
+         description
+           "Microloop state enabled/disabled";
+      }
+
+      leaf rib-update-delay {
+         type uint32;
+         units milliseconds;
+         description
+           "Microloop rib-update-delay timer total configured value";
+      }
+
+     leaf running-state {
+         type boolean;
+         description
+           "Microloop rib-update-delay running state";
+      }
+
+     leaf pending-rib-update-delay {
+         type uint32;
+         units milliseconds;
+         description
+           "Microloop rib-update-delay timer remaining value";
+      }
+     
+     leaf event-type {
+         type cn-l3-types:isis-microloop-event-type;
+         description
+           "The event that caused microloop rib-update-delay to be triggered";
+      }
+     
+     leaf link-info {
+         type string; 
+         description
+           "Information about the link that underwent a change.(Up/Down/Metric change)";
+      }
+  }
+
+  grouping isis-grouping {
+    container isis {
+      description
+        "List of IS-IS structures.";
+      list instance {
+        key "tag";
+        max-elements 16;
+        description
+          "IS-IS structure";
+
+        leaf tag {
+          type cn-l3-types:string-max-256 {
+            pattern '[\S]*';
+          }
+          description
+            "IS-IS instance area tag";
+        }
+
+        uses isis-instance-config;
+
+        container interfaces {
+          description
+            "Configure IS-IS interface";
+          list interface {
+            key "name";
+            max-elements 254;
+            description
+              "ISIS interface related operations";
+
+            leaf name {
+              type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+              }
+              description
+                "L3 Interface name";
+            }
+            uses isis-interface-config;
+          }
+        }
+
+        container mpls-te {
+          description
+            "Routing protocol commands for MPLS Traffic Engineering";
+          leaf router-id {
+            type inet:ip-address;
+            description
+              "Router ID to be set";
+          }
+          leaf level-type {
+            type leafref {
+              path "/isis:isis/isis:instance/isis:level-type";
+            }
+            description
+              "Level of ISIS-TE node";
+          }
+       }
+
+       leaf cspf-flag {
+         type boolean;
+         default "false";
+         description
+           "Enable cspf flag";
+       }
+
+       container segment-routing {
+         description
+           "Attribute to enable MPLS-based segment routing for an ISIS or OSPF process.";
+         leaf enabled {
+           type  boolean;
+           default "false";
+           description
+             "Enable MPLS Segment Routing";
+         }
+         uses srgb-cfg;
+         container bindings {
+           description
+             "Attribute to enable prefix sid map local/receive";
+           leaf advertise {
+             type boolean;
+             default "false";
+             description
+               "Enables/disables prefix sid map type local";
+           }
+           leaf receive {
+             type boolean;
+             default "true";
+             description
+               "Enables/disables prefix sid map type receive";
+           }
+         }
+         container force-php {
+           description
+             "Attribute to configure Force PHP";
+           leaf enable {
+             type boolean;
+             default "false";
+             description
+               "Enable/disable Force PHP";
+           }
+         }
+       }
+
+       container graceful-restart {
+         description
+           "IS-IS graceful restart capabilities.";
+
+         leaf helper-enable {
+           type boolean;
+           description
+             "Enable/disable graceful restart helper mode (disabled by default).";
+         }
+
+         leaf restart-capable {
+           if-feature graceful-restart;
+           type boolean;
+           description
+             "Enable/disable graceful restart capability (disabled by default).";
+         }
+
+         leaf max-recovery-time {
+           if-feature graceful-restart;
+            type uint16 {
+               range "1..65535";
+            }
+            default "60";
+            units seconds;
+            description
+               "Graceful restart T3 timer (max time for recovery)";
+         }
+
+         leaf max-restart-time {
+           if-feature graceful-restart;
+            type uint16 {
+               range "1..3600";
+            }
+            default "50";
+            units seconds;
+            description
+               "Graceful restart T1 timer";
+         }
+       }
+
+       uses admin-control;
+      
+      }
+    }
+
+    container isis-state {
+      config "false";
+      list instance {
+        key "tag";
+        description
+          "IS-IS state attributes";
+
+        leaf tag {
+          type leafref {
+            path "/isis/instance/tag";
+          }
+          description
+            "IS-IS instance area tag";
+        }
+
+      container summary {
+        config "false";
+        description
+          "Summary of config data for the IS-IS instance.";
+
+        leaf tag {
+          type leafref {
+            path "/isis/instance/tag";
+          }
+          description
+            "IS-IS instance area tag";
+        }
+
+        leaf level-type {
+          type  cn-l3-types:isis-level-types;
+          description
+            "Level of an IS-IS node - can be level-1,
+            level-2 or level-1-2.";
+        }
+
+        leaf-list area-id {
+          type string;
+          description
+            "Area ID list configured on the IS-IS instance.";
+        }
+ 
+        leaf system-id {
+          type string;
+          description
+            "IS-IS system ID.";
+        }
+
+        leaf dynamic-hostname {
+          type boolean;
+          description 
+            "IS-IS dynamic-hostname enabled/disabled.";
+        }
+ 
+        list level {
+          key "level-index";
+          description
+            "IS-IS level data configured on node.";
+
+          leaf level-index {
+            type  cn-l3-types:isis-level-type;  
+            description
+              "IS-IS instance level index.";
+          }
+
+          leaf auth-type {
+            type cn-l3-types:isis-auth-mode;
+            description
+              "IS-IS instance authentication type.";
+          }
+
+          leaf auth-enabled {
+            type boolean;
+            description
+              "IS-IS instance level authentication enabled: true/false.";
+          }
+        }
+
+        leaf topology-type {
+          type cn-l3-types:isis-topology-type;
+          description
+            "Single topology or multi-topology running on node.";   
+        }
+     
+        leaf microloop-avoidance-enabled {
+          type boolean;
+          description
+            "IS-IS microloop avoidance enabled: true/false.";
+        }
+
+        leaf gr-helpermode-enabled {
+          type boolean;
+          description
+            "IS-IS graceful restart helper mode enabled: true/false.";
+        } 
+        
+        list interface {
+          key "name";   
+          description
+            "IS-IS interface config data.";
+
+          leaf name {
+            type string;
+            description
+              "Interface name tied to the IS-IS instance."; 
+          }
+
+          leaf interface-type {
+            type cn-l3-types:isis-interface-type;
+            description
+              "Type of adjacency to be established on the interface: 
+               broadcast or point-to-point.";
+          }
+
+          leaf level-type {
+            type cn-l3-types:isis-level-types;
+            description
+              "Level of an IS-IS interface - can be level-1, level-2 or level-1-2.";
+          }
+
+          leaf passive {
+            type boolean;
+            description
+              "Interface is passive: true/false.";
+          }
+
+          leaf ipv4-unicast {
+            type boolean;
+            description
+              "IPv4 unicast enabled on the interface: true/false.";
+          }
+
+          leaf ipv6-unicast {
+            type boolean;
+            description
+              "IPv6 unicast is enabled on the interface: true/false.";
+          }
+
+          list level {
+            key "level-index";
+            description
+               "IS-IS level data configured on the interface.";
+
+            leaf level-index {
+               type  cn-l3-types:isis-level-type;
+               description
+                  "IS-IS interface level index.";
+            }
+
+            leaf metric {
+               type uint8;
+               description 
+                  "IS-IS interface metric.";
+            }
+
+            leaf wide-metric {
+               type uint32;
+               description
+                  "IS-IS interface wide metric.";
+            }
+
+            leaf auth-type {
+               type cn-l3-types:isis-auth-mode;
+               description
+                  "IS-IS interface authentication type.";
+            }
+
+            leaf auth-enabled {
+               type boolean;
+               description
+                  "IS-IS interface level authentication enabled: true/false.";
+            }   
+         }
+        }
+
+        container mpls-te {
+          config "false";
+          description
+            "IS-IS configs for MPLS Traffic Engineering";
+
+          leaf router-id {
+            type inet:ip-address;
+            description
+              "Router ID for node.";
+          }
+   
+          leaf level-type {
+            type cn-l3-types:isis-level-types;
+            description
+              "Level of IS-IS TE node";
+          }
+        }
+ 
+        leaf segment-routing-enabled {
+          type boolean;
+          description
+            "Segment routing enabled/disabled on node.";
+        }
+
+        leaf transition {
+          type boolean;
+          description
+            "Multi-topology transition mode enabled/disabled on node.";
+        }
+      }
+      
+      list route-state {
+        key "prefix";
+        description
+          "List of IS-IS local RIB Routes";
+
+        leaf prefix {
+          type inet:ip-prefix;
+          description
+            "Destprefix for the route";
+        }
+
+        leaf metric {
+          type uint32;
+          description
+            "Metric for the route";
+        }
+
+        leaf type {
+          type string;
+          description
+            "Destination path type attribute";
+        }
+
+        leaf type-external {
+          type string;
+          description
+            "Destination path type external attribute";
+        }
+
+        list next-hop {
+          key "nexthopIndex";
+          description
+            "List of next hop for the route";
+
+          leaf nexthopIndex {
+            type uint8;
+            description
+              "Index for next hop";
+          }
+
+          leaf next-hop {
+            type inet:ip-address;
+            description
+              "Nexthop address.";
+          }
+
+          leaf outgoing-interface {
+            type string;
+            description
+              "Name of the outgoing interface";
+          }
+        }
+      }
+
+      list route-v6-state {
+        key "prefix";
+        description
+          "List of IS-IS local RIB Routes";
+
+        leaf prefix {
+          type inet:ip-prefix;
+          description
+            "Destprefix for the route";
+        }
+
+        leaf metric {
+          type uint32;
+          description
+            "Metric for the route";
+        }
+
+        leaf type {
+          type string;
+          description
+            "Destination path type attribute";
+        }
+
+        leaf type-external {
+          type string;
+          description
+            "Destination path type external attribute";
+        }                          
+
+        list next-hop {
+          key "nexthopIndex";
+          description
+            "List of next hop for the route";
+
+          leaf nexthopIndex {
+            type uint8;
+            description
+              "Index for next hop";
+          }
+
+          leaf next-hop {
+            type inet:ip-address;
+            description
+              "Nexthop address.";
+          }
+
+          leaf outgoing-interface {
+            type string;
+            description
+              "Name of the outgoing interface";
+          }
+        }
+      }
+
+      list level-db {
+        key "level-type";
+        description
+          "LSDB level number (1 or 2)";
+
+        leaf level-type {
+          type cn-l3-types:isis-level-type;
+          description
+            "Level of an IS-IS node - can be level-1 or level-2";
+        }
+
+        leaf level-flags {
+          type uint8;
+          description
+            "Isis level flags";
+        }
+
+        leaf topology-type {
+          type uint8;
+          description
+            "Topology type of isis instance";
+        }
+
+        leaf tv-spf {
+          type string;
+          description
+            "SPF counter value";
+        }
+
+        leaf tv-spf-curr {
+          type string;
+          description
+            "SPF current counter value";
+        }
+
+        leaf tv-prc {
+          type string;
+          description
+            "PRC counter value";
+        }
+
+        leaf tv-prc-curr {
+          type string;
+          description
+            "PRC current counter value";
+        }
+
+        leaf prc-flags {
+          type uint8;
+          description
+            "PRF flags for the LSPDB";
+        }
+
+        leaf authentication-type-fails {
+          type uint32;
+          description
+            "Number of authentication type mismatches.";
+        }
+
+        leaf authentication-fails {
+          type uint32;
+          description
+            "Number of authentication key failures.";
+        }
+
+        leaf corrupted-lsps {
+          type uint32;
+          description
+            "Number of corrupted in-memory LSPs detected.
+             LSPs received from the wire with a bad
+             checksum are silently dropped and not counted.
+             LSPs received from the wire with parse errors
+             are counted by lsp-errors.";
+        }
+
+        leaf database-overload {
+          type uint32;
+          description
+            "Number of times the database has become overloaded.";
+        }    
+
+        leaf manual-address-drop-from-area {
+          type uint32;
+          description
+            "Number of times a manual address
+             has been dropped from the area.";
+        }
+
+        leaf max-sequence {
+          type uint32;
+          description
+            "Number of times the system has attempted
+            to exceed the maximum sequence number.";
+        }
+
+        leaf sequence-number-skipped {
+          type uint32;
+          description
+            "Number of times a sequence number skip has occured.";
+        }
+
+        leaf own-lsp-purge {
+          type uint32;
+          description
+            "Number of times a zero-aged copy of the system's
+             own LSP is received from some other IS-IS node.";
+        }
+
+        leaf lsp-sourced {
+          type uint32;
+          description
+            "Lsp sourced value";
+        }
+
+        leaf max-area-addresses-mismatch {
+          type uint32;
+          description
+            "The number of times an IS-IS PDU has been
+             received on this interface with the
+             max area address field differing from that of
+             this system.";
+        }   
+
+        leaf id-len-mismatch {
+          type uint32;
+          description
+            "The number of times an IS-IS PDU with an ID
+            field length different from that for this
+            system has been received on this interface.";
+        }   
+
+        leaf partition-changes {
+          type uint32;
+          description
+            "Number of partition changes detected";
+        }
+
+        leaf spf-calc-count {
+          type uint32;
+          description
+            "Spf calculation count";
+        }
+
+        leaf prc-calc-count {
+          type uint32;
+          description
+            "PRC calculation count";
+        }
+
+        leaf dis-election-count {
+          type uint32;
+          description
+            "DIS election count";
+        }
+
+        leaf lsp-error {
+          type uint32;
+          description
+            "Number of LSPs with errors we have received.";
+        }
+ 
+        container microloop-avoidance-state {
+          uses microloop-avoidance-state-grouping;
+        }
+
+        container spf-log {
+          config "false";
+          description
+            "SPF computation-related information container";
+
+          leaf last-spf-time {
+            type string;
+            description
+              "Time of last SPF computation.";
+          }
+          leaf spf-runs {
+            type uint32;
+            description
+              "Number of times we ran SPF at this level.";
+          }
+          leaf spf-max-delay {
+            type string;
+            description
+              "Maximum delay between receiving a change to SPF calculation";
+          }
+          leaf spf-min-delay {
+            type string;
+            description
+              "Minimum delay between receiving a change to SPF calculation";
+          }
+          leaf next-spf-time {
+            type string;
+            description
+              "Time when next SPF has been scheduled.";
+          }
+        }
+
+        list topology {
+          key "protocol-index";
+          description
+            "Level Topology state attributes";
+
+          leaf protocol-index {
+            type uint32;
+            description
+              "Index of IPv4 or IPv6 topology graph";
+          }
+
+          list nexthop {
+            key "index";
+            description
+              "Level Topology next hop attributes";
+
+            leaf index {
+              type uint32;
+              description
+                "Next hop index of topology";
+            }
+
+            leaf flags {
+              type uint8;
+              description
+                "Topology flags";
+            }
+            leaf metric {
+              type uint32;
+              description
+                "Topology Metric";
+            }
+
+            leaf destination-source-id {
+              type string;
+              description
+                "Source id of the destination";
+            }
+
+            leaf source-id {
+              type string;
+              description
+                "Source id of the Next hop";
+            }
+
+            leaf interface {
+              type string;
+              description
+                "Next hop interface name";
+            }
+
+            leaf local-snpa {
+              type string;
+              description
+                "This type defines the Subnetwork Point
+                 of Attachement (SNPA) format";
+            }
+          }
+        }
+
+        list lsp {
+          key "lsp-id";
+          description
+            "LSPDB state attributes";
+          leaf lsp-id {
+            type string;
+            description
+              "List of LSPs in LSDB";
+          }
+
+          leaf checksum {
+            type string;
+            description
+              "LSP checksum";
+          }
+
+          leaf holdtime {
+            type string;
+            description
+              "LSP Hold time";
+          }
+
+          leaf att-flag {
+            type uint8;
+            description
+              "This leaf describes the attribute number of the LSP.";
+          }
+
+          leaf p-flag {
+            type uint8;
+            description
+              "This leaf describes the p-flag number of the LSP.";
+          }
+
+          leaf ol-flag {
+            type uint8;
+            description
+              "This leaf describes the ol-flag number of the LSP.";
+          }
+
+          leaf seq-num {
+            type string;
+            description
+              "This leaf describes the sequence number of the LSP.";
+          }
+
+          leaf zero-life {
+            type uint8;
+            description
+              "This leaf describes the zero-life number of the LSP.";
+          }
+
+          leaf lifetime {
+            type uint32;
+            description
+              "This leaf describes the LSP lifetime.";
+          }
+
+          leaf pdu-length {
+            type uint32;
+            description
+              "This leaf describes the PDU length of each LSP";
+          }
+
+          leaf h-flags {
+            type uint8;
+            description
+              "This leaf describes the h-flag of each LSP";
+          }
+
+          leaf tv-update {
+            type string;
+            description
+              "This leaf describes the tv-update of each LSP";
+          }
+
+          list lspdb-tlv {
+            key "tlv-index";
+            description
+              "Loop for TLV from LSPDB";
+
+            leaf tlv-index {
+              type uint32;
+              description
+                "LDP db Tlv Index";
+            }
+
+            leaf-list multitopology-id {
+               type uint16;
+               description
+                  "List of MTIDs that node is advertising - IS-IS 
+                   reference is TLV type 229";
+            }
+
+            list area {
+              key "address-index";
+              description
+                "Area Address TLV information";
+
+              leaf area-address {
+                type string;
+                description
+                  "TLV Area Address";
+              }
+
+              leaf address-index {
+                type uint8;
+                description
+                  "TLV Area Address Index";
+              }
+            }
+
+            list is-neighbor {
+              key "is-neighbor-id";
+              description
+                "IS neighbor tlv attributes";
+
+              leaf is-neighbor-id {
+                type string;
+                description
+                  "TLV Lsp Is Neighbor Id";
+              }
+
+              leaf metric {
+                type string;
+                description
+                  "TLV Lsp Is Neighbor Metric";
+              }
+            }
+
+            list es-neighbor {
+              key "es-neighbor-id";
+              description
+                "Extended neighbor TLV attributes";
+
+              leaf es-neighbor-id {
+                type string;
+                description
+                  "TLV LSP Es Neighbor Id";
+              }
+
+              leaf metric {
+                type string;
+                description
+                  "TLV LSP Extended Neighbor Metric";
+              }
+            }
+
+            list ipv4-internal-reachability {
+              key "ip-prefix";
+              description
+                "IPv4 internal reachability information container - IS-IS
+                 reference is TLV 128.";
+
+              leaf ip-prefix {
+                type string;
+                description
+                  "TLV IP internal reachability Address";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "TLV IP internal reachability Metric";
+              }
+            }
+
+            list ipv6-internal-reachability {
+              key "ip-prefix";
+              description
+                "IPv6 internal reachability information container - IS-IS
+                 reference is TLV type 236.";
+
+              leaf ip-prefix {
+                type string;
+                description
+                  "TLV IPv6 internal reachability Address";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "TLV IPv6 internal reachability Metric";
+              }
+
+              list stlv {
+                key "stlv-index";
+                description
+                  "Sub-tlv-reach index list";
+
+                leaf stlv-index {
+                  type uint32;
+                  description
+                    "Stlv-reach Index for IPv6 Reachability (TLV 236)";
+                }
+
+                leaf tag {
+                  type  uint32;
+                  description
+                    "Admin tag value received in link state PDUs";
+                }
+              }
+            }
+
+            list ipv4-external-reachability {
+              key "ip-prefix";
+              description
+                "IPv4 external reachability information container - IS-IS
+                 reference is TLV 128.";
+
+              leaf ip-prefix {
+                type string;
+                description
+                  "TLV IP external reachability Address";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "TLV IP external reachability Metric";
+              }
+            }
+
+            list ipv6-external-reachability {
+              key "ip-prefix";
+              description
+                "IPv6 external reachability information container - IS-IS
+                 reference is TLV type 236.";
+
+              leaf ip-prefix {
+                type string;
+                description
+                  "TLV IPv6 external reachability Address";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "TLV IPv6 external reachability Metric";
+              }
+            }
+
+            list multi-topology-ipv4-reachability {
+               key "ipv4reach-index";
+               description
+                 "IPv4 Multi Topology Reachability information conatiner - 
+                  IS-IS reference is TLV 235.";
+               
+               leaf ipv4reach-index {
+                  type uint32;
+                  description
+                    "Multi Topology IPv4 reachability TLV Index";
+               }
+
+               leaf ipv4-prefix {
+                  type string;
+                  description 
+                    "Multi Topology IPv4 reachability Address";
+               }
+
+               leaf metric {
+                  type uint32;
+                  description
+                    "Multi Topology IPv4 reachability Metric";
+               }
+            }
+
+            list multi-topology-ipv6-reachability {
+               key "ipv6reach-index";
+               description
+                 "IPv6 Multi Topology Reachability information conatiner -
+                  IS-IS reference is TLV 237.";
+
+               leaf ipv6reach-index {
+                  type uint32;
+                  description
+                    "Multi Topology IPv6 reachability TLV Index";
+               }
+               
+               leaf inter-area {
+                  type string;
+                  description
+                    "Inter-Area String Yes/No";
+               }
+               
+               leaf ipv6-prefix {
+                  type string;
+                  description
+                    "Multi Topology IPv6 reachability Address";
+               }
+
+               leaf metric {
+                  type uint32;
+                  description
+                    "Multi Topology IPv6 reachability Metric";
+               }
+            }
+
+            list multi-topology-is-reachability {
+               key "multi-isreach-tlv-index";
+               description
+                 "Multi topology IS reachability information container - 
+                  IS-IS reference is TLV 222.";
+
+               leaf multi-isreach-tlv-index {
+                  type uint32;
+                  description
+                    "Multi topology IS reachability TLV index.";
+               }
+
+               leaf neighbor-id {
+                  type string;
+                  description
+                    "Neighbor-id of node.";
+               }
+
+               leaf metric {
+                  type uint32;
+                  description
+                    "Multi topology IS reachability TLV metric.";
+               }
+
+               leaf multitopology-id {
+                  type uint16;
+                  description
+                     "Multi Topology ID associated with the TLV.";
+               }
+            }
+
+            list extended-ipv4-reachability {
+              key "ipv4reach-tlv-index";
+              description
+                "IPv4 extended reachability information container -
+                 IS-IS reference is TLV 135.";
+ 
+              leaf ipv4reach-tlv-index {
+                type uint32;
+                description
+                  "Extended IPv4 reachability Tlv Index";
+              }
+
+              leaf ip-prefix {
+                type string;
+                description
+                  "TLV IPv4 extended reachability Address";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "Extended reachability TLV Metric";
+              }
+
+              list stlv {
+                key "stlv-index";
+                description
+                  "Sub-tlv-reach index list";
+
+                leaf stlv-index {
+                  type uint32;
+                  description
+                    "LDP db stlv-reach Index";
+                }
+
+                leaf tag {
+                  type  uint32; 
+                  description
+                    "Admin tag values received in link state PDUs";
+                }
+
+                list sid-list {
+                  key "value";
+                  description
+                    "List of Prefix SID values";
+
+                  leaf value {
+                    type uint32;
+                    description
+                      "Value of the Prefix SID for the link";
+                  }
+
+                  leaf flags {
+                    type string;
+                    description
+                      "Bit Position 7: If set, then the prefix to
+                       which this Prefix-SID is attached,
+                       has been propagated by the
+                       router either from another level
+                       or from redistribution.
+                       Bit Position 5: If set, then the penultimate hop MUST NOT
+                       pop the Prefix-SID before delivering the packet
+                       to the node that advertised the Prefix-SID.
+                       Bit Position 4: If set, any upstream neighbor of
+                       the Prefix-SID originator MUST replace
+                       the Prefix-SID with a
+                       Prefix-SID having an
+                       Explicit-NULL value (0 for IPv4 and 2 for
+                       IPv6) before forwarding the packet.
+                       Bit Position 3: If set, then the Prefix-SID carries a
+                       value (instead of an index).
+                       By default the flag is UNSET.
+                       Bit Position 2: If set, then the value/index carried by
+                       the Prefix-SID has local significance.
+                       By default the flag is UNSET.";
+                  }
+
+                  leaf algorithm {
+                    type uint8;
+                    description
+                      "Algorithm to be used for path computation.";
+                  }
+                }
+              }
+            }
+
+            list extended-is-reachability {
+              key "isreach-tlv-index";
+              description
+                "IPv4 IS reachability information container -
+                 IS-IS reference is TLV 135.";
+
+              leaf isreach-tlv-index {
+                type uint32;
+                description
+                  "Extended IS reachability Tlv Index";
+              }
+
+              leaf neighbor-id {
+                type string;
+                description
+                  "Neighbor-id of the node.";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "Extended reachability TLV Metric";
+              }
+
+              list stlv {
+                key "stlv-index";
+                description
+                  "Sub-tlv index list";
+
+                leaf stlv-index {
+                  type uint32;
+                  description
+                    "LDP db stlv Index";
+                }
+
+               list sid-list {
+                 key "value";
+                 description
+                   "List of Adj SID values";
+
+                 leaf value {
+                   type uint32;
+                   description
+                     "Adjacency SID for the link";
+                 }
+
+                 leaf flags {
+                   type string;
+                   description
+                     "Bit Position 7: If unset, then the Adj-SID refers
+                      to an adjacency with outgoing IPv4 encapsulation.
+                      If set then the Adj-SID refers to an adjacency
+                      with outgoing IPv6 encapsulation.
+                      Bit Position 6: If set, the Adj-SID refers to an
+                      adjacency being protected
+                      (e.g.: using IPFRR or MPLS-FRR)
+                      Bit Position 5: If set, then the SID carries a
+                      value (instead of an index).
+                      By default the flag is SET.
+                      Bit Position 4: If set, then the value/index carried by
+                      the SID has local significance.
+                      By default the flag is SET.
+                      Bit Position 3: When set, the S-Flag indicates that the
+                      Adj-SID refers to a set of adjacencies.
+                      Bit Position 2: When set, the P-Flag indicates that the
+                      Adj-SID is persistently allocated.";
+                 }
+
+                 leaf weight {
+                   type uint8;
+                   description
+                     "The value represents the weight of the Adj-SID
+                      for the purpose of load balancing.";
+                 }
+
+                 leaf neighbor-id {
+                   type string;
+                   description
+                     "Describes the system ID of the neighbor
+                      associated with the SID value. This is only
+                      used on LAN adjacencies.";
+                 }
+               }
+               
+               leaf interface-ip-address {
+                  type string;
+                  description
+                     "Interface IP address";
+               }
+
+               leaf neighbor-ip-address {
+                  type string;
+                  description
+                     "Neighbor IP address";
+               }
+
+               leaf admin-group {
+                  description
+                     "Admin group bitmap attached to the interface";
+                  type uint32;
+               }
+
+               leaf te-metric {
+                  type uint32;
+                  description
+                     "STLV TE Metric";
+               }
+
+               container unidirectional-link-delay {
+                 description
+                   "STLV Unidirectional Link Delay";
+                             
+                 leaf flags {
+                   type uint8;
+                   description
+                     "The value represents Anomalous bit";
+                 }
+
+                 leaf delay {
+                   type uint32;
+                   description
+                     "Unidirectional delay";
+                 }                               
+               }
+
+               leaf max-link-bw {
+                  type string;
+                  description
+                     "Maximum link bandwidth in bytes per second";
+               }
+
+               leaf max-reservable-bw {
+                  type string;
+                  description
+                     "Reservable link bandwidth in bytes per second";
+               }
+
+               container unreserved-bandwidths {
+                  list unreserved-bandwidth {
+                     key "priority";
+                     description
+                        "List of unreserved bandwidths for different
+                        priorities.";
+
+                     leaf priority {
+                        type uint8 {
+                           range "0 .. 7";
+                        }
+                        description
+                           "Priority from 0 to 7.";
+                     }
+
+                     leaf unreserved-bandwidth {
+                        type string;
+                        description
+                           "Unreserved bandwidth in bytes per second.";
+                     }
+                  }
+               }
+
+               container link-identifiers {
+                 description
+                   "Link identifier container";
+
+                 leaf link-local-id {
+                   type uint32;
+                   description
+                     "Local identifier of the link.";
+                 }
+
+                 leaf link-remote-id {
+                   type uint32;
+                   description
+                     "Remote identifier of the link.";
+                 }
+               }
+
+               container min-max-unidirectional-link-delay {
+                 description
+                   "STLV Unidirectional Min Max Link Delay";
+
+                 leaf flags {
+                   type uint8;
+                   description
+                     "The value represents Anomalous bit";
+                 }
+
+                 leaf min-delay {
+                   type uint32;
+                   description
+                     "Unidirectional Minimum link delay";
+                 }
+
+                 leaf max-delay {
+                   type uint32;
+                   description
+                     "Unidirectional Maximum link delay";
+                 }
+               }
+               container unidirectional-link-delay-variation {
+                 description
+                   "STLV Unidirectional Link Delay Variation";
+
+                 leaf delay-variation {
+                   type uint32;
+                   description
+                     "Unidirectional link delay variation";
+                 }
+               }
+             }
+           }
+
+           list router-capability {
+             key "router-capability-tlv-index";
+             description
+               "IS-IS Router Capability list TLV 242";
+
+             leaf router-capability-tlv-index {
+               type uint32;
+               description
+                 "Router capability TLV index";
+             }
+
+             leaf router-id {
+               type string;
+               description
+                 "Router ID";
+             }
+
+             leaf flags {
+               type uint8;
+               description
+                 "Router capability flags";
+             }
+
+             list sub-tlv {
+               key "sub-tlv-index";
+               description
+                 "SUB-TLV index list";
+
+               leaf sub-tlv-index {
+                 type uint32;
+                 description
+                   "SUB TLV Index";
+               }
+
+               list seamless-bfd-disc {
+                 key "value";
+                 description
+                   "List of seamless BFD discriminator values";
+
+               leaf value {
+                   type uint32;
+                   description
+                     "Seamless BFD discriminator value";
+                 }
+               }
+             }
+           }
+
+           leaf network-layer-protocol-id {
+             type string;
+             description
+               "Network layer protocol supported";
+           } 
+
+           leaf interface-ip-address {
+             type string;
+             description
+               "Interface IP address";
+           }
+
+           leaf host-name {
+             type string;
+             description
+               "Hostname associated with the system ID.";
+           }
+
+           leaf system-id {
+             type string;
+             description
+               "System ID associated with neighbor.";
+           }
+
+           list segment-routing-bindings {
+             key "fec binding-range";
+             description
+               "List of segment-routing bindings";
+
+             leaf fec {
+               type string;
+               description
+                 "Segment-routing SID Binding IP Address";
+             }
+
+             leaf binding-range {
+               type uint16;
+               description
+                 "Segment-routing Binding Range";
+             }
+ 
+             leaf flags {
+               type string;
+               description
+                 "Segment-routing Binding Flags";
+             }
+
+             container binding {
+               config "false";
+               description
+                 "Binding container";
+
+               container prefix-sid {
+                 config "false";
+                 description
+                   "Prefix SID container";
+
+                 list sid-list {
+                   key "sid-value";
+                   description
+                     "List of SID values";
+
+                   leaf sid-value {
+                     type uint32;
+                     description
+                       "SID value";
+                   }
+
+                   leaf flags {
+                     type string;
+                     description
+                       "SID flags";
+                   }
+
+                   leaf algorithm {
+                     type uint8;
+                     description
+                       "SID Algorithm";
+                   }
+                 }
+               }
+             }
+           }
+
+           list shared-risk-link-group {
+              description
+                 "SRLG group(s) associated with interfaces";
+
+              leaf neighbor-id {
+                 type string;
+                 description
+                    "System ID of the neighbor associated with the SRLG.";
+              }
+
+              leaf flags {
+                type uint8;
+                description
+                  "Flags associated with the link.";
+              }
+
+              leaf link-local-id {
+                type union {
+                  type uint32;
+                  type string;
+                }
+                description
+                  "Local identifier of the link.
+                  It could be a local identifier or an IPv4 address.";
+              }
+
+              leaf link-remote-id {
+                type union {
+                  type uint32;
+                  type string;
+                }
+                description
+                  "Remote identifier of the link.
+                  It could be a remotely learned identifier or an IPv4 address.";
+              }
+
+              leaf-list srlg {
+                 type uint32;
+                 description
+                    "List of SRLGs";
+              }
+           }
+
+           leaf ipv4-te-routerid {
+             type string;
+             description
+               "IPv4 Traffic Engineering router ID of the IS-IS node -
+                IS-IS reference is TLV 134.";
+           }
+         }
+       }
+     }
+
+     list lfa-route
+     {
+        key "dest-prefix";
+          description
+             "List of ip LFA routes";
+          leaf dest-prefix  {
+             type inet:ip-prefix;
+             description "Destination prefix of the LFA route";
+          }
+
+          leaf dest-path-type  {
+             type string;
+             description
+                "Destination path type attribute";
+          }
+
+          list next-hop {
+            key "primary-address";
+            description
+              "IPv4 next hops of the primary and alternate routes";
+            leaf primary-address {
+               type inet:ip-address;
+                   description
+                      "Next hop ip address of the primary route";
+            }
+
+            leaf primary-interface-name  {
+               type string;
+               description
+                  "Name of the outgoing interface for the primary route";
+            }
+
+            leaf alternate-address  {
+               type inet:ip-address;
+               description
+                  "Next hop ip address of the alternate route";
+            }
+
+            leaf alternate-interface-name  {
+               type string;
+               description
+                  "Name of the outgoing interface for the alternate route";
+            }
+
+            leaf path-metric {
+               type uint32;
+               description
+                  "Link cost of the alternate route";
+            }
+
+            leaf protection-provided  {
+               type string;
+               description
+                  "The possible protection types provided by the alternate route";
+            }
+         }
+      }
+
+      list remote-lfa-route
+      {
+         key "dest-prefix";
+         description
+            "List of remote LFA routes";
+         leaf dest-prefix  {
+            type inet:ip-prefix;
+            description "Destination prefix of the remote LFA route";
+         }
+
+         leaf dest-path-type  {
+            type string;
+            description
+               "Destination path type attribute";
+         }
+
+         list repair-path {
+            key "primary-gateway-address";
+            description
+              "IPv4 next hops of the primary and repair paths";
+            leaf primary-gateway-address {
+               type inet:ip-address;
+                   description
+                      "Next hop ip address of the primary route";
+            }
+
+            leaf primary-interface-name  {
+               type string;
+               description
+                  "Name of the outgoing interface for the primary route";
+            }
+
+            leaf tunnel-source-id  {
+               type string;
+               description
+                  "Source id of the repair tunnel";
+            }
+
+            leaf tunnel-peer-address  {
+               type inet:ip-address;
+               description
+                  "Peer ip address of the repair tunnel";
+            }
+
+            leaf tunnel-gateway  {
+               type inet:ip-address;
+               description
+                  "Gateway ip address of the repair tunnel";
+            }
+
+            leaf tunnel-gateway-interface-name  {
+               type string;
+               description
+                  "Outgoing interface name of the repair tunnel";
+            }
+
+            leaf tunnel-metric {
+               type uint32;
+               description
+                  "Metric of the repair tunnel";
+            }
+
+            leaf protection-provided {
+               type string;
+               description
+                  "The constraint applied in selecting the repair tunnel";
+            }
+         }
+      }
+
+     list ti-lfa-route
+     {
+        key "dest-prefix";
+        description
+           "List of ip TI LFA routes";
+        leaf dest-prefix  {
+           type inet:ip-prefix;
+           description "Destination prefix of the TI LFA route";
+        }
+
+        leaf dest-path-type  {
+           type string;
+           description
+              "Destination path type attribute";
+        }
+
+        list next-hop {
+           key "primary-address";
+           description
+             "IPv4 next hops of the primary and alternate routes";
+           leaf primary-address {
+              type inet:ip-address;
+                  description
+                     "Next hop ip address of the primary route";
+           }
+
+           leaf primary-interface-name  {
+              type string;
+              description
+                 "Name of the outgoing interface for the primary route";
+           }
+
+           leaf primary-source-id  {
+              type string;
+              description
+                 "The primary route source id";
+           }
+
+           leaf alternate-address  {
+              type inet:ip-address;
+              description
+                 "Next hop ip address of the alternate route";
+           }
+
+           leaf alternate-interface-name  {
+              type string;
+              description
+                 "Name of the outgoing interface for the alternate route";
+           }
+
+           leaf alternate-source-id  {
+              type string;
+              description
+                 "The alternate route source id";
+           }
+
+           leaf alternate-path-metric {
+              type uint32;
+              description
+                 "Link cost of the alternate route";
+           }
+
+           leaf protection-provided  {
+              type string;
+              description
+                 "The protection scheme provided by the alternate route";
+           }
+        }
+     }
+
+     container interfaces-state {
+       uses isis-state-grouping;
+     }
+     }
+
+     container segment-routing-state {
+       config false;
+       description
+         "ISIS-segment routing oper config.";
+       list sr-capability {
+         key "tag router-ip";
+         description
+           "segment routing capability table";
+
+         leaf tag {
+           type leafref {
+             path "/isis:isis/isis:instance/isis:tag";
+           }
+           description
+             "ISIS Instance Area Tag";
+         }
+
+         leaf router-ip {
+           type inet:ip-address;
+           description
+             "Local Router ip address";
+         }
+
+         leaf algorithm {
+           type uint8;
+           description
+             "SR algorithm";
+         }
+
+         leaf preference {
+           type uint32;
+           description
+             "SR preferance";
+         }
+
+         leaf total-sid {
+           type uint32;
+           description
+             "SID total";
+         }
+
+         leaf sid-range {
+           type uint8;
+           description
+             "SID range";
+         }
+         list range-info {
+           key "index";
+           description
+             "List of Ranges";
+           leaf index {
+             type uint32;
+             description
+               "SID range index for indexing";
+           }
+
+           leaf start {
+             type uint32;
+             description
+               "SID range start";
+           }
+
+           leaf end {
+             type uint32;
+             description
+               "SID range end";
+           }
+         }
+
+         leaf node-msd {
+           type uint8;
+           description
+             "Node MSD is the lowest MSD supported by the node.";
+         }
+       }
+
+       uses sr-state-grouping;
+
+       list sr-mapping-table {
+         key "tag table-type";
+         description
+           "SRMS - segment routing mapping server table";
+
+         leaf tag {
+           type leafref {
+             path "/isis:isis/isis:instance/isis:tag";
+           }
+           description
+             "ISIS Instance Area Tag";
+         }
+
+         leaf table-type {
+           type string;
+           description
+             "Active or Inactive";
+         }
+
+         leaf table-entry-count {
+           type uint32;
+           description
+             "Number of SRMS table entries";
+         }
+
+         leaf conflict-resolution-policy {
+           type string;
+           description
+             "Mapping Conflict Resolution Policy";
+         }
+
+         list sr-mapping-table-entry {
+           key "sid-index";
+           description
+             "SRMS table entry";
+
+           leaf sid-index {
+             type uint32;
+             description
+               "SRMS SID Index 0-7999";
+           }
+
+           leaf map-entry-prefix{
+             type inet:ip-prefix;
+             description
+               "SRMS Start Prefix";
+           }
+
+           leaf prefix-length {
+             type uint32;
+             description
+               "Prefix length 0-32";
+           }
+
+           leaf prefix-range {
+             type uint32;
+             description
+               "SRMS Range 1-7999";
+           }
+
+           leaf prefix-flags {
+             type string;
+             description
+               "SRMS Prefix-SID flags
+                PFX_SID_RE_ADVT     (1 << 7)
+                PFX_SID_NODE        (1 << 6)
+                PFX_SID_NO_PHP      (1 << 5)
+                PFX_SID_EXP_NULL    (1 << 4)
+                PFX_SID_VALUE       (1 << 3)
+                PFX_SID_LOCAL       (1 << 2)";
+           }
+
+           leaf last-sid-index {
+             type uint32;
+             description
+               "SRMS SID Index 0-7999";
+           }
+
+           leaf last-prefix {
+             type inet:ip-prefix;
+             description
+               "SRMS Last Prefix";
+           }
+
+           leaf binding-flags {
+             type string;
+             description
+               "SRMS Binding Entry Flags
+                SR_MS_FAMILY    (1 << 7)
+                SR_MS_MIRROR    (1 << 6)
+                SR_MS_S_FLOOD   (1 << 5)
+                SR_MS_D_LEAK    (1 << 4)
+                SR_MS_ATTACHED  (1 << 3)
+                SR_MS_RANGE     (1 << 2)";
+           }
+
+           leaf system-id {
+             type string;
+             description
+               "SRMS Entry System ID";
+           }
+
+           leaf srms-preference {
+             type uint8;
+             description
+               "SRMS Preference";
+           }
+
+           leaf state {
+             type string;
+             description
+               "Segment Routing Mapping Server prefix state active or inactive";
+           }
+         }
+       }
+
+       list bindings {
+         key "tag";
+         description
+           "Attribute to enable prefix sid map local/receive";
+
+         leaf tag {
+           type leafref {
+             path "/isis:isis/isis:instance/isis:tag";
+           }
+           description
+             "ISIS Instance Area Tag";
+         }
+
+         leaf advertise {
+           type boolean;
+           default "false";
+           description
+             "Enables/disables prefix sid map type local";
+         }
+
+         leaf receive {
+           type boolean;
+           default "true";
+           description
+             "Enables/disables prefix sid map type receive";
+         }
+       }
+     }
+    }
+  }
+  uses isis-grouping;
+
+  rpc isis-clear-is-neighbors {
+    input {
+      leaf system-id {
+        type cn-l3-types:system-id;
+        description
+          "System-id of the node.";
+      }
+    }
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-clear-is-neighbors failure";
+      }
+    }
+  }
+
+
+  rpc isis-clear-route {
+    input {
+      leaf instance-tag {
+        type leafref {
+          path "/isis/instance/tag";
+        }
+        description
+          "Routing area tag.";
+      }
+
+      leaf ipv4route {
+        type cn-l3-types:isis-route-type;
+        description
+          "Clear all or redistribution IPv4 routes";
+      }
+
+      leaf ipv6route {
+        type cn-l3-types:isis-route-type;
+        description
+          "Clear all or redistribution IPv6 routes";
+      }
+    }
+
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-clear-ip-route failure";
+      }
+    }
+  }
+  rpc isis-clear-process {
+    input {
+      leaf instance-tag {
+        type leafref {
+          path "/isis/instance/tag";
+        }
+        description
+          "ISIS Routing area tag.";
+      }
+    }
+
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-proc-clear failure";
+      }
+    }
+  }
+
+  rpc isis-clear-counters {
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-clear-counters failure";
+      }
+    }
+  }
+
+  rpc isis-clear-interface-counters {
+    input {
+      leaf interface {
+        type leafref {
+          path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+          "Interface name.";
+      }
+    }
+
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-clear-interface-counters failure";
+      }
+    }
+  }
+
+  rpc isis-clear-adjacency {
+    input {
+      leaf instance-tag {
+        type leafref {
+          path "/isis/instance/tag";
+        }
+        description
+          "Routing area tag.";
+      }
+
+      leaf interface {
+        type leafref {
+          path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+          "Interface name.";
+      }
+
+      leaf system-id {
+        type  cn-l3-types:system-id;
+        description
+          "Neighbor system-id.";
+      }
+    }
+
+    output {
+      leaf response {
+        type string;
+        description
+          "The response could be 'success', or the reason for isis-clear-adjacency failure";
+      }
+    }
+  }
+
+   notification isis-neighbor-events {
+      list neighbor {
+         description
+            "Defines IS-IS neighbor state change events and associated data used to publish change in the state";
+         leaf interface {
+            type string;
+            description
+               "IS-IS interface name.";
+         }
+         leaf system-id {
+            type string;
+            description
+               "IS-IS neighbor.";
+         }
+         leaf tag {
+            type string;
+            description
+               "IS-IS instance name.";
+         }
+         leaf level {
+            type uint8;
+            description
+               "IS-IS interface level.";
+         }
+         leaf old-state {
+            type string;
+            description
+               "IS-IS neighbor old state.";
+         }
+         leaf new-state {
+            type string;
+            description
+               "IS-IS neighbor new state.";
+           }
+      }
+   }
+
+   notification isis-authentication-failure-event {
+       description
+         "Notification sent when a PDU with the wrong
+          authentication information is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+   }
+
+   notification isis-authentication-type-failure-event {
+       description
+         "Notification sent when a PDU with the wrong
+          authentication type field is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+   }
+
+   notification isis-sysid-len-mismatch-event {
+       description
+         "Notification sent when a PDU with a different
+          value for the system-id length is received";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf pdu-field-len {
+         type uint8;
+         description
+             "Size of the ID length in the received PDU";
+      }
+   }
+
+   notification isis-manual-area-drop-event {
+      description
+         "Manual Area drop notification event.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf area {
+         type string;
+         description
+            "Area address which was dropped";
+      }
+   }
+
+   notification isis-max-area-address-mismatch-event {
+       description
+         "Notification sent when a PDU with a different value
+          for the for Maximum Area Addresses is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf max-area-addresses {
+         type uint8;
+         description
+            "Received number of supported areas";
+      }
+   }
+
+   notification isis-area-address-mismatch-event {
+      description
+         "Notification sent when a Hello PDU that does not
+          share any Area Addresses is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+   }
+
+   notification isis-protocol-version-skew-event {
+       description
+         "Notification set when a PDU with a different
+          protocol version number is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf protocol-version {
+         type uint8;
+         description
+            "Protocol version received in the PDU.";
+      }
+   }
+
+   notification isis-rejected-adjacency-event {
+       description
+         "Notification sent when a Hello PDU from an
+          IS results in no established adjacency.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+   }
+
+   notification isis-lsp-buffer-size-mismatch-event {
+      description
+         "Mismatch in LSP and originating buffer size event notification.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-exceed-max-sequence-num-event {
+       description
+         "Notification sent when the sequence counter for an
+          LSP wraps the 32-bit sequence counter.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-corrupted-lsp-event {
+       description
+         "Notification sent when a LSP with a parse error is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-lsp-error-event {
+       description
+         "Notification sent when a LSP with a parse error is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-protocol-supported-mismatch-event {
+       description
+         "Notification sent when a non-pseudonode LSP with no
+          matching protocols supported is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-own-lsp-purge-event {
+      description
+         "Notification sent when a PDU with a systems
+          own system-id and age zero is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-lsp-too-large-event {
+       description
+         "Notification sent when a LSP larger than the
+          dataLinkBlockSize (ISO10589) for the circuit is propogated.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf pdu-size {
+         type uint32;
+         description
+            "Size of the LSP PDU";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+
+   }
+
+   notification isis-sequence-number-skipped-event {
+       description
+         "Notification sent when a PDU with its own
+          system-id and different contents is received.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+   }
+
+   notification isis-adjacency-state-change-event {
+      description
+           "Adjacency state change events UP/DOWN/INIT.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf interface {
+         type string;
+         description
+            "IS-IS interface name.";
+      }
+
+      leaf lsp-id {
+         type string;
+         description
+            "IS-IS LSP id";
+      }
+      
+      leaf state {
+         type cn-l3-types:isis-state;
+         description 
+            "New state of the IS-IS adjacency.";
+      }
+
+   }
+
+   notification isis-overloaded-event {
+       description
+          "Notification sent when an IS-IS instance
+           overload state changes.";
+
+      leaf tag {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS instance area tag";
+      }
+
+      leaf level {
+         type cn-l3-types:isis-level-type;
+         description
+            "IS-IS interface level.";
+      }
+
+      leaf overload {
+         type enumeration {
+            enum off {
+               description
+                  "Indicates IS-IS instance has left overload state";
+            }
+            enum on {
+               description
+                  "Indicates IS-IS instance has entered overload state";
+            }
+         }
+         description
+            "New overload state of the IS-IS instance";
+      }
+
+   }
+
+   notification isis-instance-events {
+      list instance {
+         description
+            "Defines IS-IS instance state change events and associated data used to publish change in the state";
+         leaf tag {
+           type cn-l3-types:string-max-256;
+           description
+             "IS-IS instance area tag";
+         }
+          leaf system-id {
+            type string;
+            description
+               "IS-IS neighbor.";
+         }
+         leaf state {
+            type cn-l3-types:isis-inst-state-type;
+            description
+               "IS-IS instance state.";
+         }
+      }
+   }
+
+   notification isis-nflag-mismatch-event {
+       description
+           "Notification sent for ISIS nflag mismatch event for an anycast prefix";
+
+       leaf tag {
+           type cn-l3-types:string-max-256;
+           description
+              "IS-IS instance area tag";
+       }
+
+       leaf level {
+           type cn-l3-types:isis-level-types;
+           description
+              "IS-IS level";
+       }
+
+       leaf adv-system-id {
+           type string;
+           description
+              "System ID of advertising node";
+       }
+
+       leaf lsp-id {
+           type string;
+           description
+              "LSP ID having anycast prefix";
+       }
+
+       leaf anycast-prefix {
+           type  inet:ipv4-prefix;
+           description
+              "Anycast prefix advertised by peer node";
+       }
+
+       leaf anycast-sid {
+           type uint32;
+           description
+              "Anycast SID advertised by peer node";
+       }
+
+       leaf n-flag-state {
+           type boolean;
+           description
+              "IS-IS n-flag is set (True) or unset (False) ";
+       }
+   }
+}

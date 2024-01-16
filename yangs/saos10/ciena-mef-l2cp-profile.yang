@@ -1,0 +1,238 @@
+module ciena-mef-l2cp-profile {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-l2cp-profile";
+    prefix "mef-l2cp";
+    
+    import ietf-yang-types {
+        prefix "yang";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's configuration of
+         the L2 Control Protocol Profile.";
+
+    revision 2020-10-16 {
+        description "New protocols are added to l2cp protocol list.
+                     Added support for L2PT";
+    }
+
+    revision 2015-05-13 {
+        description "Initial revision";
+    }
+
+    typedef l2cp-profile-ref {
+        type leafref {
+            path "/mef-l2cp:l2cp-profiles/mef-l2cp:l2cp-profile/mef-l2cp:name";
+        }
+        description
+            "This type is used by the data models that need to reference
+             configured L2 Control Protocol Profiles.";
+    }
+
+    typedef DispositionType {
+        type enumeration {
+            enum discard;
+            enum peer;
+            enum forward;
+            enum l2pt-forward;
+        }
+    }
+
+    container l2cp-profiles {
+        description
+            "List of l2cp-profile templates. Layer 2 control protocol profiles can be referenced by various entities (flow-point/logical-port etc.) 
+             to determine forward/drop control-protocol behaviour based on the L2 protocol.";
+
+        list l2cp-profile {
+            key "name";
+
+            description
+                "The list of layer 2 control protocol profiles.";
+
+            leaf name {
+                type string {
+                }
+                description
+                    "An administratively assigned string, which may be used
+                     to identify the profile.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "This is a user-defined string used to describe the profile.";
+            }
+
+            leaf untagged-cos-policy {
+                type enumeration {
+                    enum fixed {
+                        description 
+                            "This policy assigns fixed resolved and frame CoS to
+                             forwarded untagged L2 control frames.";
+                    }
+                    enum ignore {
+                        description
+                            "This policy doesn't assign explicit CoS to forwarded
+                             untagged L2 control frames. Instead it allows the control 
+                             frames to pick resolved and frame CoS in datapath just 
+                             like untagged data frames.";
+                    }
+                }
+                description
+                    "This denotes CoS policy for forwarded untagged L2 control frames.";
+            }
+
+            leaf fixed-cos {
+                type uint8 {
+                    range "0..63";
+                }
+                description
+                    "This denotes fixed resolved CoS and frame CoS for forwarded 
+                    untagged L2 control frames.";
+            }
+
+            list protocol-disposition {
+
+                key "protocol";
+
+                description
+                    "The list of L2 control protocols and their disposition assignments.";
+
+                leaf protocol {
+                    type enumeration {
+                        enum xstp {
+                            description "STP/RSTP/MSTP protocols. MAC DA 01-80-C2-00-00-00.";
+                        }
+                        enum lacp {
+                            description "LACP protocol. Ethertype 0x8809/01. MAC DA 01-80-C2-00-00-02.";
+                        }
+                        enum lamp {
+                            description "LAMP protocol. Ethertype 0x8809/02. MAC DA 01-80-C2-00-00-02.";
+                        }
+                        enum link-oam {
+                            description "LINK OAM protocol. Ethertype 0x8809/03. MAC DA 01-80-C2-00-00-02.";
+                        }
+                        enum port-auth {
+                            description "Port Authentication protocol. Ethertype 0x888E. MAC DA 01-80-C2-00-00-03.";
+                        }
+                        enum e-lmi {
+                            description "E-LMI protocol. Ethertype 0x88EE. MAC DA 01-80-C2-00-00-07.";
+                        }
+                        enum lldp {
+                            description "LLDP protocol. Ethertype 0x88CC. MAC DA 01-80-C2-00-00-0E.";
+                        }
+                        enum ptp-peer-delay {
+                            description "PTP Peer-Delay protocol. Ethertype 0x88F7. MAC DA 01-80-C2-00-00-0E.";
+                        }
+                        enum ptp {
+                            description "PTP protocol. Ethertype 0x88F7. MAC DA 01-80-C2-00-00-0E and 01-1B-19-00-00-00.";
+                        }
+                        enum esmc {
+                            description "ESMC protocol. Ethertype 0x8809/0A. MAC DA 01-80-C2-00-00-02.";
+                        }
+                        enum garp-block {
+                            description "GARP/MRP block range. MAC DA 01-80-C2-00-00-20 to 01-80-C2-00-00-2F.";
+                        }
+                        enum bridge-rsvd-0b0f {
+                            description "Bridge reserved range. MAC DA 01-80-C2-00-00-0B/0F.";
+                        }
+                        enum bridge-rsvd-0c0d {
+                            description "Bridge reserved range. MAC DA 01-80-C2-00-00-0C/0D.";
+                        }
+                        enum bridge-block {
+                            description "Bridge block range. MAC DA 01-80-C2-00-00-00 to 01-80-C2-00-00-0A and 01-80-C2-00-00-0E.";
+                        }
+                        enum all-bridges-block {
+                            description "All Bridges Block. MAC DA 01-80-C2-00-00-10 to 01-80-C2-00-00-1F.";
+                        }
+                        enum cisco-cdp {
+                            description "Cisco Discovery Protocol (CDP). MAC DA 01-00-0C-CC-CC-CC.
+                                         LLC/SNAP AA-AA-03-00-00-0C-20-00.";
+                        }
+                        enum cisco-dtp {
+                            description "Cisco Dynamic Trunking Protocol (DTP). MAC DA 01-00-0C-CC-CC-CC.
+                                         LLC/SNAP AA-AA-03-00-00-0C-20-04.";
+                        }
+                        enum cisco-pagp {
+                            description "Cisco Port Aggregation Protocol (PAGP). MAC DA 01-00-0C-CC-CC-CC.
+                                         LLC/SNAP AA-AA-03-00-00-0C-01-04.";
+                        }
+                        enum cisco-udld {
+                            description "Cisco Unidirectional Link Detection (UDLD). MAC DA 01-00-0C-CC-CC-CC.
+                                         LLC/SNAP AA-AA-03-00-00-0C-01-11.";
+                        }
+                        enum cisco-vtp {
+                            description "Cisco VLAN Trunk Protocol (VTP). MAC DA 01-00-0C-CC-CC-CC.
+                                         LLC/SNAP AA-AA-03-00-00-0C-20-03.";
+                        }
+                        enum cisco-stp-uplink-fast {
+                            description "Cisco STP UplinkFast. MAC DA 01-00-0C-CD-CD-CD.
+                                         LLC/SNAP AA-AA-03-00-00-0C-20-0A.";
+                        }
+                        enum cisco-vlan-bridge {
+                            description "Cisco VLAN Bridge. MAC DA 01-00-0C-CD-CD-CE.
+                                         LLC/SNAP AA-AA-03-00-00-0C-01-0C.";
+                        }
+                        enum gmrp {
+                            description "GARP Multicast Registration Protocol. MAC DA 01-80-C2-00-00-20.";
+                        }
+                        enum gvrp {
+                            description "GARP VLAN Registration Protocol. MAC DA 01-80-C2-00-00-21.";
+                        }
+                        enum is-is {
+                            description "IS-IS Protocol. MAC DA 01-80-C2-00-00-14 and 01-80-C2-00-00-15.";
+                        }
+                    }
+                }
+
+                leaf untagged-disposition {
+                    type DispositionType;
+                    description
+                        "Disposition assigned to untagged form of L2 control protocol PDUs.";
+                }
+
+                leaf tagged-disposition {
+                    type DispositionType;
+                    description
+                        "Disposition assigned to tagged form of L2 control protocol PDUs.";
+                }
+
+                leaf l2pt-mac {
+                    type leafref {
+                        path "/mef-l2cp:l2cp-profiles/mef-l2cp:l2pt-macs/mef-l2cp:mac-address";
+                    } 
+                    description
+                        "Reference to an L2PT translation MAC instance.";
+                }
+            }
+        }
+
+        list l2pt-macs {
+            key "mac-address";
+ 
+            description
+                "The list of configured l2pt-mac addresses.";
+ 
+            leaf mac-address {
+                type yang:mac-address;
+                description
+                    "This stores the L2PT Translation MAC address to
+                     be stamped over L2 control protocol's standard defined
+                     destination MAC at egress. In the reverse direction, L2PT
+                     translated MAC will be converted to L2CP standard defined
+                     destination MAC.";
+           }
+       }
+    }
+}

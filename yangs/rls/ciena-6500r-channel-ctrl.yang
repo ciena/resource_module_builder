@@ -1,0 +1,441 @@
+module ciena-6500r-channel-ctrl {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-channel-ctrl";
+  prefix ccs;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-6500r-channel-ctrl-types {
+    prefix ccs-types;
+  }
+
+  import ciena-pro-scaler-types {
+    prefix ciena-pro-scaler-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's channel control objects for the 6500r-Series platform";
+
+  revision 2021-05-03 {
+    description
+      "New Capacity Change Pending diagnostic point added to
+       channel controller diagnostic container";
+    reference
+      "1.0.9";
+  }
+  revision 2020-12-14 {
+    description
+      "Diagnostic container added to state container
+       Capacity Change Inhibited diagnostic point added to diagnostic container";
+    reference
+      "1.0.8";
+  }
+  revision 2020-12-04 {
+    description
+      "Added ase-replacement-holdoff to channel config";
+    reference
+      "1.0.7";
+  }
+  revision 2020-10-29 {
+    description
+      "Changed ccs-instance name from common-types:object-name to string";
+    reference
+      "1.0.6";
+  }
+  revision 2020-10-08 {
+    description
+      "Added:
+       recalibration-bundle-count to the channel-management-config grouping";
+    reference
+      "1.0.5";
+  }
+  revision 2020-07-31 {
+    description
+      "Diagnostic container added to channel-controller";
+    reference
+      "1.0.4";
+  }
+  revision 2020-07-16 {
+    description
+      "Added:
+       default value for closed-loop
+       default value for control-mode
+       default value for ase-replacement-on-fault";
+    reference
+      "1.0.3";
+  }
+  revision 2020-07-09 {
+    description
+      "Moved:
+       closed-loop to config section";
+    reference
+      "1.0.2";
+  }
+  revision 2020-06-24 {
+    description
+      "Added:
+       closed-loop configuration";
+    reference
+      "1.0.1";
+  }
+  revision 2019-06-03 {
+    description
+      "Added:
+       channel-management configuration
+       ase-management configuration
+       ccs-instance
+       Added load-ase rpc";
+    reference
+      "0.1.0";
+  }
+  revision 2018-09-14 {
+    description
+      "6500r-series Release 1.0";
+  }
+
+  identity ccs {
+    base ciena-pro-scaler-types:owner;
+    description
+      "Identifies the Channel Control Service";
+  }
+
+  grouping channel-management-config {
+    description
+      "Configuration settings for channel addition and bundling";
+    leaf add-threshold-offset {
+      type ccs-types:decibels;
+      units "dB";
+      default "4.0";
+      description
+        "Power offset determining the threshold to add channel";
+    }
+
+    leaf bundle-spectral-slots {
+      type uint8;
+      default "48";
+      description
+        "Number of bundle spectral slots";
+    }
+
+    leaf bundle-count {
+      type uint8;
+      default "4";
+      description
+        "Number of bundles";
+    }
+
+    leaf recalibration-bundle-count {
+      type uint8;
+      default "4";
+      description
+        "Number of bundles to use for bundling while in turn-down mode";
+    }
+  }
+
+  grouping ase-replacement-config {
+    description
+      "ASE replacement configuration settings";
+    leaf replacement-holdoff {
+      type uint16;
+      units "seconds";
+      default "10";
+      description
+        "Specifies the holdoff in seconds to apply prior to initiating ASE replacement due to fault.";
+    }
+
+    leaf replacement-threshold-offset {
+      type ccs-types:decibels;
+      units "dB";
+      default "3.0";
+      description
+        "Specifies the power offset used to derive an absolute power threshold below which the channel-controller should be replaced by ASE.
+         The absolute power threshold will be derived by subtracting the analog power threshold from the add threshold.";
+    }
+  }
+
+  grouping channel-power-attributes {
+    leaf port-instance {
+      type instance-identifier;
+      config false;
+      description
+        "Port instance where scaled power is taken.";
+    }
+
+    leaf measured-power {
+      type ccs-types:decibels;
+      units "dBm";
+      config false;
+      description
+        "Integrated measured power.";
+    }
+
+    leaf expected-power {
+      type ccs-types:decibels;
+      units "dBm";
+      config false;
+      description
+        "Integrated expected power.";
+    }
+  }
+
+  grouping channel-powers {
+    container input {
+      uses channel-power-attributes;
+    }
+
+    container output {
+      uses channel-power-attributes;
+    }
+  }
+
+  grouping channel-config {
+    leaf add-threshold {
+      type ccs-types:decibels;
+      units "dB";
+      description
+        "The default value is inherited from the add-threshold in the ccs-instance, but may be overriden.";
+    }
+
+    leaf replacement-offset {
+      type ccs-types:decibels;
+      units "dB";
+      description
+        "The default value is inherited from the ase replacement offset in the ccs-instance, but may be overriden.";
+    }
+
+    leaf target-power-alarm-threshold {
+      type ccs-types:decibels;
+      units "dB";
+      description
+        "A threshold value for raising Target Power Unachievable alarm. Default is inherited from ccs-instance.";
+    }
+
+    leaf closed-loop {
+      type ccs-types:closed-loop-mode-enum;
+      default "enabled";
+      description
+        "Closed-loop enabled/disabled configuration for the channel controller.";
+    }
+
+    leaf ase-replacement-holdoff {
+      type uint16;
+      units "seconds";
+      default "0";
+      description
+        "Specifies the holdoff in seconds to apply prior to initiating ASE replacement due to fault.";
+    }
+  }
+
+  grouping channel-controller-attributes {
+    leaf center-frequency {
+      type common-types:frequency;
+      description
+        "Center frequency of the channel controller";
+    }
+
+    leaf spectral-width {
+      type common-types:frequency;
+      description
+        "Spectral width of the channel controller";
+    }
+
+    leaf nmc-instance {
+      type instance-identifier;
+      config false;
+      description
+        "Instance of the corresponding network media channel";
+    }
+
+    leaf operational-state {
+      type ccs-types:channel-controller-state-enum;
+      description
+        "Operational state of the channel-controller";
+    }
+
+    leaf additional-info {
+      type string;
+      config false;
+      description
+        "An additional information string.";
+    }
+
+    leaf control-mode {
+      type ccs-types:channel-controller-mode-enum;
+      default "loss";
+      description
+        "Control mode of the channel controller";
+    }
+
+    leaf ase-replacement-on-fault {
+      type ccs-types:ase-replacement-mode-enum;
+      default "enabled";
+      description
+        "ASE replacement mode of the channel controller";
+    }
+
+    container channel-power {
+      uses channel-powers;
+    }
+
+    leaf discovered-neighbour {
+      type instance-identifier;
+      config false;
+      description
+        "Instance of the downstream channel-controller.";
+    }
+
+    leaf attenuation-adjustment {
+      type ccs-types:decibels;
+      units "dB";
+      config false;
+      description
+        "Adjustment factor applied to attenuation settings (i.e. fiber pinch compensation, pixel aging, etc.).";
+    }
+
+    container config {
+      uses channel-config;
+    }
+  }
+
+  grouping ciena-6500r-channel-ctrl-mount {
+    list ccs-instance {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "The name of the controller, corresponding to the functional group";
+      }
+
+      container config {
+        uses common-types:admin-state;
+
+        leaf mode {
+          type ccs-types:ccs-mode-enum;
+        }
+
+        container channel-management {
+          uses channel-management-config;
+        }
+
+        container ase-replacement {
+          uses ase-replacement-config;
+        }
+
+        leaf default-target-power-alarm-threshold {
+          type ccs-types:decibels;
+          units "dB";
+          default "2.0";
+          description
+            "Default threshold for raising Target Power Unachievable alarm.";
+        }
+      }
+
+      container state {
+        leaf controller-state {
+          type ccs-types:ccs-state-enum;
+          description
+            "Current state of the controller";
+        }
+
+        leaf additional-info {
+          type string;
+          config false;
+          description
+            "";
+        }
+
+        container diagnostic {
+          leaf capacity-change-inhibited {
+            type common-types:BOOLEAN;
+            description
+              "Indicates Capacity Change Inhibited condition";
+          }
+        }
+      }
+
+      list channel-controller {
+        key "center-frequency";
+        uses channel-controller-attributes;
+
+        container diagnostic {
+          leaf target-unachievable {
+            type common-types:BOOLEAN;
+          }
+
+          leaf capacity-change-pending {
+            type common-types:BOOLEAN;
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-channel-ctrl-mount-actions {
+    action load-ase {
+      description
+        "Initiate ASE loading on the PFG specified in 'name'.";
+      input {
+        leaf name {
+          type common-types:object-name;
+          mandatory true;
+          description
+            "Name of the PFG on which to load ASE.";
+        }
+
+        leaf action {
+          type ccs-types:load-ase-action;
+          default "initiate-ase-loading";
+          description
+            "ASE loading action being requested. When the rpc returns, the request has been sent.
+             The status of the request is reported in ccs_status.";
+        }
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+  }
+
+  uses ciena-6500r-channel-ctrl-mount;
+
+  rpc load-ase {
+    description
+      "Initiate ASE loading on the PFG specified in 'name'.";
+    input {
+      leaf name {
+        type common-types:object-name;
+        mandatory true;
+        description
+          "Name of the PFG on which to load ASE.";
+      }
+
+      leaf action {
+        type ccs-types:load-ase-action;
+        default "initiate-ase-loading";
+        description
+          "ASE loading action being requested. When the rpc returns, the request has been sent.
+           The status of the request is reported in ccs_status.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

@@ -1,0 +1,265 @@
+module ciena-cpri-augment {
+  namespace "http://www.ciena.com/ns/yang/ciena-cpri";
+  prefix "ciena-cpri";
+
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  import ciena-packet-ptp {
+    prefix cn-pkt-ptp;
+  }
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ciena-packet-typedefs {
+    prefix cntypes;
+  }
+
+  import ciena-ieee1914-dot3-roe-augment {
+    prefix ciena-ieee1914-dot3-roe-augment;
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+      
+  description
+    "This YANG module defines Ciena's CPRI augments to the 
+     ietf-interfaces model.
+
+     Copyright (c) 2020 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2021-08-16 {
+     description
+       "Updated to specify that container cpri-port is a presence container.";
+  }
+
+  revision 2021-07-13 {
+     description
+       "Added leaf roe-dcr-sync-reference (boolean).
+        Updated cpri-id to become non-configurable.";
+  }
+
+  revision 2020-10-01 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  identity cienacpri {
+    base if:interface-type;
+    description
+      "Ciena CPRI interface type.";
+  }
+
+  grouping timestamp {
+    description
+      "A timestamp comprised of integer and fractional nanosecond portions.";
+    reference
+      "5.5.5.3 of IEEE Std 1914.3-2018";
+    leaf integer-nanosecond {
+      type uint32 {
+        range "0..16777215";
+      }
+      units "nanoseconds";
+      default "0";
+      description
+        "The integer nanosecond portion of the timestamp.";
+      reference
+        "5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+    leaf fractional-nanosecond {
+      type uint8 {
+        range "0..31";
+      }
+      default "0";
+      description
+        "The fractional nanosecond portion of the timestamp.
+         It counts in fractions of a nanosecond (0.03125 ns) where 0
+         represents 0 ns and 31 represents 0.96875 ns.";
+      reference
+        "5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+  }
+
+  augment "/if:interfaces/if:interface" {
+    when "if:type = 'cienacpri'";
+    description
+      "Augmenting ietf-interfaces to cpri port for ciena specific configuration.";
+
+    container cpri-port {
+      description
+        "CPRI port parameters.";
+      reference
+        "Table 8 of IEEE Std 1914.3";
+
+      presence "CPRI Port configuration";
+
+      leaf cpri-id {
+        type uint16;
+        config false;
+        description
+          "Each CPRI port in a node has a unique identifier.";
+        reference
+          "enParam 0 in Table 8 of IEEE Std 1914.3";
+      }
+      leaf admin-state {
+        type ciena:admin-state;
+        default enabled;
+        description
+          "Cpri port admin state.";
+      }
+      leaf oper-state {
+        type ciena:oper-state;
+        config false;
+        description
+          "Cpri port operational state.";
+      }
+      leaf cpri-option {
+        type enumeration {
+          enum CPRI_3 {
+          description
+            "For CPRI port speed of 2.457 Gbps.";
+          }
+          enum CPRI_5 {
+          description
+            "For CPRI port speed of 4.912 Gbps.";
+          }
+          enum CPRI_7 {
+          description
+            "For CPRI port speed of 9.83 Gbps.";
+          }
+          enum CPRI_8 {
+          description
+            "For CPRI port speed of 10.137 Gbps.";
+          }
+          enum CPRI_10 {
+          description
+            "For CPRI port speed of 24.33024 Gbps.";
+          }
+        }
+        default CPRI_3;
+        description 
+          "The speed option of the CPRI port.";
+      }
+      leaf cpri-speed {
+        type decimal64 {
+          fraction-digits 5;
+          range "0.00000..25.00000";
+        }
+        units "Gbps";
+        config false;
+        description
+          "CPRI port speed in Gbps";
+      }
+      leaf forward-error-correction {
+        type cntypes:ettp-fec-enum;
+        default auto;
+        description
+          "Forward error correction";
+      }
+      leaf cpri-ver {
+        type uint8;
+        config false;
+        description
+          "CPRI protocol version at location Z.2.0, i.e., control word 2 as
+           extracted by the control process.";
+        reference
+          "enParam 2 in Table 8 and 8.3.6(.c) of IEEE Std 1914.3";
+      }
+      leaf cpri-hdlc {
+        type uint8 {
+          range "0..7";
+        }
+        config false;
+        description
+          "HDLC bit rate at location Z.66.0, i.e., control word 66 as
+           extracted by the control process.";
+        reference
+          "enParam 3 in Table 8 and 8.3.6(.d) of IEEE Std 1914.3";
+      }
+
+      leaf cpri-l1 {
+        type uint8 {
+          range "0..31";
+        }
+        config false;
+        description
+          "L1 signaling at location Z.130.0, i.e., control word 130 as
+           extracted by the control process.";
+        reference
+          "enParam 4 in Table 8 and 8.3.6(.e) of IEEE Std 1914.3";
+      }
+      
+      leaf cpri-eth {
+        type uint8 {
+          range "0|20..63";
+        }
+        config false;
+        description
+          "Ethernet pointer at location Z.194.0, i.e., control word 194 as
+           extracted by the control process.";
+        reference
+          "enParam 5 in Table 8 and 8.3.6(.f) of IEEE Std 1914.3";
+      }
+
+      leaf ptp-id {
+        type leafref {
+           path "/cn-pkt-ptp:ptps/cn-pkt-ptp:ptp/cn-pkt-ptp:ptp-id";
+        }
+        description
+           "Unique, access identifier string of the PTP (e.g., '1/1').";
+      }
+
+      leaf associated-interface {
+        type leafref {
+           path "/if:interfaces/if:interface/if:name";
+        }
+        description
+           "This is associated interface to the cpri interface.";
+      }
+
+      leaf roe-dcr-sync-status {
+        type ciena-ieee1914-dot3-roe-augment:sync-oper-state;
+        config false;
+        description
+           "Indicates if the cpri-port has achieved synchronization.";
+      }
+
+      container cpri-cable-delay {
+         config false;
+         description
+           "The calculated cpri cable delay.";
+         uses timestamp;
+      }
+
+      leaf roe-dcr-sync-reference {
+        type boolean;
+        config false;
+        description
+           "Indicates if the cpri-port is the sync reference for cpri-ports in the same DCR group.";
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+module ciena-file-transfer-types {
+  namespace 
+    "http://www.ciena.com/ns/yang/ciena-file-transfer-types";
+  
+  prefix "ciena-ftt";
+  
+  import ietf-inet-types {
+    prefix inet;
+  }
+ import ciena-tls-service-profile {
+    prefix ciena-tls-service-profile;
+
+  }
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  
+  description
+    "This YANG module defines Ciena's file transfer types.
+
+     Copyright (c) 2017 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2020-01-14 {
+    description 
+      "Added support for port in the file transfer parameters";
+     reference
+        "No specific reference or standard available.";
+  }
+
+  revision 2017-03-08 {
+    description 
+      "Initial version";
+    reference
+      "009-3273-007 (39XX 51XX SAOS 6.16 Administration & Security) 
+       Standard Revision A
+
+       8700 Packetwave Platform Administration and Security, SAOS 
+       8.4, 380-1874-301, 8700, Rev A";
+  }
+  
+  /*
+   * typedefs
+   */
+  typedef file-transfer-status {
+    type enumeration {
+      enum idle {
+        description
+          "No files are being downloaded at this time.";
+      }
+      enum busy {
+        description
+          "A file is currently being downloaded.";
+      }
+    }
+    description
+      "File transfer status values.";
+  }
+
+  /*
+   * identities
+   */
+
+  identity file-transfer-server {
+    description
+      "Base identity for file transfer server types.";
+  }
+
+  identity tftp-server {
+    base file-transfer-server;
+    description
+      "TFTP file transfer server type.";
+  }
+
+  identity ftp-server {
+    base file-transfer-server;
+    description
+      "FTP file transfer server type.";
+  }
+
+  identity sftp-server {
+    base file-transfer-server;
+    description
+      "SFTP file transfer server type.";
+  } 
+
+  identity http-server {
+    base file-transfer-server;
+    description
+      "HTTP file transfer server type.";
+  }
+
+  /*
+   * Groupings
+   */
+  grouping file-transfer-parameters {
+    choice file-transfer-syntax {
+      case url {
+        leaf url {
+          type inet:uri;
+          description
+            "Use a URL to specify the transfer protocol, 
+             address/hostname, path, username, and password";
+        }
+      }
+
+      case component {
+        leaf filename {
+          type string;
+          description
+            "Path and filename.";
+        }
+        
+        leaf server-type {
+          type identityref {
+            base file-transfer-server;
+          }
+          description
+            "The server type for file transfer.";
+        }
+
+        leaf address {
+          type inet:host;
+          description
+            "The server IP address or hostname. The 
+             server-type leaf must be specified 
+             when using this leaf.";
+        }
+
+        leaf port {
+          type uint16;
+          description
+            "The server port.";
+        }
+
+        leaf login-id {
+          type string;
+          description
+            "Login ID for the specified server.";
+        }
+
+        leaf password {
+          type string;
+          description
+            "Password associated with the login-id.";
+        }
+      }
+      description
+        "Choice between using a URL to specify the file transfer
+         information or individual components.";
+    }
+    leaf tls-service-profile { 
+        type leafref {
+            path "/ciena-tls-service-profile:tls-service-profiles/ciena-tls-service-profile:tls-service-profile-name";
+        }  
+        description
+           "The TLS Service Profile to be used when accepting
+            TLS connections.";
+    }
+    description
+      "File transfer options.";
+  }
+}

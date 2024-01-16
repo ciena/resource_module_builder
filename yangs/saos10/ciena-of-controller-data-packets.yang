@@ -1,0 +1,119 @@
+module ciena-of-controller-data-packets {
+   namespace "http://www.ciena.com/ns/yang/ciena-pn/ciena-of-controller-data-packets";
+   prefix "of-controller-data-packets";
+
+   import ciena-of-types {
+      prefix "of-types";
+   }
+
+   import ciena-of-vfsi {
+      prefix "of-vfsi";
+   }
+
+   import ciena-of-flow-tables {
+      prefix "of-flow-tables";
+   }
+
+   import ciena-of-group-tables {
+      prefix "of-group-tables";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's management data definition for the definition of
+       Open Flow controller data packets for use by Ciena Open Flow packet handling.";
+
+   revision "2018-09-20" {
+      description
+         "Initial Version.";
+   }
+
+   notification of-packet-in {
+      description
+         "Send a packet to the controller.";
+
+      leaf vfsi {
+         type of-vfsi:vfsi-id-ref;
+         description
+            "Identifier of the Virtual FlowSwitch Instance that generated
+             this packet-in.";
+      }
+
+      uses of-types:of-logical-port;
+
+      leaf table-id {
+         type of-flow-tables:flow-table-number-ref;
+         description
+            "ID of the flow table that was looked up";
+      }
+
+      leaf entry-id {
+         type of-flow-tables:flow-table-entry-ref;
+         description
+            "ID of the flow table entry that was looked up.";
+      }
+
+      leaf cookie {
+         type of-types:cookie;
+         description
+            "Cookie of the flow table entry that was looked up.";
+      }
+
+      leaf reason {
+         type of-types:packet-in-reason;
+         description
+            "Reason that resulted in this packet-in.";
+      }
+
+      uses of-types:packet-data;
+   }
+
+   rpc of-packet-out {
+      description
+         "Send the provided packet out the specified port.";
+
+      input {
+         leaf vfsi {
+            type of-vfsi:vfsi-id-ref;
+            description
+               "Identifier of the Virtual FlowSwitch Instance for the packet-out.";
+         }
+
+         container action-set {
+            description
+               "Action set. Although OpenFlow supports a list of actions, this is
+                limited to an action set, which contains at most one action of
+                each type. An empty set drops the packet.";
+
+            uses of-types:action-set;
+
+            leaf group-id {
+               type of-group-tables:group-table-entry-ref;
+               description
+                  "Action to send the packet to a particular group table.";
+            }
+         }
+
+         uses of-types:packet-data;
+      }
+
+      output {
+        leaf status {
+          type string;
+          description
+            "Status indicating if the operation has succeeded or not.";
+        }
+      }
+   }
+}

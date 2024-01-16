@@ -1,0 +1,429 @@
+module ciena-6500r-span-calibr-orch {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-span-calibr-orch";
+  prefix span-calibr-orch;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-6500r-types {
+    prefix ciena-types;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com;
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's span calibration orchestrator object for the 6500r-Series platform";
+
+  revision 2021-06-13 {
+    ciena-common-version:string "1.2.5";
+    description
+      "Moved leaf additional-info under State";
+  }
+  revision 2021-05-27 {
+    ciena-common-version:string "1.2.4";
+    description
+      "Added leaf additional-info";
+  }
+  revision 2021-04-19 {
+    ciena-common-version:string "1.2.3";
+    description
+      "Replaced operation name augment with augment-l-band
+       Introduced new state: preparing";
+  }
+  revision 2020-10-09 {
+    ciena-common-version:string "1.2.2";
+    description
+      "Added new values related to re-calibration with channels:
+       new local state value - demux-blocked
+       new fsm state value - blocking-demux
+       new recalibrate rpc operation - without-blocking";
+  }
+  revision 2020-08-27 {
+    ciena-common-version:string "1.2.1";
+    description
+      "Added diagnostic container";
+  }
+  revision 2020-08-25 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Added:
+       new local state value - augmenting
+       new operation to recalibrate rpc - augment
+       new fsm states related to augment operation
+       new sco attribute current-operation";
+  }
+  revision 2020-01-14 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Added recalibrate rpc";
+  }
+  revision 2019-07-26 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Initial version for RLS 1.01";
+  }
+
+  typedef operations {
+    type enumeration {
+      enum "none" {
+        description
+          "no operation";
+      }
+      enum "recalibrate" {
+        description
+          "initiates recalibrate operation";
+      }
+      enum "augment-l-band" {
+        description
+          "initiates band augmenting operation";
+      }
+      enum "without-blocking" {
+        description
+          "initiates recalibrate operation which does not require blocking DEMUX pixels";
+      }
+    }
+  }
+
+  grouping ciena-6500r-span-calibr-orch-mount {
+    list sco {
+      key "name";
+      leaf name {
+        type string;
+        description
+          " Name to be used to access an orchestrator and it is the name of the associated PFG.";
+      }
+
+      container config {
+        uses ciena-types:admin-state;
+      }
+
+      container state {
+        leaf local-state {
+          type enumeration {
+            enum "unknown" {
+              description
+                "Initial value for this leaf.";
+            }
+            enum "initializing" {
+              description
+                "Make sure everything is configured and all gating conditions are met before proceeding to calibration.";
+            }
+            enum "calibrating" {
+              description
+                "Calibration running on this node.";
+            }
+            enum "calibrated" {
+              description
+                "Calibration on this node completed.";
+            }
+            enum "recalibrating" {
+              description
+                "Used to signal downstream node that recalibration started.";
+            }
+            enum "augmenting" {
+              description
+                "Used to signal downstream node that band augmentation started.";
+            }
+            enum "demux-blocked" {
+              description
+                "Used only on DEMUX node to signal upstream MUX that DEMUX pixels are blocked.";
+            }
+          }
+          mandatory true;
+          description
+            "SCO local calibration state";
+        }
+
+        leaf section-state {
+          type enumeration {
+            enum "unknown" {
+              description
+                "Initial value for this leaf.";
+            }
+            enum "pending" {
+              description
+                "Waiting for the head-end SCO to be calibrated";
+            }
+            enum "calibrating" {
+              description
+                "Waiting for all nodes in the section to be calibrated.";
+            }
+            enum "calibrated" {
+              description
+                "All nodes are calibrated";
+            }
+          }
+          mandatory true;
+          description
+            "SCO end-to-end calibration state. In RLS1.1 it will be used only on head-end SCO which is associated with Line Mux PFG.";
+        }
+
+        leaf fsm-state {
+          type enumeration {
+            enum "init" {
+              description
+                "Initial value for this leaf.";
+            }
+            enum "wait-launch-profile" {
+              description
+                "Waiting for power profile manager to generate launce profile";
+            }
+            enum "wait-booster-directed" {
+              description
+                "Waiting for booster to get in directed state";
+            }
+            enum "booster-configuring" {
+              description
+                "Booster controller configuring EDFA";
+            }
+            enum "wait-voa-directed" {
+              description
+                "Waiting for VOA controller to get in directed state";
+            }
+            enum "voa-configuring" {
+              description
+                "VOA controller configuring line VOA";
+            }
+            enum "ccs-ase-loading" {
+              description
+                "State that will be reported by CCS when ASE loading completed";
+            }
+            enum "local-calibrated" {
+              description
+                "State when SCO completed calibration on this node";
+            }
+            enum "ase-dialing-down" {
+              description
+                "State when ASE controller performs ASE dialing down";
+            }
+            enum "section-calibrated" {
+              description
+                "State when SCO completed calibration for entire section. Relevany only on MUX PFG";
+            }
+            enum "wait-input-profile" {
+              description
+                "Waiting for input profile available";
+            }
+            enum "wait-upstream-calibrated" {
+              description
+                "Waiting for the upstream SCO to report that its PFG is calibrated";
+            }
+            enum "wait-raman-directed" {
+              description
+                "Waiting for raman controller to get in directed state";
+            }
+            enum "wait-raman-pump-on" {
+              description
+                "Wait for raman to turn on pump on";
+            }
+            enum "wait-preamp-directed" {
+              description
+                "Waiting for preamp controller to get in directed state";
+            }
+            enum "preamp-configuring" {
+              description
+                "Wait for preamp controller to complete configuring";
+            }
+            enum "wait-amp-directed" {
+              description
+                "Waiting for amp controller to get in directed state";
+            }
+            enum "amp-configuring" {
+              description
+                "Waiting for amp controller to complete configuring";
+            }
+            enum "wait-dgff-directed" {
+              description
+                "Waiting for dgff controller to get in directed state";
+            }
+            enum "dgff-configuring" {
+              description
+                "Waiting for dgff controller to complete configuring";
+            }
+            enum "wait-launch-profile-augmenting" {
+              description
+                "Waiting for power profile manager to generate launce profile";
+            }
+            enum "wait-booster-directed-augmenting" {
+              description
+                "Waiting for booster to get in directed state";
+            }
+            enum "booster-configuring-augmenting" {
+              description
+                "Booster controller configuring EDFA";
+            }
+            enum "wait-voa-directed-augmenting" {
+              description
+                "Waiting for VOA controller to get in directed state";
+            }
+            enum "voa-configuring-augmenting" {
+              description
+                "VOA controller configuring line VOA";
+            }
+            enum "ccs-ase-loading-augmenting" {
+              description
+                "State that will be reported by CCS when ASE loading completed";
+            }
+            enum "ase-dialing-down-augmenting" {
+              description
+                "State when ASE controller performs ASE dialing down";
+            }
+            enum "wait-input-profile-augmenting" {
+              description
+                "Waiting for input profile available";
+            }
+            enum "wait-upstream-augmenting" {
+              description
+                "Waiting for the upstream SCO to report that its PFG is calibrated";
+            }
+            enum "wait-raman-directed-augmenting" {
+              description
+                "Waiting for raman controller to get in directed state";
+            }
+            enum "wait-raman-pump-on-augmenting" {
+              description
+                "Wait for raman to turn on pump on";
+            }
+            enum "wait-preamp-directed-augmenting" {
+              description
+                "Waiting for preamp controller to get in directed state";
+            }
+            enum "preamp-configuring-augmenting" {
+              description
+                "Wait for preamp controller to complete configuring";
+            }
+            enum "wait-amp-directed-augmenting" {
+              description
+                "Waiting for amp controller to get in directed state";
+            }
+            enum "amp-configuring-augmenting" {
+              description
+                "Waiting for amp controller to complete configuring";
+            }
+            enum "wait-dgff-directed-augmenting" {
+              description
+                "Waiting for dgff controller to get in directed state";
+            }
+            enum "dgff-configuring-augmenting" {
+              description
+                "Waiting for dgff controller to complete configuring";
+            }
+            enum "blocking-demux" {
+              description
+                "Used only on MUX node for waiting until DEMUX reports that its pixels blocked";
+            }
+            enum "preparing" {
+              description
+                "Perform re-calibration preparation operations";
+            }
+          }
+          mandatory true;
+          description
+            "State of the FSM attached to this SCO instance. This is a superset of sets for MUX, DEMUX and AMP PFGs";
+        }
+
+        leaf local-time-stamp {
+          type yang:date-and-time;
+          config false;
+          description
+            "Time when local calibration is completed.";
+        }
+
+        leaf section-time-stamp {
+          type yang:date-and-time;
+          config false;
+          description
+            "Time when section calibration is completed.";
+        }
+
+        leaf current-operation {
+          type operations;
+          description
+            "Indicating what user operation is being performed now.";
+        }
+
+        leaf additional-info {
+          type string;
+          config false;
+          description
+            "An additional information string.";
+        }
+      }
+
+      container diagnostic {
+        leaf section-calibration-in-progress {
+          type ciena-types:BOOLEAN;
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-span-calibr-orch-mount-actions {
+    action recalibrate {
+      description
+        "Recalibrate section";
+      input {
+        leaf name {
+          type string;
+          description
+            "Name to access SCO object and it is the name of the associated PFG.";
+        }
+
+        leaf operation {
+          type operations;
+          description
+            "operation to perform";
+        }
+
+        uses ciena-types:admin-state;
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+  }
+
+  uses ciena-6500r-span-calibr-orch-mount;
+
+  rpc recalibrate {
+    description
+      "Recalibrate section";
+    input {
+      leaf name {
+        type string;
+        description
+          "Name to access SCO object and it is the name of the associated PFG.";
+      }
+
+      leaf operation {
+        type operations;
+        description
+          "operation to perform";
+      }
+
+      uses ciena-types:admin-state;
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

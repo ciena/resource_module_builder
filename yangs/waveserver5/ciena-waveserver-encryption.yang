@@ -1,0 +1,276 @@
+module ciena-waveserver-encryption {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-encryption";
+  prefix encryption;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-port {
+    prefix port;
+  }
+
+  import ciena-waveserver-system {
+    prefix system;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  import ciena-ddf {
+    prefix ddf;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Datapath encryption support on Waveserver.
+
+     Encryption support includes global encryption status and per-channel pre-shared-key
+     provisioning, authentication, and state.";
+
+  revision 2019-08-09 {
+    description
+      "Added re-keying-period leaf.";
+    reference
+      "Waveserver Ai R1.5 user's guide.";
+  }
+  revision 2018-09-19 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.6 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Removed several unsupported attributes/containers/RPCs.
+       Changed the augment's target node from 'ports/properties' to 'channel/properties'.
+       Added container peer-authenticaltion with leafs: status and status-update-time.
+       Added typedef authentication-material-type-enum.
+       Added augment for '/system:waveserver-system', added container 'encryption'
+       and its leafs.";
+    reference
+      "Waveserver Ai R1.3 user's guide.";
+  }
+
+  typedef authentication-material-type-enum {
+    type enumeration {
+      enum "pre-shared-key" {
+        value 1;
+        description
+          "Pre-shared key(PSK).";
+      }
+      enum "certificate-ECC" {
+        value 2;
+        description
+          "Elliptic Curve Cryptography(ECC) based X 509 certificate.";
+      }
+    }
+    description
+      "Enum definitions for the type of authentication material to be used in
+       datapath encryption peer authentication.";
+  }
+
+  grouping pre-shared-key-configuration {
+    description
+      "Pre-shared key (PSK) configurations and attributes.";
+    leaf value {
+      ui:ui-name "Pre Shared Key Value";
+      type string {
+        length "0..1 | 32..512";
+        pattern "[0-9a-fA-F]*|\\*";
+      }
+      description
+        "Value for a pre-shared-key (PSK).
+         The value must be specified as a hexadecimal encoded string.
+         The string must be 32 characters to 512 characters consisting of (0-9, a-f, A-F).
+         This is for support of 128bit key to 2048bit key in increment of 8 bits.
+         Setting this attribute to an empty or blank string will clear the PSK.
+         A read of this attribute will always return '*' to protect the plaintext value.
+
+         Note: This is a write-only attribute.";
+    }
+
+    leaf fingerprint {
+      ui:ui-name "Pre Shared Key Fingerprint";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "A system generated hash value based on the provisioned pre-shared-key.
+         If no key is provisioned, the fingerprint is empty.";
+    }
+
+    leaf status {
+      ui:ui-name "Pre Shared Key Provisioned Status";
+      type boolean;
+      config false;
+      description
+        "Boolean value to indicate whether the pre-shared-key has been
+         setup by user or not.";
+    }
+
+    leaf description {
+      ui:ui-name "Pre Shared Key Description";
+      type string {
+        length "0..60";
+      }
+      description
+        "A human-readable description for the applied pre-shared-key.
+         Eg. 'PSK for site 1 and site 2'";
+    }
+  }
+
+  augment "/port:waveserver-ports/port:ports/port:channels/port:properties" {
+    ddf:ddf-struct-version "channelEncrypt";
+    description
+      "Data path encryption properties for the channels of line port 1 on the
+       Waveserver modules that support data path encryption.";
+    container encryption {
+      ui:ui-name "Data Path Encryption";
+      description
+        "Data path encryption properties for a channel.";
+      container pre-shared-key {
+        ui:ui-name "Pre-Shared-Key";
+        description
+          "Channel data path encryption pre-shared-key properties.";
+        uses pre-shared-key-configuration;
+      }
+
+      container peer-authentication {
+        ui:ui-name "Peer-Authentication";
+        config false;
+        description
+          "Channel data path encryption peer-authentication properties.";
+        leaf re-keying-period {
+          ui:ui-name "Re-keying Period (Seconds)";
+          type uint16;
+          units "seconds";
+          description
+            "The peer authentication session key negotiation interval, in seconds.";
+        }
+
+        leaf status {
+          ui:ui-name "Peer Authentication Status";
+          type enumeration {
+            enum "unknown" {
+              value 0;
+              description
+                "Peer Authentication Status is unknown.";
+            }
+            enum "pass" {
+              value 1;
+              description
+                "Peer Authentication Status is pass.";
+            }
+            enum "fail" {
+              value 2;
+              description
+                "Peer Authentication Status is fail.";
+            }
+          }
+          description
+            "Whether the channel is authenticated with its peer.";
+        }
+
+        leaf status-update-time {
+          ui:ui-name "Peer Authentication Status Update Time";
+          type cienawstypes:string-maxl-32;
+          description
+            "Last time when the channel's peer authentication status was updated.";
+        }
+      }
+    }
+  }
+
+  augment "/system:waveserver-system" {
+    ddf:ddf-struct-version "systemEncrypt";
+    description
+      "System level datapath encryption configuration and status.";
+    container encryption {
+      description
+        "System level datapath encryption properties.";
+      leaf authentication-material-type {
+        ui:ui-name "Authentication Material Type";
+        type authentication-material-type-enum;
+        config false;
+        description
+          "The authentication material type for this Waveserver,
+           the default type is pre-shared-key.";
+      }
+
+      leaf warm-restart-type {
+        ui:ui-name "Warm Restart Type";
+        type enumeration {
+          enum "FIPS" {
+            value 1;
+            description
+              "The warm restart type is FIPS(Federal Information Processing Standard).";
+          }
+          enum "non-FIPS" {
+            value 2;
+            description
+              "The warm restart type is non-FIPS.";
+          }
+        }
+        description
+          "Defines the chassis warm-restart type for this Waveserver.
+           The default type is FIPS.
+           When warm restart type is set to FIPS, traffic squelching will be
+           enforced during FIPS power up self-tests, i.e. traffic affecting.
+           When warm restart type is set to non-FIPS, traffic squelching will not
+           be enforced during FIPS power up self-tests, i.e. non-traffic affecting.";
+      }
+
+      leaf signing-ca-certificate {
+        ui:ui-name "Signing CA Certificate";
+        type cienawstypes:string-maxl-32;
+        config false;
+        description
+          "The signing Certifate Authority(CA) certificate.";
+      }
+
+      leaf entity-certificate {
+        ui:ui-name "Entity Certificate";
+        type cienawstypes:string-maxl-32;
+        description
+          "The entity certificate name, issued by a Certificate Authority(CA).";
+      }
+    }
+  }
+
+  rpc waveserver-encryption-clear-critical-security-parameters {
+    description
+      "Clear all critical-security-parameters (CSP) from the Waveserver.
+       Must be super or higher user privilege level to call this RPC.";
+    input {
+      leaf authentication-material-type {
+        ui:ui-name "Authentication Material Type";
+        type authentication-material-type-enum;
+        description
+          "The authentication material type used after clear all the
+           critical-security-parameters.
+           If not specified, the current authentication material type
+           will be maintained.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

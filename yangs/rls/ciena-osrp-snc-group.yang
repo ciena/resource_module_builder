@@ -1,0 +1,470 @@
+module ciena-osrp-snc-group {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-snc-group";
+  prefix snc-group;
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+
+  import ciena-osrp-snc {
+    prefix snc-common-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's OSRP Sub-network connection group (snc-group)
+     object model for the 6500r platform";
+
+  revision 2021-03-26 {
+    ciena-common-version:string "1.4.0";
+    description
+      "removed snc-group-route action and updated CLI help.";
+  }
+  revision 2021-02-05 {
+    ciena-common-version:string "1.3.1";
+    description
+      "Parameter route-list is made read-only.";
+  }
+  revision 2020-12-08 {
+    ciena-common-version:string "1.3.0";
+    description
+      "changed type in lower-edge-spacing, higher-edge-spacing, range in time-to-revert.";
+  }
+  revision 2020-10-20 {
+    ciena-common-version:string "1.2.0";
+    description
+      "mandatory check for name in actions input removed.";
+  }
+  revision 2020-09-11 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Output added for manual operation";
+  }
+  revision 2020-07-11 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.01
+       action for route added.";
+  }
+  revision 2019-09-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+  revision 2019-04-22 {
+    description
+      "Initial revision.";
+  }
+
+  grouping ciena-osrp-snc-group-mount {
+    list snc-group {
+      key "name";
+      leaf name {
+        type ciena-osrp-types:snc-group-key;
+        mandatory true;
+        description
+          "Name of Snc-Group.";
+      }
+
+      container allocated-spectrum {
+        config false;
+        description
+          "Specifies the spectrum allocated to snc-group.";
+        leaf higher-edge-spacing {
+          type ciena-osrp-types:spectrum;
+          config false;
+          description
+            "Allocated Media Channel Higher Dead Band (GHz).";
+        }
+
+        leaf lower-edge-spacing {
+          type ciena-osrp-types:spectrum;
+          config false;
+          description
+            "Allocated Media Channel Lower Dead Band (GHz).";
+        }
+
+        leaf max-freq {
+          type ciena-osrp-types:frequency;
+          config false;
+          description
+            "Allocated Maximum Frequency for snc-group (GHz).";
+        }
+
+        leaf min-freq {
+          type ciena-osrp-types:frequency;
+          config false;
+          description
+            "Allocated Minimum Frequency for snc-group (GHz).";
+        }
+      }
+
+      leaf backoff-period {
+        type ciena-osrp-types:timeperiod-sec;
+        default "2";
+        description
+          "Back-off period for retrying snc-group setup (in seconds).
+           The back-off period doubles for each subsequent retry up
+           to 30 seconds, then becomes 30 seconds thereafter. For example,
+           if set to 2 seconds, then the back-off period is (in seconds)
+           2, 4, 8, 16, 30, 30, 30, .. Default 2secs.";
+      }
+
+      leaf mesh-protected {
+        type ciena-osrp-types:yes-no;
+        config false;
+        description
+          "Indicates of snc-group is mesh-protected.";
+      }
+
+      container route-constraints {
+        description
+          "Specifies the route constraints applied to snc-group.";
+        leaf dtl-exclusivity {
+          type ciena-osrp-types:dtl-exclusive;
+          default "preferred";
+          description
+            "Specifies whether to exclusively use the dtl-set and how to use it. Default preferred.";
+        }
+
+        leaf dtl-set-name {
+          type ciena-osrp-types:dtl-set-key;
+          description
+            "Name of dtl-set to be used for snc-group.";
+        }
+
+        leaf max-admin-weight {
+          type uint64 {
+            range "0..1310700";
+          }
+          default "0";
+          description
+            "Maximum admin weight allowed for connection. Default 0 (no constraint).";
+        }
+
+        leaf route-computation-interval {
+          type ciena-osrp-types:timeperiod-sec {
+            range "30..3600";
+          }
+          default "300";
+          description
+            "Time interval expiry of which triggers route computation/validation.
+             Range 30secs - 1hr. Default 5mins.";
+        }
+
+        leaf maximum-computed-routes {
+          type uint32 {
+            range "0..40";
+          }
+          default "1";
+          description
+            "Maximum number of routes to compute. Defaut 1.";
+        }
+
+        leaf nv-dtl-set-name {
+          type ciena-osrp-types:dtl-set-key;
+          description
+            "Name of non-viable dtl-set to be used for snc-group.";
+        }
+      }
+
+      container spectrum-constraints {
+        description
+          "Specifies the spectrum constraints applied to snc-group.";
+        leaf contiguous {
+          type ciena-osrp-types:yes-no;
+          default "yes";
+          description
+            "Indicates if media channel is contiguous or not (fragmented). (Future use)";
+        }
+
+        leaf higher-edge-spacing {
+          type ciena-osrp-types:spectrum;
+          default "0.0";
+          description
+            "Media Channel Higher Dead Band (GHz). Default 0.0GHz.";
+        }
+
+        leaf lower-edge-spacing {
+          type ciena-osrp-types:spectrum;
+          default "0.0";
+          description
+            "Media Channel Lower Dead Band (GHz). Default 0.0GHz.";
+        }
+
+        leaf max-freq {
+          type ciena-osrp-types:frequency;
+          default "196125.000";
+          description
+            "Maximum Frequency constraint for snc-group (GHz). Default C band maximum frequency i.e. 196125GHz.";
+        }
+
+        leaf min-freq {
+          type ciena-osrp-types:frequency;
+          default "191325.000";
+          description
+            "Minimum Frequency constraint for snc-group (GHz). Default C band minimum frequency i.e. 191325GHz.";
+        }
+
+        leaf spectrum-exclusivity {
+          type ciena-osrp-types:freq-exclusive;
+          default "preferred";
+          description
+            "Specifies whether to exclusively use the spectrum constraints or not. (Future use)";
+        }
+      }
+
+      leaf home-path-active {
+        type ciena-osrp-types:yes-no;
+        config false;
+        description
+          "Indicates if the snc-group is on its home path.";
+      }
+
+      leaf home-path-available {
+        type ciena-osrp-types:yes-no;
+        config false;
+        description
+          "Indicates if the home path of snc-group is available.";
+      }
+
+      leaf priority {
+        type ciena-osrp-types:priority;
+        description
+          "Priority of snc-group.";
+      }
+
+      container revert-config {
+        description
+          "Specifies the revert configuration applied to snc-group.";
+        leaf revert-type {
+          type ciena-osrp-types:revert-type;
+          default "delay";
+          description
+            "Specifies whether the connection is to revert to the
+             original route after a delay (delay), the connection
+             is not to revert to the original route (no-revert).";
+        }
+
+        leaf time-to-revert {
+          type ciena-osrp-types:timeperiod-sec {
+            range "300..86400";
+          }
+          default "300";
+          description
+            "Amount of time for a connection to be reverted to the
+             original (home) route (sec). Range 300secs - 86400secs (5mins - 1day). Default 5mins.";
+        }
+      }
+
+      leaf-list snc-list {
+        type ciena-osrp-types:snc-key;
+        min-elements 1;
+        max-elements 32;
+        description
+          "Unordered list of member sncs (Max. 32).";
+      }
+
+      uses snc-common-types:snc-common-config;
+
+      container snc-group-protection-config {
+        description
+          "Specifies the snc-group-protection configuration for snc-group.";
+        leaf absolute-route-diversity {
+          type ciena-osrp-types:yes-no;
+          default "no";
+          description
+            "Indicates if Absolute Route Diversity (ARD) is enabled, Can only be set to ON for mesh-restorable snc-groups.";
+        }
+
+        leaf peer-origin {
+          type ciena-osrp-types:node-name;
+          description
+            "Name of node from which peer snc-group originates. Default is originating node of this snc-group.";
+        }
+
+        leaf peer-snc-group {
+          type ciena-osrp-types:snc-group-key;
+          description
+            "Name of peer snc-group.";
+        }
+
+        leaf protection-line-type {
+          type enumeration {
+            enum "working";
+            enum "protect";
+          }
+          description
+            "Identifiers if snc-group is the working or protecting leg of an snc-group-protection.";
+        }
+      }
+
+      leaf type {
+        type ciena-osrp-types:snc-type;
+        default "dynamic";
+        description
+          "Type of this snc-group, dynamic or permanent. Default dynamic.";
+      }
+
+      list route-list {
+        key "index";
+        config false;
+        description
+          "Retrieve Subnetwork Connection Group Routes on originating node.";
+        leaf index {
+          type uint32 {
+            range "1..22";
+          }
+          description
+            "Index of route.";
+        }
+
+        leaf route-type {
+          type enumeration {
+            enum "working-route";
+            enum "protect-route";
+            enum "home-route";
+          }
+          config false;
+          description
+            "Specifies the type of route.";
+        }
+
+        list dtl-data {
+          key "nodename";
+          config false;
+          description
+            "Transit List of OSRP hops in route.";
+          uses ciena-osrp-types:hop-info;
+        }
+
+        leaf dtl-cost {
+          type uint32 {
+            range "1..4000000";
+          }
+          config false;
+          description
+            "Indicates the dtl cost.";
+        }
+
+        leaf dtl-name {
+          type ciena-osrp-types:dtl-key;
+          config false;
+          description
+            "Name of dtl.";
+        }
+
+        leaf available {
+          type ciena-osrp-types:yes-no;
+          default "yes";
+          config false;
+          description
+            "Specifies if dtl is available or not.";
+        }
+
+        leaf failure-cause {
+          type string {
+            length "0..1024";
+          }
+          config false;
+          description
+            "Cause of failure of dtl.";
+        }
+
+        container point-of-failure {
+          config false;
+          description
+            "Point of failure of dtl.";
+          uses ciena-osrp-types:hop-info;
+        }
+      }
+
+      action snc-group-operation {
+        description
+          "Place a Subnetwork Connection Group into an out-of-service maintenance state on originating node.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-group-key;
+            mandatory true;
+            description
+              "Name of Snc-Group.";
+          }
+
+          leaf route-and-service-operation {
+            type ciena-osrp-types:operation;
+            mandatory true;
+            description
+              "Specifies the snc-group route and service related operations.";
+          }
+        }
+
+        output {
+          leaf return-status {
+            type enumeration {
+              enum "failure";
+              enum "success";
+            }
+            description
+              "Specifies if operation was a success or not";
+          }
+
+          leaf message {
+            type string {
+              length "0..1024";
+            }
+            description
+              "cause of success or failure of operation";
+          }
+        }
+      }
+
+      action show-snc-group-diagnostics {
+        description
+          "Retrieve Subnetwork Connection Group diagnostics on the originating node.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-group-key;
+            description
+              "Name of Snc-Group.";
+          }
+        }
+
+        output {
+          list output {
+            key "index";
+            uses snc-common-types:snc-common-diag-config;
+          }
+        }
+      }
+
+      action clear-snc-group-diagnostics {
+        description
+          "Clear Subnetwork Connection Group diagnostics on originating node.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-group-key;
+            description
+              "Name of Snc-Group.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-osrp-snc-group-mount-actions;
+
+  uses ciena-osrp-snc-group-mount;
+}

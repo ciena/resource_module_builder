@@ -1,0 +1,994 @@
+module ciena-ext-lag {
+
+  namespace "urn:ietf:params:xml:ns:yang:ciena-ext-lag";
+  prefix "ciena-ext-lag";
+
+  import ietf-yang-types { 
+    prefix "yang"; 
+  }
+  import ciena-ieee-lag {
+    prefix "ciena-ieee-lag";
+  }
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+  import ciena-openconfig-interfaces { 
+    prefix cn-oc-if; 
+  }
+
+  organization      
+    "Ciena Corporation";
+
+  contact           
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description       
+    "This yang module is an extension to the IEEE8023-LAG yang model.
+     It defines the managed objects for the creation and
+     deletion of Aggregators.";
+  
+  revision 2022-06-13 {
+    description
+      "PPM based MCLAG changes";
+  }
+
+  revision 2019-10-02 {
+    description
+      "EV-lAG changes";
+    reference
+      "EVPN VPWS Flexible Cross-Connect Service Internet Draft";
+  }
+
+  revision 2018-05-16 {
+    description
+      "Min link Aggrigation Changes";
+    reference
+      "Link Aggregation - 802.3AX";
+  }
+
+  revision 2018-01-24 {
+    description
+      "Move lacp augmentations from ietf-interfaces to 
+       openconfig-interfaces";
+    reference
+     "openconfig-interfaces yang";
+  }
+
+  revision 2016-03-06 {
+    description
+      "Initial revision";
+    reference
+     "IEEE Standard for Local and metropolitan area networks --
+      Link Aggregation - 802.1AX";
+  }
+   
+
+//
+// Type Definitions related to ciena proprietary extansion of LACP
+//
+
+  // AGG REDUNDANCY STATE
+
+  identity agg-redundancy-state {
+    description
+      "Indicates the redundancy-state of the aggregation";
+  }
+  
+  identity agg-redundancy-state-down { 
+     description
+       "Indicates that the MC-LAG node is oper-down";
+  }
+
+  identity agg-redundancy-state-unavailable { 
+    base agg-redundancy-state;
+    description
+      "Indicates that the MC-LAG node is currently 
+       unavailable";
+  }
+
+  identity agg-redundancy-state-active { 
+    base agg-redundancy-state;
+    description
+      "Indicates that the MC-LAG node is currently in active
+       state";
+  }
+
+  identity agg-redundancy-state-standby { 
+    base agg-redundancy-state;
+    description
+      "Indicates that the MC-LAG mode is currently in standby
+       state. This means the peer RG node is in active state";
+  }
+
+  identity agg-redundancy-state-standalone  { 
+    base agg-redundancy-state;
+    description 
+      "Indicates that the MC-LAG node is currently in 
+       standalone state. Connection with the peer RG node is 
+       lost";
+  }
+
+  identity agg-redundancy-state-none { 
+    base agg-redundancy-state;
+    description
+      "Indicates that the MC-LAG node is currently in undefined
+       state";
+  }
+
+ 
+  // AGG MODE
+
+  identity agg-mode-type {
+    description
+      "Indicates the aggregation mode";
+  }
+
+  identity agg-mode-lacp {
+    base agg-mode-type;
+    description
+      "Indicates the aggregation mode for the agg is lacp";
+  }
+
+  identity agg-mode-manual {
+    base agg-mode-type;
+    description
+      "Indicates the aggregation mode for the agg is manual";
+  }
+
+
+  // MIN LINK AGGREGATION STATE
+
+  identity min-link-aggregation-state {
+    description
+      "Indicates the state of min-link for the aggregation";
+  }
+  
+  identity min-link-on {
+    base min-link-aggregation-state;
+    description
+      "Indicates on-state for min-link-aggregation";
+  }
+  identity min-link-off {
+    base min-link-aggregation-state;
+    description
+      "Indicates off-state for min-link-aggregation";
+  }
+ 
+ 
+  typedef min-link-threshold-value-range {
+    type uint8 {
+      range "1..max";
+    }
+    description
+      "Indicates the range of legal values for min-link-threshold";
+  }
+
+
+  // MULTI CHASSIS STATE
+
+  identity multi-chassis-state {
+    description
+      "Specifies if the LAG is an MC-LAG";
+  }
+  
+  identity multi-chassis-enable {
+    base multi-chassis-state;
+    description
+      "Indicates user intends multi-chassis operation";
+  }
+
+  identity multi-chassis-disable {
+    base multi-chassis-state;
+    description
+      "Indicates user intends regular LACP operation";
+  }
+
+  
+  // MULTI CHASSIS CONNECT STATE
+
+  identity multi-chassis-connect-state {
+    description
+      "Specifies the Connect State of the MC-LAG node.";
+  }
+  
+  identity multi-chassis-init {
+    base multi-chassis-connect-state;
+    description
+      "Indicates that the MC-LAG node is in init state";
+  }
+  
+  identity multi-chassis-disconnected {
+    base multi-chassis-connect-state;
+    description
+      "Indicates that the MC-LAG node is in disconnected 
+       state";
+  }  
+
+  identity multi-chassis-connected {
+    base multi-chassis-connect-state;
+    description
+      "Indicates that the MC-LAG node is in connected state";
+  }  
+
+  identity multi-chassis-mismatch {
+    base multi-chassis-connect-state;
+    description
+      "Indicates that the MC-LAG node is in mismatch state";
+  }  
+
+  identity multi-chassis-none {
+    base multi-chassis-connect-state;
+    description
+      "Indicates that the MC-LAG node is in undefined state";
+  }
+
+
+  // MULTI CHASSIS AGG ROLE
+
+  identity multi-chassis-agg-role {
+    description
+      "Specifies if the MC-LAG node is primary or backup";
+  }
+  
+  identity multi-chassis-agg-role-primary {
+    description
+      "In case of multi-chassis operation, this is the primary
+       link to the dual-homing device";
+  }
+  
+  identity multi-chassis-agg-role-backup {
+    base multi-chassis-agg-role;
+    description
+      "In case of multi-chassis operation, this is the backup
+       link to the dual-homing device";
+  }
+ 
+  identity multi-chassis-agg-role-none {
+    base multi-chassis-agg-role;
+    description
+      "In case of multi-chassis operation, this is the dual-
+       homing device";
+  }
+   
+
+  // LAG HASH MODE
+
+  identity lag-hash-mode-type {
+    description
+      "Specifies the hash mode used by the aggregation
+       for known unicast frames." ;   
+  }
+
+  identity mac-based-hash-mode {
+    base lag-hash-mode-type;
+    description
+      "Indicates that the hash mode used for known unicast 
+       frames is mac-based"; 
+  } 
+
+  identity ip-based-hash-mode {
+    base lag-hash-mode-type;
+    description
+      "Indicates that the hash mode used for known unicast
+       frames is ip-based";
+  }
+
+  identity enhanced-hash-mode {
+    base lag-hash-mode-type;
+    description
+      "Indicates that the hash mode used for known unicast
+       frames is enhanced"; 
+  }
+
+
+  // LAG PROTECTION MODE
+  
+  identity lag-protection-mode-type {
+    description
+      "Specifies the LACP protection-mode in which the
+       given aggregation is operating." ;    
+  }
+
+  identity lag-protection-mode-proprietary {
+    base lag-protection-mode-type;
+    description
+      "Indicates that the LACP protection-mode is proprietary";
+  }  
+ 
+  identity lag-protection-mode-standard {
+    base lag-protection-mode-type;
+    description
+      "Indicates that the LACP protection-mode is standard";
+  }  
+
+
+  // FLOOD HASH MODE
+  
+  identity lag-flood-hash-mode-type {
+    description
+      "Specifies the aggregation hash mode used by
+       unknown unicast, multicast and broadcast frames for all
+       aggregation ports in the system." ;
+  }
+
+  identity simplified-flood-hash-mode { 
+    base lag-flood-hash-mode-type;
+    description 
+      "Indicates simplified flood hash mode for unknown unicast
+       multicast, and broadcast frames";
+  }
+
+  identity enhanced-flood-hash-mode { 
+    base lag-flood-hash-mode-type;
+    description
+      "Indicates enhanced flood hash mode for unknown unicast,
+       multicast, and broadcast frames";
+  }
+
+  // EV-LAG STATE
+
+  identity ev-lag-admin-state {
+    description
+      "Specifies if the LAG is ev-lag attached";
+  }
+  
+  identity ev-lag-enable {
+    base ev-lag-admin-state;
+    description
+      "Indicates user intends ev-lag operation";
+  }
+
+  identity ev-lag-disable {
+    base ev-lag-admin-state;
+    description
+      "Indicates user intends regular LACP operation";
+  }
+
+  identity ev-lag-sync-state {
+    description
+      "Specifies the LAG's sync status";
+  }
+  
+  identity ev-lag-sync-on {
+    base ev-lag-sync-state;
+    description
+      "Indicates lag is not forced to sync-off";
+  }
+
+  identity ev-lag-sync-off {
+    base ev-lag-sync-state;
+    description
+      "Indicates lag is forced to sync-off";
+  }
+   
+  // PPM based MCLAG State
+
+  identity ppm-mclag-admin-state {
+    description
+      "Specifies if the LAG is PPM MCLAG attached";
+  }
+  
+  identity ppm-mclag-enable {
+    base ppm-mclag-admin-state;
+    description
+      "Indicates user intended PPM MCLAG operation";
+  }
+
+  identity ppm-mclag-disable {
+    base ppm-mclag-admin-state;
+    description
+      "Indicates user intended PPM MCLAG operation";
+  }
+
+  identity ppm-mclag-sync-state {
+    description
+      "Specifies the PPM MCLAG's sync status";
+  }
+  
+  identity ppm-mclag-sync-on {
+    base ppm-mclag-sync-state;
+    description
+      "Indicates PPM MCLAG is not forced to sync-off";
+  }
+
+  identity ppm-mclag-sync-off {
+    base ppm-mclag-sync-state;
+    description
+      "Indicates PPM MCLAG is forced to sync-off";
+  }
+
+//
+// Groupings related to ciena proprietary extension of LACP
+//
+
+  grouping mc-lag-parameters-group {
+ 
+    description
+      "User-configurable ciena-proprietary MC-LAG parameters";
+
+    leaf multi-chassis {
+      type identityref {
+        base multi-chassis-state;
+      }
+      default multi-chassis-disable;
+      description
+        "This object specifies if the LAG is an MC-LAG";
+    }
+
+    leaf icl {
+      type string;
+      description
+        "This object specifies the inter-chassis link name that the
+         multi-chassis LAG is using.";
+    }
+
+  } 
+
+  grouping mc-lag-operational-group {
+   
+    description
+      "Operational states of various MC-LAG components";
+
+    leaf rg-node-index {
+      type uint32;
+      description
+        "This object specifies the MC-LAG RG node ID.";
+    }
+
+    leaf rg-dynamic-priority {
+      type uint32;
+      description
+        "This object specifies the MC-LAG RG node dynamically
+         assigned priority.";
+    }
+
+    leaf rg-oper-key {
+      type uint32;
+      description
+        "This object specifies the MC-LAG RG node operational key.";
+    }
+
+    leaf connect-state {
+      type identityref {
+        base multi-chassis-connect-state;
+      }
+      description
+        "This object specifies the Connect State of the MC-LAG node.";
+    }    
+
+    leaf redundancy-state {
+      type identityref {
+        base agg-redundancy-state;
+      }
+      description
+        "This object specifies the oper state of the MC-LAG node";
+    }
+
+    leaf peer-system-mac {
+      type yang:mac-address;
+      description
+        "This object specifies the MC-LAG peer node system MAC
+         address.";
+    }
+
+    leaf peer-rg-node-id {
+      type uint32;
+      description
+        "This object specifies the MC-LAG peer RG node ID.";
+    }
+
+    leaf peer-rg-dynamic-priority {
+      type uint32;
+      description
+        "This object specifies the MC-LAG peer RG node dynamically
+         assigned priority.";
+    }
+
+    leaf peer-rg-oper-key {
+      type uint32;
+      description
+        "This object specifies the MC-LAG peer RG node operational
+         key.";
+    }   
+
+    leaf agg-oper-mode {
+      type identityref {
+        base agg-mode-type;
+      }
+      default agg-mode-lacp;
+      description
+        "This object specifies the operation mode in which a given
+         port is operating." ;
+    }
+
+    leaf agg-role {
+      type identityref {
+        base multi-chassis-agg-role;
+      }
+      description
+        "This object specifies if the MC-LAG node is primary or backup";
+    }  
+
+  }
+
+
+  grouping mc-lag-statistics-group {
+ 
+    description
+      "Packet and timer related statistics for MC-LAG";
+
+    leaf disconnect-rx {
+      type yang:counter32;
+      description
+        "This object specifies the number of Disconnect messages
+         received by the MC-LAG node.";
+    }
+
+    leaf disconnect-tx {
+      type yang:counter32;
+      description
+        "This object specifies the number of Disconnect messages
+         transmitted by the MC-LAG node.";
+    }
+
+    leaf config-mismatch-rx {
+      type yang:counter32;
+      description
+        "This object specifies the number of mismatch config messages
+         received by the MC-LAG node.";
+    }
+
+    leaf key-mismatch-count {
+      type yang:counter32;
+      description
+        "This object specifies the number of messages received 
+         with mismatching key by the MC-LAG node.";
+    }
+
+    leaf out-of-sequence-rx {
+      type yang:counter32;
+      description
+        "This object specifies the number of out of sequence messages
+         received by the MC-LAG node.";
+    }
+
+    leaf peer-unreachable-count {
+      type yang:counter32;
+      description
+        "This object specifies the number of times peer was
+         unreachable.";
+    }
+
+    leaf unknown-rx {
+      type yang:counter32;
+      description
+        "This object specifies the number unknown messages received
+         by the MC-LAG node.";
+    }    
+
+    leaf total-rx {
+      type yang:counter32;
+      description
+        "This object specifies the total number of messages received
+         by the MC-LAG node.";
+    }
+
+    leaf total-tx {
+      type yang:counter32;
+      description
+        "This object specifies the total number of messages
+         transmitted by MC-LAG node.";
+    } 
+
+    leaf total-down-time {
+      type uint32;
+      description
+        "This object specifies total time for which the MC-LAG node
+         has been operationally down.";
+    }     
+
+    leaf up-time {
+      type uint32;
+      description
+        "This object specifies time for which the MC-LAG node has been
+         operationally up.";
+    }
+
+    leaf time-in-protect-state {
+      type uint32;
+      description
+        "This object specifies time for which the MC-LAG node has been
+         in protection state.";
+    }
+
+    leaf last-time-protected {
+      type uint32;
+      description
+        "This object specifies time of day of the last MC-LAG
+         protection switching.";
+    }
+
+    leaf number-of-switchovers {
+      type yang:counter32;
+      description
+        "This object specifies the number of MC-LAG protection
+         switching.";
+    }
+
+  }
+
+  grouping min-link-agg-parameters-group {
+    
+    description
+      "User configurable parameters related to ciena-proprietary 
+       min-link-aggregation";
+
+    leaf min-link-aggregation {
+      type identityref {
+        base min-link-aggregation-state;
+      }
+      default min-link-off;
+      description
+        "This object allows the user to enable or disable min-link-
+         aggregation on an agg";
+    }
+   
+    leaf min-link-threshold {
+      type min-link-threshold-value-range;
+      default 1;
+      description
+        "This object allows the user to specify the threshold for 
+         min-link-aggregation";
+    }
+  }
+
+  grouping min-link-agg-operational-group {
+    status obsolete;
+    
+    description
+      "Operational data related to ciena-proprietary 
+       min-link-aggregation";
+
+    leaf min-link-aggregation {
+      type identityref {
+        base min-link-aggregation-state;
+      }
+      description
+        "This object allows the user to enable or disable min-link-
+         aggregation on an agg";
+    }
+   
+    leaf min-link-threshold {
+      type min-link-threshold-value-range;
+      description
+        "This object allows the user to specify the threshold for 
+         min-link-aggregation";
+    }
+  }
+
+  grouping ev-lag-operational-group {
+
+    description
+      "Operational states of various EV-LAG components";
+
+    leaf ev-lag-state {
+      type identityref {
+        base ev-lag-admin-state;
+      }
+      description
+        "This object specifies the ev-lag State of the LAG node.";
+    }
+
+    leaf sync-state {
+      type identityref {
+        base ev-lag-sync-state;
+      }
+      description
+        "This object specifies the oper state of the ev-lag";
+    }
+  }
+
+  grouping ppm-mclag-operational-group {
+
+    description
+      "Operational states of various PPM MCLAG components";
+
+    leaf ppm-mclag-state {
+      type identityref {
+        base ppm-mclag-admin-state;
+      }
+      description
+        "This object specifies the PPM MCLAG state of the LAG node.";
+    }
+
+    leaf ppm-mclag-sync-state {
+      type identityref {
+        base ppm-mclag-sync-state;
+      }
+      description
+        "This object specifies the operational state of the ppm mclag";
+    }
+  }
+
+  augment "/ciena-ieee-lag:agg-global" {
+
+    description
+      "Augmenting configurable parameters global to all Aggregators in
+       the system to the standard yang";
+
+    leaf flood-hash-mode {
+      type identityref {
+        base lag-flood-hash-mode-type;
+      }
+      default simplified-flood-hash-mode;
+      description
+        "This object specifies the aggregation hash mode used by
+         unknown unicast, multicast and broadcast frames for all
+         aggregation ports in the system.";
+    }
+
+    leaf marker-timeout {
+      type uint32 {
+        range "0..1000";
+      }
+      default 50;
+
+      description
+        "This object indicates the marker timeout in the system";
+    }
+  }
+
+  augment "/ciena-ieee-lag:agg-global-state" {
+
+    description
+      "Augmenting ciena-proprietary global info to the standard 
+       yang";
+    
+    leaf max-lags {
+      type uint32;
+      description
+        "The maximum number of aggregators that this device
+         supports.";
+    }
+   
+    leaf num-lags {
+      type uint32;
+      description
+        "The current number of LAGs that are
+         configured in this device.";
+    }
+  
+  }
+
+  rpc clear-lacp-statistics {
+      description
+        "Administratively clear LACP statistics";
+  }
+
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:config" {
+    when "cn-oc-if:type = 'ettp'"{
+      description
+        "Augment only if the interface type is ettp.";
+    }
+
+    description
+      "Augmenting openconfig-interface module to add configuration 
+       parameters for LACP.";
+
+    container agg-port-config {
+      description
+        "Per port configurable variables.";
+      leaf agg-admin-mode {
+        type identityref {
+          base agg-mode-type;
+        }
+        default agg-mode-lacp;
+        description
+          "This object specifies the administrative mode in which a 
+           given port is operating." ;
+      }
+
+      leaf lacp-activity    {
+        type identityref {
+          base ciena-ieee-lag:lacp-activity-type;
+        }
+        default ciena-ieee-lag:lacp-active;
+          description
+            "Active or Passive - Indicates whether LACP PDUs are 
+             initiated always or only in response to another LACP PDU.
+             The IEEE 802.1ax Link Aggregation will always operate in 
+             Active mode.";
+      }
+
+      leaf lacp-timeout     { 
+        type identityref {
+          base ciena-ieee-lag:lacp-timeout-type;
+        }
+        default ciena-ieee-lag:lacp-timeout-long;
+        description
+          "Long or Short - Indicates time to wait before sending
+           LACP PDUs. The IEEE 802.1ax Link Aggregation will always
+           use the long timeout.";
+      }
+    }
+  }
+
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:config/"
+        + "ciena-ieee-lag:agg" {
+
+    description
+      "Adding ciena-proprietary configurable parameters to the 
+       standard yang.";
+
+    leaf system-mac {
+      type yang:mac-address;
+      description
+        "A 6-octet read-only value specifying the 
+         MC-LAG redundancy group MAC.";  
+    }
+
+    leaf lag-protection-revert-state {
+      type enumeration {
+        enum on  { 
+          description
+            "Indicates that if the primary port goes from 
+             operationally disabled to enabled, it shall become
+             active, and one of the secondary ports shall become
+             backup when the protection-revert-timer expires";
+        }
+        enum off { 
+          description
+            "Indicates that the secondary port will remain active
+             even if the primary port goes from operationally
+             disabled to enabled"; 
+        }
+      }
+      default off;
+      description
+        "This object specifies that if the primary port goes from
+         operationally disabled to operationally enabled it shall
+         become active, and one of the secondary ports shall become
+         backup if this object is set to 'on' and the
+         protection-revert-timer expires." ;
+    }
+
+    leaf lag-protection-revert-timer {
+      type uint32 {
+        range "0..720000";
+      }
+      default 5000;
+      description
+        "This object specifies the revert protection timer value.
+         The default for  multi-chassis LAG is 300000 ms and for
+         regular LAG is 5000 ms";
+    }
+
+    leaf hash-mode {
+      type identityref {
+        base lag-hash-mode-type;
+      }
+      default mac-based-hash-mode;
+      description
+        "This object specifies the hash mode used by the aggregation
+         for known unicast frames." ;
+    }
+
+    leaf lag-protection-mode {
+      type identityref {
+        base lag-protection-mode-type;
+      }
+      default lag-protection-mode-proprietary;
+      description
+        "This object specifies the LACP protection-mode in which the
+         given aggregation is operating." ;
+    }
+
+    leaf agg-admin-mode {
+      type identityref {
+        base agg-mode-type;
+      }
+      default agg-mode-lacp;
+      description
+        "This object specifies the administrative mode in which a 
+         given port is operating." ;
+    }
+
+    uses mc-lag-parameters-group;
+    uses min-link-agg-parameters-group;
+
+    leaf node-id {
+      type uint8 {
+        range "0..7";
+      }
+      default 0;
+      description
+        "For multichassis, this object specifies the lacp node id 
+         to prevent ports overlap.";
+    }
+
+  }
+
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:config/"
+        + "ciena-ieee-lag:agg/"
+        + "ciena-ieee-lag:member-ports" {
+    description
+      "This object specifies the member port in an agg";
+    leaf protection-port {
+      type boolean;
+      default "false";
+      description
+        "This object specifies whether the member port is primary or
+         protection port.";
+    }
+  }
+    
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:state/"
+        + "ciena-ieee-lag:agg-state" {
+    when "../../config/cn-oc-if:type = 'lag'" {
+      description
+        "Augment only if the interface type is lag.";
+    }
+  
+    description
+      "Adding ciena-proprietary operational data to the standard 
+       yang";
+    uses mc-lag-operational-group;  
+    uses mc-lag-statistics-group;
+    uses min-link-agg-operational-group {
+      status obsolete; 
+    }
+    uses ev-lag-operational-group;
+    uses ppm-mclag-operational-group;
+  }
+
+  // Notifications
+  notification mclag-state-change {
+
+    description 
+      "This notification is sent when MC-LAG oper state changes.
+       Var binding index represents the MC-LAG PGID.";
+
+    list state {
+      key "index";
+      description
+        "Change in redundancy-state per Aggregation in the system";
+
+      leaf index {
+        type uint32 {
+          range "1..2147483647";
+        }
+        description
+          "The unique identifier allocated to this Aggregator by
+           the local System.  This attribute identifies an
+           Aggregator instance among the subordinate managed
+           objects of the containing object.
+           This value is read-only. This object refer to the
+           dot3ad-agg-index in the IEEE-8023-LAG-MIB.";
+        reference
+          "IEEE 802.3 Subclause 30.7.1.1.1";
+      }
+
+      leaf redundancy-state {
+        type identityref {
+          base agg-redundancy-state;
+        }     
+        description
+          "This object specifies the oper state of the MC-LAG node";
+      }
+    }
+  } 
+}

@@ -1,0 +1,820 @@
+module ciena-pro-alarm {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-alarm";
+  prefix alarm;
+
+  import ciena-common-yang {
+    prefix ciena-yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's alarm object for the R-Series 6500 platform";
+
+  revision 2021-01-25 {
+    version:version "version" {
+      version:string "2.1.1";
+    }
+    description
+      "Add alarm history.  Enable alarm filter support to the user.";
+  }
+  revision 2019-11-19 {
+    version:version "version" {
+      version:string "2.1.0";
+    }
+    description
+      "Enhance the base alarm types to include definitions to support multiple
+       alarm levels for individual alarm templates.
+
+       Alarms can be defined with separate sets of severity + service affecting
+       code values for each defined level.";
+  }
+  revision 2019-03-27 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Copied template and raise/clear alarms to separate modules.";
+  }
+
+  identity alarm-level {
+    description
+      "Identity type of alarm severity-level specifiers.  Used to create
+       alternate sets of severity + service impact data for a given alarm
+       template.  Allows the same generic alarm template to be used to
+       generate different levels of alarm severity criteria.
+
+       Use of Identity will allow the levels to be expanded as applications
+       come up with alternate levels for their alarms besides the traditional
+       high and low designations.";
+  }
+
+  identity high {
+    base alarm-level;
+    description
+      "High severity level alarm definition identifier";
+  }
+
+  identity low {
+    base alarm-level;
+    description
+      "Low severity level alarm definition identifier";
+  }
+
+  typedef direction {
+    type enumeration {
+      enum "tx" {
+        value 1;
+      }
+      enum "rx" {
+        value 2;
+      }
+      enum "bi" {
+        value 3;
+      }
+    }
+  }
+
+  typedef service-impact {
+    type enumeration {
+      enum "nsa" {
+        value 1;
+      }
+      enum "sa" {
+        value 2;
+      }
+    }
+    description
+      "Service impact, either sa (service-affecting) or nsa (not-service-affecting)";
+  }
+
+  typedef location {
+    type enumeration {
+      enum "near-end" {
+        value 2;
+      }
+      enum "far-end" {
+        value 3;
+      }
+    }
+  }
+
+  typedef severity {
+    type enumeration {
+      enum "unknown" {
+        value 1;
+      }
+      enum "critical" {
+        value 2;
+      }
+      enum "major" {
+        value 3;
+      }
+      enum "minor" {
+        value 4;
+      }
+      enum "warning" {
+        value 5;
+      }
+    }
+    description
+      "Severity, based on X.733 perceived severity";
+  }
+
+  typedef alarm-id {
+    type uint32;
+    description
+      "Unique identifying value assigned to an alarm record";
+  }
+
+  typedef alarm-state {
+    type enumeration {
+      enum "all" {
+        value 0;
+      }
+      enum "enabled" {
+        value 1;
+      }
+      enum "inhibited" {
+        value 2;
+      }
+      enum "inhibited-template" {
+        value 3;
+      }
+    }
+    description
+      "A type to reflect enabled/inhibited state of an alarm record.
+       The <inhibited> and <all> values are used only for retrievals, for
+       retrieving either all inhibited alarms or all alarms regardless of
+       their state.
+       For now, the <inhibited> value is redundant since only one method of
+       inhibiting alarms exist, using the template.  However, it is useful
+       shorthand rather than forcing a user to filter on <inhibited-template>
+       when trying to retrieve a filtered list of inhibited alarms.";
+  }
+
+  typedef condition-type {
+    type string {
+      length "1..31";
+    }
+    description
+      "The type of the alarm; used to group or classify similar or related alarms
+       within a resource.  Only one alarm of any given condition type can be active
+       against a given resource at a time. This allows classification of alarms into
+       conditions, and then the highest condition is the one that prevails. Since
+       different alarms can (and do) share condition types, it provides a form of a
+       classification system.";
+  }
+
+  typedef short-string {
+    type string {
+      length "1..15";
+    }
+    description
+      "Very short string for various purposes";
+  }
+
+  typedef alarm-name-string {
+    type string {
+      length "1..79";
+    }
+    description
+      "String for storing and recording alarm template names.";
+  }
+
+  typedef alarm-cause-string {
+    type string {
+      length "1..127";
+    }
+    description
+      "String for storing and recording alarm cause.";
+  }
+
+  typedef alarm-additional-info-string {
+    type string {
+      length "1..127";
+    }
+    description
+      "String for storing and recording alarm cause.";
+  }
+
+  typedef alarm-filter-name {
+    type string {
+      length "1..47";
+    }
+    description
+      "String for storing and recording alarm filter names.
+       Shorter than the default string size to save memory and
+       improve performance.";
+  }
+
+  typedef update-reason {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+      }
+      enum "alarm-raise" {
+        value 1;
+      }
+      enum "alarm-clear" {
+        value 2;
+      }
+      enum "alarm-state-change" {
+        value 3;
+      }
+      enum "user-notes-change" {
+        value 4;
+      }
+      enum "additional-info-change" {
+        value 5;
+      }
+      enum "alarm-masking-change" {
+        value 6;
+      }
+    }
+    description
+      "The reason for an entry to be included in alarm history.";
+  }
+
+  typedef alarm-date-and-time {
+    type string {
+      length "1..23";
+    }
+    description
+      "Storage for a formatted timestamp value of format
+           yyyy-mm-ddThh:mm:ssZ.
+       Considerably more space efficient than the ietf definition
+       for timestamps.";
+  }
+
+  typedef alarm-source {
+    type enumeration {
+      enum "active-alarms" {
+        value 0;
+      }
+      enum "active" {
+        value 1;
+      }
+      enum "alarm-history" {
+        value 2;
+      }
+      enum "history" {
+        value 3;
+      }
+    }
+    description
+      "Identifies which alarm set will be accessed for a filtered alarm request.";
+  }
+
+  typedef alarm-list-order {
+    type enumeration {
+      enum "ascending" {
+        value 0;
+      }
+      enum "descending" {
+        value 1;
+      }
+    }
+    description
+      "Identify the ordering of an alarm list.";
+  }
+
+  grouping alarm-level-grouping {
+    description
+      "The combined set of alarm severity and service affecting code for a given
+       level of an alarm condition.";
+    leaf severity {
+      type severity;
+      mandatory true;
+      description
+        "Severity of alarm.";
+    }
+
+    leaf service-impact {
+      type service-impact;
+      mandatory true;
+      description
+        "Impact of alarm on service";
+    }
+  }
+
+  grouping alarm {
+    leaf cause {
+      type alarm-cause-string;
+      mandatory true;
+    }
+
+    leaf condition-type {
+      type condition-type;
+    }
+
+    leaf direction {
+      type direction;
+      description
+        "Direction indication of the alarm.";
+    }
+
+    leaf location {
+      type location;
+      description
+        "location indication of the alarm.";
+    }
+
+    leaf severity {
+      type severity;
+      description
+        "Severity of alarm.";
+    }
+
+    leaf service-impact {
+      type service-impact;
+      description
+        "Impact of alarm on service";
+    }
+  }
+
+  grouping alarm-user-note {
+    leaf note-time {
+      type alarm-date-and-time;
+      mandatory true;
+      description
+        "Time the user-note was entered";
+    }
+
+    leaf note {
+      type string;
+      mandatory true;
+      description
+        "Free text field for user supplied notes";
+    }
+  }
+
+  grouping alarm-record {
+    leaf id {
+      type alarm-id;
+      description
+        "Alarm record instance identifier.";
+    }
+
+    leaf name {
+      type alarm-name-string;
+      description
+        "Alarm name. Name of the template from which the alarm was generated.";
+    }
+
+    leaf resource {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Resource under alarm";
+    }
+
+    leaf raise-time {
+      type alarm-date-and-time;
+      mandatory true;
+      description
+        "Time alarm was raised";
+    }
+
+    leaf clear-time {
+      type alarm-date-and-time;
+      mandatory false;
+      description
+        "The time that the alarm was cleared.  Only present with alarm clear reports.";
+    }
+
+    leaf alarm-state {
+      type alarm-state;
+      description
+        "State of the given alarm:  enabled or inhibited.";
+    }
+
+    uses alarm;
+
+    leaf additional-info {
+      type alarm-additional-info-string;
+      mandatory false;
+      description
+        "Additional information supplied by system";
+    }
+
+    list user-notes {
+      key "note-time";
+      description
+        "List of user supplied notes";
+      uses alarm-user-note;
+    }
+  }
+
+  grouping alarm-history-record {
+    leaf history-id {
+      type alarm-id;
+      description
+        "Alarm history record instance identifier.";
+    }
+
+    leaf update-reason {
+      type update-reason;
+      description
+        "The reason for the update to the alarm-record and why the entry
+         was made in the alarm history.";
+    }
+
+    leaf history-time {
+      type alarm-date-and-time;
+      description
+        "The time when the event was inserted into history.";
+    }
+
+    uses alarm-record;
+  }
+
+  grouping alarm-id-range {
+    description
+      "A type for specifying ranges of alarm id's.  Specifying both start and end
+       id's will match those id's and any id's between them.
+
+       Specifying only a start will include the alarm record with that alarm id and
+       all alarm records that have occurred since then (i.e. have a higher id).
+
+       Specifying only an end will include the alarm record with that id and and all
+       those available records that occurred before it (i.e. have a lower id).";
+    leaf start {
+      type alarm-id;
+      description
+        "Start of the id range";
+    }
+
+    leaf end {
+      type alarm-id;
+      description
+        "End of the id range";
+    }
+  }
+
+  grouping time-range {
+    description
+      "A type for specifing time ranges.  Specifying both start and end times
+       will match time values including the endpoints and all time values
+       between them.
+
+       Specifying only a start will match times from that starting point to
+       an unbounded end time.  Useful for querying 'everything since <this>
+       time' until now.
+
+       Similarly specifying only an end time will match all time values up
+       to and including that end time.";
+    leaf start {
+      type alarm-date-and-time;
+      description
+        "Start of the time range";
+    }
+
+    leaf end {
+      type alarm-date-and-time;
+      description
+        "End of the time range";
+    }
+  }
+
+  grouping alarm-filter-items {
+    description
+      "Range of items that compose an alarm filter.  All values are optional.
+       A filter with no fields specified equates to 'all active alarms'.
+
+       Some items are effectively mutually exclusive, for example an alarm-id
+       and an alarm-id-range.  In all cases, the multi-valued (range) item
+       will superced the single-valued item so the single-valued item will
+       be ignored.";
+    leaf source {
+      type alarm-source;
+      description
+        "Which group of alarms is to be accessed for the given alarm filter (request).
+         The field is optional.  If unspecified, the default is the list of active-alarms.";
+    }
+
+    leaf order {
+      type alarm-list-order;
+      description
+        "The order in which the alarms will be reported, either ascending (from oldest to
+         newest) or descending (newest to oldest).  The default is ascending.";
+    }
+
+    leaf id {
+      type alarm-id;
+      description
+        "Active alarm record instance identifier.";
+    }
+
+    container id-range {
+      description
+        "Allows specifying ranges of alarm ids for retrieval";
+      uses alarm-id-range;
+    }
+
+    leaf history-id {
+      type alarm-id;
+      description
+        "History alarm record instance identifier.";
+    }
+
+    container history-id-range {
+      description
+        "Allows specifying ranges of history alarm ids for retrieval";
+      uses alarm-id-range;
+    }
+
+    leaf update-reason {
+      type update-reason;
+      description
+        "The reason for the update to the alarm-record and why the entry
+         was made in the alarm history.";
+    }
+
+    leaf-list severity-list {
+      type severity;
+      description
+        "List of severities to include in an alarm query filter.";
+    }
+
+    leaf direction {
+      type direction;
+      description
+        "Direction value to include in the filter";
+    }
+
+    leaf location {
+      type location;
+      description
+        "Location value to include in the filter";
+    }
+
+    leaf condition-type {
+      type condition-type;
+      description
+        "Filter on condition-type value.";
+    }
+
+    leaf alarm-state {
+      type alarm-state;
+      default "enabled";
+      description
+        "Alarm-state value to include in the filter.";
+    }
+
+    leaf service-impact {
+      type service-impact;
+      description
+        "Service impact value to include in the filter.
+
+         Since there are only two valid values, and that's not going
+         to change, you never need to specify more than one filter
+         option for the service-impact.";
+    }
+
+    leaf has-user-notes {
+      type boolean;
+      description
+        "Allows filtering on the presence or absence of user notes.";
+    }
+
+    leaf has-additional-info {
+      type boolean;
+      description
+        "Allows filtering on the presence or absence of additional info.";
+    }
+
+    leaf count {
+      type uint32;
+      description
+        "Maximum number of alarms that will be returned.";
+    }
+
+    leaf last {
+      type short-string;
+      description
+        "Quick-and-easy way to specify a short, relative time range value.
+         Retrieves all alarms between the current time and the specified
+         relative time value.
+
+         Value is specified as x[d|h|m|s] where (x) is a postive integer value
+         followed by a single character for the units of that integer value,
+         where d = days, h = hours, m = minutes, s = seconds.
+
+         The values are limited to 366 (days), 72 (hours), 300 (minutes) and
+         900 (seconds).";
+    }
+
+    leaf time {
+      type alarm-date-and-time;
+      description
+        "Single time for any timestamp in the alarm record.  In the case of
+         history alarms, this will match the history-time.  In the
+         case of active-alarms, this will match either the raise or the clear
+         time.";
+    }
+
+    container time-range {
+      description
+        "Range of time values within the list of alarm records.  As with the
+         time parameter, this will match the history-time for historical
+         alarms, and for active-alarms this will match either the raise or
+         clear time, so basically including every alarm with any timestamp in
+         the given range.";
+      uses time-range;
+    }
+
+    leaf raise-time {
+      type alarm-date-and-time;
+      description
+        "Single raise-time value to query; allows searches for alarms
+         raised at a specific time.";
+    }
+
+    container raise-time-range {
+      description
+        "Range of raise-time values to query; allows searches for alarms
+         with raise timestamps that fit within a given range.";
+      uses time-range;
+    }
+
+    leaf clear-time {
+      type alarm-date-and-time;
+      description
+        "Single cleared-alarm time to query.
+         This is only valid when querying alarm history.";
+    }
+
+    container clear-time-range {
+      description
+        "Range of clear-time values to query; allows searches for alarms
+         with clear timestamps that fit within a given range.
+         This is only valid when querying alarm history.";
+      uses time-range;
+    }
+
+    leaf-list name-list {
+      type alarm-name-string;
+      description
+        "A list of specific alarms to query by name";
+    }
+
+    leaf-list cause-list {
+      type alarm-cause-string;
+      description
+        "A list of specific alarms to query by cause";
+    }
+
+    leaf-list resource-list {
+      type instance-identifier;
+      description
+        "A list of resources to query for active alarms";
+    }
+  }
+
+  list active-alarm {
+    key "id";
+    config false;
+    uses alarm-record;
+  }
+
+  list alarm-history {
+    key "history-id";
+    config false;
+    uses alarm-history-record;
+  }
+
+  container alarm-counts {
+    config false;
+    leaf critical {
+      type uint32;
+      description
+        "Count of visible, currently active alarms with critical severity.";
+    }
+
+    leaf major {
+      type uint32;
+      description
+        "Count of visible, currently active alarms with major severity.";
+    }
+
+    leaf minor {
+      type uint32;
+      description
+        "Count of visible, currently active alarms with minor severity.";
+    }
+
+    leaf warning {
+      type uint32;
+      description
+        "Count of visible, currently active alarms with warning severity.";
+    }
+  }
+
+  list alarm-filter {
+    key "filter-name";
+    description
+      "An object containing filter criteria to be applied to alarm
+       retrieve operations that allow alarms to be retrieved and filtered
+       so that subsets of alarms can be easily extracted.
+
+       All criteria are completely optional.  Unspecified or absent criteria
+       have no effect on the filtering.";
+    leaf filter-name {
+      type alarm-filter-name;
+      description
+        "Identifying name for the filter.";
+    }
+
+    container filter {
+      description
+        "Contents of the filter";
+      uses alarm-filter-items;
+    }
+  }
+
+  rpc add-notes {
+    input {
+      leaf id {
+        type alarm-id;
+        mandatory true;
+        description
+          "Alarm instance id";
+      }
+
+      leaf user-notes {
+        type string;
+        mandatory true;
+        description
+          "Free text field for user supplied notes";
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc clear-notes {
+    input {
+      leaf id {
+        type alarm-id;
+        mandatory true;
+        description
+          "Alarm record instance id";
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc filtered-alarms {
+    description
+      "Retrieve a list of alarms filtered via the specified named filter
+       or the in-line-filter applied for this specific command.
+
+       If both a filter-name and a filter are supplied, then the supplied
+       filter will be used first.  The named filter will only be used if the
+       supplied filter is not valid.";
+    input {
+      leaf filter-name {
+        type alarm-filter-name;
+        description
+          "Alarm record instance id";
+      }
+
+      container filter {
+        description
+          "One-time-use filter for the given query.";
+        uses alarm-filter-items;
+      }
+    }
+
+    output {
+      uses ciena-yang:rpc-result-common;
+
+      list active-alarms {
+        key "id";
+        uses alarm-record;
+      }
+
+      list history-alarms {
+        key "history-id";
+        uses alarm-history-record;
+      }
+    }
+  }
+}

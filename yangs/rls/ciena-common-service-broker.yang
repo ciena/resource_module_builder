@@ -1,0 +1,448 @@
+module ciena-common-service-broker {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-service-broker";
+  prefix service-broker;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-common-exceptions {
+    prefix ciena-common-exceptions;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Service Level locking with Transactions.";
+
+  revision 2021-05-26 {
+    version:version "version" {
+      version:string "1.10.0";
+    }
+    description
+      "Add ability to set max stage iteration.";
+  }
+  revision 2021-03-18 {
+    version:version "version" {
+      version:string "1.9.0";
+    }
+    description
+      "Add ability to skip staging portion of a transaction.";
+  }
+  revision 2021-01-07 {
+    version:version "version" {
+      version:string "1.8.0";
+    }
+    description
+      "Add staged-replace to per-deployment options";
+  }
+  revision 2020-11-19 {
+    version:version "version" {
+      version:string "1.7.0";
+    }
+    description
+      "Add list of patches to stage-transaction RPC output.
+       Add ability to skip commit stage of a transaction.";
+  }
+  revision 2020-10-20 {
+    version:version "version" {
+      version:string "1.6.0";
+    }
+    description
+      "Move stage-transaction control from per-message to
+       per-deployment";
+  }
+  revision 2020-09-29 {
+    version:version "version" {
+      version:string "1.5.0";
+    }
+    description
+      "Add options for edit to allow for RFC 8040 existence checks
+
+       Add options to service broker options to control which actions
+       can be skipped for a transaction";
+  }
+  revision 2020-09-22 {
+    version:version "version" {
+      version:string "1.4.0";
+    }
+    description
+      "Add options for edit to allow for RFC 8040
+       existence checks";
+  }
+  revision 2020-09-17 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "Add stage-transaction RPC and stage-transaction option";
+  }
+  revision 2020-08-20 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Add options for set and commit to allow for RFC 6241
+       existence checks";
+  }
+  revision 2019-08-08 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Add read/write mutex lock timeout value to the broker.";
+  }
+  revision 2018-09-12 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial Revision";
+  }
+
+  identity service-broker-failure {
+    base ciena-common-exceptions:exception;
+  }
+
+  identity service-broker-info {
+    base ciena-common-exceptions:exception;
+  }
+
+  grouping transaction-id {
+    leaf id {
+      type string {
+        length "64";
+      }
+    }
+  }
+
+  grouping options {
+    container broker-options {
+      yang:alias "service-broker-options";
+      description
+        "Flags used to control service-broker behavior";
+      leaf test-existence {
+        type boolean;
+        default "false";
+        description
+          "Flag used to tell service broker to test for existence in
+           create and delete actions.  This provides compliance with RFC
+           6241 but may introduce problems for clients who are using declarative
+           config.  Normally service broker will not attempt a create if it exists,
+           or attempt a delete if it does not exist based on the diff detected
+           between the current datastore and the target datastore.";
+      }
+
+      leaf test-existence-edit {
+        type boolean;
+        default "false";
+        description
+          "Flag used to tell service broker to test for existence in
+           edit action. This provides compliance with RFC 8040.
+           If this flag is set, then we will reject the
+           request if the list element being edited does not exist.
+           Normally we would see this in a SB diff and create the
+           missing element.";
+      }
+
+      leaf skip-actions {
+        type bits {
+          bit validate {
+            position 0;
+          }
+          bit commit {
+            position 1;
+          }
+          bit stage {
+            position 2;
+          }
+        }
+        description
+          "Flag used to identify which skippable actions should be
+           skipped.";
+      }
+    }
+  }
+
+  grouping transaction {
+    container transaction {
+      yang:alias "service-broker-transaction";
+      uses transaction-id;
+    }
+  }
+
+  grouping transaction-actions {
+    uses transaction-id;
+
+    list actions {
+      key "action path";
+      description
+        "Actions to set for the service's transaction.  This will
+         replace all actions in the transaction for this service";
+      uses yang:yang-set-obj-input;
+    }
+  }
+
+  container broker {
+    description
+      "Service broker operational data.";
+    list services {
+      key "name";
+      description
+        "List of services managed locally by this broker.";
+      leaf name {
+        type yang:service;
+        description
+          "The name of the service.";
+      }
+
+      leaf lock-wait-time {
+        type uint32 {
+          range "0..3600000";
+        }
+        units "ms";
+        default "0";
+        config true;
+        description
+          "How long (in ms) to wait to lock the service, maximum 1 hour";
+      }
+
+      list transactions {
+        key "id";
+        config false;
+        uses transaction-actions;
+
+        leaf locked {
+          type boolean;
+          description
+            "Is the service locked or not?";
+        }
+      }
+    }
+
+    container options {
+      description
+        "Options to control service broker across a deployment";
+      leaf bulked-notifications {
+        type boolean;
+        default "true";
+        description
+          "Flag to indicate if notifications resulting from
+           a committed service broker transaction should be
+           reported via a single bulked yang-delivery notification
+           or if each patch should be reported individually";
+      }
+
+      leaf parallel-process {
+        type boolean;
+        default "true";
+        description
+          "Flag to indicate if messaging to services for locking,
+           patches, gets, validations, and commits should be done
+           using asynchronous messaging to the services.  Doing
+           so can increase performance where services are I/O
+           blocked";
+      }
+
+      leaf prebuild-running {
+        type boolean;
+        default "true";
+        description
+          "Flag to indicate if the running config should be
+           pre-built when a service is locked.  This occurs in a
+           parallel thread and does not block or delay the lock
+           RPC but can involve additional processing of a running
+           get even if no services need that data";
+      }
+
+      leaf stage-transaction {
+        type boolean;
+        default "true";
+        description
+          "Flag used to indicate that the stage-transaction RPC should
+           be sent to brokered services to stage their patches,
+           instead of staging them one at a time using yang-set-object.
+           Patches for non-brokered services are still staged one at a
+           time.";
+      }
+
+      leaf staged-replace {
+        type boolean;
+        default "false";
+        description
+          "Flag to indicate if replace patches should be split into delete and
+           create patches and the delete patches processed first. This supports
+           behavior required by some products for backwards compatibility.";
+      }
+
+      leaf stage-max {
+        type uint8;
+        default "10";
+        description
+          "Maximum iterations of staging to be allowed";
+      }
+    }
+  }
+
+  augment "/yang:yang-get-object/yang:input" {
+    uses transaction;
+  }
+
+  augment "/yang:yang-set-object/yang:input" {
+    uses transaction;
+  }
+
+  augment "/yang:yang-set-object/yang:input" {
+    uses options;
+  }
+
+  augment "/yang:yang-val-object/yang:input" {
+    uses transaction;
+  }
+
+  augment "/yang:yang-stage-object/yang:input" {
+    uses transaction;
+  }
+
+  rpc set-transaction-actions {
+    input {
+      uses transaction-actions;
+
+      leaf service-name {
+        type yang:service;
+        description
+          "The name of the service to set the transaction actions for.";
+      }
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc stage-transaction {
+    description
+      "Stage a transaction for all services managed by this broker.
+
+       If the RPC input transaction-id is a batch tid, the RPC output
+       includes a list of patches (actions) containing all changes which
+       would be made if the batch transaction were to be committed.
+
+       If the RPC input transaction-id is not a batch tid, the RPC output
+       includes a yang-root structure (out) containing all the patches
+       added by staging.";
+    input {
+      uses transaction-id;
+    }
+
+    output {
+      uses yang:rpc-result-common;
+
+      anyxml out;
+
+      list actions {
+        key "action path";
+        uses yang:yang-set-obj-input;
+      }
+    }
+  }
+
+  rpc commit-transaction {
+    description
+      "Commit a transaction for all services managed by this broker.
+       The transaction patches will be discarded when complete.";
+    input {
+      uses transaction-id;
+
+      uses options;
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc validate-transaction {
+    description
+      "Validate a transaction for all services managed by this broker.";
+    input {
+      uses transaction-id;
+
+      uses options;
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc discard-transaction {
+    description
+      "Discard a transaction for all services managed by this broker.";
+    input {
+      uses transaction-id;
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc complete-transaction {
+    description
+      "RPC (optionally implemented by the local services) to let service-broker
+       indicate when a transaction has been completely committed
+       by all services involved.  Services may choose to wait to start
+       communicating changes to hardware or flushing to persistent
+       storage until this indication arrives.";
+    input {
+      uses transaction-id;
+
+      leaf success {
+        type boolean;
+        description
+          "This will be true if all commits were successful.  If
+           the transaction was discarded, this will be set to false";
+      }
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc yang-lock-object {
+    description
+      "This RPC will lock or unlock the specified objects.";
+    input {
+      uses transaction-id;
+
+      leaf lock {
+        type boolean;
+        description
+          "lock if true, unlock if false";
+      }
+
+      leaf service-name {
+        type yang:service;
+        description
+          "The name of the service with the objects to be locked.";
+      }
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+}

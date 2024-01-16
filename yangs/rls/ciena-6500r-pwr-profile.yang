@@ -1,0 +1,766 @@
+module ciena-6500r-pwr-profile {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-pwr-profile";
+  prefix pwr-profile;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ietf-yang-types {
+    prefix ietf;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-pro-scaler-types {
+    prefix ciena-pro-scaler-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This modules describes Ciena's power profile object for the 6500R-Series platform";
+
+  revision 2021-06-04 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "6500R-series Release 2.4
+       Re-grouped power profiles under pwr-profile-grouping";
+  }
+  revision 2021-05-20 {
+    version:version "version" {
+      version:string "1.2.2";
+    }
+    description
+      "Added total-power, total-power-alarm-threshold,and tilt-threshold.
+       Also added diagnostic points for target-power-unachievable and target-tilt-unachievable.";
+  }
+  revision 2021-05-12 {
+    version:version "version" {
+      version:string "1.2.1";
+    }
+    description
+      "6500R-series Release 2.4
+       Added downstream and upstream precombiner methods";
+  }
+  revision 2021-04-09 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "6500R-series Release 2.4
+       Add timestamp to target profiles";
+  }
+  revision 2020-10-20 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "6500R-series Release 2.2
+       Add set-baseline-pwr-profile";
+  }
+  revision 2019-06-18 {
+    description
+      "6500R-series Release 1.1";
+  }
+
+  identity pwr-profile {
+    base ciena-pro-scaler-types:owner;
+    description
+      "Extension of the owner type for Power Profile";
+  }
+
+  typedef pwr-profile-state {
+    type enumeration {
+      enum "initializing" {
+        description
+          "Init mode of the Power Profile upon Creation";
+      }
+      enum "operational" {
+        description
+          "Power Profile is ready for use";
+      }
+      enum "manual" {
+        description
+          "User initiated Power Profile";
+      }
+    }
+  }
+
+  typedef pwr-profile-build-method {
+    type enumeration {
+      enum "launch" {
+        description
+          "Launch Profile for the line";
+      }
+      enum "flat" {
+        description
+          "Flat Profile based on RPC input Power or Monitor Total Power";
+      }
+      enum "scale-ocm-downstream" {
+        description
+          "Profile scaled from Downstream OCM";
+      }
+      enum "scale-ocm-upstream" {
+        description
+          "Profile scaled from Upstream OCM";
+      }
+      enum "ocm-baseline" {
+        description
+          "Baseline Profile at the OCM";
+      }
+      enum "scale-profile-downstream" {
+        description
+          "Profile scaled from Downstream Profile";
+      }
+      enum "scale-profile-upstream" {
+        description
+          "Profile scaled from Upstream Profile";
+      }
+      enum "amp-line-in" {
+        description
+          "Profile for the PFG Line In of an AMP";
+      }
+      enum "line-demux-line-in" {
+        description
+          "Profile for the PFG Line In of the LINE DEMUX";
+      }
+      enum "flat-channel-common-out" {
+        description
+          "Flat Profile based on Template Fixed value for CMD Common Out port";
+      }
+      enum "flat-channel-out" {
+        description
+          "Flat Profile based on Template Fixed value for CMD Rx port";
+      }
+      enum "scale-profile-fiberloss-downstream" {
+        description
+          "Profile scaled from Downstream Profile and Loss";
+      }
+      enum "scale-profile-fiberloss-upstream" {
+        description
+          "Profile scaled from Upstream Profile and Loss";
+      }
+      enum "scale-profile-fixedpathloss-upstream" {
+        description
+          "Profile scaled from Upstream Profile and card fixed path loss";
+      }
+      enum "scale-profile-fixedpathloss-downstream" {
+        description
+          "Profile scaled from Downstream Profile and card fixed path loss";
+      }
+      enum "ase-mux" {
+        description
+          "Profile for the PFG ASE of the SECTION MUX";
+      }
+      enum "switch-out" {
+        description
+          "Profile for the PFG Switch Out por of the SECTION DEMUX";
+      }
+      enum "default" {
+        description
+          "Default Profile";
+      }
+      enum "scale-profile-precombiner-upstream" {
+        description
+          "Profile scaled from Upstream Precombiner Profile and link loss";
+      }
+      enum "scale-profile-precombiner-downstream" {
+        description
+          "Profile scaled from Downstream Precombiner Profile and link loss";
+      }
+    }
+  }
+
+  grouping pwr-spectrum-spec {
+    leaf freq-min {
+      type ciena-6500r-types:frequency;
+      description
+        "Minimum frequency of the spectrum";
+    }
+
+    leaf freq-max {
+      type ciena-6500r-types:frequency;
+      description
+        "Maximum frequency of the spectrum";
+    }
+
+    leaf bin-size {
+      type ciena-6500r-types:frequency;
+      description
+        "Bin size of the spectrum";
+    }
+
+    leaf bin-spacing {
+      type ciena-6500r-types:frequency;
+      description
+        "Bin spacing of the spectrum";
+    }
+
+    leaf reference-bandwidth {
+      type ciena-6500r-types:frequency;
+      description
+        "This optional attribute, if provisioned, allows specification of power (p) within a reference bandwidth smaller than the bin-size. If not provisioned, the reference bandwidth is implied to be the bin-size";
+    }
+  }
+
+  grouping pwr-spectrum {
+    description
+      "List of power slices per bin across a spectrum";
+    list power {
+      key "i";
+      leaf i {
+        type uint16;
+        description
+          "Bin Index";
+      }
+
+      leaf p {
+        type ciena-6500r-types:power;
+        description
+          "The power within either bin-size or reference-bandwidth as applicable";
+      }
+    }
+  }
+
+  grouping diagnostic {
+    description
+      "Diagnostic state";
+    leaf total-power-unachievable {
+      type boolean;
+      description
+        "The delta between the provisioned and measured power
+          is greater than the threshold.";
+    }
+
+    leaf tilt-unachievable {
+      type boolean;
+      description
+        "The delta between the provisioned and measured tilt
+          is greater than the threshold.";
+    }
+  }
+
+  grouping pwr-data {
+    leaf total-power {
+      type ciena-6500r-types:power;
+      config false;
+      description
+        "Total power integrated from all bins.";
+    }
+
+    leaf tilt {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      config false;
+      description
+        "The tilt of the profile.";
+    }
+
+    leaf total-pwr-delta-threshold {
+      type ciena-pro-types:delta-dB-1-precision;
+      default "2.0";
+      description
+        "Threshold used to set alarm if the delta between target and measured total power is off by that limit.";
+    }
+
+    leaf tilt-alarm-threshold {
+      type ciena-pro-types:delta-dB-1-precision;
+      default "2.5";
+      description
+        "Threshold used to set alarm if the delta between target and measured tilt is off by that limit.";
+    }
+  }
+
+  grouping pwr-profile-grouping {
+    leaf parent-port {
+      type leafref {
+        path "/ports:port/ports:name";
+      }
+      description
+        "The port where the Power Profile is";
+    }
+
+    leaf name {
+      type string;
+      description
+        "string(band info for now) to be used to describe the power profile";
+    }
+
+    leaf state {
+      type pwr-profile-state;
+      description
+        "State of Power Profile";
+    }
+
+    leaf default-psd {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      description
+        "The PSD to be used in a Flat Profile upon creation";
+    }
+
+    uses pwr-spectrum-spec;
+
+    container target {
+      leaf timestamp {
+        type ietf:date-and-time;
+        description
+          "The time that the target was set";
+      }
+
+      uses pwr-spectrum;
+
+      uses pwr-data;
+
+      container diagnostic {
+        config false;
+        uses diagnostic;
+      }
+    }
+
+    container baseline {
+      leaf timestamp {
+        type ietf:date-and-time;
+        description
+          "The time that the baseline was set";
+      }
+
+      uses pwr-spectrum;
+
+      uses pwr-data;
+
+      container diagnostic {
+        config false;
+        uses diagnostic;
+      }
+    }
+
+    container measured {
+      uses pwr-spectrum {
+        refine "power" {
+          config false;
+        }
+      }
+
+      uses pwr-data;
+    }
+  }
+
+  grouping ciena-6500r-pwr-profile-mount {
+    list pwr-profile {
+      key "parent-port name";
+      uses pwr-profile-grouping;
+    }
+  }
+
+  grouping ciena-6500r-pwr-profile-mount-actions {
+    action generate-pwr-profile {
+      description
+        "Generate a power profile for a given build method";
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile instance that will be generated";
+        }
+
+        leaf method {
+          type pwr-profile-build-method;
+          description
+            "The method used to generate the power profile";
+        }
+
+        leaf bin-pwr {
+          type ciena-6500r-types:power;
+          description
+            "Power per bin - Optional Parameter";
+        }
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+
+    action set-link-baseline-loss {
+      description
+        "Set the Link Fiber Loss Baseline at the Power Profile Port";
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile instance that will be generated";
+        }
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+
+    action get-slice-power {
+      description
+        "Get the power for a given slice.
+         No interpolation is done: it returns the power of slice where the frequency is inside the area of the spacing of a
+         given slice";
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile to get";
+        }
+
+        leaf frequency {
+          type ciena-6500r-types:frequency;
+          description
+            "Center frequency of the slice.
+             The frequency can be any frequency inside the power profile.";
+        }
+      }
+
+      output {
+        leaf power {
+          type ciena-6500r-types:power;
+          description
+            "Power slice within the spectrum";
+        }
+
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+
+    action set-slice-power {
+      description
+        "Set the power for a given slice";
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile to set";
+        }
+
+        leaf frequency {
+          type ciena-6500r-types:frequency;
+          description
+            "Center frequency of the slice.
+             The frequency can be any frequency inside the power profile.";
+        }
+
+        leaf power {
+          type ciena-6500r-types:power;
+          description
+            "Power slice within the spectrum";
+        }
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+
+    action dump-pwr-profile-inst {
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile to dump";
+        }
+      }
+
+      output {
+        leaf data {
+          type string {
+            length "1..5000";
+          }
+          description
+            "Dump data";
+        }
+      }
+    }
+
+    action get-measured-pwr-profile {
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "Power Profile to dump";
+        }
+      }
+
+      output {
+        list pwr-profile {
+          leaf parent-port {
+            type leafref {
+              path "/ports:port/ports:name";
+            }
+            description
+              "The port where the Measured Power Profile is";
+          }
+
+          leaf name {
+            type string;
+            description
+              "string(band info for now) to be used to describe the measured power profile";
+          }
+
+          leaf state {
+            type pwr-profile-state;
+            description
+              "State of Measured Power Profile";
+          }
+
+          leaf tilt {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "The tilt of the measured profile ";
+          }
+
+          uses pwr-spectrum-spec;
+
+          container measured {
+            uses pwr-spectrum {
+              refine "power" {
+                config false;
+              }
+            }
+          }
+        }
+
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+
+    action set-baseline-pwr-profile {
+      input {
+        leaf instance {
+          type instance-identifier;
+          description
+            "The port where the Baseline Power Profile is";
+        }
+      }
+
+      output {
+        uses ciena-common-yang:rpc-result-common;
+      }
+    }
+  }
+
+  uses ciena-6500r-pwr-profile-mount;
+
+  rpc generate-pwr-profile {
+    description
+      "Generate a power profile for a given build method";
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile instance that will be generated";
+      }
+
+      leaf method {
+        type pwr-profile-build-method;
+        description
+          "The method used to generate the power profile";
+      }
+
+      leaf bin-pwr {
+        type ciena-6500r-types:power;
+        description
+          "Power per bin - Optional Parameter";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-link-baseline-loss {
+    description
+      "Set the Link Fiber Loss Baseline at the Power Profile Port";
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile instance that will be generated";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc get-slice-power {
+    description
+      "Get the power for a given slice.
+       No interpolation is done: it returns the power of slice where the frequency is inside the area of the spacing of a
+       given slice";
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile to get";
+      }
+
+      leaf frequency {
+        type ciena-6500r-types:frequency;
+        description
+          "Center frequency of the slice.
+           The frequency can be any frequency inside the power profile.";
+      }
+    }
+
+    output {
+      leaf power {
+        type ciena-6500r-types:power;
+        description
+          "Power slice within the spectrum";
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-slice-power {
+    description
+      "Set the power for a given slice";
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile to set";
+      }
+
+      leaf frequency {
+        type ciena-6500r-types:frequency;
+        description
+          "Center frequency of the slice.
+           The frequency can be any frequency inside the power profile.";
+      }
+
+      leaf power {
+        type ciena-6500r-types:power;
+        description
+          "Power slice within the spectrum";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc dump-pwr-profile-inst {
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile to dump";
+      }
+    }
+
+    output {
+      leaf data {
+        type string {
+          length "1..5000";
+        }
+        description
+          "Dump data";
+      }
+    }
+  }
+
+  rpc get-measured-pwr-profile {
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile to dump";
+      }
+    }
+
+    output {
+      list pwr-profile {
+        leaf parent-port {
+          type leafref {
+            path "/ports:port/ports:name";
+          }
+          description
+            "The port where the Measured Power Profile is";
+        }
+
+        leaf name {
+          type string;
+          description
+            "string(band info for now) to be used to describe the measured power profile";
+        }
+
+        leaf state {
+          type pwr-profile-state;
+          description
+            "State of Measured Power Profile";
+        }
+
+        leaf tilt {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          description
+            "The tilt of the measured profile ";
+        }
+
+        uses pwr-spectrum-spec;
+
+        container measured {
+          uses pwr-spectrum {
+            refine "power" {
+              config false;
+            }
+          }
+        }
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-baseline-pwr-profile {
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "The port where the Baseline Power Profile is";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

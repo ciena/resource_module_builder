@@ -1,0 +1,497 @@
+module ciena-osrp-pce-rsa {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-pce-rsa";
+  prefix rsa;
+
+  import ciena-osrp-pce-types {
+    prefix ciena-osrp-pce-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's RPC for Route computation/validation & Spectrum assignment for the 6500r platform";
+
+  revision 2021-06-25 {
+    ciena-common-version:string "1.1.0";
+    description
+      "removing mandatory checks from request-response";
+  }
+  revision 2020-03-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+
+  grouping validate-input-group {
+    list routes {
+      key "name";
+      description
+        "User Routes.";
+      uses ciena-osrp-pce-types:route-data-info;
+    }
+
+    leaf route-order-algorithm {
+      type ciena-osrp-pce-types:rsa-route-order-algorithm;
+      description
+        "Algorithm for order of route computation/validation. Default algorithm 'shortest-path-first'";
+    }
+
+    uses oce-rsa-input-constraints;
+  }
+
+  grouping validate-output-group {
+    list routes {
+      key "name";
+      description
+        "User routes.";
+      leaf name {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Key of route.";
+      }
+
+      uses oce-rsa-output;
+
+      leaf route-nice-value {
+        type uint32;
+        description
+          "Indicates the route mrd cost.";
+      }
+
+      container route-validation-result {
+        leaf result {
+          type ciena-osrp-pce-types:rsa-result;
+          description
+            "Route validation result.";
+        }
+
+        container first-point-of-failure {
+          description
+            "Problematic Hop.";
+          uses ciena-osrp-pce-types:hop-info;
+        }
+      }
+    }
+
+    leaf route-validation-time {
+      type ciena-osrp-pce-types:timeperiod-usec;
+      description
+        "Specifies time taken in routes validation.
+         Range 0-300000000 (0-5mins).";
+    }
+  }
+
+  grouping compute-input-group {
+    leaf source {
+      type string;
+      description
+        "Source Node name.";
+    }
+
+    leaf destination {
+      type string;
+      description
+        "Destination Node name.";
+    }
+
+    leaf route-order-algorithm {
+      type ciena-osrp-pce-types:rsa-route-order-algorithm;
+      description
+        "Algorithm for order of route computation/validation. Default algorithm 'shortest-path-first'";
+    }
+
+    uses oce-rsa-input-constraints;
+
+    leaf route-computation-timeout {
+      type ciena-osrp-pce-types:timeperiod-msec;
+      default "0";
+      description
+        "Specifies timeout in route computation. PCE will return routes computed within the timeperiod.
+         Default '0' for no timeout. Range 0-300000 (0-5mins).";
+    }
+  }
+
+  grouping compute-output-group {
+    list routes {
+      key "index";
+      description
+        "K best PCE computed routes.";
+      leaf index {
+        type uint32 {
+          range "1..22";
+        }
+        description
+          "Index of route.";
+      }
+
+      uses oce-rsa-output;
+    }
+
+    container route-computation-result {
+      leaf result {
+        type ciena-osrp-pce-types:rsa-result;
+        description
+          "Route computation result.";
+      }
+
+      list first-point-of-failure {
+        key "nodename";
+        description
+          "Problematic Hop.";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+    }
+
+    leaf route-computation-time {
+      type ciena-osrp-pce-types:timeperiod-usec;
+      description
+        "Specifies time taken in routes computation.
+         Range 0-300000000 (0-5mins).";
+    }
+  }
+
+  grouping oce-rsa-input-constraints {
+    leaf-list constraints-list {
+      type ciena-osrp-pce-types:rsa-constraint;
+      description
+        "Constraints to consider for route computation.
+         Default optimal (that includes spectrum-exclusive, route-availibity, blocked-link, blocked-node, bandwidth-reuse).";
+    }
+
+    container route-constraints-config {
+      description
+        "Specifies the route constraints applied to PCE for route computation.";
+      leaf max-routes {
+        type uint8 {
+          range "0..100";
+        }
+        default "0";
+        description
+          "Maximum admin weight allowed for a route.";
+      }
+
+      leaf max-admin-weight {
+        type uint32 {
+          range "0..1310700";
+        }
+        default "0";
+        description
+          "Maximum admin weight allowed for a route.";
+      }
+
+      list inclusion-hops-list {
+        key "nodename";
+        description
+          "List of inclusion-hops.";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+
+      list preferred-exclusion-hops-list {
+        key "nodename";
+        description
+          "List of preferred exclusion-hops.";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+
+      list exclusion-hops-list {
+        key "nodename";
+        description
+          "List of exclusion-hops.";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+
+      list preferred-exclusion-routes-list {
+        key "name";
+        description
+          "Preferred non-viable Transit List";
+        uses ciena-osrp-pce-types:route-data-info;
+      }
+
+      list exclusion-routes-list {
+        key "name";
+        description
+          "Non-viable Transit List";
+        uses ciena-osrp-pce-types:route-data-info;
+      }
+
+      leaf hop-discourage-factor {
+        type uint32;
+        default "16777216";
+        description
+          "Specifies the addition factor used by PCE to de-prioritise the hop in route calculation.";
+      }
+    }
+
+    container spectrum-constraints-config {
+      description
+        "Specifies the spectrum constraints applied to PCE for route computation.";
+      container media-channel-constraints-config {
+        leaf lower-edge-spacing {
+          type ciena-osrp-pce-types:frequency-mhz;
+          default "6250";
+          description
+            "Media Channel Lower Dead Band (GHz). Default 6.25GHz.";
+        }
+
+        leaf higher-edge-spacing {
+          type ciena-osrp-pce-types:frequency-mhz;
+          default "6250";
+          description
+            "Media Channel Higher Dead Band (GHz). Default 6.25GHz.";
+        }
+
+        leaf min-freq {
+          type ciena-osrp-pce-types:frequency-mhz;
+          default "191325000";
+          description
+            "Minimum Frequency constraint for PCE (MHz).";
+        }
+
+        leaf max-freq {
+          type ciena-osrp-pce-types:frequency-mhz;
+          default "196125000";
+          description
+            "Maximum Frequency constraint for PCE (MHz).";
+        }
+
+        leaf contiguous {
+          type ciena-osrp-pce-types:yes-no;
+          default "yes";
+          description
+            "Indicates if medica channel is contiguous or not (fragmented).";
+        }
+      }
+
+      list network-media-channel-constraints-config {
+        key "index";
+        description
+          "Specifies the spectrum constraints applied to PCE for route computation.";
+        leaf index {
+          type uint32 {
+            range "1..32";
+          }
+          description
+            "Index of network-media-channels (NMC).";
+        }
+
+        leaf center-frequency {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Explicit Center Frequency constraint for NMC (MHz). Default 0, which means PCE will assign frequency itself.";
+        }
+
+        leaf higher-guard-band {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Explicit Center Frequency constraint for NMC (MHz). Default 0, which means PCE will assign frequency itself.";
+        }
+
+        leaf lower-guard-band {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Explicit Center Frequency constraint for NMC (MHz). Default 0, which means PCE will assign frequency itself.";
+        }
+
+        leaf spectral-width {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Spectral Width of NMC (MHz).";
+        }
+      }
+    }
+
+    container resource-reuse-constraints-config {
+      description
+        "Specifies the information required for constraints of resource-reuse.";
+      list regen-reuse-nodes {
+        key "nodename";
+        leaf nodename {
+          type ciena-osrp-pce-types:node-name;
+          description
+            "Regen node name.";
+        }
+      }
+
+      list bandwidth-reuse-hops {
+        key "nodename link min-freq max-freq";
+        description
+          "Specifies the constraints applied to PCE for bandwidth double booking.";
+        uses ciena-osrp-pce-types:hop-info;
+
+        leaf min-freq {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Minimum Frequency of bandwidth to reuse (MHz).";
+        }
+
+        leaf max-freq {
+          type ciena-osrp-pce-types:frequency-mhz;
+          description
+            "Maximum Frequency of bandwidth to reuse (MHz).";
+        }
+      }
+    }
+
+    list partially-conntected-hops {
+      key "index";
+      description
+        "List of partially-connected-hops.";
+      leaf index {
+        type uint32 {
+          range "1..22";
+        }
+        description
+          "Index of route.";
+      }
+
+      container from-hop {
+        description
+          "Specifies the hop that is partially conntected to other hops but not to all.";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+
+      list to-hops {
+        key "nodename";
+        description
+          "Specifies the hops that is conntected to partially connected hop (above 'from-hop').";
+        uses ciena-osrp-pce-types:hop-info;
+      }
+    }
+  }
+
+  grouping oce-rsa-output {
+    list route-data {
+      key "nodename";
+      description
+        "Transit List of hops in route.";
+      uses ciena-osrp-pce-types:hop-info;
+    }
+
+    leaf route-cost {
+      type uint32 {
+        range "1..4000000";
+      }
+      description
+        "Indicates the route cost.";
+    }
+
+    container media-channel-allocation {
+      leaf min-freq {
+        type ciena-osrp-pce-types:frequency-mhz;
+        description
+          "Optimal Minimum Frequency for media-channel on route (MHz).";
+      }
+
+      leaf max-freq {
+        type ciena-osrp-pce-types:frequency-mhz;
+        description
+          "Optimal Maximum Frequency for media-channel on route (MHz).";
+      }
+    }
+
+    list network-media-channel-allocation {
+      key "index";
+      description
+        "Specifies the spectrum allocated to each NMC.";
+      leaf index {
+        type uint32 {
+          range "1..22";
+        }
+        description
+          "Identifier of NMC.";
+      }
+
+      leaf frequency {
+        type ciena-osrp-pce-types:frequency-mhz;
+        description
+          "Specifies the optimal center-frequencies allocated to each NMC.";
+      }
+    }
+  }
+
+  container set-pcomp-request {
+    description
+      "Compute Route asynchronously with all constraints provided.";
+    leaf user-tag {
+      type string;
+      description
+        "User tag";
+    }
+
+    leaf oper-tag {
+      type string;
+      description
+        "Operation tag";
+    }
+
+    list routes {
+      key "name";
+      description
+        "User Routes.";
+      uses ciena-osrp-pce-types:route-data-info;
+    }
+
+    uses compute-input-group;
+  }
+
+  container set-pcomp-response {
+    description
+      "Asynchronous response to Compute Route request.";
+    leaf user-tag {
+      type string;
+      description
+        "User tag";
+    }
+
+    leaf oper-tag {
+      type string;
+      description
+        "Operation tag";
+    }
+
+    container validate-route-output {
+      uses validate-output-group;
+    }
+
+    container compute-route-output {
+      uses compute-output-group;
+    }
+  }
+
+  rpc compute-route {
+    description
+      "Compute Route with all constraints provided.";
+    input {
+      uses compute-input-group;
+    }
+
+    output {
+      uses compute-output-group;
+    }
+  }
+
+  rpc validate-route {
+    description
+      "Validate Route with all constraints provided.";
+    input {
+      uses validate-input-group;
+    }
+
+    output {
+      uses validate-output-group;
+    }
+  }
+}

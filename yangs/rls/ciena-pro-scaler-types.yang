@@ -1,0 +1,342 @@
+module ciena-pro-scaler-types {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-types";
+  prefix scaler-types;
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's scaler types for the 6500r-Series platform";
+
+  revision 2021-06-21 {
+    description
+      "Added no-provisioned-path diag";
+  }
+  revision 2021-05-14 {
+    description
+      "Added edge-width field to freq-desc";
+  }
+  revision 2021-05-10 {
+    description
+      "Added include-spectral-tilt and aggregate-spectral-total-power options";
+  }
+  revision 2021-02-19 {
+    description
+      "Added no-source-on-path diag";
+  }
+  revision 2021-01-27 {
+    description
+      "Added card diags";
+  }
+  revision 2019-12-08 {
+    description
+      "Added the non-scalable-tx-source diag";
+  }
+  revision 2019-07-30 {
+    description
+      "Added the create-virtual-source and use-virtual-source options";
+  }
+  revision 2019-05-01 {
+    description
+      "Initial creation.";
+  }
+
+  identity owner {
+    description
+      "Owner";
+  }
+
+  typedef frequency {
+    type uint32;
+    units "MHz";
+  }
+
+  typedef reserved-freq-range-enum {
+    type enumeration {
+      enum "TotalPower";
+      enum "Osc";
+      enum "Telemetry";
+      enum "TotalPowerCBand";
+      enum "TotalPowerLBand";
+      enum "TotalPowerCLBand";
+      enum "TotalPowerLogical";
+    }
+  }
+
+  typedef source-type-enum {
+    type enumeration {
+      enum "UserDefined";
+      enum "PowerProfile";
+      enum "Ocm";
+      enum "TotalPower";
+      enum "Osc";
+      enum "Telemetry";
+    }
+  }
+
+  typedef direction-enum {
+    type enumeration {
+      enum "Forward";
+      enum "Backward";
+    }
+  }
+
+  grouping diagnostic {
+    leaf data-invalid {
+      type boolean;
+      description
+        "At least one piece of data required to scale powers across the path is invalid";
+    }
+
+    leaf link-break {
+      type boolean;
+      description
+        "At least one link is broken on the path from source to destination";
+    }
+
+    leaf loss-of-signal {
+      type boolean;
+      description
+        "At least one port on the path from source to destination is in LOS";
+    }
+
+    leaf amp-forced-shutoff {
+      type boolean;
+      description
+        "An amp on the path from source to destination is in forced shutoff";
+    }
+
+    leaf amp-in-shutoff {
+      type boolean;
+      description
+        "An amp on the path from source to destination is in the shutoff state";
+    }
+
+    leaf amp-in-apr {
+      type boolean;
+      description
+        "An amp on the path from source to destination is in the APR state";
+    }
+
+    leaf amp-clamped {
+      type boolean;
+      description
+        "An amp on the path from source to destination is in clamped state.";
+    }
+
+    leaf optical-path-blocked {
+      type boolean;
+      description
+        "An optical path from source to destination is blocked";
+    }
+
+    leaf no-optical-path {
+      type boolean;
+      description
+        "There is no optical path from source to destination";
+    }
+
+    leaf failed-to-get-data {
+      type boolean;
+      description
+        "Failed to get data";
+    }
+
+    leaf data-unavailable {
+      type boolean;
+      description
+        "Data unavailable";
+    }
+
+    leaf remote-node-unreachable {
+      type boolean;
+      description
+        "A remote node on the path from source to destination is unreachable";
+    }
+
+    leaf data-stale {
+      type boolean;
+      description
+        "Data stale";
+    }
+
+    leaf set-user-error {
+      type boolean;
+      description
+        "Set failed due to invalid user provided data";
+    }
+
+    leaf set-internal-error {
+      type boolean;
+      description
+        "Set failed due to scaler internal errors";
+    }
+
+    leaf non-scalable-tx-source {
+      type boolean;
+      description
+        "The tx source has no total power reporting capability";
+    }
+
+    leaf card-unreachable {
+      type boolean;
+      description
+        "The card is not responding to queries within the timeout period";
+    }
+
+    leaf card-not-present {
+      type boolean;
+      description
+        "The card is shown as not present by the system";
+    }
+
+    leaf card-communication-down {
+      type boolean;
+      description
+        "The card is not ready for providing data";
+    }
+
+    leaf no-source-on-path {
+      type boolean;
+      description
+        "The desired source is not present on the path";
+    }
+
+    leaf no-provisioned-path {
+      type boolean;
+      description
+        "Scaler could not derive a scaling path from the config";
+    }
+  }
+
+  grouping freq-desc {
+    leaf fmin {
+      type frequency;
+      mandatory true;
+      description
+        "Minimum Frequency";
+    }
+
+    leaf fmax {
+      type frequency;
+      mandatory true;
+      description
+        "Maximum Frequency";
+    }
+
+    leaf bin-size {
+      type frequency;
+      default "12500";
+      description
+        "Size of each bin";
+    }
+
+    leaf bin-spacing {
+      type frequency;
+      default "12500";
+      description
+        "Spacing between bins";
+    }
+
+    leaf reference-bandwidth {
+      type frequency;
+      default "12500";
+      description
+        "The bandwidth unit for the input power";
+    }
+
+    leaf edge-width {
+      type frequency;
+      default "0";
+      description
+        "The bandwidth at two ends of the range to be ignored when calculating tilt";
+    }
+  }
+
+  grouping monitor-point-options {
+    container options {
+      leaf auto-refresh {
+        type boolean;
+        default "false";
+        description
+          "If true, re-execute affected recipes as soon as data changes. If false, execute affected recipes on a get request only";
+      }
+
+      leaf ignore-wss-attenuation {
+        type boolean;
+        default "false";
+        description
+          "Assume 0dB attenuation and ignore switch selector positions when scaling through a WSS link. Only the CCT insertion and excess losses are taken into account";
+      }
+
+      leaf include-patch-panel-loss {
+        type boolean;
+        default "false";
+        description
+          "Take the ingress patch panel loss into account when scaling powers from the source to destination";
+      }
+
+      leaf scale-within-card {
+        type boolean;
+        default "false";
+        description
+          "Scale within the card scope";
+      }
+
+      leaf scale-within-node {
+        type boolean;
+        default "false";
+        description
+          "Scale within the node scope";
+      }
+
+      leaf use-expected-physical-loss {
+        type boolean;
+        default "false";
+        description
+          "Use the expected physical loss when scaling powers from the source to destination";
+      }
+
+      leaf use-measured-physical-loss {
+        type boolean;
+        default "false";
+        description
+          "Use the measured physical loss when scaling powers from the source to destination";
+      }
+
+      leaf create-virtual-source {
+        type boolean;
+        default "false";
+        description
+          "Export the scaled powers as a virtual source on the destination port";
+      }
+
+      leaf use-virtual-source {
+        type boolean;
+        default "false";
+        description
+          "Use virtual source in the absence of a physical one if it exists";
+      }
+
+      leaf include-spectral-tilt {
+        type boolean;
+        default "false";
+        description
+          "Specifies whether to include the spectral tilt in the response of the get request";
+      }
+
+      leaf aggregate-spectral-total-power {
+        type boolean;
+        default "false";
+        description
+          "Specifies whether to aggregate total power from the spectral bin powers for the get request";
+      }
+    }
+  }
+}

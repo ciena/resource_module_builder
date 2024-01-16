@@ -1,0 +1,1717 @@
+module ciena-waveserver-lldp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-lldp";
+  prefix lldp;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-interfaces {
+    prefix if;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the configuration and operational data for Link Layer Discovery Protocol (LLDP) on the Waveserver.";
+
+  revision 2021-03-08 {
+    description
+      "Added c-vlan, s-vlan, and tpmr types to ldp-system-capability-bits.
+       Increased max length of port-id/id string from 32 chars to 512 chars.
+       Removed the local-management-address-table from port and interface-port lists.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2019-02-11 {
+    description
+      "Updated description strings, fixed several lint errors/warnings.
+       Added support for DCN interface port.
+       Added new attribute PDU length errors attribute in the statistics.
+       Deprecated In-errored-tlv attribute in LLDP statistics";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2018-04-09 {
+    description
+      "Added ncx:user-write to 'ports' list.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+  revision 2017-06-16 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.4 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Changed 'port-id' from integer to string format.";
+    reference
+      "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef chassis-id {
+    type string {
+      length "1..256";
+    }
+    description
+      "Chassis Identifier";
+  }
+
+  typedef chassis-id-subtype {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown/reserved sub-type.";
+      }
+      enum "chassis-component" {
+        value 1;
+        description
+          "Chassis component sub-type.";
+      }
+      enum "interface-alias" {
+        value 2;
+        description
+          "Interface alias sub-type.";
+      }
+      enum "port-component" {
+        value 3;
+        description
+          "Port component sub-type.";
+      }
+      enum "mac-address" {
+        value 4;
+        description
+          "MAC address sub-type.";
+      }
+      enum "network-address" {
+        value 5;
+        description
+          "Network address sub-type.";
+      }
+      enum "interface-name" {
+        value 6;
+        description
+          "Interface name sub-type.";
+      }
+      enum "local" {
+        value 7;
+        description
+          "Local sub-type.";
+      }
+    }
+    description
+      "Chassis Identifier subtype enum type.";
+    reference
+      "IEEE 802.1ab-2016, Section 8.5.2.2";
+  }
+
+  typedef lldp-system-capability-bits {
+    type bits {
+      bit other {
+        position 0;
+        description
+          "Other";
+      }
+      bit repeater {
+        position 1;
+        description
+          "Repeater - IETF RFC 2108 [B7]";
+      }
+      bit bridge {
+        position 2;
+        description
+          "MAC Bridge component - IEEE Std 802.1Q";
+      }
+      bit wlan-access-point {
+        position 3;
+        description
+          "802.11 Access Point (AP) - IEEE Std 802.11 MIB";
+      }
+      bit router {
+        position 4;
+        description
+          "Router - IETF RFC 1812 [B6]";
+      }
+      bit telephone {
+        position 5;
+        description
+          "Telephone - IETF RFC 4293 [B10]";
+      }
+      bit docsis {
+        position 6;
+        description
+          "DOCSIS capable device - IETF RFC 4639 and 4546 [B12]";
+      }
+      bit station-only {
+        position 7;
+        description
+          "Station Only - IETF RFC 4293 [B10]";
+      }
+      bit c-vlan {
+        position 8;
+        description
+          "C-VLAN component - IEEE Std 802.1Q";
+      }
+      bit s-vlan {
+        position 9;
+        description
+          "S-VLAN component - IEEE Std 802.1Q";
+      }
+      bit tpmr {
+        position 10;
+        description
+          "Two-port MAC Relay component - IEEE Std 802.1Q";
+      }
+    }
+    description
+      "LLDP system capability bits type.";
+    reference
+      "IEEE 802.1ab-2016, Section 8.5.8.1";
+  }
+
+  typedef lldp-management-address-subtype {
+    type enumeration {
+      enum "reserved" {
+        value 0;
+        description
+          "Reserved";
+      }
+      enum "ipv4" {
+        value 1;
+        description
+          "IP (IP version 4)";
+      }
+      enum "ipv6" {
+        value 2;
+        description
+          "IP6 (IP version 6)";
+      }
+      enum "nsap" {
+        value 3;
+        description
+          "NSAP";
+      }
+      enum "hdlc" {
+        value 4;
+        description
+          "HDLC (8-bit multidrop)";
+      }
+      enum "bbn-1822" {
+        value 5;
+        description
+          "BBN 1822";
+      }
+      enum "ieee-802" {
+        value 6;
+        description
+          "IEEE 802";
+      }
+      enum "e-163" {
+        value 7;
+        description
+          "E.163";
+      }
+      enum "e164-smds-atm" {
+        value 8;
+        description
+          "E.164 (SMDS, Frame Relay, ATM)";
+      }
+      enum "f69-telex" {
+        value 9;
+        description
+          "F.69 (Telex)";
+      }
+      enum "x121-x25-fr" {
+        value 10;
+        description
+          "X.121 (X.25, Frame Relay)";
+      }
+      enum "ipx" {
+        value 11;
+        description
+          "IPX";
+      }
+      enum "appletalk" {
+        value 12;
+        description
+          "Appletalk";
+      }
+      enum "decnet-iv" {
+        value 13;
+        description
+          "Decnet IV";
+      }
+      enum "banyan-vines" {
+        value 14;
+        description
+          "Banyan Vines";
+      }
+      enum "e164-w-nsap" {
+        value 15;
+        description
+          "E.164 with NSAP format subaddress";
+      }
+      enum "dns" {
+        value 16;
+        description
+          "DNS (Domain Name Subsystem)";
+      }
+      enum "distinguish-name" {
+        value 17;
+        description
+          "Distinguished Name";
+      }
+      enum "as-number" {
+        value 18;
+        description
+          "AS Number";
+      }
+      enum "xtp-over-ipv4" {
+        value 19;
+        description
+          "XTP over IPv4";
+      }
+      enum "xtp-over-ipv6" {
+        value 20;
+        description
+          "XTP over IPv6";
+      }
+      enum "xtp-native-mode" {
+        value 21;
+        description
+          "XTP native mode";
+      }
+      enum "fibre-ch-ww-port" {
+        value 22;
+        description
+          "Fibre Channel World-Wide Port Name";
+      }
+      enum "fibre-ch-ww-node" {
+        value 23;
+        description
+          "Fibre Channel World-Wide Node Name";
+      }
+      enum "gwid" {
+        value 24;
+        description
+          "GWID";
+      }
+    }
+    description
+      "Management address subtype, IANA Address Family.";
+    reference
+      "IEEE 802.1ab-2016, Section 8.5.9.3";
+  }
+
+  typedef lldp-management-address-interface-subtype {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown/invalid value.";
+      }
+      enum "un-known" {
+        value 1;
+        description
+          "Unknown (IEEE standard value)";
+      }
+      enum "if-index" {
+        value 2;
+        description
+          "ifIndex";
+      }
+      enum "system-port-number" {
+        value 3;
+        description
+          "System port number";
+      }
+    }
+    description
+      "Management address interface numbering subtype.";
+    reference
+      "IEEE 802.1ab-2016, Section 8.5.9.5";
+  }
+
+  typedef lldp-port-id-sub-type {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown/reserved";
+      }
+      enum "interface-alias" {
+        value 1;
+        description
+          "Interface alias";
+      }
+      enum "port-component" {
+        value 2;
+        description
+          "Port component";
+      }
+      enum "mac-address" {
+        value 3;
+        description
+          "MAC address";
+      }
+      enum "network-address" {
+        value 4;
+        description
+          "Network address";
+      }
+      enum "interface-name" {
+        value 5;
+        description
+          "Interface name";
+      }
+      enum "agent-circuit-id" {
+        value 6;
+        description
+          "Agent Circuit ID";
+      }
+      enum "local" {
+        value 7;
+        description
+          "Locally assigned";
+      }
+    }
+    description
+      "Local port id sub-type.";
+    reference
+      "IEEE 802.1ab-2016, Section 8.5.3.2";
+  }
+
+  typedef lldp-auto-neg-capability {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown";
+      }
+      enum "b-10base-t" {
+        value 1;
+        description
+          "10BASE-T";
+      }
+      enum "b-10base-t-fd" {
+        value 2;
+        description
+          "10BASE-T full duplex mode";
+      }
+      enum "b-100base-t4" {
+        value 3;
+        description
+          "10BASE-T4";
+      }
+      enum "b-100base-tx" {
+        value 4;
+        description
+          "100BASE-10X";
+      }
+      enum "b-100base-tx-full-duplex" {
+        value 5;
+        description
+          "100BASE-TX full duplex mode";
+      }
+      enum "b-100base-t2" {
+        value 6;
+        description
+          "100BASE-T2";
+      }
+      enum "b-100base-t2-full-duplex" {
+        value 7;
+        description
+          "100BASE-T2 fulle duplex mode";
+      }
+      enum "b-full-duplex-pause" {
+        value 8;
+        description
+          "full duplex mode, with pause";
+      }
+      enum "b-full-duplex-asymmetric-pause" {
+        value 9;
+        description
+          "full duplex mode, with asymmetric pause";
+      }
+      enum "b-full-duplex-symmetric-pause" {
+        value 10;
+        description
+          "full duplex mode, with symmetric pause";
+      }
+      enum "b-full-duplex-asymmetric-symmetric-pause" {
+        value 11;
+        description
+          "full duplex mode, with asymmetric/symmetric pause";
+      }
+      enum "b-1000base-x" {
+        value 12;
+        description
+          "100BASE-X";
+      }
+      enum "b-1000base-x-full-duplex" {
+        value 13;
+        description
+          "1000BASE-X full duplex mode";
+      }
+      enum "b-1000base-t" {
+        value 14;
+        description
+          "1000BASE-T";
+      }
+      enum "b-1000base-t-full-duplex" {
+        value 15;
+        description
+          "1000BASE-T full duplex mode";
+      }
+    }
+    description
+      "Auto-negotiation capability.";
+  }
+
+  typedef lldp-operational-mau-type {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "IEEE 802.3 MAU type unknown/other.";
+      }
+      enum "dot3-mau-type-aui" {
+        value 1;
+        description
+          "IEEE 802.3 MAU type AUI.";
+      }
+      enum "dot3-mau-type-10-base-5" {
+        value 2;
+        description
+          "IEEE 802.3 MAU type 10BASE-5.";
+      }
+      enum "dot3-mau-type-foirl" {
+        value 3;
+        description
+          "IEEE 802.3 MAU type FOIRL.";
+      }
+      enum "dot3-mau-type-10-base-2" {
+        value 4;
+        description
+          "IEEE 802.3 MAU type 10BASE-2.";
+      }
+      enum "dot3-mau-type-10-base-t" {
+        value 5;
+        description
+          "IEEE 802.3 MAU type 10BASE-T.";
+      }
+      enum "dot3-mau-type-10-base-fp" {
+        value 6;
+        description
+          "IEEE 802.3 MAU type 10BASE-FP.";
+      }
+      enum "dot3-mau-type-10-base-fb" {
+        value 7;
+        description
+          "IEEE 802.3 MAU type 10BASE-FB.";
+      }
+      enum "dot3-mau-type-10-base-fl" {
+        value 8;
+        description
+          "IEEE 802.3 MAU type 10BASE-FL.";
+      }
+      enum "dot3-mau-type-10-broad36" {
+        value 9;
+        description
+          "IEEE 802.3 MAU type 10BROAD36.";
+      }
+      enum "dot3-mau-type-10-base-thd" {
+        value 10;
+        description
+          "IEEE 802.3 MAU type 10BASE-T half duplex mode.";
+      }
+      enum "dot3-mau-type-10-base-tfd" {
+        value 11;
+        description
+          "IEEE 802.3 MAU type 10BASE-T full duplex mode.";
+      }
+      enum "dot3-mau-type-10-base-flhd" {
+        value 12;
+        description
+          "IEEE 802.3 MAU type 10BASE-FL half duplex mode.";
+      }
+      enum "dot3-mau-type-10-base-flfd" {
+        value 13;
+        description
+          "IEEE 802.3 MAU type 10BASE-FL full duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-t4" {
+        value 14;
+        description
+          "IEEE 802.3 MAU type 100BASE-T4.";
+      }
+      enum "dot3-mau-type-100-base-txhd" {
+        value 15;
+        description
+          "IEEE 802.3 MAU type 100BASE-TX half duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-txfd" {
+        value 16;
+        description
+          "IEEE 802.3 MAU type 100BASE-TX full duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-fxhd" {
+        value 17;
+        description
+          "IEEE 802.3 MAU type 100BASE-FX half duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-fxfd" {
+        value 18;
+        description
+          "IEEE 802.3 MAU type 100BASE-FX full duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-t2hd" {
+        value 19;
+        description
+          "IEEE 802.3 MAU type 100BASE-T2 half duplex mode.";
+      }
+      enum "dot3-mau-type-100-base-t2fd" {
+        value 20;
+        description
+          "IEEE 802.3 MAU type 100BASE-T2 full duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-xhd" {
+        value 21;
+        description
+          "IEEE 802.3 MAU type 1000BASE-X half duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-xfd" {
+        value 22;
+        description
+          "IEEE 802.3 MAU type 1000BASE-X full duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-lxhd" {
+        value 23;
+        description
+          "IEEE 802.3 MAU type 1000BASE-LX half duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-lxfd" {
+        value 24;
+        description
+          "IEEE 802.3 MAU type 1000BASE-LX full duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-sxhd" {
+        value 25;
+        description
+          "IEEE 802.3 MAU type 1000BASE-SX half duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-sxfd" {
+        value 26;
+        description
+          "IEEE 802.3 MAU type 1000BASE-SX full duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-cxhd" {
+        value 27;
+        description
+          "IEEE 802.3 MAU type 1000BASE-CX half duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-cxfd" {
+        value 28;
+        description
+          "IEEE 802.3 MAU type 1000BASE-CX full duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-thd" {
+        value 29;
+        description
+          "IEEE 802.3 MAU type 1000BASE-T half duplex mode.";
+      }
+      enum "dot3-mau-type-1000-base-tfd" {
+        value 30;
+        description
+          "IEEE 802.3 MAU type 1000BASE-T full duplex mode.";
+      }
+      enum "dot3-mau-type-10Gig-base-x" {
+        value 31;
+        description
+          "IEEE 802.3 MAU type 10GBASE-X.";
+      }
+      enum "dot3-mau-type-10Gig-base-lx4" {
+        value 32;
+        description
+          "IEEE 802.3 MAU type 10GBASE-LX4.";
+      }
+      enum "dot3-mau-type-10Gig-base-r" {
+        value 33;
+        description
+          "IEEE 802.3 MAU type 10GBASE-R.";
+      }
+      enum "dot3-mau-type-10Gig-base-er" {
+        value 34;
+        description
+          "IEEE 802.3 MAU type 10GBASE-ER.";
+      }
+      enum "dot3-mau-type-10Gig-base-lr" {
+        value 35;
+        description
+          "IEEE 802.3 MAU type 10GBASE-LR.";
+      }
+      enum "dot3-mau-type-10Gig-base-sr" {
+        value 36;
+        description
+          "IEEE 802.3 MAU type 10GBASE-SR.";
+      }
+      enum "dot3-mau-type-10Gig-base-w" {
+        value 37;
+        description
+          "IEEE 802.3 MAU type 10GBASE-W.";
+      }
+      enum "dot3-mau-type-10Gig-base-ew" {
+        value 38;
+        description
+          "IEEE 802.3 MAU type 10GBASE-EW.";
+      }
+      enum "dot3-mau-type-10Gig-base-lw" {
+        value 39;
+        description
+          "IEEE 802.3 MAU type 10GBASE-LW.";
+      }
+      enum "dot3-mau-type-10Gig-base-sw" {
+        value 40;
+        description
+          "IEEE 802.3 MAU type 10GBASE-SW.";
+      }
+      enum "dot3-mau-type-10Gig-base-cx4" {
+        value 41;
+        description
+          "IEEE 802.3 MAU type 10GBASE-CX4.";
+      }
+      enum "dot3-mau-type-2-base-tl" {
+        value 42;
+        description
+          "IEEE 802.3 MAU type 2BASE-TL";
+      }
+      enum "dot3-mau-type-10-pass-ts" {
+        value 43;
+        description
+          "IEEE 802.3 MAU type 10PASS-TS.";
+      }
+      enum "dot3-mau-type-100-base-bx10D" {
+        value 44;
+        description
+          "IEEE 802.3 MAU type 100BASE-BX10D.";
+      }
+      enum "dot3-mau-type-100-base-bx10u" {
+        value 45;
+        description
+          "IEEE 802.3 MAU type 100BASE-BX10U.";
+      }
+      enum "dot3-mau-type-100-base-lx10" {
+        value 46;
+        description
+          "IEEE 802.3 MAU type 100BASE-LX10.";
+      }
+      enum "dot3-mau-type-1000-base-bx10d" {
+        value 47;
+        description
+          "IEEE 802.3 MAU type 1000BASE-BX10D.";
+      }
+      enum "dot3-mau-type-1000-base-bx10u" {
+        value 48;
+        description
+          "IEEE 802.3 MAU type 1000BASE-BX10U.";
+      }
+      enum "dot3-mau-type-1000-base-lx10" {
+        value 49;
+        description
+          "IEEE 802.3 MAU type 1000BASE-LX10.";
+      }
+      enum "dot3-mau-type-1000-base-px10d" {
+        value 50;
+        description
+          "IEEE 802.3 MAU type 1000BASE-PX10D.";
+      }
+      enum "dot3-mau-type-1000-base-px10u" {
+        value 51;
+        description
+          "IEEE 802.3 MAU type 1000BASE-PX10U.";
+      }
+      enum "dot3-mau-type-1000-base-px20d" {
+        value 52;
+        description
+          "IEEE 802.3 MAU type 1000BASE-PX20D.";
+      }
+      enum "dot3-mau-type-1000-base-px20u" {
+        value 53;
+        description
+          "IEEE 802.3 MAU type 1000BASE-PX20U.";
+      }
+      enum "invalid" {
+        value 54;
+        description
+          "Invalid type.";
+      }
+    }
+    description
+      "Operational Medium Attachment Unit (MAU) type.";
+    reference
+      "IEEE 802.3, IETF RFC 4836";
+  }
+
+  typedef supported-notsupported-enum {
+    type enumeration {
+      enum "not-supported" {
+        value 0;
+        description
+          "Capability is not supported.";
+      }
+      enum "supported" {
+        value 1;
+        description
+          "Capability is supported.";
+      }
+    }
+    description
+      "Enumeration type indicating if a capability is supported or not.";
+  }
+
+  typedef lldp-port-class {
+    type enumeration {
+      enum "pd" {
+        value 0;
+        description
+          "Powered Device.";
+      }
+      enum "pse" {
+        value 1;
+        description
+          "Power Sourcing Equipment.";
+      }
+    }
+    description
+      "LLDP port class type.";
+  }
+
+  typedef lldp-pair-control {
+    type enumeration {
+      enum "cannot" {
+        value 0;
+        description
+          "Cannot control.";
+      }
+      enum "can" {
+        value 1;
+        description
+          "Can control.";
+      }
+    }
+    description
+      "LLDP pair control.";
+  }
+
+  typedef lldp-power-pair {
+    type enumeration {
+      enum "not-support" {
+        value 0;
+        description
+          "Not supported";
+      }
+      enum "signal" {
+        value 1;
+        description
+          "Signal";
+      }
+      enum "spare" {
+        value 2;
+        description
+          "Spare";
+      }
+      enum "unknown" {
+        value 3;
+        description
+          "Unknown";
+      }
+    }
+    description
+      "LLDP power pair type.";
+  }
+
+  typedef lldp-power-class {
+    type enumeration {
+      enum "not-support" {
+        value 0;
+        description
+          "Not supported";
+      }
+      enum "class-0" {
+        value 1;
+        description
+          "Power class 0";
+      }
+      enum "class-1" {
+        value 2;
+        description
+          "Power class 1";
+      }
+      enum "class-2" {
+        value 3;
+        description
+          "Power class 2";
+      }
+      enum "class-3" {
+        value 4;
+        description
+          "Power class 3";
+      }
+      enum "class-4" {
+        value 5;
+        description
+          "Power class 4";
+      }
+      enum "unknown" {
+        value 6;
+        description
+          "Power class unknown";
+      }
+    }
+    description
+      "Power class.";
+  }
+
+  grouping system-capability-group {
+    description
+      "group of LLDP system capability data.";
+    leaf capabilities {
+      ui:ui-name "System Capabilities";
+      type lldp-system-capability-bits;
+      description
+        "LLDP system capabilities.";
+    }
+
+    leaf capability-enabled {
+      ui:ui-name "System Capability Enabled";
+      type lldp-system-capability-bits;
+      description
+        "Enabled LLDP system capability.";
+    }
+  }
+
+  grouping management-address-group {
+    description
+      "group of LLDP management address data.";
+    leaf address {
+      ui:ui-name "Address";
+      type cienawstypes:string-maxl-256;
+      config false;
+      description
+        "Management address.";
+    }
+
+    leaf subtype {
+      ui:ui-name "Subtype";
+      type lldp-management-address-subtype;
+      config false;
+      description
+        "Management adress subtype.";
+    }
+  }
+
+  grouping management-address-interface-group {
+    description
+      "group of LLDP management address data.";
+    leaf interface-subtype {
+      ui:ui-name "Interface Subtype";
+      type lldp-management-address-interface-subtype;
+      config false;
+      description
+        "Management address interface subtype.";
+    }
+
+    leaf oid-if-number {
+      ui:ui-name "Oid IF Number";
+      type uint32;
+      config false;
+      description
+        "Management address interface OID interface number.";
+    }
+
+    leaf oid {
+      ui:ui-name "OID";
+      type cienawstypes:string-maxl-128;
+      config false;
+      description
+        "Management address interface OID.";
+    }
+  }
+
+  grouping port-id-group {
+    description
+      "group of port identification data.";
+    leaf id {
+      ui:ui-name "Identifier";
+      type string {
+        length "1..512";
+      }
+      config false;
+      description
+        "Port identifier string.";
+    }
+
+    leaf sub-type {
+      ui:ui-name "Sub-Type";
+      type lldp-port-id-sub-type;
+      config false;
+      description
+        "Port identificer sub-type.";
+    }
+
+    leaf descriptor {
+      ui:ui-name "Descriptor";
+      type cienawstypes:string-maxl-256;
+      config false;
+      description
+        "Port descriptor";
+    }
+  }
+
+  grouping lldp-rpc-output-group {
+    description
+      "Group of output attributes of LLDP RPC calls.";
+    leaf return-code {
+      type uint32;
+      description
+        "return code: 0 is success; non-zero is failure";
+    }
+
+    leaf return-string {
+      type cienawstypes:string-maxl-254;
+      description
+        "Return code description";
+    }
+  }
+
+  grouping lldp-entity-group {
+    description
+      "Group of LLDP Entity configuration and operational data.";
+    container properties {
+      ui:ui-name "Properties";
+      description
+        "LLDP port level properties.";
+      leaf mode {
+        ui:ui-name "Mode";
+        type enumeration {
+          enum "unknown" {
+            value 0;
+            description
+              "LLDP port mode unknown.";
+          }
+          enum "tx-only" {
+            value 1;
+            description
+              "LLDP port tx-only mode.";
+          }
+          enum "snoop" {
+            value 2;
+            description
+              "LLDP port snoop mode.";
+          }
+          enum "tx-rx" {
+            value 3;
+            description
+              "LLDP port tx/rx mode.";
+          }
+          enum "disabled" {
+            value 4;
+            description
+              "LLDP port disabled.";
+          }
+        }
+        description
+          "LLDP port mode";
+      }
+
+      leaf notification {
+        ui:ui-name "Notification";
+        type cienawstypes:on-off-enum;
+        description
+          "Turn notification on or off";
+      }
+    }
+
+    container statistics {
+      ui:ui-name "Statistics";
+      config false;
+      description
+        "Port level statistics.";
+      leaf out-packets-total {
+        ui:ui-name "Out Packets";
+        type uint32;
+        config false;
+        description
+          "Out packets.";
+      }
+
+      leaf in-packets-total {
+        ui:ui-name "In Packets Total";
+        type uint32;
+        config false;
+        description
+          "In packets";
+      }
+
+      leaf in-err-packets-discarded {
+        ui:ui-name "In Error Packets Discarded";
+        type uint32;
+        config false;
+        description
+          "Discarded in error packets";
+      }
+
+      leaf in-errored-tlv {
+        ui:ui-name "In Errored TLV";
+        type uint32;
+        config false;
+        status deprecated;
+        description
+          "In errored TLV";
+      }
+
+      leaf tlv-discarded {
+        ui:ui-name "TLV Discarded";
+        type uint32;
+        config false;
+        description
+          "Discarded TLV.";
+      }
+
+      leaf unknown-tlv {
+        ui:ui-name "Unknown TLV";
+        type uint32;
+        config false;
+        description
+          "Unknown TLV";
+      }
+
+      leaf aged-out-total {
+        ui:ui-name "Aged Out Total";
+        type uint32;
+        config false;
+        description
+          "Aged out total.";
+      }
+
+      leaf pdu-length-errors {
+        ui:ui-name "PDU Length Errors";
+        type uint32;
+        config false;
+        description
+          "Number of LLDPDU Frames with Length Exceeding the maximum LLDPDU size";
+      }
+    }
+
+    container local {
+      ui:ui-name "Local Data";
+      config false;
+      description
+        "Port LLDP local data.";
+      container id {
+        ui:ui-name "Identification";
+        description
+          "LLDP port identification.";
+        uses port-id-group;
+      }
+
+      container specification-802-3 {
+        ui:ui-name "Specification 802.3";
+        config false;
+        description
+          "LLDP Specification 802.3.";
+        container mac-physical-config {
+          ui:ui-name "Mac Physical Config";
+          config false;
+          description
+            "Mac physical configuration.";
+          leaf auto-negotiation-support {
+            ui:ui-name "Auto-Negotiation Support";
+            type supported-notsupported-enum;
+            description
+              "Auto-negotiation support.";
+          }
+
+          leaf auto-negotiation-status {
+            ui:ui-name "Auto-Negotiation Status";
+            type cienawstypes:enabled-disabled-enum;
+            description
+              "Auto-negotiation status.";
+          }
+
+          leaf pmd-auto-negotiation-advertised-capability {
+            ui:ui-name "PMD Auto-Negotiation Advertised Capability";
+            type lldp-auto-neg-capability;
+            description
+              "PMD Auto-negotiation advertised capability.";
+          }
+
+          leaf operational-mau-type {
+            ui:ui-name "Operational MAU Type";
+            type lldp-operational-mau-type;
+            description
+              "Operational MAU type.";
+          }
+        }
+
+        container power-via-mdi {
+          ui:ui-name "Power Via MDI";
+          config false;
+          description
+            "Power Via MDI.";
+          leaf port-class {
+            ui:ui-name "Port Class";
+            type lldp-port-class;
+            description
+              "Port class";
+          }
+
+          leaf mdi {
+            ui:ui-name "MDI";
+            type supported-notsupported-enum;
+            description
+              "Media Dependent Interface (MDI) support.";
+          }
+
+          leaf mdi-power-support {
+            ui:ui-name "MDI Power Support";
+            type cienawstypes:enabled-disabled-enum;
+            description
+              "MDI power support.";
+          }
+
+          leaf pair-control {
+            ui:ui-name "Pair Control";
+            type lldp-pair-control;
+            description
+              "Pair control.";
+          }
+
+          leaf power-pair {
+            ui:ui-name "Power-pair";
+            type lldp-power-pair;
+            description
+              "Power pair.";
+          }
+
+          leaf power-class {
+            ui:ui-name "Power Class";
+            type lldp-power-class;
+            description
+              "Power class.";
+          }
+        }
+
+        leaf max-frame-size {
+          ui:ui-name "Max Frame Size";
+          type uint16;
+          description
+            "Maximum frame size.";
+        }
+      }
+    }
+
+    container remote {
+      ui:ui-name "Remote Port Data";
+      config false;
+      description
+        "LLDP port level remote data.";
+      container chassis {
+        ui:ui-name "Chassis Level Data";
+        config false;
+        description
+          "LLDP remote chassis configuration and operational data.";
+        container chassis-id {
+          ui:ui-name "Chassis Identification";
+          description
+            "Remote Chassis ID.";
+          leaf chassis-id {
+            ui:ui-name "Chassis Id";
+            type chassis-id;
+            description
+              "Chassis ID. Read only attribute.";
+          }
+
+          leaf chassis-id-subtype {
+            ui:ui-name "Chassis Id Subtype";
+            type chassis-id-subtype;
+            description
+              "Chassis Identifier subtype.";
+          }
+
+          leaf system-name {
+            ui:ui-name "System Name";
+            type cienawstypes:string-maxl-256;
+            description
+              "System Name. Max string length of 255 characters.";
+          }
+
+          leaf system-description {
+            ui:ui-name "System Description";
+            type cienawstypes:string-maxl-256;
+            description
+              "System escription. Max string length of 255 characters.";
+          }
+        }
+
+        leaf time-to-live {
+          ui:ui-name "Time To Live";
+          type uint16;
+          config false;
+          description
+            "Time to live.";
+        }
+
+        container system-capabilities {
+          ui:ui-name "System Capabilities";
+          config false;
+          description
+            "LLDP remote system capabilities.";
+          uses system-capability-group;
+        }
+
+        list management-address-table {
+          key "index";
+          config false;
+          max-elements 4;
+          description
+            "LLDP remote management address table list.";
+          leaf index {
+            ui:ui-name "Index";
+            type uint32;
+            description
+              "Unique id, read-only attribute.";
+          }
+
+          uses management-address-group;
+
+          uses management-address-interface-group;
+        }
+      }
+
+      container port {
+        ui:ui-name "Port Level Data";
+        config false;
+        description
+          "LLDP remote port level data.";
+        container id {
+          ui:ui-name "Identification";
+          config false;
+          description
+            "LLDP port identification.";
+          uses port-id-group;
+        }
+
+        container specification-802-3 {
+          ui:ui-name "Specification 802.3";
+          config false;
+          description
+            "LLDP Specification 802.3.";
+          container mac-physical-config {
+            ui:ui-name "Mac Physical Config";
+            config false;
+            description
+              "Mac physical configuration.";
+            leaf auto-negotiation-support {
+              ui:ui-name "Auto-Negotiation Support";
+              type supported-notsupported-enum;
+              description
+                "Auto-negotiation support.";
+            }
+
+            leaf auto-negotiation-status {
+              ui:ui-name "Auto-Negotiation Status";
+              type cienawstypes:enabled-disabled-enum;
+              description
+                "Auto-negotiation status.";
+            }
+
+            leaf pmd-auto-negotiation-advertised-capability {
+              ui:ui-name "PMD Auto-Negotiation Advertised Capability";
+              type lldp-auto-neg-capability;
+              description
+                "PMD Auto-negotiation advertised capability.";
+            }
+
+            leaf operational-mau-type {
+              ui:ui-name "Operational MAU Type";
+              type lldp-operational-mau-type;
+              description
+                "Operational MAU type.";
+            }
+          }
+
+          container power-via-mdi {
+            ui:ui-name "Power Via MDI";
+            config false;
+            description
+              "Power Via MDI.";
+            leaf port-class {
+              ui:ui-name "Port Class";
+              type lldp-port-class;
+              description
+                "Port class";
+            }
+
+            leaf mdi {
+              ui:ui-name "MDI";
+              type supported-notsupported-enum;
+              description
+                "mdi";
+            }
+
+            leaf mdi-power-support {
+              ui:ui-name "MDI Power Support";
+              type cienawstypes:enabled-disabled-enum;
+              description
+                "MDI power support.";
+            }
+
+            leaf pair-control {
+              ui:ui-name "Pair Control";
+              type lldp-pair-control;
+              description
+                "Pair control.";
+            }
+
+            leaf power-pair {
+              ui:ui-name "Power Pair";
+              type lldp-power-pair;
+              description
+                "Power pair.";
+            }
+
+            leaf power-class {
+              ui:ui-name "Power Class";
+              type lldp-power-class;
+              description
+                "Power class.";
+            }
+          }
+
+          leaf max-frame-size {
+            ui:ui-name "Max Frame Size";
+            type uint16;
+            description
+              "Maximum frame size.";
+          }
+        }
+
+        list organization-definition-information-table {
+          ui:ui-name "Organization Definition Information Table";
+          key "index";
+          config false;
+          description
+            "Remote organization definition information table.";
+          leaf index {
+            ui:ui-name "Index";
+            type uint32;
+            description
+              "Unique id, read-only attribute.";
+          }
+
+          leaf oui {
+            ui:ui-name "OUI";
+            type cienawstypes:string-maxl-16;
+            description
+              "OUI.";
+          }
+
+          leaf subtype {
+            ui:ui-name "Sub-Type";
+            type uint8;
+            description
+              "Sub-Type.";
+          }
+
+          leaf information {
+            ui:ui-name "Information";
+            type cienawstypes:string-maxl-256;
+            description
+              "Information.";
+          }
+        }
+
+        list unrecognized-tlv-table {
+          ui:ui-name "Unrecognized TLV Table";
+          key "index";
+          config false;
+          description
+            "Remote unrecognized TLV table.";
+          leaf index {
+            ui:ui-name "Index";
+            type uint32;
+            description
+              "Unique id, read-only attribute.";
+          }
+
+          leaf type {
+            ui:ui-name "Type";
+            type uint8;
+            description
+              "Type.";
+          }
+
+          leaf length {
+            ui:ui-name "Length";
+            type uint32;
+            description
+              "Length.";
+          }
+
+          leaf value {
+            ui:ui-name "Value";
+            type cienawstypes:string-maxl-256;
+            description
+              "Value.";
+          }
+        }
+      }
+    }
+  }
+
+  container waveserver-lldp {
+    ui:ui-name "LLDP";
+    description
+      "Waveserver LLDP configuration and operational data.";
+    reference
+      "IEEE 802.1ab-2016 - Station and Media Access Control Connectivity Discovery (LLDP)";
+    container chassis {
+      ui:ui-name "Chassis Data";
+      description
+        "LLDP Chassis configuration and operational data.";
+      container state {
+        ui:ui-name "State";
+        description
+          "LLDP Chassis state.";
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Administrative state of chassis level LLDP.";
+        }
+
+        leaf notification-interval {
+          ui:ui-name "Notification Interval";
+          type uint16 {
+            range "5 .. 32768";
+          }
+          description
+            "LLDP Notification interval.";
+        }
+      }
+
+      container id {
+        ui:ui-name "Identification";
+        config false;
+        description
+          "LLDP Chassis identification.";
+        leaf chassis-id {
+          ui:ui-name "Chassis Id";
+          type chassis-id;
+          description
+            "Chassis ID.";
+        }
+
+        leaf chassis-id-subtype {
+          ui:ui-name "Chassis Id Subtype";
+          type chassis-id-subtype;
+          description
+            "Chassis Identifier subtype.";
+        }
+
+        leaf system-name {
+          ui:ui-name "System Name";
+          type cienawstypes:string-maxl-256;
+          description
+            "System Name. Max string length of 255 characters.";
+        }
+
+        leaf system-description {
+          ui:ui-name "System Description";
+          type cienawstypes:string-maxl-256;
+          description
+            "System escription. Max string length of 255 characters.";
+        }
+      }
+
+      leaf time-to-live {
+        ui:ui-name "Time To Live";
+        type uint16;
+        config false;
+        description
+          "Time To Live.";
+      }
+
+      container system-capabilities {
+        ui:ui-name "System Capabilities";
+        config false;
+        description
+          "LLDP system capabilities.";
+        uses system-capability-group;
+      }
+
+      container local-management-address-table {
+        ui:ui-name "Local Management Address Table";
+        config false;
+        description
+          "LLDP local management address table.";
+        list address-table {
+          ui:ui-name "Address Table";
+          key "index";
+          config false;
+          max-elements 4;
+          description
+            "LLDP local management address table list.";
+          leaf index {
+            ui:ui-name "Index";
+            type uint32;
+            description
+              "Unique id, read-only attribute.";
+          }
+
+          uses management-address-group;
+
+          uses management-address-interface-group;
+        }
+      }
+
+      container statistics {
+        ui:ui-name "Statistics";
+        config false;
+        description
+          "LLDP statistics.";
+        leaf last-change {
+          ui:ui-name "Last Change";
+          type uint32;
+          description
+            "remote table last change in 1/100 seconds.";
+        }
+
+        leaf inserts {
+          ui:ui-name "Inserts";
+          type uint32;
+          description
+            "Inserts.";
+        }
+
+        leaf deletes {
+          ui:ui-name "Delete";
+          type uint32;
+          description
+            "Deletes.";
+        }
+
+        leaf drops {
+          ui:ui-name "Drops";
+          type uint32;
+          description
+            "Drops.";
+        }
+
+        leaf age-outs {
+          ui:ui-name "Age Outs";
+          type uint32;
+          description
+            "Age outs.";
+        }
+      }
+    }
+
+    list port {
+      ui:ui-name "Port Data";
+      ncx:user-write "update";
+      key "port-id";
+      description
+        "LLDP Port configuration and operational data.";
+      leaf port-id {
+        ui:ui-name "Port ID";
+        type cienawstypes:port-name;
+        mandatory true;
+        description
+          "Port ID/name string.";
+      }
+
+      uses lldp-entity-group;
+    }
+
+    list interface-port {
+      ui:ui-name "Interface Port Data";
+      ncx:user-write "update";
+      key "name";
+      description
+        "Interface Port LLDP configuration and operational data.";
+      leaf name {
+        ui:ui-name "Interface Port Name";
+        type leafref {
+          path "/if:waveserver-interfaces/if:physical-interface/if:id/if:name";
+        }
+        mandatory true;
+        description
+          "Interface Port name string.";
+      }
+
+      uses lldp-entity-group;
+    }
+  }
+
+  rpc waveserver-lldp-clear-statistics {
+    description
+      "Clear the LLDP statistics.";
+
+    output {
+      uses lldp-rpc-output-group;
+    }
+  }
+
+  rpc waveserver-lldp-clear-port-statistics {
+    description
+      "Clear the LLDP statistics for the specified port.";
+    input {
+      leaf port-id {
+        ui:ui-name "Port ID";
+        type cienawstypes:port-name;
+        mandatory true;
+        description
+          "The port ID/name string.";
+      }
+    }
+
+    output {
+      uses lldp-rpc-output-group;
+    }
+  }
+
+  rpc waveserver-lldp-clear-interface-port-statistics {
+    description
+      "Clear the LLDP statistics for the specified interface port.";
+    input {
+      leaf name {
+        ui:ui-name "Interface Port Name";
+        type cienawstypes:string-maxl-16;
+        mandatory true;
+        description
+          "Interface Port name string (e.g. ifp0-dcn-1, etc.).";
+      }
+    }
+
+    output {
+      uses lldp-rpc-output-group;
+    }
+  }
+}

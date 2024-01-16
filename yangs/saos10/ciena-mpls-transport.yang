@@ -1,0 +1,166 @@
+module ciena-mpls-transport {
+
+    namespace   "http://ciena.com/ns/ciena-mpls-transport";
+    prefix "tst";
+
+    import ciena-l3-types {
+        prefix ciena-l3-types;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific MPLS transport
+         selection template.
+
+        Copyright (c) 2021 Ciena Corporation.  All rights
+        reserved.
+
+        All information contained herein is, and remains the
+        property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained
+        from Ciena Corporation.";
+
+    revision "2021-11-24" {
+        description
+            "MPLS transport selection model.
+             Change the oper template type enum."; 
+    }
+
+    grouping transport-path-profile {
+        description
+            "Top level grouping for transport-selection-template.";
+
+        container transport-selection-templates {
+            description
+                "List of transport selection templates with their respective type & priority order.";
+
+            list transport-selection-template {
+                key "name";
+                max-elements 1;
+                description
+                    "A template to define the order of preference for selecting different
+                     transport types e.g SR-BE, LDP etc. to carry a particular service.
+                     A default transport-selection-template exists in the system
+                     with the name of def-transport-template and that's non-editable.
+                     Global template is configurable (editable) and will over ride
+                     default template preferences if present in system.";
+
+                leaf name {
+                    type string {
+                        length "1..64";
+                    }
+                    description
+                        "Name of a transport selection template.";
+                }
+
+                leaf type {
+                    type ciena-l3-types:transport-template-type;
+                    mandatory true;
+                    description
+                        "Type of transport template.";
+                }
+
+                list transport-type {
+                    key "transport-name";
+                    max-elements 2;
+                    description
+                        "List of transport types selection template statements identified with
+                         unique transport name.";
+
+                    leaf transport-name {
+                        type ciena-l3-types:transport-type;
+                        description
+                            "Type of transport tunnel.";
+                    }
+
+                    leaf priority {
+                        type uint32 {
+                            range "1..255";
+                        }
+                        mandatory true;
+                        description
+                            "Priority in which different types of tunnels/transport
+                             are selected. Lower value is higher preference.";
+                    }
+               }
+            }
+        }
+    }
+
+    grouping template-state-grouping {
+        description
+            "Top level grouping for template operational info.";
+
+        container templates-state {
+            config false;
+            description
+                "Transport selection templates operational infos.";
+
+            list template-state {
+                key "name";
+                description
+                    "Transport selection template operational info.";
+
+                leaf name {
+                    type string {
+                        length "1..64";
+                    }
+                    description
+                        "Name of a transport selection template.";
+                }
+
+                leaf type {
+                    type ciena-l3-types:transport-template-type-oper;
+                    description
+                        "Type of transport template.";
+                }
+
+                leaf status {
+                    type ciena-l3-types:transport-template-status;
+                    description
+                        "Template operational status active/inactive.";
+                }
+
+                leaf active-time {
+                    type string;
+                    description
+                       "Time since this template has been active((HH:MM:SS)";
+                }
+
+                list transport-type {
+                    key "transport-name";
+                    description
+                        "Template transport types operation data.";
+
+                    leaf transport-name {
+                        type ciena-l3-types:transport-type;
+                        description
+                            "Type of transport tunnel.";
+                    }
+
+                    leaf priority {
+                        type uint32;
+                        description
+                            "Priority associated with each transport type.";
+                    }
+               }
+            }
+        }
+    }
+
+    uses transport-path-profile;
+
+    uses template-state-grouping;
+}

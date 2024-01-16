@@ -1,0 +1,179 @@
+module ciena-bfd-ip-sh {
+
+     namespace "http://ciena.com/ns/yang/ciena-bfd-ip-sh";
+
+     prefix "bfd-ip-sh";
+
+     import ciena-bfd-types {
+       prefix "bfd-types";
+     }
+
+     import ciena-bfd {
+       prefix "bfd";
+     }
+
+     import openconfig-interfaces{
+       prefix "oc-if";
+     }
+
+     import ietf-inet-types {
+       prefix "inet";
+     }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+  description
+      "This YANG module defines Ciena's BFD IP single-hop protocol.
+      Copyright (c) 2019  Ciena Corporation.  All rights
+      reserved.
+      All information contained herein is, and remains the
+      property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained
+      from Ciena Corporation.";
+
+  revision 2021-05-21 {
+     description
+        "Marking IP-SH bfd session config parameters as deprecated.
+         BFD session parameters are now expected to be picked from
+         profile.
+         Session-state's hierarchy is changed to support operational
+         data fetch for IP-BFD without any dependency on static BFD
+         configuration.";
+  }
+
+  revision 2020-08-24 {
+     description
+       "Added bfd-client info per session.
+        Added ppm triggered bfd fault per session in operational data.";
+  }
+
+  revision 2010-02-14 {
+     description "Initial revision of BFD IP single-hop data model.";
+  }
+
+  /*
+   * Augments
+   */
+  augment "/bfd:bfd" {
+     description
+        "BFD augmentation for IP single-hop";
+     container ip-sh {
+        description
+           "BFD IP single-hop configuration and operational data.";
+
+        container sessions {
+           description
+              "BFD IP single-hop sessions.";
+           list session {
+              key "interface dest-addr";
+              description
+                 "List of IP single-hop sessions.";
+
+              leaf interface {
+                 type leafref  {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                 }
+                 description
+                    "L3 interface on which the BFD session is running.";
+              }
+              leaf dest-addr {
+                 type inet:ip-address;
+                 description
+                    "IP address of the peer.";
+              }
+              leaf source-addr {
+                 type inet:ip-address;
+                 description
+                    "Local IP address.";
+                 mandatory true;
+              }
+              uses bfd-types:common-cfg-parms {
+                 status "deprecated";
+              }
+           }
+        }
+
+        container sessions-state {
+           status "deprecated";
+           description
+              "BFD IP single-hop sessions state.";
+           config false;
+           list session-state {
+              key "interface dest-addr";
+              description
+                 "List of IP single-hop sessions.";
+
+              leaf interface{
+                 type string;
+                 description
+                    "L3 interface on which the BFD session is running.";
+              }
+              leaf dest-addr {
+                 type inet:ip-address;
+                 description
+                    "IP address of the peer.";
+              }
+              leaf source-addr {
+                 type inet:ip-address;
+                 description
+                    "Local IP address.";
+              }
+              uses bfd-types:base-cfg-parms;
+              uses bfd-types:all-session;
+              uses bfd-types:bfd-client-info;
+              leaf ppm-forced-bfd-down {
+                 type boolean;
+                 description
+                    "Indicates Programmable Policy Manager (PPM) triggered fault on BFD session.";
+              }
+           }
+        }
+     }
+
+     container ip-sh-sessions-state {
+        description
+           "BFD IP single-hop sessions state.";
+        config false;
+        list session-state {
+           key "interface dest-addr";
+           description
+              "List of IP single-hop sessions.";
+
+           leaf interface {
+              type string;
+              description
+                 "L3 interface on which the BFD session is running.";
+           }
+           leaf dest-addr {
+              type inet:ip-address;
+              description
+                 "IP address of the peer.";
+           }
+           leaf source-addr {
+              type inet:ip-address;
+              description
+                 "Local IP address.";
+           }
+           uses bfd-types:base-cfg-parms;
+           uses bfd-types:all-session;
+           uses bfd-types:bfd-client-info;
+           leaf ppm-forced-bfd-down {
+              type boolean;
+              description
+                 "Indicates Programmable Policy Manager (PPM) triggered fault on BFD session.";
+           }
+        }
+     }
+  }//augment end
+}

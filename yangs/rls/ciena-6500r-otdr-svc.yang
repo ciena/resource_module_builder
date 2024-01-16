@@ -1,0 +1,223 @@
+module ciena-6500r-otdr-svc {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-otdr-svc";
+  prefix otdr-svc;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's 6500 platform
+     Optical Time Domain Reflectometer Service (OTDR-SVC)";
+
+  revision 2021-04-22 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "FLM trace handshaking enhancements";
+  }
+  revision 2020-11-10 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "New handshaking state no-remote-otdr.
+       No migration escape required.";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2019-12-03 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial revision";
+  }
+
+  typedef handshaking-trace-request_t {
+    type enumeration {
+      enum "discovery" {
+        description
+          "Initial handshaking is not complete.
+           Remote handshaking data has not been received.";
+      }
+      enum "discovered" {
+        description
+          "Initial handshaking is not complete.
+           Remote handshaking data has been received.";
+      }
+      enum "idle" {
+        description
+          "No traces have been requested by the OTDR priority manager for this port.
+           There may be trace pending to be executed for later.";
+      }
+      enum "port-lock-request" {
+        description
+          "OTDR is requesting to run a trace on this port";
+      }
+      enum "port-lock-no-handshake" {
+        description
+          "OTDR is running a trace without handshake";
+      }
+      enum "unlock" {
+        description
+          "OTDR is requesting to unlock port";
+      }
+      enum "mirror-lock-request" {
+        description
+          "OTDR is requesting to lock the remote mirror.";
+      }
+    }
+    description
+      "OTDR handshaking trace request state.";
+  }
+
+  typedef handshaking-lock-state_t {
+    type enumeration {
+      enum "unlocked" {
+        description
+          "Port is available for running traces";
+      }
+      enum "port-lock-ack" {
+        description
+          "port-lock-request acknowledgment.
+           The remote trace engine is or will be running traces on the remote port.";
+      }
+      enum "port-busy" {
+        description
+          "Trace engine is busy running a trace on this port.";
+      }
+      enum "no-otdr" {
+        description
+          "No OTDR facility on this line-port.";
+      }
+      enum "mirror-requested" {
+        description
+          "mirror-lock-request received, waiting for card acknowledgment that the mirror is redirected to this port.";
+      }
+      enum "mirror-lock-ack" {
+        description
+          "mirror-lock-request acknowledgment.
+           The local trace engine has configured the trace engine mirror to be directed towards this port.";
+      }
+    }
+    description
+      "OTDR handshaking trace request state.";
+  }
+
+  grouping ciena-6500r-otdr-svc-mount {
+    list otdr-handshaking {
+      key "line-port";
+      leaf line-port {
+        type instance-identifier;
+        description
+          "The PFG line in or out port associated to an OTDR facility";
+      }
+
+      leaf handshaking-version {
+        type uint32;
+        default "2";
+        description
+          "OTDR handshaking protocol version number";
+      }
+
+      leaf trace-request {
+        type handshaking-trace-request_t;
+        default "discovery";
+        description
+          "OTDR handshaking trace request state.";
+      }
+
+      leaf lock-state {
+        type handshaking-lock-state_t;
+        default "unlocked";
+        description
+          "OTDR handshaking trace request state.";
+      }
+
+      leaf timestamp {
+        type yang:date-and-time;
+        default "0000-00-00T00:00:00Z";
+        description
+          "Time when the last otdr-handshaking trace-request or lock-state for this line port was updated.
+           It is also be updated to act as a keep alive notification.";
+      }
+
+      leaf keep-alive-time {
+        type uint32;
+        units "seconds";
+        default "15";
+        description
+          "When the lock-state is in port-busy state, the timestamp will be updated at this time interval.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-otdr-svc-mount-actions {
+    action otdr-debug {
+      input {
+        leaf command {
+          type string;
+          description
+            "Otdr Facility debugging command.
+             If not specified, the list of available commands are displayed in the response.";
+        }
+      }
+
+      output {
+        list output {
+          key "o";
+          leaf o {
+            type string {
+              length "1..132";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  uses ciena-6500r-otdr-svc-mount;
+
+  rpc otdr-debug {
+    input {
+      leaf command {
+        type string;
+        description
+          "Otdr Facility debugging command.
+           If not specified, the list of available commands are displayed in the response.";
+      }
+    }
+
+    output {
+      list output {
+        key "o";
+        leaf o {
+          type string {
+            length "1..132";
+          }
+        }
+      }
+    }
+  }
+}

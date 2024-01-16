@@ -1,0 +1,631 @@
+module yumaworks-system {
+
+    namespace "http://yumaworks.com/ns/yumaworks-system";
+
+    prefix "ysys";
+
+    import ietf-netconf { prefix nc; }
+
+    import ietf-netconf-acm { prefix nacm; }
+
+    import ietf-netconf-monitoring { prefix ncm; }
+
+    import ietf-yang-types { prefix yang; }
+
+    import yuma-app-common { prefix yumaapp; }
+
+    import yuma-ncx { prefix ncx; }
+
+    import yuma-types { prefix nt; }
+
+    import yumaworks-app-common { prefix ywapp; }
+
+    import yumaworks-restconf { prefix rc; }
+
+    import yumaworks-types { prefix ywt; }
+
+    organization "YumaWorks, Inc.";
+
+    contact
+        "Support <support at yumaworks.com>";
+
+    description
+       "Common system operations for the netconfd-pro server.
+
+     Copyright (c) 2013 - 2022 YumaWorks, Inc. All rights reserved.
+
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject
+     to the license terms contained in, the BSD 3-Clause License
+     http://opensource.org/licenses/BSD-3-Clause";
+
+    revision 2022-03-08 {
+        description
+          "Add get-server-version operation";
+    }
+
+    revision 2022-01-27 {
+        description
+          "Deprecate <conformance> and <module-type> leafs.";
+    }
+
+    revision 2021-08-24 {
+        description
+          "Add <get-ha-status> operation.";
+    }
+
+    revision 2021-05-29 {
+        description
+          "Add <refresh-backup-dir> operation.";
+    }
+
+    revision 2020-10-30 {
+        description
+          "Add log-stream parameter to the set-log-level operation";
+    }
+
+    revision 2020-03-06 {
+        description
+          "Change backup file name to use NcxFileName type.";
+    }
+
+    revision 2019-01-22 {
+        description
+          "Move <replay-config> to yumaworks-internal module.";
+    }
+
+    revision 2018-04-24 {
+        description
+          "Add module-tag parameter to NACM.";
+    }
+
+    revision 2018-04-14 {
+        description
+          "Add module-tag parameter to get and get-config.
+           Add get-module-tags RPC operation.
+           Add copy of set-log-level RPC operation from yuma-system.";
+    }
+
+    revision 2017-12-22 {
+        description
+          "Copy load rpc into this module so yuma-system
+           can be removed.";
+    }
+
+    revision 2017-10-06 {
+        description
+          "Add save-config parameter to the load and
+           load-bundle operations.
+           Add delete-config parameter to the unload and
+           unload-bundle operations.";
+    }
+
+    revision 2016-08-24 {
+        description
+          "Add unload-bundle operation.";
+    }
+
+    revision 2016-04-27 {
+        description
+          "Add deviation parameter to load-bundle input params.";
+    }
+
+    revision 2015-09-26 {
+        description
+          "Add depth parameter to get, get-config, and
+           copy-config operations.";
+    }
+
+    revision 2014-10-16 {
+        description
+          "Add with-owners parameter to get, get-config, and
+           copy-config operations.";
+    }
+
+    revision 2014-05-27 {
+        description
+          "Add overwrite parameter to backup operation.";
+    }
+
+    revision 2014-01-09 {
+        description
+          "Add load-bundle operation.";
+    }
+
+    revision 2013-11-13 {
+        description
+          "Add replay-config internal operation.
+           Add module-type leaf to netconf-state schema list";
+    }
+
+    revision 2013-09-19 {
+        description
+          "Add comment parameter to commit operation.";
+    }
+
+    revision 2013-08-30 {
+        description
+          "Add unload operation.";
+    }
+
+    revision 2013-07-16 {
+        description
+          "Add cancel-subscription operation.";
+    }
+
+    revision 2013-01-06 {
+        description
+          "Initial version.";
+    }
+
+    augment /ncm:netconf-state {
+      container backup-files {
+        config false;
+        description
+          "Reports the backup files currently available
+           on the server. Only present if backup commands
+           in this module are supported by the server";
+        list backup-file {
+          key name;
+
+          leaf name {
+            type ywt:NcxFileName;
+            description
+              "File name for the backup.";
+          }
+
+          leaf backup-time {
+            type yang:date-and-time;
+            description
+              "Date and time the backup file was created.";
+          }
+        }
+      }
+    }
+
+    augment /ncm:netconf-state/ncm:schemas/ncm:schema {
+      description
+        "Add extra information to schema list,
+         This has been replaced by the ietf-yang-library
+         module. Use that module instead of the schema list.";
+      status deprecated;
+
+      leaf conformance {
+        type boolean;
+        config false;
+        status deprecated;
+        description
+          "Indicates whether the server is claiming conformance
+           to the module represented by this schema or not.
+           If 'true', the server implements the module
+           represented by the indicated schema,
+           according to the YANG module capability URI.
+           If 'false', the server just imports definitions
+           from the module represented by the indicated schema.";
+      }
+
+      leaf module-type {
+        type enumeration {
+          enum module {
+            description "Schema represents a YANG module";
+          }
+          enum submodule {
+            description "Schema represents a YANG submodule";
+          }
+        }
+        config false;
+        status deprecated;
+        description
+          "Indicates the type of module for this entry";
+      }
+    }
+
+    rpc backup {
+      nacm:default-deny-all;
+      description
+        "Backup the current running configuration to a file
+         on the device.";
+      input {
+        ncx:default-parm filename;
+        leaf filename {
+          type ywt:NcxFileName;
+          mandatory true;
+          description
+            "File name for the backup. A simple identifier name
+             is expected with no directory specifications or
+             file extensions added. (e.g., 'backup1').";
+        }
+        leaf overwrite {
+          type boolean;
+          default false;
+          description
+            "If 'true' then allow an existing backup with the same
+            'filename' value to be overwritten. If 'false' then return
+            an error if the file already exists.";
+        }
+      }
+    }
+
+    rpc delete-backup {
+      nacm:default-deny-all;
+      description
+        "Delete the specified backup file on the device.";
+      input {
+        ncx:default-parm filename;
+        leaf filename {
+          type ywt:NcxFileName;
+          mandatory true;
+          description
+            "File name to delete";
+        }
+      }
+    }
+
+
+    rpc restore {
+      nacm:default-deny-all;
+      description
+        "Restore a saved configuration on the device to the
+         running configuration.";
+      input {
+        ncx:default-parm filename;
+        leaf filename {
+          type ywt:NcxFileName;
+          mandatory true;
+          description
+            "File name for the restore. A simple identifier name
+             is expected with no directory specifications or
+             file extensions added. (e.g., 'backup1').";
+        }
+      }
+    }
+
+    rpc cancel-subscription {
+      description
+        "Cancel a notification subscription for the session,
+         if this session has an active subscription.  If not,
+         just return OK.";
+    }
+
+    rpc unload {
+      nacm:default-deny-all;
+      description
+        "Unload a module from the server. Remove the associated
+         server instrumentation library (SIL). Remove any data
+         nodes in the system from the module. Remove the module
+         from the server capabilities and NETCONF monitoring
+         data. Remove the module namespace from the system.
+
+         Note: this operation does not remove the --module parameter
+         from the server configuration file if it exists.
+
+         The following conditions must be true for the unload to be
+         attempted by the server:
+
+           * The module is allowed to be unloaded. It is data-model
+             and vendor specific whether a module can be
+             removed at run-time.
+
+           * There are no dependencies on the module being removed.
+             No modules that import this module are also loaded.
+
+           * The module was loaded into the server, either via the
+             <load> operation or the --module configuration parameter.
+
+           * No datastores are currently locked.  The server will
+             attempt to lock all datastores on behalf of the client
+             for the entire unload operation.
+
+           * The candidate datastore does not contain any edits
+             that have not been committed.
+
+           * No confirmed-commit operation is in progress.
+
+         If all these conditions are met then the server will
+         attempt to unload the specified module.  The unload
+         operation can fail for various reasons:
+
+           * The client does not have write privileges for
+             all data being deleted. This includes any
+             top-level data nodes and any nested augment
+             nodes in other modules.
+
+           * The deletion of one or more nodes would cause the
+             running datastore to fail any YANG validation
+             tests in RFC 6020, sec. 8.3.3.
+
+           * Server resource errors occur
+       ";
+
+      input {
+        ncx:default-parm module;
+        leaf module {
+          type nt:NcxName;
+          mandatory true;
+          description
+            "The name of the module to unload.";
+        }
+        uses delete-config-parm;
+      }
+    }
+
+    rpc load-bundle {
+      nacm:default-deny-all;
+      description
+        "Load a SIL bundle into the server, if it is not already loaded.";
+      input {
+        ncx:default-parm bundle;
+        leaf bundle {
+          description "Name of the SIL bundle to load.";
+          mandatory true;
+          type nt:NcxName;
+        }
+        uses yumaapp:DeviationParm;
+        uses save-config-parm;
+      }
+    }
+
+    rpc unload-bundle {
+      nacm:default-deny-all;
+      description
+        "Unload a SIL bundle from the server, if it is loaded.";
+      input {
+        ncx:default-parm bundle;
+        leaf bundle {
+          description "Name of the SIL bundle to unload.";
+          mandatory true;
+          type nt:NcxName;
+        }
+        uses delete-config-parm;
+      }
+    }
+
+    augment /nc:commit/nc:input {
+      leaf comment {
+        type string {
+          length "0 .. 1024";
+        }
+        description
+          "User provided comment to add to audit log for this
+           commit operation.";
+      }
+    }
+
+    grouping with-owners-parm {
+      leaf with-owners {
+        type empty;
+        description
+          "Include the 'ywx:owner' attribute in the response for nodes
+           that have stored owner names.  The --save-owners CLI parameter
+           for the server must be set to 'complex' or 'all' for any
+           owner names to be saved.";
+      }
+    }
+
+    augment /nc:get-config/nc:input {
+      uses with-owners-parm;
+      uses rc:depth-parameter;
+      uses ywapp:ModuleTagParm;
+    }
+
+    augment /nc:get/nc:input {
+      uses with-owners-parm;
+      uses rc:depth-parameter;
+      uses ywapp:ModuleTagParm;
+    }
+
+    augment /nc:copy-config/nc:input {
+      uses with-owners-parm;
+      uses rc:depth-parameter;
+    }
+
+    augment /nacm:nacm/nacm:rule-list/nacm:rule/nacm:rule-type {
+      case module-tags {
+        uses ywapp:ModuleTagParm;
+      }
+    }
+
+    grouping save-config-parm {
+        leaf save-config {
+          type boolean;
+          default false;
+          description
+            "If 'true' then save the module or bundle load
+             configuration in the --confdir directory, if the
+             load or load-bundle operation is completed without
+             errors.
+
+             Ignored if the --no-config CLI parameter is used
+             or the --confdir CLI parameter is not specified
+             and no default configuration directory is found.
+
+             A configuration file is created or replaced in this
+             directory with the name <module-name>.conf.";
+        }
+    }
+
+    grouping delete-config-parm {
+        leaf delete-config {
+          type boolean;
+          default false;
+          description
+            "If 'true' then delete the module or bundle load
+             configuration in the --confdir directory, if the unload
+             or unload-bundle operation is completed without errors.
+
+             Ignored if the --no-config CLI parameter is used
+             or the --confdir CLI parameter is not specified
+             and no default configuration directory is found.
+
+             A configuration file is deleted in this
+             directory with the name <module-name>.conf.";
+        }
+    }
+
+    /*  !!! removed
+    augment /yuma-sys:load/yuma-sys:input {
+      uses save-config-parm;
+    }
+    */
+
+    rpc load {
+      nacm:default-deny-all;
+      description
+        "Load a module into the server, if it is not already loaded.
+         Returns the module revision date (or today's date if none),
+         of the module that was loaded, or an error if not found
+         or the module found had errors and was not loaded
+         successfully.  If the module is already loaded, then the
+         revision date will simply be returned.";
+
+      input {
+        ncx:default-parm module;
+        leaf module {
+          description "Name of the module to load.";
+          mandatory true;
+          type nt:NcxName;
+        }
+        leaf revision {
+          description
+             "Module revision to load.";
+          type nt:Date;
+        }
+        uses yumaapp:DeviationParm;
+        uses save-config-parm;
+      }
+
+      output {
+        leaf mod-revision {
+          description
+            "Revision date of the module in use by the server.
+             Will only be present if the module has a version";
+          type nt:Date;
+        }
+      }
+
+    }
+
+    rpc get-module-tags {
+      description
+        "Get the list of configured module-tags.
+         The --module-tagmap parameter is used to configure
+         a module-tag.";
+      output {
+        list module-tag {
+          key tag;
+          leaf tag {
+            type string;
+            description "The module-tag value";
+          }
+          leaf-list module {
+            type string;
+            description "A module-name mapped to this module-tag";
+          }
+        }
+      }
+    }
+
+    rpc set-log-level {
+        nacm:default-deny-all;
+
+        description
+            "Sets the server log verbosity level.
+             Copied from deprecated yuma-system.yang/";
+        input {
+            ncx:default-parm log-level;
+
+            leaf log-level {
+                description
+                 "The desired verbosity level for system logging
+                  messages generated by the server.
+                  The current value can be obtained by retrieving
+                  the /system/sysLogLevel object.";
+                type nt:NcDebugType;
+                mandatory true;
+            }
+
+            leaf log-stream {
+                type enumeration {
+                  enum main {
+                    description
+                      "The main logging stream is used, associated
+                       with the --log parameter file, or direct output
+                       to STDOUT or STDERR, or the vendor-specific
+                       output if the --log-vendor parameter is used.
+
+                       The --log-level parameter value for the next
+                       reboot is not affected by this operation.";
+                  }
+                  enum audit {
+                      description
+                        "The audit logging stream associated with
+                         the --audit-log parameter, or the default audit
+                         log, which is only created if --fileloc-fhs=true
+                         is used.
+
+                         The --audit-log-level parameter value for the next
+                         reboot is not affected by this operation.
+
+                         Audit logging is only done when the audit-log-level
+                         is greater or equal to the current log-level.";
+                  }
+                  enum syslog {
+                      description
+                        "The syslog logging stream associated with
+                         the --log-syslog parameter is used.
+
+                         The --log-syslog-level parameter value for the next
+                         reboot is not affected by this operation.";
+                  }
+                }
+                default main;
+                description
+                 "The desired logging stream to use when changing
+                  the log level.";
+            }
+        }
+    }
+
+    rpc refresh-backup-dir {
+       nacm:default-deny-all;
+       description
+         "Refresh the /netconf-state/backup-files subtree.
+          This operation allows the backup file directory contents to
+          be altered at run-time outside the control of the server.
+          The 'backup-file' list entries within the 'backup-files' container
+          will be refreshed.";
+    }
+
+    rpc get-ha-status {
+      nacm:default-deny-all;
+      output {
+        container ha-status {
+          uses ywapp:HaStatusParms;
+        }
+      }
+      description
+        "Get the YP-HA status information for this server.";
+    }
+
+    rpc get-server-version {
+       output {
+         leaf version {
+           type string;
+           description
+             "The version string returned by the ncx_get_version API";
+         }
+         leaf build-date {
+           type string;
+           description
+             "The build-date string returned by the ncx_get_build_date API";
+         }
+       }
+       description
+         "Get the server version string and build date.
+          This information is provided in an RPC operation instead
+          of the <operational> datadtore so it is available even if the
+          datastores are not ready to use.";
+     }
+
+
+}

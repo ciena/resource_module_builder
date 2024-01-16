@@ -1,0 +1,958 @@
+module ciena-sr-policy {
+  namespace   "http://ciena.com/ns/yang/ciena-sr-policy";
+  prefix "cnsr";
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-routing-types {
+    prefix rt-types;
+  }
+
+  import ietf-sr-policy-types {
+    prefix ietf-sr-policy-types;
+  }
+  
+  import ciena-l3-types {
+    prefix cn-l3-types;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+     "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+               Hanover, Maryland 21076
+               U.S.A.
+      Phone:   +1 800-921-1144
+      Phone:   +1 408-904-2139
+      Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's specific YANG definitions
+     for SR policy module
+
+    Copyright (c) 2020-2022  Ciena Corporation.  All rights
+    reserved.
+
+    All information and intellectual property contained in this
+    YANG module (Specification) is, and remains the property
+    of Ciena Corporation. Ciena retains all title and ownership
+    in the Specification, including any revisions.
+
+    Ciena grants all interested parties that access the
+    Specification with the intent to use or distribute ('you') a
+    non-exclusive, no-cost license to use and distribute
+    unmodified copies of the Specification solely in connection
+    with the management of Ciena products sold by or on
+    behalf of Ciena, provided this copyright notice and license
+    appear on all copies. Ciena may rescind or modify this
+    license at any time.
+
+    This Specification is supplied 'as is', and Ciena makes no
+    warranty, either express or implied, as to the use, operation,
+    condition, or performance of the Specification. You agree
+    that Ciena has no liability for your use of the Specification.";
+
+  revision 2022-07-13 {
+    description
+      "Added standby candidate path in oper data.
+       Renamed clear RPC to set RPC, added eligibility input to set RPC and
+       modified the input namesvof the set RPC.
+       Added last-eligibility and remaining-reversion-hold-time.
+       Changed the range and default value of the reversion-hold-timer.";
+  }
+
+  revision 2022-04-12 {
+    description
+      "Added support in clear RPC for policy and candidate path.
+       Modified the input names of the clear-sr-policy-candidate-path-eligibility RPC.";
+  }
+
+  revision 2022-03-14 {
+    description
+      "Added segment list name to show in active segment info.";
+  }
+
+  revision 2022-03-08 {
+    description
+      "Added flex algorithm under candidate-paths.
+       Added segment type 9 to support IPV6 prefix.";
+  }
+
+  revision 2020-12-22 {
+    description
+      "Added admin-state, reversion-hold-timer and reversion-state.
+       Removed pattern for policy name and increased count on segment list.";
+  }
+
+  revision 2020-02-10 {
+    description
+      "Initial version";
+    reference
+      "draft-raza-spring-sr-policy-yang-02";
+  }
+
+  typedef segment-list-type {
+    type enumeration {
+      enum segment-type-1 {
+        value 1;
+        description
+          "SR-MPLS label";
+      }
+      enum segment-type-3 {
+        value 3;
+        description
+          "IPv4 prefix with optional SR algorithm";
+      }
+      enum segment-type-6 {
+        value 6;
+        description
+          "IPv4 addresses for link endpoints as local, remote pair";
+      }
+      enum segment-type-9 {
+        value 9;
+        description
+          "IPv6 prefix with optional SID type";
+      }
+    }
+  }
+
+  typedef path-signaling-type {
+    type enumeration {
+      enum path-setup-sr-isis {
+        value 1;
+        description
+          "Segment-routing path setup for ISIS";
+      }
+      enum path-setup-sr-ospf {
+        value 2;
+        description
+          "Segment-routing path setup for OSPF";
+      }
+    }
+  }
+
+  typedef candidate-type {
+    type enumeration {
+      enum explicit {
+        value 1;
+        description
+          "candidate path type as explicit";
+      }
+    }
+  }
+
+  grouping segment-config {
+    description 
+      "Segment properties grouping";
+
+    leaf index {
+      type uint32;
+      description 
+        "Segment index";
+    }
+
+    choice segment-types {
+      description
+        "Types of segments";
+      case segment-type-1 {
+        container segment-type-1 {
+          description
+            "Segment declared by MPLS label";
+
+          leaf sid-value {
+            type rt-types:mpls-label-general-use;
+            description
+              "MPLS label value";
+          }
+        }
+      }
+
+      case segment-type-3 {
+        container segment-type-3 {
+          description
+            "Segment declared by IPv4 prefix with optional SR algorithm";
+
+          leaf ipv4-address {
+            type inet:ipv4-address;
+            description
+              "Segment IPv4 address";
+          }
+        }
+      }
+
+      case segment-type-6 {
+        container segment-type-6 {
+          description
+            "Segment declared by IPv4 addresses for link endpoints
+             as local, remote pair";
+
+          leaf local-ipv4-address {
+            type inet:ipv4-address;
+              description
+                "Segment local IPv4 adjacency address";
+          }
+
+          leaf remote-ipv4-address {
+            type inet:ipv4-address;
+              description
+                "Segment remote IPv4 adjacency address";
+          }
+        }
+      }
+
+      case segment-type-9 {
+        container segment-type-9 {
+          description
+            "Segment declared by IPv6 global prefix with optional SID type";
+
+          leaf ipv6-address {
+            type inet:ipv6-address;
+            description
+              "Segment IPv6 prefix";
+          }
+
+          leaf sid-types {
+            type  cn-l3-types:sr-sidtype-grouping;
+            description
+              "SR SID type as micro SID or SRH";
+          }
+        }
+      }
+    }
+  }
+
+  grouping segment-properties {
+    description
+      "SR segment properties grouping";
+    uses segment-config;
+  }
+
+  grouping attributes {
+    description
+      "Grouping containing attributes applicable to all SR policies";
+
+    container attributes {
+      description
+        "Attributes applicable to SR policies";
+      uses segment-lists;
+    }
+  }
+
+  grouping segment-lists {
+    description
+      "Segment lists grouping";
+
+    container segment-lists {
+      description 
+        "Segment-lists properties";
+
+      list segment-list {
+        key "name";
+        description 
+          "Segment-list properties";
+
+        leaf name {
+          type string;
+          description 
+            "Segment-list name";
+        }
+
+        container segments {
+          description
+            "Segments for given segment list";
+          list segment {
+            key "index";
+            description 
+              "Configure segment/hop at the index";
+            uses segment-properties;
+          }
+        }
+      }
+    }
+  }
+
+  grouping binding-sid-config {
+    description
+      "Binding SID configuration properties grouping";
+
+    leaf dataplane-type {
+      type ietf-sr-policy-types:dataplane-type;
+      description 
+        "Binding SID dataplane type";
+    }
+
+    leaf value {
+      type ietf-sr-policy-types:sid-value-type;
+      description 
+        "Binding SID value";
+    }
+  }
+
+  grouping explicit-path-properties {
+    description
+      "Explicit path properties of the candidate path";
+
+    container segment-lists {
+      description
+        "Path segment list(s) properties";
+
+      list segment-list {
+        key "name";
+        description 
+          "SR policy candidate path segment lists";
+
+        leaf name {
+          type leafref {
+            path "/cnsr:segment-routing-traffic-engineering/cnsr:attributes/cnsr:segment-lists/cnsr:segment-list/cnsr:name";
+          }
+          description 
+            "Reference to segment-list name";
+        }
+
+        leaf weight {
+          type uint32;
+          default "1";
+          description 
+            "Segment-list weighted loadshare";
+        }
+      }
+    }
+  }
+
+  grouping candidate-path-type {
+    description 
+      "Candidate path type grouping";
+    choice type {
+      description
+        "Type of candidate paths";
+
+      case explicit {
+        description 
+          "Candidate path with explicitly defined set/s of segment-lists";
+        uses explicit-path-properties;
+      }
+    }
+  }
+
+  grouping policies-state {
+    description
+      "Policies state";
+
+    container policies {
+      description
+        "Policies count summary";
+
+      container summary {
+        leaf policy-count {
+          type uint16;
+          description 
+            "Total policies count";
+        }
+      }
+
+      list policy {
+        key "name";
+        description
+          "Policies summary";
+
+        leaf name {
+          type leafref {
+            path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:name";
+          }
+          description 
+            "Policy name";
+        }
+
+        leaf source {
+          type inet:ip-address;
+          description 
+            "Source ip for the policy";
+        }
+
+        leaf destination {
+          type inet:ip-address;
+          description 
+            "Destination ip for the policy";
+        }
+
+        leaf color {
+          type uint32;
+          description 
+            "Color associated with the policy";
+        }
+        
+        leaf out-labels {
+          type  string;
+          description 
+            "Policy out labels";
+        }
+
+        leaf outgoing-interface-name  {
+          type  string;
+          description
+            "outgoing interface name.";
+        }
+
+        leaf oper-status {
+          type  cn-l3-types:sr-status;
+          description 
+            "Policy oper status";
+        }
+
+        leaf admin-status {
+          type  cn-l3-types:sr-policy-admin-state;
+          description 
+            "Tunnel admin status";
+        }
+
+        leaf create-time {
+          type  string;
+          description 
+            "Creation time of policy";
+        }
+
+        leaf up-time {
+          type  string;
+          description 
+            "Policy up time";
+        }
+
+        leaf reversion-hold-timer {
+          type  uint32;
+          units seconds;
+          description
+            "Reversion hold timer for SR policy";
+        }
+
+        leaf reversion-state {
+          type enumeration {
+            enum enable {
+              description
+                "Specifies reversion state as enable";
+            }
+            enum disable {
+              description
+                "Specifies reversion state as disable";
+            }
+          }
+          description
+            "Specifies reversion state as enable or disable";
+        }
+
+        container binding-sid {
+          leaf alloc-mode {
+            type  ietf-sr-policy-types:binding-sid-alloc-mode;
+            description 
+              "Binding SID types";
+          }
+
+          leaf allocated-sid {
+            type uint32;
+            description 
+              "Allocated SID value for the binding SID";
+          }
+        }
+
+        uses candidate-paths-state;
+
+        container segment-info {
+          leaf segment-count {
+            type uint32;
+              description 
+                "Total segment count";
+          }
+
+          leaf segment-name {
+            type string;
+            description
+              "Active segment list name";
+          }
+
+          list active-segment-list {
+            key "index";
+            description 
+              "Active segment list";
+
+            leaf index {
+              type uint32;
+              description 
+                "Index value of segment list";
+            }
+
+            leaf path-type {
+              type string;
+              description 
+                "segment list path type";
+            }
+
+            leaf ip-address {
+              type inet:ip-address;
+              description 
+                "segment list address";
+            }
+
+            leaf sid-value {
+              type uint32;
+              description 
+                "segment list label value";
+            }
+
+            leaf local-ipv4-address {
+              type inet:ipv4-address;
+                description
+                  "Segment local IPv4 adjacency address";
+            }
+
+            leaf remote-ipv4-address {
+              type inet:ipv4-address;
+                description
+                  "Segment remote IPv4 adjacency address";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping candidate-paths-state {
+    description 
+      "SR policy candidate path grouping";
+
+    container candidate-paths {
+      description 
+        "SR policy candidate path(s) ";
+
+      list candidate-path {
+        key "protocol-origin originator discriminator";
+        description 
+          "SR policy Candidate path(s) list entry";
+
+        leaf protocol-origin {
+          type ietf-sr-policy-types:protocol-origin-type;
+          description
+            "Instantiation mechanism used to create the candidate path";
+        }
+
+        leaf originator {
+          type string;
+          description
+            "Identifier (concatenation of ASN and node-address) of the node
+             that signalled/instantiated the candidate path on headend";
+        }
+
+        leaf discriminator {
+          type uint32;
+          description 
+            "Candidate path distinguisher";
+        }
+
+        leaf candidate-path-name {
+          type string;
+          description
+            "Candidate path name";
+        }
+
+        leaf preference {
+          type uint32;
+          description 
+            "Candidate path preference";
+        }
+        
+        leaf flex-algorithm {
+          type uint8;
+          description
+            "Flex algorithm value associated with candidate path.";
+        }
+
+        leaf best-candidate-path {
+          type boolean;
+          description 
+            "Best candidate path";
+        }
+
+        leaf standby-candidate-path {
+          type boolean;
+          description
+            "Standby candidate path";
+        }
+ 
+        leaf candidate-path-type {
+          type candidate-type;
+          description
+            "Type of candidate paths";
+        }
+
+        leaf eligibility {
+          type enumeration {
+            enum "true" {
+              description
+                "Specifies candidate path eligibility state as true";
+            }
+            enum "false" {
+              description
+                "Specifies candidate path eligibility state as false";
+            }
+          }
+          description
+            "Specifies candidate path eligibility state as true or false";
+        }
+
+        leaf last-eligibility {
+          type string;
+          description
+            "Specifies timestamp of the last time eligibility was true";
+        }
+
+        leaf remaining-reversion-hold-time {
+          type string;
+          description
+            "Specifies remaining reversion hold time before reverting candidate paths";
+        }
+
+        container segment-lists {
+          description
+            "Path segment list(s) properties";
+
+          list segment-list {
+            key "name";
+            description 
+              "SR policy candidate path segment lists";
+
+            leaf name {
+              type leafref {
+                path "/cnsr:segment-routing-traffic-engineering/cnsr:attributes/cnsr:segment-lists/cnsr:segment-list/cnsr:name";
+              }
+              description 
+                "Reference to segment-list name";
+            }
+
+            leaf valid {
+              type boolean;
+              description 
+                "Segment-list valid or not";
+            }
+
+            leaf verification-status {
+              type string;
+              description
+                "Specifies reason for paths which are invalid.";
+            }
+           
+            leaf weight {
+              type uint32;
+              description
+                "Weight of segment list";
+            }
+
+            leaf segment-count {
+              type uint32;
+              description 
+                "Total segment count";
+            }
+
+            list segment {
+              key "index";
+              description 
+                "SR policy candidate path segment lists";
+
+              leaf index {
+                type uint32;
+                description 
+                  "Reference to segment name";
+              }
+
+              leaf ipv4-address {
+                type inet:ipv4-address;
+                description 
+                  "IPv4 address of segment list";
+              }
+
+              leaf sid-value {
+                type uint32;
+                description 
+                  "segment list label value";
+              }
+             
+              leaf local-ipv4-address {
+                type inet:ipv4-address;
+                  description
+                    "local IPv4 adjacency address of segment list";
+              }
+
+              leaf remote-ipv4-address {
+                type inet:ipv4-address;
+                  description
+                    "remote IPv4 adjacency address of segment list";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+ 
+  container segment-routing-traffic-engineering {
+    description 
+      "Traffic-engineering container";
+    uses attributes;
+	  
+    container policies {
+      description 
+        "SR policy container";
+
+      list policy {
+        key "color endpoint";
+        unique "name";
+        description 
+          "SR policy properties";
+
+        leaf color {
+          type uint32;
+          description 
+            "Color associated with the policy";
+        }
+
+        leaf endpoint {
+          type inet:ip-address;
+          description 
+            "Policy end point IP address";
+        }
+
+        leaf name {
+          type string {
+            length "0..255";
+          }
+          mandatory true;
+          description 
+            "SR policy name";
+        }
+
+        leaf description {
+          type string {
+            length "0..255";
+          }
+          description 
+            "Description of the policy";
+        }
+
+        leaf signaling-type {
+          type path-signaling-type;
+          description 
+            "Signaling type of SR policy";
+        }
+
+        leaf source {
+          type inet:ip-address;
+            description 
+              "Source ip for the tunnel";
+        }
+
+        leaf admin-state {
+          type cn-l3-types:sr-policy-admin-cfg-type;
+          description
+            "SR policy administrative state.";
+        }
+
+        leaf reversion-hold-timer {
+          type uint32 {
+            range "0..max";
+          }
+          default "0";
+          units seconds;
+          description
+            "Reversion hold timer for SR policy";
+        }
+
+        leaf reversion-state {
+          type enumeration {
+            enum enable {
+              description
+                "Specifies reversion state as enable";
+            }
+            enum disable {
+              description
+                "Specifies reversion state as disable";
+            }
+          }
+          default "enable";
+          description
+            "Specifies reversion state as enable or disable";
+        }
+
+        container binding-sid {
+          description
+            "Binding segment ID";
+          uses binding-sid-config;
+        }
+	  
+        container candidate-paths {
+          description 
+            "SR policy candidate path(s) ";
+
+          list candidate-path {
+            key "protocol-origin originator discriminator";
+            unique "name";
+            description 
+              "SR policy Candidate path(s) list entry";
+
+            leaf protocol-origin {
+              type ietf-sr-policy-types:protocol-origin-type;
+              description
+                "Instantiation mechanism used to create the candidate path";
+            }
+
+            leaf originator {
+              type string;
+              description
+                "Identifier (concatenation of ASN and node-address) of the node
+                 that signalled/instantiated the candidate path on headend";
+            }
+
+            leaf discriminator {
+              type uint32 {
+                range "1..65535";
+              }
+              description 
+                "Candidate path distinguisher";
+            }
+
+            leaf preference {
+              type uint32 {
+                range "1..65535";
+              }
+              default "100";
+              description 
+                "Candidate path preference";
+            }
+
+            leaf flex-algorithm {
+              type uint8 {
+                range "128..255";
+              }
+              description
+                "A numeric identifier in the range 128-255 that is 
+                 associated via configuration with the flexible algorithm";
+            }
+
+            leaf name {
+              type string {
+                length "0..255";
+              }
+              description 
+                "Candidate path name";
+            }
+
+            leaf description {
+              type string {
+                length "0..255"; 
+              }
+              description 
+                "Candidate path description";
+            }
+            uses candidate-path-type;
+          }
+        } 
+      }
+    }  
+  }
+
+  container segment-routing-traffic-engineering-state {
+    config false;
+    description 
+      "Traffic engineering state container, contains information about SR policies.";
+    uses policies-state;
+  }
+
+  rpc re-evaluate-sr-policy-best-candidate-path {
+    input {
+      leaf policy-name {
+        type leafref {
+          path "/segment-routing-traffic-engineering/policies/policy/name";
+        }
+        description
+          "SR Policy name.";
+      }     
+    }
+
+    output {
+      leaf rpc-status {
+        type enumeration {
+          enum success {
+            description
+              "Specifies successful status of the clear-sr-policy";
+          }
+          enum failure {
+            description
+              "Specifies failed status of the clear-sr-policy";
+          }
+        }
+      }
+      leaf status-details {
+        type string;
+        description
+          "The details of the 'success', or the reason for clear-sr-policy failure";
+      }
+    }
+  }
+
+  rpc set-sr-policy-candidate-path-eligibility {
+    input {
+      leaf policy-name {
+        type leafref {
+          path "/segment-routing-traffic-engineering/policies/policy/name";
+        }
+        description
+          "SR Policy name.";
+      }
+
+      leaf originator {
+        type string;
+        description
+          "Candidate-path originator.";
+      }
+
+      leaf discriminator {
+        type uint32;
+        description
+          "Candidate-path discriminator.";
+      }
+
+      leaf protocol-origin {
+        type ietf-sr-policy-types:protocol-origin-type;
+        description
+          "Candidate-path protocol-origin.";
+      }
+
+      leaf eligibility {
+        type boolean;
+        description
+          "Candidate-path eligibility true/false";
+      }
+    }
+
+    output {
+      leaf rpc-status {
+        type enumeration {
+          enum success {
+            description
+              "Specifies successful status of the clear-sr-policy-candidate-path operation";
+          }
+          enum failure {
+            description
+              "Specifies failed status of the clear-sr-policy-candidate-path operation";
+          }
+        }
+      }
+      leaf status-details {
+        type string;
+        description
+          "The details could be 'success', or the reason for clear-sr-policy-candidate-path failure";
+      }
+    }
+  }
+}

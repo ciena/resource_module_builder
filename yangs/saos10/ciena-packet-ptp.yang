@@ -1,0 +1,351 @@
+module ciena-packet-ptp {
+  namespace "http://www.ciena.com/ns/yang/ciena-packet-ptp";
+  prefix ciena-ptp;
+
+  import ciena-packet-typedefs {
+    prefix cntypes;
+  }
+  import ciena-packet-xcvr {
+    prefix xcvr;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Physical Termination Point. This module models the physical characteristics
+     of the signal. This base module contains generic definitions for all PTPs.
+     Specific characteristics of PTPs can augment this model to provide more
+     detail. PTPs are automatically provisioned by the system.";
+
+  revision 2020-04-22 {
+    description
+      "Removing max-elements from list lane";
+  }
+
+  revision 2019-10-14 {
+    description
+      "Change ptp->xcvr-id mapping from operational to config";
+  }
+
+  revision 2018-05-17 {
+    description
+      "Based off of ciena-waveserver-ptp.yang";
+  }
+
+  typedef ptp-op-enum {
+    type enumeration {
+      enum "up" {
+        description
+          "The PTP is enabled/operational and capable of carrying traffic.";
+      }
+      enum "down" {
+        description
+          "The PTP is disabled.";
+      }
+      enum "tuning" {
+        description
+          "Wavelength or CDR tuning in progress.";
+      }
+      enum "fault" {
+        description
+          "There is an active alarm associated with the PTP.";
+      }
+      enum "lower-layer-down" {
+        description
+          "The PTP is enabled, but a parent object is faulted.";
+      }
+    }
+    description
+      "PTP operational state.";
+  }
+
+  container ptps {
+    description
+      "Physical Termination Point (PTP) configuration and operational data.";
+    list ptp {
+      key "ptp-id";
+      description
+        "List of PTP objects.";
+      leaf ptp-id {
+        type cntypes:name-string;
+        mandatory true;
+        description
+          "Unique, access identifier string of the PTP (e.g., '1/1'). Key value for the PTP list. Read-only attribute.";
+      }
+      container id {
+        config false;
+        description
+          "Identification information of this PTP instance.";
+        leaf name {
+          type cntypes:name-string;
+          config false;
+          description
+            "Name of the PTP instance. Read only attribute.";
+        }
+      }//end id
+
+      container state {
+        description
+          "State information of this PTP instance.";
+        leaf admin-state {
+          type cntypes:enabled-disabled-enum;
+          description
+            "Administrative state (enabled or disabled) of the PTP. Intended for future use.";
+        }
+        leaf operational-state {
+          type ptp-op-enum;
+          config false;
+          description
+            "Operational state of the PTP. Read-only attribute.";
+        }
+        leaf spli-management {
+          when "../../properties/xcvr-type = 'WaveLogic Ai'" {
+            description
+              "SPLI management supported on line-side PTPs only.";
+          }
+          type cntypes:enabled-disabled-enum;
+          description
+            "Whether or not Service Photonic Layer Interoperations management
+             protocol is enabled on this PTP.";
+        }
+        leaf spli-management-status {
+          when "../../properties/xcvr-type = 'WaveLogic Ai'" {
+            description
+              "SPLI management supported on line-side PTPs only.";
+          }
+          type enumeration {
+            enum matched {
+              description
+                "SPLI is in matched state.";
+            }
+            enum mismatched {
+              description
+                "SPLI is in mismatched state.";
+            }
+            enum unavailable {
+              description
+                "SPLI state is unknown or SPLI management is disabled.";
+            }
+          }
+          config false;
+          description
+            "The operational status of the SPLI management subsystem.";
+        }
+      }//end state
+
+      container properties {
+        description
+          "All the configurable and operational data of this PTP instance.";
+        leaf xcvr-type {
+          type cntypes:xcvr-type;
+          description
+            "Transceiver type of the XCVR that's associated with this PTP. Type depends on what is physically plugged in. Read only attribute.";
+        }
+        leaf parent-id {
+          type leafref {
+            path "/xcvr:xcvrs/xcvr:xcvr/xcvr:xcvr-id";
+          }
+          config true;
+          description
+            "Reference to the name of the transceiver (XCVR) associated with the PTP. Read-only attribute.";
+        }
+        leaf nominal-bit-rate {
+          type cntypes:string-maxl-16;
+          units "Gbps";
+          config false;
+          description
+            "Bit rate, nominal, in Gbps.";
+        }
+        leaf forward-error-correction {
+          type cntypes:enabled-disabled-enum;
+          description
+            "Forward error correction.";
+        }
+        container thresholds {
+          description
+            "Common container for PTP threshold configuration data.";
+          leaf pre-fec-sf-dbq {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.00 .. 1.00";
+            }
+            units "dBQ";
+            description
+              "Pre-FEC Signal Fail threshold value, expressed in dBQ notation.";
+          }
+          leaf pre-fec-sd-dbq {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.00 .. 3.50";
+            }
+            units "dBQ";
+            description
+              "Pre-FEC Signal Degrade threshold value, expressed in dBQ notation.";
+          }
+          leaf pre-fec-sf-ber {
+            type cntypes:string-sci;
+            units "errored-bits / bit";
+            config false;
+            description
+              "Pre-FEC Signal Fail threshold value, expressed in exponential
+               notation, e.g. '1E-06' to '1E-09'.";
+          }
+          leaf pre-fec-sd-ber {
+            type cntypes:string-sci;
+            units "errored-bits / bit";
+            config false;
+            description
+              "Pre-FEC Signal Degrade threshold value, expressed in exponential
+               notation, e.g. '1E-06' to '1E-09'.";
+          }
+        }//end container thresholds
+        container transmitter {
+          description
+            "PTP transmitter related config and operational data fields.";
+          leaf state {
+            type cntypes:enabled-disabled-na-enum;
+            description
+              "Transmitter state (enabled or disabled) of the PTP. PTP Admin State cannot be changed to enabled unless the transmitter state is enabled.";
+          }
+          container wavelength {
+            config false;
+            description
+              "PTP tx wavelength related operational data fields.";
+            leaf value {
+              type cntypes:decimal-2-dig;
+              units "nm";
+              config false;
+              description
+                "Wavelength value setting of the PTP, in nm. Read-only attribute.";
+            }
+            leaf min-value {
+              description
+                "XCVR min-value supported on line-side PTPs only.";
+              type cntypes:decimal-2-dig-small;
+              units "nm";
+              config false;
+            }
+            leaf max-value {
+              description
+                "XCVR max-value supported on line-side PTPs only.";
+              type cntypes:decimal-2-dig-small;
+              units "nm";
+              config false;
+            }
+            leaf actual {
+              type cntypes:decimal-2-dig;
+              units "nm";
+              config false;
+              description
+                "Actual wavelength value of the PTP, in nm. Read-only attribute.";
+            }
+          }//end wavelength
+        }//end transmitter properties
+        container lanes {
+          config false;
+          description
+            "PTP lanes related operational data fields.";
+          leaf number-of-lanes {
+            type cntypes:lanes-number;
+            config false;
+            description
+              "Number of lanes this PTP has.";
+          }
+          list lane {
+            key "lane-number";
+            config false;
+            description
+              "Operational data of a specific PTP lane.";
+            leaf lane-number {
+              type cntypes:lanes-number;
+              config false;
+              description
+                "Lane number of the PTP being queried.";
+            }
+            leaf actual-wavelength {
+              type cntypes:decimal-2-dig;
+              units "nm";
+              config false;
+              description
+                "Actual wavelength value for the lane, in nm.";
+            }
+            container rx {
+              description
+                "Lane Rx attributes.";
+              container power {
+                description
+                  "Lane Rx Power operational attributes (actual power, min/max recorded power, etc.).";
+                uses xcvr:optical-power-group;
+              }
+              container status {
+                description
+                  "Lane Rx Power high/low alarm/warning status/thresholds, where applicable for the XCVR type.";
+                uses xcvr:optical-power-status-group;
+                uses xcvr:optical-power-threshold-group;
+                leaf loss-of-signal {
+                  type boolean;
+                  config false;
+                  description
+                    "Rx Loss of Signal.";
+                }
+                leaf loss-of-lock {
+                  when "../../../../../xcvr-type = 'QSFP28'" {
+                    description
+                      "Returned for on pluggables only.";
+                  }
+                  type boolean;
+                  config false;
+                  description
+                    "Rx Loss of Lock.";
+                }
+              }
+            }//end rx
+            container tx {
+              description
+                "Lane Tx attributes.";
+              container power {
+                description
+                  "Lane Tx Power operational attributes (actual power, min/max recorded power, etc.).";
+                uses xcvr:optical-power-group;
+              }
+              container status {
+                description
+                  "Lane Tx Power high/low alarm/warning status/thresholds, where applicable for the XCVR type.";
+                uses xcvr:optical-power-status-group;
+                uses xcvr:optical-power-threshold-group;
+                leaf loss-of-signal {
+                  when "../../../../../xcvr-type = 'QSFP28'" {
+                    description
+                      "Returned for on pluggables only.";
+                  }
+                  type boolean;
+                  config false;
+                  description
+                    "Tx Loss of Signal.";
+                }
+                leaf loss-of-lock {
+                  when "../../../../../xcvr-type = 'QSFP28'" {
+                    description
+                      "Returned for on pluggables only.";
+                  }
+                  type boolean;
+                  config false;
+                  description
+                    "Tx Loss of Lock.";
+                }
+              }
+            }//end tx
+          }//end lane list
+        }//end lanes
+      }//end properties
+
+    }//end ptps list
+  }
+}

@@ -1,0 +1,958 @@
+module ciena-sync {
+  namespace "http://www.ciena.com/ns/yang/ciena-sync";
+  prefix "sync";
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data model for the management of clock
+     synchronization in packet networks.
+
+     Copyright (c) 2018 Ciena Corporation. All rights reserved.
+
+     All information contained herein is, and remains the property of Ciena
+     Corporation. Dissemination of this information or reproduction of this
+     material is strictly forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+  revision "2020-03-19" {
+    description
+      "Add support for time-of-day protection group config and add PRTC as a QL.";
+    reference
+      "ITU-T G.8271: Time and phase synchronization aspects of
+      telecommunication networks.";
+  }
+
+  revision "2018-06-01" {
+    description
+      "Initial version.";
+    reference
+      "ITU-T G.781:  Synchronization layer functions.
+       ITU-T G.8261: Timing and synchronization aspects in packet networks.
+       ITU-T G.8271: Time and phase synchronization aspects of
+                     telecommunication networks.";
+  }
+
+  /*
+   * Identities
+   */
+
+  identity sync-reference-oper-state-identity {
+    description
+      "Base identity from which specific input and output reference operational
+       state types are derived.";
+  }
+
+  identity up {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "Reference is up with no known faults.";
+  }
+
+  identity quality-level-below-threshold {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "Operational RX quality-level of reference is below configured threshold
+       quality-level of protection-group.";
+  }
+
+  identity quality-level-invalid {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "Quality-level of reference is invalid.";
+  }
+
+  identity down {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "Reference is down.";
+  }
+
+  identity signal-failure {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "Reference encountered a signal failure.";
+  }
+
+  identity sync-protection-group-oper-state-identity {
+    description
+      "Base identity from which specific protection-group operational state
+       types are derived.";
+  }
+
+  identity free-run {
+    base sync:sync-protection-group-oper-state-identity;
+    description
+      "The clock has never been synchronized and is not in the process of
+       synchronizing to an input reference.";
+  }
+
+  identity acquiring {
+    base sync:sync-protection-group-oper-state-identity;
+    description
+      "The clock is in the process of synchronizing to an input reference.";
+  }
+
+  identity locked {
+    base sync:sync-protection-group-oper-state-identity;
+    description
+      "The clock is synchronized to an input reference and is within some
+       internal acceptable accuracy.";
+  }
+
+  identity holdover-in-specification {
+    base sync:sync-protection-group-oper-state-identity;
+    description
+      "The clock is no longer synchronized to an input reference and is using
+       information obtained while it was previously synchronized to maintain
+       performance within desired specification.";
+  }
+
+  identity holdover-out-of-specification {
+    base sync:sync-protection-group-oper-state-identity;
+    description
+      "The clock is no longer synchronized to an input reference and, while it
+       may be using information obtained while it was previously synchronized,
+       it is unable to maintain performance within desired specification.";
+  }
+
+  identity sync-quality-level-identity {
+    description
+      "Base identity from which specific quality-level types are derived.";
+  }
+
+  identity unknown {
+    base sync:sync-quality-level-identity;
+    description
+      "Quality-level is unknown.";
+  }
+
+  identity invalid {
+    base sync:sync-quality-level-identity;
+    description
+      "Quality-level is invalid for network-option.";
+  }
+
+  identity prc {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Primary Reference Clock.
+       Applies to Option-1 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.811: Timing characteristics of primary reference clocks.";
+  }
+
+  identity ssu-a {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Synchronization Supply Unit (Types I or V).
+       Applies to Option-1 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity ssu-b {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Synchronization Supply Unit (Type VI).
+       Applies to Option-1 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity sec {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to SDH Equipment Clock.
+       Applies to Option-1 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.813: Timing characteristics of SDH equipment slave clocks
+                    (SEC).";
+  }
+
+  identity dnu {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal should not be used for synchronization.
+       Applies to Option-1 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.";
+  }
+
+  identity prs {
+    base sync:sync-quality-level-identity;
+    description
+      "Traceable to Primary Reference Source.
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.811: Timing characteristics of primary reference clocks.";
+  }
+
+  identity stu {
+    base sync:sync-quality-level-identity;
+    description
+      "Synchronized - Tracibility Unknown.
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.";
+  }
+
+  identity st2 {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Stratum 2 (Type II).
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity tnc {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Transit Node Clock (Type V).
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity st3e {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Stratum 3E (Type III).
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity st3 {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to Stratum 3 (Type IV).
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.812: Timing requirements of slave clocks suitable for use as
+                    node clocks in synchronization networks.";
+  }
+
+  identity smc {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal is traceable to SONET Clock Self Timed.
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.
+       ITU-T G.813: Timing characteristics of SDH equipment slave clocks
+                    (SEC).";
+  }
+
+  identity prov {
+    base sync:sync-quality-level-identity;
+    description
+      "Provisionable by the Network Operator.
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.";
+  }
+
+  identity dus {
+    base sync:sync-quality-level-identity;
+    description
+      "This signal should not be used for synchronization.
+       Applies to Option-2 only.";
+    reference
+      "ITU-T G.781: Synchronization layer functions.";
+  }
+
+  identity prtc {
+    base sync:sync-quality-level-identity;
+    description
+      "A typical PRTC provides the reference signal for time, phase
+       and frequency synchronization for other clocks within a
+       network or section of a network. In particular, the PRTC can
+       also provide the reference signal to the telecom grand master
+       (T-GM) within the network nodes where the PRTC is located.";
+    reference
+      "ITU-T G.8272: Timing characteristics of primary reference time clocks";
+  }
+
+  /*
+   * Typedefs
+   */
+
+  typedef name-string-type {
+    type string {
+      length "1..32";
+    }
+    description
+      "Name string type.";
+  }
+
+  typedef reversion-mode-type {
+    type enumeration {
+      enum revertive {
+        description
+          "In revertive mode the 'best' input reference is always selected
+           (after a wait-to-restore period has elapsed when a better input
+           reference is introduced).
+           In revertive mode wait-to-restore timer is not started if:
+             1. The current selected input reference is removed from the
+                protection-group, or
+             2. The current selected input reference becomes unselectable, or
+             3. The waiting (soon-to-be-current) input reference is ready, or
+             4. The protection-group's current state is free-run";
+      }
+      enum non-revertive {
+        description
+          "In non-revertive mode, once an input reference has been selected, a
+           new 'better' input reference will not be selected until the current
+           selected input reference becomes unselectable.";
+      }
+    }
+    description
+      "Reversion-mode enumeration type.";
+  }
+
+  typedef frequency-protection-group-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:protection-groups" + 
+           "/sync:frequency-protection-group" + 
+           "/sync:name";
+    }
+    description
+      "Frequency protection-group leafref type.";
+  }
+
+  typedef phase-protection-group-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:protection-groups" + 
+           "/sync:phase-protection-group" + 
+           "/sync:name";
+    }
+    description
+      "Phase protection-group leafref type.";
+  }
+
+  typedef tod-protection-group-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:protection-groups" +
+           "/sync:tod-protection-group" +
+           "/sync:name";
+    }
+    description
+      "ToD (time-of-day) protection-group leafref type.";
+  }
+
+  typedef frequency-protection-group-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" + 
+           "/sync:protection-groups" + 
+           "/sync:frequency-protection-group" + 
+           "/sync:oper-state";
+    }
+    description
+      "Frequency protection-group operational state leafref type.";
+  }
+
+  typedef phase-protection-group-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" + 
+           "/sync:protection-groups" + 
+           "/sync:phase-protection-group" + 
+           "/sync:oper-state";
+    }
+    description
+      "Phase protection-group operational state leafref type.";
+  }
+
+  typedef tod-protection-group-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:protection-groups" +
+           "/sync:tod-protection-group" +
+           "/sync:oper-state";
+    }
+    description
+      "ToD (time-of-day) protection-group operational state leafref type.";
+  }
+
+  typedef reference-oper-state-type {
+    type identityref {
+      base sync:sync-reference-oper-state-identity;
+    }
+    description
+      "Reference operational state identityref type.";
+  }
+
+  typedef protection-group-oper-state-type {
+    type identityref {
+      base sync:sync-protection-group-oper-state-identity;
+    }
+    description
+      "Protection-group operational state identityref type.";
+  }
+
+  typedef quality-level-type {
+    type identityref {
+      base sync:sync-quality-level-identity;
+    }
+    description
+      "Quality-level identityref type.";
+  }
+
+  typedef network-option-type {
+    type enumeration {
+      enum option-1 {
+        description
+          "Applies to SDH networks optimized for the 2048 kbit/s
+           hierarchy.";
+        reference
+          "ITU-T G.813: Timing characteristics of SDH equipment slave
+                        clocks (SEC).";
+      }
+      enum option-2 {
+        description
+          "Applies to SDH networks optimized for the 1544 kbit/s
+           hierarchy that includes the rates 1544 kbit/s, 6312 kbit/s
+           and 44736 kbit/s.";
+        reference
+          "ITU-T G.813: Timing characteristics of SDH equipment slave
+                        clocks (SEC).";
+      }
+    }
+    description
+      "Network-option enumeration type.";
+  }
+
+  typedef holdover-interval-type {
+    type enumeration {
+      enum indefinite {
+        description
+          "Given no other events trigger clock selection after a 
+           protection-group loses lock, the protection-group state does not
+           switch from 'holdover-in-specification' to 'holdover-out-of-
+           specification'.";
+      }
+      enum 24-hours {
+        description
+          "Given no other events trigger clock selection after a
+           protection-group loses lock, the protection-group state switches
+           from 'holdover-in-specification' to 'holdover-out-of-
+           specification' after 24 hours. Upon entering 'holdover-out-of-
+           specification' state the TX quality-level of configured output
+           references may degrade.";
+      }
+    }
+    description
+      "Holdover-interval enumeration type.";
+  }
+
+  /*
+   * Groupings
+   */
+
+  grouping sync-input-reference-config-grouping {
+    description
+      "Common input reference configuration attributes.";
+    leaf override-priority {
+      type uint32;
+      must ". > 0" {
+        description
+          "Only non-zero values are accepted";
+      }           
+      description
+        "Override-priority has a higher precedence than operational RX 
+         quality-level in clock selection criteria.
+         An input reference with an override-priority configuration is
+         preferred over those without an override-priority configuration.
+         Among those with override-priority configured, an input reference
+         with a lower override-priority attribute value is preferred over 
+         those with a higher override-priority attribute value.
+         Override-priority is typically used to configure 'static' input
+         reference preferences in clock selection instead of having the
+         potentially 'dynamic' operational RX quality-level changes drive
+         clock selection.";
+    }
+    leaf priority {
+      type uint32;
+      must ". > 0" {
+        description
+          "Only non-zero values are accepted";
+      }
+      description
+        "Priority has a lower precedence than operational RX quality-level
+         in clock selection criteria.
+         An input reference with a priority configuration is preferred over
+         those without a priority configuration.
+         Among those with priority configured, an input reference with a
+         lower priority attribute value is preferred over those with a higher
+         priority attribute value.
+         Priority is typically used to break ties in preference when two
+         or more input references have the same operational RX quality-level.";
+    }
+  }
+
+  grouping sync-frequency-input-reference-config-grouping {
+    description
+      "Common frequency input reference configuration attributes.";
+    leaf forced-quality-level {
+      type sync:quality-level-type;
+      description
+        "Configuration to ignore/override the RX quality-level of an input
+         reference.";
+    }
+  }
+
+  grouping sync-input-reference-state-grouping {
+    description
+      "Common input reference state attributes.";
+    leaf oper-state {
+      type sync:reference-oper-state-type;
+      description
+        "Operational state of input reference.";
+    }
+  }
+
+  grouping sync-frequency-input-reference-state-grouping {
+    description
+      "Common frequency input reference state attributes.";
+    leaf oper-rx-quality-level {
+      type sync:quality-level-type;
+      description
+        "Operational RX quality-level of input reference will be equal to
+         forced quality-level if configured, otherwise it will be equal
+         to RX quality-level.";
+    }
+    leaf rx-quality-level {
+      type sync:quality-level-type;
+      description
+        "RX quality-level of input reference.";
+    }
+  }
+
+  grouping sync-output-reference-state-grouping {
+    description
+      "Common output reference state attributes.";
+    leaf oper-state {
+      type sync:reference-oper-state-type;
+      description
+        "Operational state of output reference.";
+    }
+  }
+
+  grouping sync-frequency-output-reference-state-grouping {
+    description
+      "Common frequency output reference state attributes.";
+    leaf tx-quality-level {
+      type sync:quality-level-type;
+      description
+        "TX quality-level of output reference.";
+    }
+  }
+
+  grouping sync-protection-group-state-grouping {
+    description
+      "Common protection-group state attributes.";
+    leaf oper-state {
+      type sync:protection-group-oper-state-type;
+      description
+        "Operational state of protection-group.";
+    }
+    leaf last-change {
+      type yang:date-and-time;
+      description
+        "Timestamp of last change to the operational state.";
+    }
+    leaf duration {
+      type uint32;
+      units seconds;
+      description
+        "Total time spent in current operational state.";
+    } 
+    leaf is-forced-selection {
+      type boolean;
+      description
+        "Flag to indicate whether clock selection was forced via 
+         'selection-force-switch' RPC operation or not. Forced selection can
+         be cleared via 'selection-clear' RPC operation.";
+    }
+    leaf reference-switch-count {
+      type yang:counter32;
+      description
+        "Number of times the protection-group switched input references.";
+    }  
+  }
+
+  /*
+   * Configuration data
+   */
+
+  container sync {
+    description
+      "Clock synchronization configuration.";
+    container global {
+      description
+        "Clock synchronization global configuration.";
+      leaf network-option {
+        type sync:network-option-type;
+        description
+          "Ethernet equipment clock (EEC) synchronization network option.";
+      }
+      leaf admin-state {
+        type ciena:admin-state;
+        default enabled;
+        description
+          "Global administrative state of clock synchronization feature.";
+      }
+      leaf reversion-mode {
+        type sync:reversion-mode-type;
+        description
+          "Reversion behavior configuration for input reference switching.";
+      }
+      leaf wait-to-restore {
+        type uint32 {
+          range "0..12";
+        }
+        units minutes;
+        default 5;
+        description
+          "The duration an input reference must remain fault-free before it
+           is considered or selection.
+           Applies only when reversion-mode is set to 'revertive'.";
+      }
+      leaf holdover-interval {
+        type sync:holdover-interval-type;
+        default indefinite;
+        description
+          "The time spent in 'holdover-in-specification' state for protection-
+           group before it enters 'holdover-out-of-specification' state.";
+      }
+    }
+    container input-references {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "Configuration of all input references.";
+    }
+    container output-references {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "Configuration of all output references.";
+    }
+    container protection-groups {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "Configuration of all protection-groups.";
+      list frequency-protection-group {
+        key "name";
+        description
+          "A list of all frequency protection-group configuration entries.";
+        leaf name {
+          type sync:name-string-type;
+          description
+            "Name of frequency protection-group.";
+        }
+      }
+      list phase-protection-group {
+        key "name";
+        description
+          "A list of all phase protection-group configuration entries.";
+        leaf name {
+          type sync:name-string-type;
+          description
+            "Name of phase protection-group.";
+        }
+      }
+
+      list tod-protection-group {
+        key "name";
+        description
+          "A list of all ToD (time-of-day) protection-group configuration entries.";
+        leaf name {
+          type sync:name-string-type;
+          description
+            "Name of ToD protection-group.";
+        }
+      }
+    }
+  }
+
+  /*
+   * State data
+   */
+
+  container sync-state {
+    config false;
+    description
+      "Clock synchronization state.";
+    container global {
+      description
+        "Clock synchronization global configuration state.";
+      leaf internal-ocxo-quality-level {
+        type sync:quality-level-type;
+        description
+          "Quality-level of device's oven-controlled crystal oscillator (OCXO).";
+      }
+      leaf reversion-mode {
+        type sync:reversion-mode-type;
+        description
+          "Operational reversion behavior for input reference switching.";
+      }
+    }
+    container input-references {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "State of all input references.";
+    }
+    container output-references {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "State of all output references.";
+    }
+    container protection-groups {
+      when "/sync:sync" +
+           "/sync:global" + 
+           "/sync:network-option" {
+        description
+          "Global network-option attribute must be configured.";
+      }
+      description
+        "State of all protection-groups.";
+      list frequency-protection-group {
+        key "name";
+        description
+          "A list of all frequency protection-group state entries.";
+        leaf name {
+          type sync:frequency-protection-group-leafref-type;
+          description
+            "Name of frequency protection-group.";
+        }
+        uses sync-protection-group-state-grouping;
+      }
+      list phase-protection-group {
+        key "name";
+        description
+          "A list of all phase protection-group state entries.";
+        leaf name {
+          type sync:phase-protection-group-leafref-type;
+          description
+            "Name of phase protection-group.";
+        }
+        uses sync-protection-group-state-grouping;
+      }
+
+      list tod-protection-group {
+        key "name";
+        description
+          "A list of all ToD protection-group state entries.";
+        leaf name {
+          type sync:tod-protection-group-leafref-type;
+          description
+            "Name of ToD protection-group.";
+        }
+        uses sync-protection-group-state-grouping;
+      }
+    }
+  }
+
+  /*
+   * RPC Operations
+   */
+
+  rpc sync-protection-group-selection-force-switch {
+    description
+      "Force-switch an input reference selection on protection-group.";
+    input {
+      leaf frequency-protection-group-name {
+        type sync:frequency-protection-group-leafref-type;
+        description
+          "Name of frequency protection-group.";
+      }
+      leaf phase-protection-group-name {
+        type sync:phase-protection-group-leafref-type;
+        description
+          "Name of phase protection-group.";
+      }
+      leaf tod-protection-group-name {
+        type sync:tod-protection-group-leafref-type;
+        description
+          "Name of ToD protection-group.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  rpc sync-protection-group-selection-clear {
+    description
+      "Clear a force-switch operation on protection-group.";
+    input {
+      leaf frequency-protection-group-name {
+        type sync:frequency-protection-group-leafref-type;
+        description
+          "Name of frequency protection-group.";
+      }
+      leaf phase-protection-group-name {
+        type sync:phase-protection-group-leafref-type;
+        description
+          "Name of phase protection-group.";
+      }
+      leaf tod-protection-group-name {
+        type sync:tod-protection-group-leafref-type;
+        description
+          "Name of ToD protection-group.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  rpc sync-protection-group-reference-switch-count-clear {
+    description
+      "Clear the number of times protection-group switched input references.";
+    input {
+      leaf frequency-protection-group-name {
+        type sync:frequency-protection-group-leafref-type;
+        description
+          "Name of frequency protection-group.";
+      }
+      leaf phase-protection-group-name {
+        type sync:phase-protection-group-leafref-type;
+        description
+          "Name of phase protection-group.";
+      }
+      leaf tod-protection-group-name {
+        type sync:tod-protection-group-leafref-type;
+        description
+          "Name of ToD protection-group.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  /*
+   * Notifications
+   */
+
+  notification frequency-protection-group-oper-state-change {
+    description
+      "Generated when the operational state of a frequency-protection-group
+       changes.";
+    leaf frequency-protection-group-name {
+      type sync:frequency-protection-group-leafref-type;
+      description
+        "Name of frequency protection-group.";
+    }
+    leaf oper-state {
+      type sync:frequency-protection-group-oper-state-leafref-type;
+      description
+        "Operational state of protection-group.";
+    }
+  }
+
+  notification phase-protection-group-oper-state-change {
+    description
+      "Generated when the operational state of a phase-protection-group
+       changes.";
+    leaf phase-protection-group-name {
+      type sync:phase-protection-group-leafref-type;
+      description
+        "Name of phase protection-group.";
+    }
+    leaf oper-state {
+      type sync:phase-protection-group-oper-state-leafref-type;
+      description
+        "Operational state of protection-group.";
+    }
+  }
+
+  notification tod-protection-group-oper-state-change {
+    description
+      "Generated when the operational state of a tod-protection-group
+       changes.";
+    leaf tod-protection-group-name {
+      type sync:tod-protection-group-leafref-type;
+      description
+        "Name of ToD protection-group.";
+    }
+    leaf oper-state {
+      type sync:tod-protection-group-oper-state-leafref-type;
+      description
+        "Operational state of protection-group.";
+    }
+  }
+}

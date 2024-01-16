@@ -1,0 +1,1005 @@
+module yumaworks-app-common {
+
+    yang-version 1;
+    namespace "http://yumaworks.com/ns/yumaworks-app-common";
+    prefix "ywapp";
+
+    import ietf-inet-types { prefix "inet"; }
+    import ietf-yang-types { prefix "yang"; }
+    import yuma-ncx { prefix "ncx"; }
+    import yuma-types { prefix "yt"; }
+    import yumaworks-types { prefix "ywt"; }
+
+    organization "YumaWorks, Inc.";
+
+    contact
+        "Support <support at yumaworks.com>";
+
+    description
+       "Common CLI parameters used in all yumapro applications.
+
+     Copyright (c) 2012 - 2021 YumaWorks, Inc. All rights reserved.
+
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject
+     to the license terms contained in, the BSD 3-Clause License
+     http://opensource.org/licenses/BSD-3-Clause";
+
+    revision 2021-08-24 {
+       description
+         "Add HaStatusParms grouping.
+          Add HaRoleState typedef.";
+    }
+
+    revision 2019-05-22 {
+       description
+         "Add WithTermMsgParm grouping.
+          Add MaxStrlenParm grouping.";
+    }
+
+    revision 2019-03-30 {
+       description
+         "Add binary-display-maxlen parameter in
+          BinaryDisplayMaxlenParm grouping";
+    }
+
+    revision 2018-06-26 {
+       description
+         "Move SshKeyParms and SslKeyParms to this module
+          so they can be shared by yumaworks-sesmgr";
+    }
+
+    revision 2018-03-26 {
+       description
+         "Add ErrMsgParm and ErrMsgLangParm groupings.
+          Add ModuleTagParm grouping";
+    }
+
+    revision 2018-03-08 {
+       description
+         "Add InsecureOkParm grouping";
+    }
+
+    revision 2018-01-07 {
+       description
+         "Add LoadPathParm grouping";
+    }
+
+    revision 2017-04-27 {
+       description
+         "Add OcPatternParm grouping";
+    }
+
+    revision 2016-04-11 {
+       description
+         "Add AnnotationParm grouping";
+    }
+
+    revision 2014-02-14 {
+       description
+         "Add UseSesssionVars CLI variable grouping.
+          Add SaveSesssionVars CLI variable grouping.
+          Add DataTemplateParms grouping.";
+    }
+
+    revision 2013-08-13 {
+       description
+         "Split log-vendor and log-vendor-level parameters into
+          their own grouping.";
+    }
+
+    revision 2013-05-25 {
+       description
+         "Add log-console param as user friendly synonym
+          for log-mirroring.";
+    }
+
+    revision 2013-02-11 {
+       description
+         "Move common yangcli-pro grouping to this module";
+    }
+
+    revision 2012-11-30 {
+       description
+         "Add message-indent parameter.";
+    }
+
+    revision 2012-10-23 {
+       description
+         'Remove log-custom and log-localtime empty leafs and convert
+          to "bits" entity: log-header="custom localtime".';
+    }
+
+    revision 2012-10-10 {
+       description
+         "Change log-backtrace-level to and add log-backtrace-stream
+          parameters as 'bits' type entities. Eliminate
+          log-backtrace-xxx 'type empty' leafs.";
+    }
+
+    revision 2012-08-16 {
+       description
+         "Split from yuma-app-common; Add new logging parameters.";
+    }
+
+    grouping LoggingCommonParms {
+
+	leaf log-backtrace {
+          description
+             "If present, log output will include traceback
+	     detail for each log message, subject to further
+             filtering by --log-backtrace-level and/or
+             log-backtrace-stream qualifiers";
+          type uint32 {
+            range "0 .. 100";
+          }
+        }
+
+	leaf log-backtrace-detail {
+          description
+             "If present in conjunction with --log-backtrace
+              log messages will include 'detailed' backtrace
+              information (if supported by the compiler).";
+          type empty;
+        }
+
+        leaf log-backtrace-level {
+          description
+            'Indicates for which debug level(s) backtrace
+             info will be generated. Param string is an XSD
+             list: a double quoted series of whitespace
+             separated (level) strings like "error warn debug"';
+
+          type bits {
+            bit write {
+              description "Include backtrace info in write messages.";
+            }
+            bit dev0 {
+              description "Include backtrace info in developer
+                           level 0 messages.";
+            }
+            bit error {
+              description "Include backtrace info in error messages.";
+            }
+            bit warn {
+              description "Include backtrace info in warning messages.";
+            }
+            bit info {
+              description "Include backtrace info in info messages.";
+            }
+            bit dev1 {
+              description "Include backtrace info in developer
+                           level 1 messages.";
+            }
+            bit debug {
+              description "Include backtrace info in debug messages.";
+            }
+            bit debug2 {
+              description "Include backtrace info in debug2 messages.";
+            }
+            bit debug3 {
+              description "Include backtrace info in debug3 messages.";
+            }
+            bit debug4 {
+              description "Include backtrace info in debug4 messages.";
+            }
+          }
+        }
+
+        leaf log-backtrace-stream {
+          description
+            'Indicates in which log stream(s) backtrace info
+             will be included. Param string is an XSD list:
+             a double quoted series of whitespace separated
+             (log stream) strings like "logfile syslog"';
+
+          type bits {
+            bit logfile {
+              description "Include backtrace in logfile stream.";
+            }
+            bit stderr {
+              description "Include backtrace in stderr stream.";
+            }
+            bit stdout {
+              description "Include backtrace in stdout stream.";
+            }
+            bit syslog {
+              description "Include backtrace in syslog stream.";
+            }
+            bit vendor {
+              description "Include backtrace in vendor stream.";
+            }
+          }
+        }
+
+        leaf log-header {
+          description
+            'Indicates what header elements to include in
+             header output. Param string is an XSD list:
+             a double quoted series of whitespace separated
+             (element) strings like "custom localtime"';
+
+          type bits {
+            bit custom {
+              description "Include date, time, and level.";
+            }
+            bit localtime {
+              description
+                "Include localtime instead of Yang canonical format.";
+            }
+          }
+        }
+
+	leaf log-mirroring {
+          description
+             "If present in conjunction with --log, --log-syslog,
+              and/or --log-vendor, log output will be directed to
+              the normal stdout/stderr/logfile as well as
+              to the syslog or vendor log stream";
+          type empty;
+        }
+
+	leaf log-console {
+          description
+             "User friendly synonym for --log-mirroring.";
+          type empty;
+        }
+
+	leaf log-stderr {
+          description
+             "If present, error level output be directed to stderr
+              instead of stdout (as well as log file, if specified)";
+          type empty;
+        }
+
+	leaf log-suppress-ctrl {
+          ncx:hidden;
+          description
+             "If present, strip certain control characters from
+              output in order to modify log formatting.";
+          type empty;
+        }
+
+	leaf log-syslog {
+          description
+             "If present, log output will be directed to the
+              standard syslog interface. Yuma log priorities
+              will be translated into the appropriate syslog
+              equivalents.";
+          type empty;
+        }
+
+        leaf log-syslog-level {
+          description
+            "Sets the syslog debug logging level filter for output to
+             the syslog file for the program.";
+          type yt:NcDebugType;
+        }
+
+    }
+
+    grouping LoggingVendorParms {
+	leaf log-vendor {
+          description
+             "If present, log messages will be directed to a
+              customer-written and registered callback function.
+              This functionality is defined by an API specified in
+              the YumaWorks API Reference Manual. In the absence of
+              a registered callback, this parameter will direct
+              logging messages to syslog in order to facilitate
+              standalone testing.";
+          type empty;
+        }
+
+        leaf log-vendor-level {
+          description
+            "Sets the vendor debug logging level filter for output to
+             the vendor-specific log output file stream for the program.";
+          type yt:NcDebugType;
+        }
+    }
+
+    grouping MessageIndentParm {
+        leaf message-indent {
+          type int8 {
+            range "-1 .. 9";
+          }
+          default -1;
+          description
+             "The number of spaces to indent for each level of
+              output in a protocol message, e.g. NETCONF request.
+              The value zero means no indent, just line feeds.
+              The value -1 means no indent and no line feeds either.";
+        }
+    }
+
+    grouping YumaproHomeParm {
+        leaf yumapro-home {
+          description
+             "Directory for the yumapro project root to use.
+              If present, this directory location will
+              override the 'YUMAPRO_HOME' environment variable,
+              if it is present.  If a zero-length string is
+              entered, then the YUMAPRO_HOME environment variable
+              will be ignored.";
+          type string;
+        }
+    }
+
+    grouping MatchParms {
+      leaf match-names {
+        type ywt:NameMatchMode;
+        description
+          "Match mode to use for UrlPath name searches.";
+
+      }
+
+      leaf alt-names {
+        type ywt:AltNameMode;
+        description
+          "Match mode to use for UrlPath name searches.";
+
+      }
+
+      leaf wildcard-keys {
+        type boolean;
+        description
+          "Enable wildcards on key leaf values.
+           Set to 'true' if UrlPath targets for GET operations
+           are allowed to replace key values with the dash '-'
+           character to indicate that all instances of that key
+           are requested.
+
+           Set to false to treat the '-' character as a plain
+           character if entered as a key value in a UrlPath string.";
+       }
+    }
+
+    grouping UseSessionVarsParm {
+      leaf use-session-vars {
+        description
+          "Specifies how global variables will be handled when
+           set from the context of a named session.  If 'true',
+           then an assignment (e.g., $$foo = 'bar') will only
+           affect the session-specific instance of the variable,
+           and only be visible within the scope of the named
+           session.
+
+           If 'false', then assignment statements for global
+           variables will affect the global instance of the
+           variable, and be visible to all sessions.
+
+           If the current session is the default session,
+           and not a named session, then the value of this
+           variable is ignored, and all global variable
+           assignments will affect the global instance of
+           the variable, and be visible to all sessions.";
+        type boolean;
+        default true;
+      }
+    }
+
+    grouping SaveSessionVarsParm {
+      leaf save-session-vars {
+        description
+          "Specifies if session variables will be saved
+           when the program exits. If use-session-vars
+           is 'false' then this variable is ignored.
+
+           If 'false', then session variables will not be
+           saved when the program exits.
+
+           If 'true', then session variables will be
+           saved when the program exits, but only if user
+           variables are being saved.";
+        type boolean;
+        default true;
+      }
+    }
+
+    grouping DataTemplateParms {
+      leaf use-data-templates {
+        description
+          "Specifies if variable expressions are enabled for
+           data in XML, JSON or .conf instance documents.
+
+           If 'false', then text matching the pattern for
+           variable expressions in these instance documents
+           will be treated as plain strings.
+
+           If 'true', then text matching the pattern for
+           variable expressions in these instance documents
+           will be processed as variable expressions.";
+        type boolean;
+        default true;
+      }
+
+      leaf ignore-missing-vars {
+        description
+          "Specifies how missing variable errors in data
+           templates are handled. This parameter has no
+           affect unless the 'use-data-templates' parameter
+           is 'true'.
+
+           If 'false', then variable expressions that contain
+           references to missing variables will cause a parsing
+           error.
+
+           If 'true', then variable expressions that contain
+           references to missing variables will not cause a
+           parsing error. Instead, an empty string will be used
+           for the value of a missing variable.";
+        type boolean;
+        default false;
+      }
+    }
+
+
+    grouping AnnotationParm {
+        leaf-list annotation {
+            description
+              "YANG deviation file representing model annotations.
+               Processed the same as a deviation parameter except
+               the module is not advertised to any client sessions.
+
+               Only the deviation 'deviate add' operation can be
+               used to transfer extension statements to another
+               model.
+
+               The annotations will be applied to a data definition
+               statement, as if they were defined as sub-statements
+               of the deviation target.
+
+                  --annotation=acme-dev1
+
+               Example object annotations (contents of acme-dev1)
+
+                 deviation /if:interfaces {
+                   deviate add {
+                     ncx:sil-delete-chilren-first;
+                   }
+                 }
+
+                 deviation /if:interfaces/if:interface {
+                   deviate add {
+                     ncx:sil-delete-chilren-first;
+                     acme:my-deviation1 'the deviation parm';
+                   }
+                 }
+             ";
+            type yt:NcModuleSpec;
+        }
+    }
+
+    grouping OcPatternParm {
+        leaf with-ocpattern {
+            description
+              "If true, then OpenConfig patterns with be checked.
+               If the module name starts with the string 'openconfig-'
+               then all pattern statements within that module
+               are treated as POSIX patterns, not YANG patterns.
+
+               If false, then the pattern statements in all modules
+               will be checked as YANG patterns.
+             ";
+            type boolean;
+            default false;
+        }
+    }
+
+    grouping LoadPathParm {
+      leaf loadpath {
+        description
+           "Directory load path for YANG or YIN modules.
+            This will be checked before the modpath setting
+            if present when finding modules. After all module
+            and bundle parameters have been processed, this
+            load path will be checked and the server will
+            attempt to load any modules not already loaded.
+            Overrides the YUMA_LOADPATH environment variable.";
+        type yt:NcPathList;
+      }
+    }
+
+    grouping InsecureOkParm {
+      leaf insecure-ok {
+        type boolean;
+        default false;
+        description
+          "Specifies if insecure NETCONF over TLS should be allowed.
+           If true then X.509 certificates will be accepted even
+           if they cannot be verified. Used for debugging only!
+           This parameter is only available if the image was built
+           with the DEBUG=1 parameter.";
+      }
+    }
+
+    grouping ErrMsgParm {
+      leaf-list errmsg {
+        type string;
+        description
+          "Specifies a replacement string for a specific error number.
+           Can specify error message for 1 specific language.
+
+           The 'num' component must match the <error-number>
+           found in status_enum.h. New error enums are always added
+           at the end of the list, so the numbers will not change.
+
+           The 'lang' component should use the ISO-639-1 code
+           Max length is 7 characters.
+
+           The string has the format: '<num>:<lang>:error string'
+           where:
+               <num> = error number to use for error message
+               <lang> = language code (en for English)
+               error string = error string text
+
+           Example:
+
+             Replace error 117 (ERR_WB_WRITE_FAILED) 'db write failed'
+
+             errmsg='117:en:The database could not be written'
+          ";
+      }
+    }
+
+    grouping ErrMsgLangParm {
+      leaf errmsg-lang {
+        type string {
+          length "1 .. 7";
+        }
+        default "en";
+        description
+          "Specifies the language code for the error-message
+           language. This is only relevant if there are errmsg
+           parameters for multiple languages loaded in the program.
+           This value should use the ISO-639-1 code.
+          ";
+      }
+    }
+
+    grouping ModuleTagParm {
+      leaf-list module-tag {
+        type string {
+          length "1 .. 1023";
+        }
+        description
+          "Include only data nodes that match the module-tag.
+
+           Multiple module-tag parameters are combined as a
+           logical OR expression. Matching any tag value will
+           cause the data node to be included.
+
+           It is not an error to include an unknown module-tag.
+           Such tag values will simply be treated as a 'false'
+           match result, when evaluating the filter.
+
+           If any module-tag parameters are provided at all,
+           and there are no matches found, then no data will be
+           returned in the response.";
+      }
+    }
+
+    grouping SshKeyParms {
+        leaf public-key {
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Contains the file path specification
+             for the file containing the client-side public key.
+             If both 'public-key' and 'private-key' files are
+             present, the client will attempt to connect
+             to the server using these keys.  If this fails,
+             or not done, then password authentication will
+             be attempted.";
+          default "$HOME/.ssh/id_rsa.pub";
+        }
+
+        leaf private-key {
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Contains the file path specification
+             for the file containing the client-side private key.
+             If both 'public-key' and 'private-key' files are
+             present, the client will attempt to connect
+             to the server using these keys.  If this fails,
+             or not done, then password authentication will
+             be attempted.";
+          default "$HOME/.ssh/id_rsa";
+        }
+    }
+
+    grouping SslKeyParms {
+        leaf ssl-fallback-ok {
+            type boolean;
+            default true;
+            description
+             "If true then an attempt to establish a plain TCP
+              connection will be made if an SSL connection cannot
+              be made. This parameter only applies of the
+              'transport' is 'ssl'";
+        }
+
+        leaf ssl-certificate {
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Contains the file path specification
+             for the file containing the client-side ssl certificate.
+             If both 'certificate' and 'key' files are
+             present, the client will attempt to setup a secure
+             connection with the server using the certificate and
+             SSL key.
+
+             If this fails, and the 'ssl-fallback-ok' leaf is
+             set to true, the client will attempt to setup
+             a raw TCP connection with the server.";
+          default "$HOME/.ssl/yangapi-client.crt";
+        }
+
+        leaf ssl-key {
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Contains the file path specification
+             for the file containing the client-side ssl key.
+             If both 'certificate' and 'key' files are
+             present, the client will attempt to setup a secure
+             connection with the server using the certificate and
+             SSL key.  If this fails, client will attempt to setup
+             a raw TCP connection with the server.";
+          default "$HOME/.ssl/yangapi-client.key";
+        }
+
+        leaf ssl-trust-store {
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Contains the file path specification
+             for the file containing the client-side ssl trust-store,
+             or the path specification for the directory to use
+             for finding trusted certificates. If the default value
+             is used and the file is not found, then the default
+             directory location '/etc/ssl/certs' will be used.";
+          default "$HOME/.ssl/trust-store.pem";
+        }
+    }
+
+    grouping BinaryDisplayMaxlenParm {
+      leaf binary-display-maxlen {
+        type uint32;
+        default 0;
+        description
+          "The maximum number of bytes to display when dumping
+           the contents of a binary value. Normally a message
+           will be displayed showing the name and length.
+
+           If this parameter is set to a value greater than zero
+           then a standard 8-byte per line hex dump of the
+           binary type will also be displayed for a maximum number
+           of bytes set by this parameter.";
+       }
+     }
+
+     typedef HaRoleState {
+       type enumeration {
+         enum none {
+           description HA_STATE_NONE;
+         }
+         enum disabled {
+           description HA_STATE_DISABLED;
+         }
+         enum error {
+           description HA_STATE_ERROR;
+         }
+         enum wait-role {
+           description HA_STATE_WAIT_ROLE;
+         }
+         enum be-active {
+           description HA_STATE_BE_ACTIVE;
+         }
+         enum active {
+           description HA_STATE_ACTIVE;
+         }
+         enum be-standby {
+           description HA_STATE_BE_STANDBY;
+         }
+         enum standby {
+           description HA_STATE_STANDBY;
+         }
+         enum shutting-down {
+           description HA_STATE_SHUTTING_DOWN;
+         }
+       }
+       description "YP-HA role state enumerations";
+     }
+
+     grouping WithTermMsgParm {
+      leaf with-term-msg {
+        description
+          "If set to 'true', then the yumaworks-term-msg module
+           will be loaded and enabled. Otherwise, this module will
+           not be loaded. The <term-msg> notification is used by
+           yp-shell for displaying terminal diagnostic messages.";
+        type boolean;
+        default true;
+      }
+    }
+
+    grouping HaStatusParms {
+      leaf ha-built {
+        type boolean;
+        description
+          "Set to true if the WITH_YP_HA=1 parameter used to build
+           the server code. Set to false otherwise. If false then no
+           other parameters are actually active.  Only the HA related CLI
+           parameter values will be reported.
+
+           This must be set to 'true' for a working YP-HA configuration.";
+      }
+
+      leaf ha-role-state {
+        type HaRoleState;
+        description
+          "Set to the current YP-HA role state enumeration.
+           A 'correct' value depends on the configuration and the
+           timing of the request returning the status.
+
+           A stable YP-HA system will have one server with the
+           ha-role-state value of 'active' and one or more servers
+           with the value 'standby'.";
+      }
+
+      leaf ha-role-state-time {
+        type yang:date-and-time;
+        description
+          "The timestamp when the ha-role-state object last changed value.";
+      }
+
+      leaf ha-enabled {
+        type boolean;
+        description
+          "Set to the value of the --ha-enabled parameter.
+           This must be set to 'true' for a working YP-HA configuration.";
+      }
+
+
+      leaf ha-sil-standby {
+        type boolean;
+        description
+          "Set to the value of the --ha-sil-standby parameter.
+           Either value can be used without affect on a working
+           YP-HA configuration.";
+      }
+
+      leaf-list ha-server {
+        type string;
+        description
+          "Set to the value of a --ha-server parameter.
+           There will be one entry for each instance of
+           the ha-server leaf-list, or no nodes present
+           if there are none.
+
+           There must be at least two entries for a working YP-HA
+           configuration.";
+      }
+
+      leaf ha-server-key {
+        type string;
+        description
+          "Set to the value of the --ha-server-key parameter.
+           This node will not be present unless this parameter is set.
+
+           This parameter must be set. A working YP-HA configuration
+           requires this parameter to be set to the same value for
+           all servers in the same HA pool.";
+      }
+
+      leaf ha-initial-active {
+        type string;
+        description
+          "Set to the value of the --ha-initial-active parameter.
+           This leaf will not be present unless it is set.
+
+           This parameter is not required for a working YP-HA configuration.
+           It will impact YP-HA behavior if it is present. In normal
+           operation it should not be used.";
+      }
+
+      leaf socket-type {
+        type enumeration {
+          enum aflocal {
+            description
+              "An AF_LOCAL socket will be used for incoming sessions.";
+          }
+          enum tcp {
+            description
+              "An AF_INET socket will be used for incoming sessions.";
+          }
+        }
+        description
+          "Specifies the --socket-type parameter.
+           This parameter must be set to 'tcp' in a working YP-HA
+           configuration.";
+
+      }
+
+      leaf socket-address {
+        when "../socket-type = 'tcp'";
+        type inet:ip-address;
+        description
+          "Specifies the --socket-address parameter. This leaf is
+           only relevant if the socket-type is set to 'tcp'. The value
+           must match the address field in the ha-server entry for this
+           server, or be set to the default '0.0.0.0'. The parameter
+           actually means all IP addresses, not just IPv4 addresses.
+
+           Examples:
+
+              # if socket-address present it must match the ha-server
+              # for this server
+              ha-server ha1@192.168.0.20:8989
+              ha-server ha2@192.168.0.40
+              socket-type tcp
+              socket-address 192.168.0.20
+              socket-port 8989
+
+              # socket-address not present is OK
+              ha-server ha1@192.168.0.20
+              socket-type tcp
+              socket-port 8088
+          ";
+      }
+
+      leaf socket-port {
+        when "../socket-type = 'tcp'";
+        type inet:port-number;
+        description
+          "Specifies the --socket-port parameter. This leaf is only relevant
+           if the socket-type is set to 'tcp'. The value must match the
+           port field in the ha-server entry for this server. If that is
+           not present then this leaf must be set to 8088 (the default)
+           for a working YP-HA configuration.
+
+           Examples:
+
+              # if port in the ha-server then socket-port must match
+              ha-server ha1@192.168.0.20:8989
+              ha-server ha2@192.168.0.40
+              socket-address 192.168.0.20
+              socket-type tcp
+              socket-port 8989
+
+              # port must be 8088 if default used in ha-server
+              ha-server ha1@192.168.0.20
+              socket-type tcp
+              socket-port 8088
+          ";
+      }
+
+      leaf server-id {
+        type yt:NcxName;
+        description
+           "The --server-id parameter.
+            The default is 'server1' if this parameter is not set.
+            This parameter must match the ha-server entry name for
+            the server in a working YP-HA configuration.
+
+           Example:
+
+              # this ha-server is ha1
+              ha-server ha1@192.168.0.20:8989
+              ha-server ha2@192.168.0.40
+              server-id ha1
+          ";
+      }
+
+      leaf config-id {
+        type uint64;
+        description
+          "The config-id ETag of the running datastore that is the
+           current ID for YP-HA purposes. This leaf will only be present
+           if the ha-role-state leaf is 'active' or 'standby'.
+
+           This leaf should get updated to match the config-id of the
+           <running> datastore if the configuration changes on the active
+           HA server. It should be present on a working YP-HA
+           configuration that has finished its initialization phase.";
+       }
+
+       leaf config-stamp {
+         type yang:date-and-time;
+          description
+           "The config-id Last-Modified timestamp value for the running
+            datastore for YP-HA purposes. This leaf is only present if
+            the ha-role-state is set to 'active'.  It is not maintained
+            on a standby server.
+
+           This leaf should get updated to match the last-modified
+           attribute of the <running> datastore if the configuration
+           changes on the active HA server. It should be present on a
+           working YP-HA configuration that has finished
+           its initialization phase.";
+       }
+
+       leaf config-updates {
+         type yang:counter64;
+         description
+           "Number of config updates that this server has successfully
+            processed since the current role (active or standby) was set.
+            Each time the server resets or changes HA roles this counter
+            will be reset.";
+       }
+
+       leaf config-failures {
+         type yang:counter64;
+         description
+           "Number of config updates that this server has unsuccessfully
+            processed since the current role (active or standby) was set.
+            Each time the server resets or changes HA roles this counter
+            will be reset.";
+       }
+
+       leaf active-server {
+         type yt:NcxName;
+         description
+          "If this server is using the HA standby role, then the
+           HA active server will be identified by this object.";
+       }
+
+       leaf last-error-time {
+         type yang:date-and-time;
+         description
+          "The timestamp when the last error happened.
+
+           For HA-Active servers, this object represents the time
+           of the last config replication error, if any.
+           This object is not cleared if a subsequent config
+           update is successful.
+
+           For HA-Standby servers, this object represents the time
+           of the last failure to connect to the HA Active server.
+           This only applies to the case where the server is
+           reachable, but it is not the HA Active server, or not
+           ready to accept datastore replication requests.
+
+           If the HA Active server is unreachable then the YControl
+           layer will attempt reconnections. These reconnections will
+           not affect this timestamp.
+
+           This object is cleared if the HA Standby role is established
+           successfully. It is only present if errors have occurred
+           on this HA server. Replication errors are not reported.";
+       }
+
+       leaf last-error-msg {
+         type string;
+         description
+           "The error message for the last HA error code.
+
+           For HA-Active servers, this object represents the error string
+           of the last config replication error, if any.
+           This object is not cleared if a subsequent config
+           update is successful.
+
+           For HA-Standby servers, this object represents the error string
+           of the last failure to connect to the HA Active server.
+           This only applies to the case where the server is
+           reachable, but it is not the HA Active server, or not
+           ready to accept datastore replication requests.
+
+           This object is cleared if the HA Standby role is established
+           successfully. It is only present if errors have occurred
+           on this HA server. Replication errors are not reported.";
+       }
+
+    }
+
+
+}

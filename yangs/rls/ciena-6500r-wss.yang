@@ -1,0 +1,580 @@
+module ciena-6500r-wss {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-wss";
+  prefix wss;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-6500r-links {
+    prefix links;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's wavelength selective switch object for the 6500r platform";
+
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.1.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-06-10 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Removed config false for parameters that should be saved in datastore.";
+  }
+  revision 2020-02-12 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Adding a decription for both the get-channel-data & set-channel-data RPC's input and output.
+       Refactoring central-freq to center-freq
+       Make binary data variable length";
+  }
+  revision 2020-02-11 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Remove wss-logical-index leaf";
+  }
+  revision 2020-02-04 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Editing get-channel-data & set-channel-data RPC's";
+  }
+  revision 2019-05-29 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "RLS Release 1.1";
+  }
+
+  typedef channel-plan-type {
+    type enumeration {
+      enum "fixed-grid";
+    }
+  }
+
+  typedef attenuationx10 {
+    type uint8;
+    units "dBx10";
+    description
+      "xx.x in dB multiplied by 10";
+  }
+
+  grouping fixed-grid-spec {
+    leaf min-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Minimum frequency limit of fixed grid channel plan";
+    }
+
+    leaf max-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Maximum frequency limit of fixed grid channel plan";
+    }
+
+    leaf channel-bandwidth {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Spectral width of channels";
+    }
+
+    leaf channel-spacing {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Spectral spacing between channels";
+    }
+  }
+
+  grouping fixed-grid-attr {
+    list attenuations {
+      key "i";
+      leaf i {
+        type uint16;
+        description
+          "Index as per fixed grid channel plan";
+      }
+
+      leaf a {
+        type attenuationx10;
+        description
+          "Attenuation value of the channel";
+      }
+    }
+
+    list switch-selectors {
+      key "i";
+      leaf i {
+        type uint16;
+        description
+          "Index as per fixed grid channel plan";
+      }
+
+      leaf s {
+        type uint8;
+        description
+          "Switch selector logical index";
+      }
+    }
+
+    list line-switch-selectors {
+      key "i";
+      leaf i {
+        type uint16;
+        description
+          "Index as per fixed grid channel plan";
+      }
+
+      leaf ls {
+        type uint8;
+        description
+          "Line switch selector logical index";
+      }
+    }
+
+    leaf attenuation {
+      type binary {
+        length "1..2000";
+      }
+      description
+        "Attenuation binary data";
+    }
+
+    leaf switch-selector {
+      type binary {
+        length "1..2000";
+      }
+      description
+        "Switch selector binary data";
+    }
+
+    leaf line-switch-selector {
+      type binary {
+        length "1..2000";
+      }
+      description
+        "Line switch selector binary data";
+    }
+  }
+
+  grouping ciena-6500r-wss-mount {
+    list wss {
+      key "name";
+      leaf name {
+        type common-types:object-name;
+        description
+          "Name of wss device";
+      }
+
+      uses common-types:admin-state;
+
+      leaf partner-wss {
+        type leafref {
+          path "../name";
+        }
+      }
+
+      container channel-plan {
+        leaf plan-type {
+          type channel-plan-type;
+          default "fixed-grid";
+        }
+
+        uses fixed-grid-spec {
+          when "../plan-type = fixed-grid";
+        }
+      }
+
+      uses fixed-grid-attr {
+        when "../channel-plan/plan-type = fixed-grid";
+      }
+
+      list swsel-logical-mapping {
+        key "physical-port";
+        leaf physical-port {
+          type leafref {
+            path "/ports:port/ports:name";
+          }
+          description
+            "Physical port corresponding to the logical index";
+        }
+
+        leaf index {
+          type uint8;
+        }
+      }
+
+      list line-swsel-logical-mapping {
+        key "physical-port";
+        leaf physical-port {
+          type leafref {
+            path "/ports:port/ports:name";
+          }
+          description
+            "Physical port corresponding to the logical index";
+        }
+
+        leaf index {
+          type uint8;
+        }
+      }
+
+      leaf-list links {
+        type leafref {
+          path "/links:link/links:name";
+        }
+        description
+          "Links traversing the wss device";
+      }
+    }
+  }
+
+  grouping ciena-6500r-wss-mount-actions {
+    action get-channel-data {
+      description
+        "The user will be providing a wss instance-identifier which is the only mandatory paramter in the input,
+         it will be used to get the full wss object, the rest of the inputs are optional. For the frequencies,
+         the user can choose to get a list of slices if providing a valid values of frequencies for both the min-freq
+         and the max-freq, and a single slice when providing a valid value of a center-freq. The valid range frequncies
+         is any frequency that is greater than or equal to min-freq from channel-plan and less than or equal to max-freq from channel-plan.
+         For the output of the rpc, the user will get a list of channel data that include the values of attenuation, switch-selector,
+         and line-switch-selector for the given slice/slices based on if a range of frequencies was provided or only a center-freq.
+         If the get rpc was not successful a return-code-list specifing what went wrong.";
+      input {
+        leaf wss {
+          type instance-identifier;
+        }
+
+        leaf min-freq {
+          type common-types:frequency;
+          description
+            "Start frequency of range of channels to return - optional -
+             If not provided, the value min-freq from channel plan data will be used.
+             The valid range for min-freq is between Channel_plan.Max_freq and Channel_plan.Min_freq.
+             If the min-freq provided is less than the Channel_plan.Min_freq, the Channel_plan.Min_freq will be used,
+             however, if the min-freq provided is greater than Channel_plan.Max_freq a return code will be returned that the value is out of range.";
+        }
+
+        leaf max-freq {
+          type common-types:frequency;
+          description
+            "End frequency of range of channels to return - optional -
+             If not provided, the value max-freq from channel plan data will be used.
+             The valid range for max-freq is between Channel_plan.Max_freq and Channel_plan.Min_freq.
+             If the max-freq provided is greater than the Channel_plan.Max_freq, the Channel_plan.Max_freq will be used,
+             however, if the max-freq provided is smaller than Channel_plan.Min_freq a return code will be returned that the value is out of range.";
+        }
+
+        leaf center-freq {
+          type common-types:frequency;
+          description
+            "Specific frequency to return one single slice - optional -
+             If this was provided only one channel slice will be set, min-freq & max-freq will be ignored. ";
+        }
+      }
+
+      output {
+        list return-code-list {
+          uses ciena-common-yang:return-code;
+        }
+
+        list channel-data {
+          key "start-freq";
+          leaf start-freq {
+            type common-types:frequency;
+            description
+              "Start frequency of channel";
+          }
+
+          leaf attenuation {
+            type attenuationx10;
+            description
+              "Channel attenuation";
+          }
+
+          leaf switch-selector {
+            type string;
+            description
+              "Switch selector value";
+          }
+
+          leaf line-switch-selector {
+            type string;
+            description
+              "Line switch selector value";
+          }
+        }
+      }
+    }
+
+    action set-channel-data {
+      description
+        "The user will be providing a wss instance-identifier which is the only mandatory paramter in the input,
+         it will be used to get the full wss object, the rest of the inputs are optional. For the frequencies,
+         the user can choose to modify a list of slices if providing a valid values of frequencies for both the min-freq
+         and the max-freq, and a single slice when providing a valid value of a center-freq. The valid range frequncies
+         is any frequency that is greater than or equal to min-freq from channel-plan and less than or equal to max-freq from channel-plan.
+         This rpc will be used to modify the values of attenuation, switch-selector, and line-switch-selector for the given slice/slices.
+         The user must provide a valid value for each of the provided paramter, the valid values for switch-selector are any value of the
+         physical-port under swsel-logical-mapping i.e : (21-7 for rla or 2 for cmd8x24), however, the value of the index i.e :
+         ( 1 to 33 for rla or 1 to 24 for cmd8x24) will be displayed when doing a get-channel-rpc.
+         For line-switch-selector the valid value will be any value of the physical-port under line-swsel-logical-mapping and the value of the
+         index will be displayed when doing a get-channel-rpc.
+         For the output of the rpc, the user will expect result:success if all values were valid and everything went fine, otherwise, result:failure
+         with a return-code-list specifing what went wrong.";
+      input {
+        leaf wss {
+          type instance-identifier;
+        }
+
+        leaf min-freq {
+          type common-types:frequency;
+          description
+            "Start frequency of range of channels to be set - optional -
+             If center-freq is not provided the user is required to enter a valid min-freq that is
+             between the channel plan minimun amd maximium frequency";
+        }
+
+        leaf max-freq {
+          type common-types:frequency;
+          description
+            "End frequency of range of channels to be set - optional -
+             If center-freq is not provided the user is required to enter a valid max-freq that is
+             between the channel plan minimun amd maximium frequency";
+        }
+
+        leaf center-freq {
+          type common-types:frequency;
+          description
+            "Specific frequency to return one single slice - optional -
+             If this was provided only one channel slice will be set, and min-freq & max-freq will be ignored.
+             Otherwise, min-freq & max-freq are mandatory";
+        }
+
+        leaf attenuation {
+          type attenuationx10;
+          description
+            "Channel attenuation";
+        }
+
+        leaf switch-selector {
+          type string;
+          description
+            "Switch selector value";
+        }
+
+        leaf line-switch-selector {
+          type string;
+          description
+            "Line switch selector value";
+        }
+      }
+
+      output {
+        list return-code-list {
+          uses ciena-common-yang:return-code;
+        }
+
+        leaf result {
+          type enumeration {
+            enum "success";
+            enum "failure";
+          }
+        }
+      }
+    }
+  }
+
+  uses ciena-6500r-wss-mount;
+
+  rpc get-channel-data {
+    description
+      "The user will be providing a wss instance-identifier which is the only mandatory paramter in the input,
+       it will be used to get the full wss object, the rest of the inputs are optional. For the frequencies,
+       the user can choose to get a list of slices if providing a valid values of frequencies for both the min-freq
+       and the max-freq, and a single slice when providing a valid value of a center-freq. The valid range frequncies
+       is any frequency that is greater than or equal to min-freq from channel-plan and less than or equal to max-freq from channel-plan.
+       For the output of the rpc, the user will get a list of channel data that include the values of attenuation, switch-selector,
+       and line-switch-selector for the given slice/slices based on if a range of frequencies was provided or only a center-freq.
+       If the get rpc was not successful a return-code-list specifing what went wrong.";
+    input {
+      leaf wss {
+        type instance-identifier;
+      }
+
+      leaf min-freq {
+        type common-types:frequency;
+        description
+          "Start frequency of range of channels to return - optional -
+           If not provided, the value min-freq from channel plan data will be used.
+           The valid range for min-freq is between Channel_plan.Max_freq and Channel_plan.Min_freq.
+           If the min-freq provided is less than the Channel_plan.Min_freq, the Channel_plan.Min_freq will be used,
+           however, if the min-freq provided is greater than Channel_plan.Max_freq a return code will be returned that the value is out of range.";
+      }
+
+      leaf max-freq {
+        type common-types:frequency;
+        description
+          "End frequency of range of channels to return - optional -
+           If not provided, the value max-freq from channel plan data will be used.
+           The valid range for max-freq is between Channel_plan.Max_freq and Channel_plan.Min_freq.
+           If the max-freq provided is greater than the Channel_plan.Max_freq, the Channel_plan.Max_freq will be used,
+           however, if the max-freq provided is smaller than Channel_plan.Min_freq a return code will be returned that the value is out of range.";
+      }
+
+      leaf center-freq {
+        type common-types:frequency;
+        description
+          "Specific frequency to return one single slice - optional -
+           If this was provided only one channel slice will be set, min-freq & max-freq will be ignored. ";
+      }
+    }
+
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+
+      list channel-data {
+        key "start-freq";
+        leaf start-freq {
+          type common-types:frequency;
+          description
+            "Start frequency of channel";
+        }
+
+        leaf attenuation {
+          type attenuationx10;
+          description
+            "Channel attenuation";
+        }
+
+        leaf switch-selector {
+          type string;
+          description
+            "Switch selector value";
+        }
+
+        leaf line-switch-selector {
+          type string;
+          description
+            "Line switch selector value";
+        }
+      }
+    }
+  }
+
+  rpc set-channel-data {
+    description
+      "The user will be providing a wss instance-identifier which is the only mandatory paramter in the input,
+       it will be used to get the full wss object, the rest of the inputs are optional. For the frequencies,
+       the user can choose to modify a list of slices if providing a valid values of frequencies for both the min-freq
+       and the max-freq, and a single slice when providing a valid value of a center-freq. The valid range frequncies
+       is any frequency that is greater than or equal to min-freq from channel-plan and less than or equal to max-freq from channel-plan.
+       This rpc will be used to modify the values of attenuation, switch-selector, and line-switch-selector for the given slice/slices.
+       The user must provide a valid value for each of the provided paramter, the valid values for switch-selector are any value of the
+       physical-port under swsel-logical-mapping i.e : (21-7 for rla or 2 for cmd8x24), however, the value of the index i.e :
+       ( 1 to 33 for rla or 1 to 24 for cmd8x24) will be displayed when doing a get-channel-rpc.
+       For line-switch-selector the valid value will be any value of the physical-port under line-swsel-logical-mapping and the value of the
+       index will be displayed when doing a get-channel-rpc.
+       For the output of the rpc, the user will expect result:success if all values were valid and everything went fine, otherwise, result:failure
+       with a return-code-list specifing what went wrong.";
+    input {
+      leaf wss {
+        type instance-identifier;
+      }
+
+      leaf min-freq {
+        type common-types:frequency;
+        description
+          "Start frequency of range of channels to be set - optional -
+           If center-freq is not provided the user is required to enter a valid min-freq that is
+           between the channel plan minimun amd maximium frequency";
+      }
+
+      leaf max-freq {
+        type common-types:frequency;
+        description
+          "End frequency of range of channels to be set - optional -
+           If center-freq is not provided the user is required to enter a valid max-freq that is
+           between the channel plan minimun amd maximium frequency";
+      }
+
+      leaf center-freq {
+        type common-types:frequency;
+        description
+          "Specific frequency to return one single slice - optional -
+           If this was provided only one channel slice will be set, and min-freq & max-freq will be ignored.
+           Otherwise, min-freq & max-freq are mandatory";
+      }
+
+      leaf attenuation {
+        type attenuationx10;
+        description
+          "Channel attenuation";
+      }
+
+      leaf switch-selector {
+        type string;
+        description
+          "Switch selector value";
+      }
+
+      leaf line-switch-selector {
+        type string;
+        description
+          "Line switch selector value";
+      }
+    }
+
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+
+      leaf result {
+        type enumeration {
+          enum "success";
+          enum "failure";
+        }
+      }
+    }
+  }
+}

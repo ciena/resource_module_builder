@@ -1,0 +1,268 @@
+module ciena-syslog-tls {
+  namespace "http://www.ciena.com/ns/yang/ciena-syslog-tls";
+  prefix "ciena-syslog-tls";
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-types {
+    prefix ciena-types;
+  }
+
+  import ietf-syslog {
+    prefix syslog;
+  }
+
+  import ietf-syslog-types {
+    prefix syslogtypes;
+  }
+
+  import ciena-tls-service-profile {
+    prefix ciena-tsp;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module defines configuration and operational state data
+    related to syslog over TLS protocol compliant to RFC5425.
+
+     Copyright (c) 2020 Ciena Corporation.  All rights
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision 2020-09-24 {
+    description
+      "Initial version";
+    reference
+      "RFC 5425: Transport Layer Security (TLS) Transport Mapping for Syslog.";
+  }
+
+  /*
+   * Configuration data nodes
+   */
+  augment /syslog:syslog/syslog:log-actions {
+    container remote-syslog-tls {
+      description
+        "This container describes  the syslog over TLS configuration for remote logginng.";
+
+      leaf admin-state {
+        type ciena-types:admin-state;
+        default enabled;
+        description
+          "The administrative state of syslog TLS.";
+      }
+
+      leaf tls-service-profile {
+        type leafref {
+          path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+        }
+        description
+          "The TLS Service Profile for accepting TLS connections.";
+      }
+
+      leaf timeout {
+        type uint8 {
+          range "1..30";
+        }
+        units "seconds";
+        default "6";
+        description
+          "Timeout for syslog TLS server response.";
+      }
+
+      list destination {
+        key address;
+        max-elements 4;
+        description
+          "This list describes a collection of remote syslog TLS destination targets.";
+
+        leaf address {
+          type "inet:host";
+          description
+            "Syslog TLS server IP address or a DNS domain name.";
+        }
+
+        leaf admin-state {
+          type ciena-types:admin-state;
+          default enabled;
+          description
+            "The administrative state of the Syslog TLS server.";
+        }
+
+        leaf port {
+          type "inet:port-number" {
+            range "1..65535";
+          }
+          default 6514;
+          description
+            "Port number for syslog over TLS connection.";
+        }
+
+        leaf facility {
+          type identityref {
+            base syslogtypes:syslog-facility;
+          }
+          default syslogtypes:local6;
+          description
+            "Describes the syslog facility.";
+        }
+
+        leaf-list severity {
+          type syslogtypes:severity;
+          description
+            "Set a list of severities for the facility.";
+        }
+
+        leaf custom-prefix {
+          type string {
+            length "0..15";
+          }
+          description
+            "Syslog message prefix.";
+        }
+      }
+    }
+  }
+
+  /*
+   * Operational state data nodes
+   */
+
+  augment /syslog:syslog {
+    container syslog-tls-state {
+      config false;
+      description
+        "syslog over TLS state information.";
+
+      leaf oper-state {
+        type ciena-types:oper-state;
+          description
+            "Operational state of syslog over TLS functionality";
+      }
+
+      list statistics {
+        key "address";
+        description
+          "A collection of TLS connection statistics.";
+
+        leaf address {
+          type "inet:host";
+          description
+            "Syslog TLS server IP address or hostname.";
+        }
+ 
+        leaf oper-state {
+          type ciena-types:oper-state;
+          description
+            "Operational state of syslog TLS server";
+        }
+
+        leaf connection-attempts {
+          type yang:counter64;
+          description
+            "Number of connection attempted.";
+        }
+
+        leaf successful-connections  {
+          type yang:counter64;
+          description
+            "Number of successful connection with server.";
+        }
+
+        leaf failed-tcp-connections {
+          type yang:counter64;
+          description
+            "TCP connection failure.";
+        }
+
+        leaf failed-tls-connections {
+          type yang:counter64;
+          description
+            "TLS connection failure.";
+        }
+
+        leaf timed-out-connections {
+          type yang:counter64;
+          description
+            "Timed out connection with server.";
+        }
+
+        leaf unexpected-close-connections {
+          type yang:counter64;
+          description
+            "Unexpected closure of connection.";
+        }
+
+        leaf closed-connections {
+          type yang:counter64;
+          description
+            "Number of closed connections.";
+        }
+
+        leaf last-transport-error {
+          type string;
+          description
+            "Last transport error during TLS connection with server.";
+        }
+      }
+    }
+  }
+
+  rpc clear-syslog-tls-server-stats {
+    description
+      "Clears locally-cached syslog TLS server statistics.";
+    input {
+      choice clear-scope {
+        mandatory true;
+        description
+          "Clear statistics for all or for a specific syslog TLS server.";
+        case server {
+          leaf address {
+            type "inet:host";
+            description
+              "Syslog TLS destination target source address or hostname.";
+
+          }
+          description
+             "Clear stats for this syslog TLS server.";
+        }
+        case all {
+          leaf all {
+            type empty;
+          }
+          description
+             "Clear statistics for all syslog TLS servers.";
+
+        }
+      }
+    }
+    output {
+      leaf status {
+        type ciena-types:status;
+        description
+          "Status of the clear statistics operation.";
+      }
+    }
+  }
+}

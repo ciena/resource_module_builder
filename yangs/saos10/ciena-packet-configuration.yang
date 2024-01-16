@@ -1,0 +1,181 @@
+module ciena-packet-configuration {
+   namespace "http://www.ciena.com/ns/yang/ciena-packet-configuration";
+
+   prefix "cn-packet-config";
+
+   import yuma-ncx {
+      prefix ncx;
+   }
+   import yumaworks-types {
+      prefix ywt;
+   }
+   import ietf-netconf-acm {
+      prefix nacm;
+   }
+   import ietf-inet-types {
+      prefix inet;
+   }
+   import ciena-tls-service-profile {
+      prefix ciena-tls-service-profile;
+   }
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's data definition for configuration file management
+       Copyright (c) 2019 Ciena Corporation.  All rights 
+       reserved. 
+
+       All information contained herein is, and remains the
+       property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained
+       from Ciena Corporation.";
+
+   revision "2020-03-10" {
+      description
+         "Change leaf filename and remote-filename to use NcxFileName type.
+         Update pattern for leaf prefix to allow colon character";
+   }
+   revision "2019-10-06" {
+      description
+         "Added remote-filename, prefix and include-pkix-cetificates leafs";
+   }
+   revision "2019-07-17" {
+      description
+         "1.0";
+   }
+
+   rpc transfer-config {
+      nacm:default-deny-all;
+      description
+         "Start a file download or upload of configuration file";
+
+      input {
+         leaf filename {
+            type ywt:NcxFileName;
+            description
+               "Configuration file name";
+
+         }
+
+         leaf action {
+            mandatory true;
+            type enumeration {
+               enum download;
+               enum upload;
+            }
+            description
+               "Action to be performed on file:
+               download: Download operation
+               upload: Upload operation";
+         }
+
+         leaf url {
+            mandatory true;
+            type inet:uri;
+            description
+               "Destination URL for upload. 
+               Source URL for download.";
+
+         }
+
+         leaf username {
+            type string {
+               length "1..255";
+            }
+            description
+               "Username for authentication";
+         }
+
+         leaf password {
+            ncx:password;
+            type string {
+               length "1..255";
+            }
+            description
+               "Password for authentication";
+         }
+
+         leaf tls-service-profile {
+            type leafref {
+                  path "/ciena-tls-service-profile:tls-service-profiles/ciena-tls-service-profile:tls-service-profile-name";
+            }  
+            description
+               "The TLS Service Profile to be used when accepting
+               TLS connections.";
+         }
+
+         leaf remote-filename {
+            type ywt:NcxFileName;
+            description
+               "Remote file name";
+         }
+
+         leaf include-pkix-certificates {
+            type boolean;
+            default false;
+            description
+               "Include pkix certificates for transfer.
+               leaf remote-filename is required when using this parameter.
+               In case of upload, transfer all certificates from the device to remote server url.
+               For e.g. All certificates will be uploaded in <remote-filename>-certs.tar.gz file
+
+               In case of download, transfer all certificates from remote server url to device
+               For e.g. <remote-filename>-certs.tar.gz file will be downloaded and certificates
+               will be installed on the device.";
+         }
+
+         leaf prefix {
+            type string {
+               length "1..128";
+               pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+            }
+            description
+               "Add prefix string to remote-filename and certificates.
+               leaf remote-filename is required when using this parameter.
+               In case of upload, prefix will be added to the remote-filename and certificates.
+               For e.g. files and certificates uploaded will be <prefix><remote-filename> and
+               <prefix><remote-filename>-certs.tar.gz respectively.
+
+               In case of download, files having prefix to their remote-filename and certificates will be downloaded
+               to device and local filenames will exclude the prefix.
+               For e.g. files and certificates having names <prefix><remote-filename> and
+               <prefix><remote-filename>-certs.tar.gz will downloaded.
+               The name of configuration file downloaded will be local filename used. If local filename is not given
+               then remote-filename will be used excluding the prefix.";
+         }
+
+      }
+
+      output {
+         leaf transfer-status {
+            type enumeration {
+               enum success;
+               enum fail;
+               enum error;
+            }
+            description
+               "Status of file upload or download operation";
+         }
+
+         leaf transfer-status-message {
+            type string {
+               length "1..255";
+            }
+            description
+               "String describing transfer status of upload or 
+               download of configuration file";
+         }
+      }
+   }
+}

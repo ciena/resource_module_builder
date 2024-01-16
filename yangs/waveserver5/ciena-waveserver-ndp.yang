@@ -1,0 +1,171 @@
+module ciena-waveserver-ndp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-ndp";
+  prefix ndp;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the configuration and operational data for Neighbor Discovery Protocol (NDP) on the Waveserver.";
+
+  revision 2020-05-28 {
+    description
+      "Added 'interface-name' as key of 'list neighbors'.";
+    reference
+      "Waveserver OS R2.0.1 user's guide.";
+  }
+  revision 2019-02-12 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of this module.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+
+  typedef neighbor-type-enum {
+    type enumeration {
+      enum "deleted" {
+        value 0;
+        description
+          "Neighboring node is deleted.";
+      }
+      enum "dynamic" {
+        value 1;
+        description
+          "Neighboring node is dynamically linked.";
+      }
+      enum "static" {
+        value 2;
+        description
+          "Neighboring node is statically linked.";
+      }
+    }
+    description
+      "Type of the NDP neighboring nodes.";
+  }
+
+  container waveserver-ndp {
+    ui:ui-name "NDP";
+    description
+      "Waveserver NDP configuration and operational data.";
+    reference
+      "RFC4861 Neighbor Discovery for IP version 6 (IPv6)";
+    container options {
+      ui:ui-name "NDP Options";
+      description
+        "NDP configuration options.";
+      leaf cache-timeout {
+        ui:ui-name "Cache Timeout";
+        type uint16 {
+          range "60 .. 3600";
+        }
+        description
+          "Cache Timeout.";
+      }
+    }
+
+    list neighbors {
+      ui:ui-name "Neighbors";
+      key "ip-address interface-name";
+      config false;
+      description
+        "List of neighboring IPv6 nodes discovered through NDP.";
+      leaf ip-address {
+        ui:ui-name "Ip Address";
+        type cienawstypes:ipv6-address;
+        description
+          "The IPv6 address of a neighboring node.";
+      }
+
+      leaf mac-address {
+        ui:ui-name "MAC Address";
+        type cienawstypes:mac-string;
+        description
+          "The MAC address of a neighboring node.";
+      }
+
+      leaf type {
+        ui:ui-name "Type";
+        type neighbor-type-enum;
+        description
+          "Type of the discoverd neighboring node.";
+      }
+
+      leaf interface-name {
+        ui:ui-name "Interface name";
+        type cienawstypes:string-maxl-16;
+        description
+          "The name of the logical management interface of the neighboring node.";
+      }
+    }
+  }
+
+  rpc waveserver-ndp-delete-neighbor {
+    description
+      "Delete a neighbor node.";
+    input {
+      leaf ip-address {
+        type cienawstypes:ipv6-address;
+        mandatory true;
+        description
+          "The IPv6 address of a neighboring node to be deleted from the NDP table.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-ndp-flush {
+    description
+      "Flush the NDP data for the specified interface. If no interface-name
+       is provided, will flush the entire NDP data.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface name";
+        type cienawstypes:string-maxl-16;
+        description
+          "The name of the logical management interface.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

@@ -1,0 +1,1098 @@
+module ciena-waveserver-configuration {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-configuration";
+  prefix configuration;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-system {
+    prefix system;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines configuration data for the Waveserver.";
+
+  revision 2021-09-07 {
+    description
+      "Added 'commit-revert-time-remaining' and 'rtuc-revert-time-remaining' leafs to state container.";
+    reference
+      "Waveserver OS R2.2 user's guide.";
+  }
+  revision 2021-03-03 {
+    description
+      "Removed deprecated leafs from state container: 'loaded-configuration', 'errors', and 'dirty'.
+       Added new datastore state leafs to state container: 'running', 'candidate', and 'startup'.
+       Removed deprecated 'default-files' container.
+       Removed 'strip-user-comments' and added optional 'datastore' leaf to waveserver-configuration-save RPC.
+       Removed 'strip-user-comments' and 'include-default-settings' leafs from waveserver-configuration-backup RPC.
+       Added optional 'datastore' leaf to waveserver-configuration-reset-to-user-config RPC.
+       Updated input arguments for waveserver-configuration-install to allow for xftp or url input args.
+       Updated input arguments for waveserver-configuration-check to allow for xftp or url input args.
+       Updated input arguments for waveserver-configuration-upload-running-config to allow for xftp or url input args.
+       Removed several deprecated/optional input leafs in waveserver-configuration-upload-running-config rpc
+       Removed waveserver-configuration-clear-backup-config-warning RPC.
+       Removed waveserver-configuration-clear-config-errors-warning RPC.
+       Removed waveserver-configuration-clear-no-config-warning RPC.
+       Moved common rpc output leafs into a grouping.
+       Added waveserver-configuration-restore RPC.
+       Added waveserver-configuration-replace RPC.
+       Added waveserver-configuration-commit RPC.
+       Added waveserver-configuration-datastore-lock RPC.
+       Added waveserver-configuration-datastore-unlock RPC.
+       Added waveserver-configuration-datastore-validate RPC.
+       Added waveserver-configuration-datastore-copy RPC.
+       Added waveserver-configuration-datastore-delete RPC.
+       ";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2018-12-03 {
+    description
+      "Added waveserver-configuration-clear-backup-config-warning RPC.
+       Added waveserver-configuration-clear-config-errors-warning RPC.
+       Added waveserver-configuration-clear-no-config-warning RPC.
+       Added waveserver-configuration-copy RPC.
+       Added waveserver-configuration-rename RPC.
+       Added waveserver-configuration-upload-running-config RPC.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2018-06-19 {
+    description
+      "Added waveserver-configuration-reset-to-defaults RPC.
+       Added waveserver-configuration-reset-to-factory-defaults RPC.
+       Added Zero Touch Provisioning (ZTP) support.";
+    reference
+      "Waveserver Ai R1.3 user's guide.";
+  }
+  revision 2018-04-17 {
+    description
+      "Added 'state' container.
+       Added waveserver-configuration-delete RPC.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+  revision 2017-08-24 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.4 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Added 'include-default-settings' option to waveserver-configuration-save RPC (from WS 1.5).
+       Added 'include-default-settings' option to waveserver-configuration-backup RPC (from WS 1.5).
+       Remove 'max-elements' from the configuration-files/file-list.";
+    reference
+      "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef datastore-type {
+    type enumeration {
+      enum "running" {
+        description
+          "Running datastore.";
+      }
+      enum "candidate" {
+        description
+          "Candidate datastore.";
+      }
+      enum "startup" {
+        description
+          "Startup datastore.";
+      }
+    }
+    description
+      "Datastore type.";
+  }
+
+  typedef datastore-state-enum {
+    type enumeration {
+      enum "empty" {
+        description
+          "Datastore does not exist or has no configuration or operational data.";
+      }
+      enum "ready" {
+        description
+          "Datastore is in stable working state and is non-empty.";
+      }
+      enum "default" {
+        description
+          "Datastore contains only system default values.";
+      }
+      enum "uncommitted" {
+        description
+          "Candidate datastore contains changes that have not been committed to running.";
+      }
+      enum "committed" {
+        description
+          "Candidate datastore is in sync with running datastore.";
+      }
+      enum "saved" {
+        description
+          "Running datastore has been persisted to startup datastore.";
+      }
+      enum "unsaved" {
+        description
+          "Running datastore contains changes that have not been saved to startup datastore.";
+      }
+    }
+    description
+      "The operational state of the specified datastore.";
+  }
+
+  typedef ztp-operational-state {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "ZTP operational state is unknown.";
+      }
+      enum "idle" {
+        value 1;
+        description
+          "ZTP is idle.";
+      }
+      enum "start" {
+        value 2;
+        description
+          "ZTP has started.";
+      }
+      enum "restarting" {
+        value 3;
+        description
+          "ZTP is restarting.";
+      }
+      enum "waiting-for-dhcp-lease" {
+        value 4;
+        description
+          "ZTP is waiting for dhcp lease renewal.";
+      }
+      enum "downloading-boot-file" {
+        value 5;
+        description
+          "ZTP is downloading a boot file.";
+      }
+      enum "parsing-boot-file" {
+        value 6;
+        description
+          "ZTP is parsing a boot file.";
+      }
+      enum "processing-ztp-timeout" {
+        value 7;
+        description
+          "ZTP is processing ztpTimeout attribute.";
+      }
+      enum "processing-license-id" {
+        value 8;
+        description
+          "ZTP is processing license registrationId attribute.";
+      }
+      enum "processing-combo-license" {
+        value 9;
+        description
+          "ZTP is processing combo license.";
+      }
+      enum "downloading-licenses" {
+        value 10;
+        description
+          "ZTP is downloading the license file.";
+      }
+      enum "installing-licenses" {
+        value 11;
+        description
+          "ZTP is installing the license file.";
+      }
+      enum "downloading-login-banner" {
+        value 12;
+        description
+          "ZTP is downloading and processing the login banner.";
+      }
+      enum "downloading-welcome-banner" {
+        value 13;
+        description
+          "ZTP is downloading and processing the welcome banner.";
+      }
+      enum "downloading-config-file" {
+        value 14;
+        description
+          "ZTP is downloading the config file.";
+      }
+      enum "applying-config-file" {
+        value 15;
+        description
+          "ZTP is applying the config file.";
+      }
+      enum "downloading-script-file" {
+        value 16;
+        description
+          "ZTP is downloading the script file.";
+      }
+      enum "applying-script-file" {
+        value 17;
+        description
+          "ZTP is applying the script file.";
+      }
+      enum "processing-software-package" {
+        value 18;
+        description
+          "ZTP is processing the software package.";
+      }
+      enum "requesting-reboot" {
+        value 19;
+        description
+          "ZTP is requesting a cold reboot.";
+      }
+      enum "upgrading-software" {
+        value 20;
+        description
+          "ZTP is upgrading the software load.";
+      }
+      enum "booting" {
+        value 21;
+        description
+          "ZTP is booting.";
+      }
+      enum "failed" {
+        value 22;
+        description
+          "ZTP has failed.";
+      }
+      enum "completed" {
+        value 23;
+        description
+          "ZTP has completed.";
+      }
+    }
+    description
+      "ZTP operational states.";
+  }
+
+  typedef ztp-error {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown ZTP Error.";
+      }
+      enum "none" {
+        value 1;
+        description
+          "No ZTP Errors.";
+      }
+      enum "boot-file-download-failed" {
+        value 2;
+        description
+          "ZTP Boot File Download Failed.";
+      }
+      enum "boot-file-parse-error" {
+        value 3;
+        description
+          "ZTP Error Parsing Boot File.";
+      }
+      enum "ztp-timeout-error" {
+        value 4;
+        description
+          "Error Processing ZTP Timeout.";
+      }
+      enum "license-id-error" {
+        value 5;
+        description
+          "ZTP Error Setting License Registration ID.";
+      }
+      enum "combo-license-error" {
+        value 6;
+        description
+          "ZTP Combo License Error.";
+      }
+      enum "license-download-error" {
+        value 7;
+        description
+          "ZTP Error Downloading Licenses.";
+      }
+      enum "license-install-error" {
+        value 8;
+        description
+          "ZTP Error Installing Licenses.";
+      }
+      enum "license-host-id-mismatch-error" {
+        value 9;
+        description
+          "ZTP Error Installing Licenses: Host Id Mismatch.";
+      }
+      enum "license-warm-reboot-required" {
+        value 10;
+        description
+          "ZTP Error Installing Licenses: Warm Reboot Required.";
+      }
+      enum "license-unsupported-file-type" {
+        value 11;
+        description
+          "ZTP Error Installing Licenses: Unsupported File Type.";
+      }
+      enum "expired-license-file" {
+        value 12;
+        description
+          "ZTP Error Installing Licenses: Expired License File.";
+      }
+      enum "system-time-not-set" {
+        value 13;
+        description
+          "ZTP Error System Time Not Set.";
+      }
+      enum "login-banner-error" {
+        value 14;
+        description
+          "ZTP Error Downloading/Installing Login Banner.";
+      }
+      enum "welcome-banner-error" {
+        value 15;
+        description
+          "ZTP Error Downloading/Installing Welcome Banner.";
+      }
+      enum "script-file-download-failed" {
+        value 16;
+        description
+          "ZTP Failed to Download Script File.";
+      }
+      enum "script-file-apply-failed" {
+        value 17;
+        description
+          "ZTP Failed to Execute Script File.";
+      }
+      enum "config-file-download-failed" {
+        value 18;
+        description
+          "ZTP Failed to Download Config File.";
+      }
+      enum "config-file-apply-failed" {
+        value 19;
+        description
+          "ZTP Failed to Apply Config File.";
+      }
+      enum "software-upgrade-failed" {
+        value 20;
+        description
+          "ZTP Software Package Upgrade Failed.";
+      }
+      enum "software-download-failed" {
+        value 21;
+        description
+          "ZTP Software Download Failed.";
+      }
+      enum "software-already-running" {
+        value 22;
+        description
+          "ZTP Did Not Upgrade Software. Correct
+           Software Load is Already Installed.";
+      }
+    }
+    description
+      "ZTP errors.";
+  }
+
+  grouping rpc-output {
+    description
+      "Common output leafs for configuration RPC calls.";
+    leaf return-code {
+      type uint32;
+      description
+        "return code: 0 is success; non-zero is failure";
+    }
+
+    leaf return-string {
+      type string;
+      description
+        "Return code description";
+    }
+  }
+
+  container waveserver-configuration {
+    ui:ui-name "Configuration";
+    description
+      "Waveserver Configuration: configuration data and operational data.";
+    container state {
+      ui:ui-name "Configuration State";
+      config false;
+      description
+        "System configuration status operational data.";
+      leaf operational-state {
+        ui:ui-name "Operational State";
+        type enumeration {
+          enum "idle" {
+            description
+              "Configuration subsystem is idle.";
+          }
+          enum "loading" {
+            description
+              "Configuration subsystem is loading the default, startup or
+               installed configuration.";
+          }
+          enum "augmenting" {
+            description
+              "Configuration is being augmented from another file. The config
+               data will be applied to the running config without replacing it.";
+          }
+          enum "checking" {
+            description
+              "Configuration subsystem is performing syntax validation on a
+               configuration file.";
+          }
+        }
+        description
+          "The operational state of the configuration management subsystem.";
+      }
+
+      leaf running {
+        ui:ui-name "Running Datastore State";
+        type datastore-state-enum;
+        description
+          "State of the running datastore (e.g. 'default', 'saved', 'unsaved').";
+      }
+
+      leaf candidate {
+        ui:ui-name "Candidate Datastore State";
+        type datastore-state-enum;
+        description
+          "State of the candidate datastore (e.g. 'default', 'uncommitted', 'committed').";
+      }
+
+      leaf startup {
+        ui:ui-name "Startup Datastore State";
+        type datastore-state-enum;
+        description
+          "State of the startup datastore (e.g. 'empty', 'ready', 'default').";
+      }
+
+      leaf commit-revert-time-remaining {
+        ui:ui-name "Commit Revert Time Remaining";
+        type cienawstypes:string-maxl-32;
+        description
+          "Time remaining on the revert timer for pending commit operation, if
+           applicable. The format is 'N[yMwdhms]', for example '1h10m30s'.";
+      }
+
+      leaf rtuc-revert-time-remaining {
+        ui:ui-name "RTUC Revert Time Remaining";
+        type cienawstypes:string-maxl-32;
+        description
+          "Time remaining on the revert timer for pending reset-to-user-config
+           operation, if applicable. The format is 'N[yMwdhms]', for example
+           '1h10m30s'.";
+      }
+    }
+
+    list datastore-locks {
+      key "datastore";
+      config false;
+      description
+        "List of datastore locks. A lock is owned by the session that created
+         it. A lock can be removed by the session that created it or by another
+         service using the force attribute of the unlock RPC. Locks do not persist
+         over a system restart.";
+      leaf datastore {
+        type datastore-type;
+        description
+          "Target datastore of the lock.";
+      }
+
+      leaf session-id {
+        type uint32;
+        description
+          "Session ID holding the lock.";
+      }
+    }
+
+    container configuration-files {
+      ui:ui-name "Configuration Files";
+      config false;
+      description
+        "List of saved configuration files on the Waveserver.";
+      leaf-list file-list {
+        ui:ui-name "File List";
+        type cienawstypes:string-maxl-254;
+        config false;
+        description
+          "The filename list for all the saved configuration files.";
+      }
+    }
+
+    container ztp {
+      ui:ui-name "Zero Touch Provisioning";
+      description
+        "Waveserver Configuration: zero touch provisioning data";
+      container state {
+        ui:ui-name "ZTP State";
+        description
+          "ZTP configuration and operational data.";
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether the ZTP admin state is enabled or disabled.
+             When ZTP is disabled, DHCP bootfile requests will be ignored.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type ztp-operational-state;
+          config false;
+          description
+            "The current status or functional step being executed in the
+             ZTP process. ZTP operational state will be 'idle' before ZTP
+             is run, and 'completed' when the bootfile has been fully
+             processed and applied.";
+        }
+
+        leaf last-failure {
+          ui:ui-name "Last ZTP Failure";
+          type ztp-error;
+          config false;
+          description
+            "The most recent failure encountered while running ZTP. This
+             failure will be blank if no failure has occurred, or if the
+             failure has been cleared due to successful completion of
+             ZTP procedure.";
+        }
+
+        leaf ztp-timeout {
+          ui:ui-name "ZTP Timeout";
+          type uint16 {
+            range "30 .. 3600";
+          }
+          units "seconds";
+          config false;
+          description
+            "ZTP timeout value setting in seconds. The default is
+             30 seconds unless changed by the user in the boot file.
+             This is the timeout value used before requesting a DHCP
+             lease renewal on a ZTP failure.";
+        }
+
+        leaf last-command-file {
+          ui:ui-name "Last ZTP Command File";
+          type cienawstypes:string-maxl-256;
+          config false;
+          description
+            "The filename of the most recent command file (bootfile)
+             processed by DHCP/ZTP.";
+        }
+
+        leaf last-config-file {
+          ui:ui-name "Last ZTP Config File";
+          type cienawstypes:string-maxl-256;
+          config false;
+          description
+            "The filename of the most recent config file processed by ZTP.";
+        }
+
+        leaf tftp-server {
+          ui:ui-name "DHCP Option 66 Tftp Server Name";
+          type cienawstypes:string-maxl-64;
+          config false;
+          description
+            "Tftp Server Name received in DHCP option 66.";
+        }
+      }
+    }
+  }
+
+  rpc waveserver-configuration-save {
+    description
+      "Save the running config to the startup config (i.e. commit running datastore),
+       or if filename is specified, export a datastore to a local configuration file
+       in text format.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        description
+          "Optional filename in which to store the exported CLI or JSON config.
+           If omitted the running config datastore will be saved to the startup
+           config. If specified, the operation is an export. Datastore name and
+           file format are appended to the user supplied file name for usability.
+           The added suffixes will not be used in any way and are not required for
+           files installed by the user. For example: userFile.running.json";
+      }
+
+      leaf datastore {
+        ui:ui-name "Datastore";
+        type datastore-type;
+        default "running";
+        description
+          "Source datastore to save: running, startup, or candidate. Only applicable
+           when specifying a filename for exporting the saved config.";
+      }
+
+      leaf include-default-settings {
+        ui:ui-name "Include Default Settings";
+        type boolean;
+        default "false";
+        description
+          "Indicates whether to include the default settings when exporting the
+           configuration to a file.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-backup {
+    description
+      "Create a full backup archive for use in a configuration restore operation.
+       Includes current configuration datastores (running, candidate, and startup)
+       in native binary format, as well as addition log and system files.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the backup configuration archive file to be saved in the
+           local config directory.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-restore {
+    description
+      "Load the startup, candidate, and running configuration datastores from a
+       specified binary database file in the local config directory.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the backup configuration file.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-install {
+    description
+      "Install configuration file from remote location to local config directory.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the configuration file to install.";
+      }
+
+      leaf url {
+        type cienawstypes:string-maxl-254;
+        description
+          "The URL specifying the remote location and config file name to install.
+           Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.
+           If url leaf is not empty, the xftp related leafs will be ignored.";
+      }
+
+      uses system:server-settings-group;
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-check {
+    description
+      "Check the specified configuration file for syntax/schema errors.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the configuration file to check.";
+      }
+
+      leaf url {
+        type cienawstypes:string-maxl-254;
+        description
+          "The URL specifying the remote location and config file name to install.
+           Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.
+           If url leaf is not empty, the xftp related leafs will be ignored.";
+      }
+
+      uses system:server-settings-group;
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-delete {
+    description
+      "Delete local configuration file.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the configuration file to delete.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-reset-to-user-config {
+    description
+      "By default replace the running config with the user-specified configuration file.
+       If candidate datastore is specified then the candidate is replaced. This is an
+       alias for configuration-replace.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the user-specified configuration file.";
+      }
+
+      leaf datastore {
+        type datastore-type;
+        default "running";
+        description
+          "Datastore to replace, either running or candidate. Running is default.";
+      }
+
+      leaf revert-timeout {
+        ui:ui-name "Revert Timeout";
+        type cienawstypes:string-maxl-32;
+        description
+          "If specified the user must cancel the timer to make the reset action
+           permanent otherwise the target datastore will revert to its previous state.
+           The format is N[yMwdhms] for example 1h10m30s";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-replace {
+    description
+      "By default replace the running config with the user-specified configuration file.
+       If candidate datastore is specified then the candidate is replaced. This is an
+       alias for reset-to-user-config.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the user-specified configuration file.";
+      }
+
+      leaf datastore {
+        type datastore-type;
+        default "running";
+        description
+          "Datastore to replace, either running or candidate. Running is default.";
+      }
+
+      leaf revert-timeout {
+        ui:ui-name "Revert Timeout";
+        type cienawstypes:string-maxl-32;
+        description
+          "If specified the user must cancel the timer to make the replace action
+           permanent otherwise the target datastore will revert to its previous state.
+           The format is N[yMwdhms] for example 1h10m30s";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-reset-to-defaults {
+    description
+      "Reset the configuration file to system default settings.";
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-reset-to-factory-defaults {
+    description
+      "Perform a full RTFD operation on the configuration and system files.";
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-cancel-revert {
+    description
+      "Cancel the configuration automatic revert when the auto-revert timer is
+       running.";
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-commit {
+    description
+      "Commit the candidate config datastore to the running config datastore.";
+    input {
+      leaf revert-timeout {
+        type string;
+        description
+          "If specified the user must cancel the revert timer to make the configuration
+           permanent, otherwise the running config will revert to its previous state
+           when the timer expires.
+           The format is N[yMwdhms] for example 1h10m30s";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-datastore-lock {
+    description
+      "Apply a session lock on a datastore whereby only the current session can
+       change the configuration. Lock will be enforced until explicitly released
+       by the owner, or the session holding the lock is terminated.";
+    input {
+      leaf datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Datastore to be locked.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-datastore-unlock {
+    description
+      "Release a session lock on a datastore. Datastore can only be unlocked
+       by the session holding the lock, unless the force option is used by an
+       authorized user. A lock can be implicily released by killing the session
+       of the lock owner.";
+    input {
+      leaf datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Datastore to be unlocked.";
+      }
+
+      leaf force {
+        type boolean;
+        description
+          "Force an unlock of the datastore held by another session.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-datastore-validate {
+    description
+      "Validate a datastore.";
+    input {
+      leaf datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Datastore to be validated.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-datastore-copy {
+    description
+      "Copy the specified configuration datastore to the specified destination.
+       For example, running config datastore can be copied to startup or candidate.";
+    input {
+      leaf source-datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Source datastore to be copied from.";
+      }
+
+      leaf destination-datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Destination datastore to be copied to.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-datastore-delete {
+    description
+      "Delete the contents of a configuration datastore or return the
+       configuration to factory default state.";
+    input {
+      leaf datastore {
+        type datastore-type;
+        mandatory true;
+        description
+          "Datastore to be deleted.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-ztp-reset-last-command-file {
+    description
+      "Reset the last command file processed by ZTP";
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-ztp-reset-last-config-file {
+    description
+      "Reset the last config file processed by ZTP";
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-copy {
+    description
+      "Copy configuration file in the local config directory to another file.";
+    input {
+      leaf source-filename {
+        ui:ui-name "Source File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the file to be copied from.";
+      }
+
+      leaf destination-filename {
+        ui:ui-name "Destination File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the file to be copied to.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-rename {
+    description
+      "Rename configuration file to another filename.";
+    input {
+      leaf source-filename {
+        ui:ui-name "Source File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the file to be renamed.";
+      }
+
+      leaf destination-filename {
+        ui:ui-name "Destination File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The renamed filename.";
+      }
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+
+  rpc waveserver-configuration-upload-running-config {
+    description
+      "Upload a snapshot of the running configuration to a specified remote
+       location in CLI format without changing the saved configuration on the
+       local system.";
+    input {
+      leaf filename {
+        ui:ui-name "File Name";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The name of the configuration file to install.";
+      }
+
+      leaf differences-from-saved {
+        ui:ui-name "Differences From Saved";
+        type boolean;
+        description
+          "Indicates whether to limit the output to only include differences
+           between the running configuration and the saved configuration.";
+      }
+
+      leaf url {
+        type cienawstypes:string-maxl-254;
+        description
+          "The URL specifying the remote location and config file name to install.
+           Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.
+           If url leaf is not empty, the xftp related leafs will be ignored.";
+      }
+
+      uses system:server-settings-group;
+    }
+
+    output {
+      uses rpc-output;
+    }
+  }
+}

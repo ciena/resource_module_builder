@@ -1,0 +1,271 @@
+module ciena-ieee1914-dot3-roe-augment {
+  namespace "http://www.ciena.com/ns/yang/ciena-ieee1914-dot3-roe-augment";
+  prefix "ciena-ieee1914-dot3-roe-augment";
+
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  import ieee1914-dot3-roe {
+    prefix ieee1914-dot3-roe;
+  }
+
+  import openconfig-interfaces {
+     prefix oc-if;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+      
+  description
+    "This YANG module defines Ciena's augments to the ieee1914-dot3-roe model.
+
+      Copyright (c) 2020 Ciena Corporation.  All rights 
+      reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this 
+      information or reproduction of this material is strictly 
+      forbidden unless prior written permission is obtained from 
+      Ciena Corporation.";
+
+  revision 2021-10-01 {
+     description
+       "Modified DCR timestamp to allow negative values.";
+  }
+
+  revision 2021-07-13 {
+     description
+       "Added leaf dcr-sync-reference (boolean).";
+  }
+
+  revision 2020-10-01 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  typedef sync-oper-state {
+    type enumeration {
+      enum free-run {
+        description
+          "The clock has never been synchronized and is not in the process of
+           synchronizing to an input reference.";
+      }
+      enum acquiring {
+        description
+          "The clock is in the process of synchronizing to an input reference.";
+      }
+      enum locked {
+        description
+          "The clock is synchronized to an input reference and is within some
+           internal acceptable accuracy.";
+      }
+      enum holdover {
+        description
+          "The clock is no longer synchronized to an input reference and is using
+           information obtained while it was previously synchronized to maintain
+           performance within desired specification.";
+      }
+    }
+    description
+      "Possible states of synchronization.";
+  }
+
+  grouping timestamp {
+    description
+      "A timestamp comprised of integer and fractional nanosecond portions.
+       This timestamp for DCR error can report negative and positive values.";
+    reference
+      "Based on 5.5.5.3 of IEEE Std 1914.3-2018";
+    leaf integer-nanosecond {
+      type int32 {
+        range "-16777215..16777215";
+      }
+      units "nanoseconds";
+      default "0";
+      description
+        "The postive or negative integer nanosecond portion of the timestamp.";
+      reference
+        "Based on 5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+    leaf fractional-nanosecond {
+      type int8 {
+        range "-31..31";
+      }
+      default "0";
+      description
+        "The postive or negative fractional nanosecond portion of the timestamp.
+         It counts in fractions of a nanosecond (0.03125 ns) where 0
+         represents 0 ns and 31 represents 0.96875 ns.";
+      reference
+        "Based on 5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+  }
+
+  augment "/if:interfaces/if:interface/ieee1914-dot3-roe:roe-interface" {
+    description
+      "Augmenting ietf-interfaces roe interfaces for ciena specific configuration.";
+
+    leaf associated-ettp {
+      type leafref {
+        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+      }
+      description
+        "This is associated ettp to the radio-over-ethernet interface.";
+    }
+
+    container dcr-status {
+      config false;
+      description
+      "DCR status";
+
+      leaf dcr-sync-status {
+        type sync-oper-state;
+        description
+          "Indicates if DCR has achieved synchronization.";
+      }
+
+      leaf dcr-sync-reference {
+        type boolean;
+        description
+           "Indicates if the associated ettp is the sync reference for interfaces in the same DCR group.";
+      }
+
+      container average-dcr-roe-error {
+        description
+          "Average DCR RoE error.";
+        uses timestamp;
+      }
+
+      container maximum-dcr-roe-error {
+        description
+          "Maximum DCR RoE error.";
+        uses timestamp;
+      }
+
+      container current-dcr-roe-error {
+        description
+          "Current DCR RoE error.";
+        uses timestamp;
+      }
+
+      container dcr-phase-offset {
+        description
+          "DCR phase offset.";
+        uses timestamp;
+      }
+    }
+  }
+
+  augment "/if:interfaces/if:interface/ieee1914-dot3-roe:roe-interface/ieee1914-dot3-roe:mapper-demapper" {
+    description
+      "Augmenting ietf-interfaces roe interfaces mapper-demapper for ciena specific configuration.";
+
+    leaf destination-mac {
+      type yang:mac-address;
+      description 
+        "For an RoE mapper: identifies the destination.
+         For an RoE de-mapper: identifies the destination.";
+    }
+
+    leaf source-mac {
+      type yang:mac-address;
+      config false;
+      description 
+        "For an RoE mapper: identifies the source.
+         For an RoE de-mapper: identifies the source.";
+    }
+
+    container demapper-status {
+      config false;
+      description
+        "Statistics related to demapper";
+
+      leaf sequence-number-out-of-order-event {
+        type yang:counter32;
+        description
+          "Count of the sequence number out-of-order events";
+      }
+
+      leaf buffer-status {
+        type enumeration {
+          enum NO_FAULT {
+          description
+            "buffer has not experienced overflow or underflow condition";
+          }
+          enum OVERFLOW {
+          description
+            "buffer has experienced an overflow condition";
+          }
+          enum UNDERFLOW {
+          description
+            "buffer has experienced an underflow condition";
+          }
+        }
+        default NO_FAULT;
+        description
+          "RoE buffer status.";
+      }
+
+      leaf roe-presentation-time-out-of-sync {
+        type boolean;
+        default false;
+        description
+          "Status of RoE presentation time out-of-sync";
+      }
+
+      leaf roe-presentation-time-out-of-sync-count {
+        type yang:counter32;
+        description
+          "Count of RoE presentation time out-of-sync events. Represents the number 
+           of times presentation time was recorded out of sync during the operation";
+      }
+    }
+  }
+
+  augment "/if:interfaces/if:interface/if:statistics" {
+    description
+      "Augmenting ietf-interfaces statistics for ciena specific statistics.";
+
+    leaf missing-pkts {
+      type yang:counter64;
+      description
+         "The number of missing packets.";
+    }
+
+    leaf out-of-order-pkts {
+      type yang:counter64;
+      description
+         "The number of out of order packets.";
+    }
+
+    leaf out-of-window-pkts {
+      type yang:counter64;
+      description
+         "The number of late arriving packets.";
+    }
+
+    leaf cpu-excepted-pkts {
+      type yang:counter64;
+      description
+         "The number of execpted packets to cpu including corrupted pkts.";
+    }
+  }
+}

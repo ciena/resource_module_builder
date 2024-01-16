@@ -1,0 +1,202 @@
+module ciena-management-plane {
+   namespace "http://www.ciena.com/ns/yang/ciena-management-plane";
+   prefix "mgmt";
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   import ciena-openconfig-interfaces {
+      prefix "cn-if";
+   }
+
+   import ciena-types {
+      prefix ciena;
+   }
+
+   import ietf-netconf-acm {
+      prefix nacm;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module is used to configure management plane
+       behaviors, such as client source-ip overrides, application
+       enable/disable, etc.
+
+       Copyright (c) 2020  Ciena Corporation.  All rights
+       reserved.
+
+       All information contained herein is, and remains the
+       property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained
+       from Ciena Corporation.";
+
+   revision "2022-06-20" {
+      description
+         "Added a configuration parameter to provide management domain separation.
+          Added a state object for oper state of the management domain.
+          Added an RPC to configure management domain isolation
+          Added a notification for management domain admin and operation state change";
+   }
+
+   revision "2021-06-20" {
+      description
+         "Making enable as false by default for all the server-applications";
+   }
+
+   revision "2020-04-03" {
+      description
+         "Initial revision";
+   }
+
+   typedef server-application-type {
+      description
+         "Name of the server application to be configured.";
+      type enumeration {
+         enum "web-gui" {
+            description "Web GUI server";
+         }
+      }
+   }
+
+   grouping source-ip-config {
+      leaf interface {
+         description
+            "When clients are reaching out towards a server, the first appropriate address from this interface will be used.
+             Clients using the v4 stack will use the first v4 address on this interface as their source address.
+             Clients using the v6 stack will use the first v6 address on this inteface as their source address.";
+         type leafref {
+            path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+         }
+         must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]" +
+              "/oc-if:config/cn-if:role = 'cn-if:management'" {
+                 error-message
+                    "The management-plane default-source-ip configuration must reference an existing management interface.
+                     This interface cannot be removed while it is referenced by management-plane default-source-ip.";
+         }
+      }
+   }
+
+   container management-plane {
+      description
+         "Configuration parameters for management plane behaviors.";
+
+      container default-source-ip {
+         description
+            "Used to configure the default source-ip address and/or
+             interface that will be used for outgoing connections from
+             the device.";
+
+         uses source-ip-config;
+      }
+
+      container server-applications {
+         description
+            "Management plane configuration for server applications.
+             Configuration is managed separately per application.";
+
+         list application {
+            description
+               "List of applications and their management plane configuration.";
+            key "application";
+            leaf application {
+               description
+                  "An application on which supports management plane configuration";
+               type server-application-type;
+            }
+            leaf enable {
+               description
+                  "Enable/disable application.  Not all applications support enable/disable.";
+               type boolean;
+               default false;
+            }
+         }
+      }
+   }
+
+   container management-domain {
+      nacm:default-deny-all;
+      description
+         "Separate management from non-management domain";
+
+      leaf admin-state {
+         type ciena:admin-state;
+         default disabled;
+         description
+            "Enable/Disable isolation of management domain, admin-state will be updated by the YANG RPC";
+      }
+   }
+
+   container management-domain-state {
+      config false;
+
+      leaf oper-state {
+         type ciena:oper-state;
+         description
+             "management domain operational status";
+      }
+
+      leaf admin-state {
+         type ciena:admin-state;
+         description
+            "Management domain admin state";
+      }
+
+      leaf management-domain-status {
+         type string;
+         description
+            "Return status of management-domain";
+      }
+   }
+
+   rpc management-domain-switch-auto-reboot {
+      nacm:default-deny-all;
+      input {
+         leaf admin-state {
+            type ciena:admin-state;
+            default disabled;
+            description
+               "Enable/Disable isolation of management domain";
+         }
+      }
+
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for managemet-domain-switch failure";
+         }
+      }
+   }
+
+   notification mgmt-domain-config-event {
+      leaf admin-state {
+         type ciena:admin-state;
+         description
+            "Management domain administrative status";
+      }
+      leaf oper-state {
+         type ciena:oper-state;
+         description
+             "management domain operational status";
+      }
+      leaf event-reason {
+         type string;
+         description
+            "Additional event information, when available";
+      }      
+   }
+}

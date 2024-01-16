@@ -1,0 +1,917 @@
+module ciena-dhcp {
+  namespace "http://www.ciena.com/ns/yang/ciena-dhcp";
+  prefix dhcp;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the YANG definition of DHCP client and layer-2
+     relay agent parameters per Ciena functional specifications
+     106-0008-001_CES_DHCPClient_FS.doc and
+     106-0009-001_CES_DHCP_Relay_FS.doc.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains the property of
+     Ciena Corporation. Dissemination of this information or
+     reproduction of this material is strictly forbidden unless prior
+     written permission is obtained from Ciena Corporation.";
+
+  revision 2017-06-26 {
+    description
+      "Added '-time' to some leaves to make their purpose more clear.
+       Changed some leaf-list nodes to leaf nodes because they could
+       have only one element.  Renamed the
+       dhcp-client-state/option-value/vivsi leaf-list to the
+       dhcp-client/option-value/bootfile-uri leaf because the original
+       name did not reflect the actual value.";
+    reference
+      "Ciena Functional Specification.";
+  }
+
+  revision 2017-04-25 {
+    description
+      "Added tpid-rotation to DHCP.  Updated the file to move
+       operational state data containers up a level now that operational
+       data is supported and better understood.";
+    reference
+      "Ciena Functional Specification.";
+  }
+
+  revision 2016-08-04 {
+    description
+      "Initial revision.";
+    reference
+      "RFC 2131, Dynamic Host Configuration Protocol
+       RFC 2132, DHCP Options and BOOTP Vendor Extensions
+       RFC 3046, DHCP Relay Agent Information Option
+       RFC 3925, Vendor-Identifying Vendor Options for
+                 Dynamic Host Configuration Protocol version 4
+                 (DHCPv4)";
+  }
+
+  typedef state {
+    type enumeration {
+      enum enabled {
+        description
+        "The node is enabled.";
+      }
+      enum disabled {
+        description
+        "The node is disabled.";
+      }
+    }
+    description
+      "The state of the node.";
+  }
+
+  typedef admin-state {
+    type state;
+    description
+      "The admin state of the node.";
+  }
+  
+  typedef oper-state {
+    type state;
+    description
+      "The oper state of the node.";
+  }
+
+  typedef on-off-state {
+    type enumeration {
+      enum off {
+        description 
+          "The off state.";
+      }
+      enum on {
+        description 
+          "The on state.";
+      }
+    }
+    description 
+      "The on / off state.";
+  } 
+
+  typedef relay-type {
+    type enumeration {
+      enum vlan {
+        description
+          "Relay agent is attached to a VLAN.";
+      }
+      enum vs {
+        description
+          "Relay agent is attached to a virtual switch.";
+      }
+    }
+    description
+      "The type of network element to which the relay agent is
+       attached.";
+  }
+
+  container dhcp-client {
+    description
+      "This is the top-level container for the DHCP client entity.  It
+       contains DHCP client configuration values and the operational
+       state container.";
+    reference
+      "RFC 2131, RFC 2132";
+
+    leaf admin-state {
+      type admin-state;
+      description
+        "The global administrative state of the DHCP client.";
+    }
+
+    leaf interface-type {
+      type enumeration {
+        enum active {
+          description
+            "Select the active interface.  This value applies only to
+             devices that have an active interface.";
+        }
+        enum local {
+          description
+            "Select the local interface.  This value applies only to
+             devices that have a local interface.";
+        }
+        enum remote {
+          description
+            "Select the remote interface.";
+        }
+      }
+      description
+        "The name of the interface to which the DHCP client is
+         connected.  Two names are in common use for the non-remote
+         interface:  active (SAOS 8.x) and local (SAOS 6.x).  For 8.x
+         platforms, active is accepted and local is rejected with an
+         error message; for 6.x platforms, local is accepted and active
+         is rejected with an error message.  In addition, some 6.x
+         platforms do not have a local interface.  For those, local will
+         also be rejected with an error message.";
+    }
+
+    leaf discovery-interval {
+      type uint8 {
+        range "1..60";
+      }
+      units seconds;
+      description
+        "The number of seconds between the transmission of successive
+         Discover messages.";
+    }
+
+    leaf requested-lease-time {
+      type uint32 {
+        range "45..4294967294";
+      }
+      units seconds;
+      description
+        "The lease time requested from the server, in seconds.  Uses
+         the IP Address Lease Time option, option 51.";
+      reference
+        "RFC 2132, Section 9.2";
+    }
+
+    container option-enable {
+      description
+        "Specifies the option codes to be included in the Parameter
+         Request List option, option 55, and to be used if received.
+         (An option may be included in the Parameter Request List even
+         if not enabled, but it will be ignored if received if it is
+         not enabled.)";
+      reference
+        "RFC 2132, Section 9.8";
+
+      leaf subnet-mask {
+        type boolean;
+        description
+          "Subnet Mask option, option 1";
+        reference
+          "RFC 2132, Section 3.3";
+      }
+
+      leaf time-offset {
+        type boolean;
+        description
+          "Time Offset option, option 2";
+        reference
+          "RFC 2132, Section 3.4";
+      }
+
+      leaf router {
+        type boolean;
+        description
+          "Router Option, option 3";
+        reference
+          "RFC 2132, Section 3.5";
+      }
+
+      leaf domain-name-server {
+        type boolean;
+        description
+          "Domain Name Server Option, option 6";
+        reference
+          "RFC 2132, Section 3.8";
+      }
+
+      leaf log-server {
+        type boolean;
+        description
+          "Log Server Option, option 7";
+        reference
+          "RFC 2132, Section 3.9";
+      }
+
+      leaf host-name {
+        type boolean;
+        description
+          "Host Name Option, option 12";
+        reference
+          "RFC 2132, Section 3.14";
+      }
+
+      leaf domain-name {
+        type boolean;
+        description
+          "Domain Name option, option 15";
+        reference
+          "RFC 2132, Section 3.17";
+      }
+
+      leaf ntp-servers {
+        type boolean;
+        description
+          "Network Time Protocol (NTP) Servers Option, option 42";
+        reference
+          "RFC 2132, Section 8.3";
+      }
+
+      leaf lease-time {
+        type boolean;
+        description
+          "IP Address Lease Time, option 51";
+        reference
+          "RFC 2132, Section 9.2";
+      }
+
+      leaf tftp-server-name {
+        type boolean;
+        description
+          "TFTP Server Name option, option 66";
+        reference
+          "RFC 2132, Section 9.4";
+      }
+
+      leaf bootfile-name {
+        type boolean;
+        description
+          "Bootfile Name option, option 67";
+        reference
+          "RFC 2132, Section 9.5";
+      }
+
+      leaf vivsi {
+        type boolean;
+        description
+          "Vendor-Identifying Vendor-Specific Information Option,
+           option 125";
+        reference
+          "RFC 3925, Section 4";
+      }
+    }
+  }
+
+  container dhcp-client-state {
+    config false;
+    description
+      "DHCP client operational values.";
+    reference
+      "RFC 2131, RFC 2132";
+
+    leaf oper-state {
+      type oper-state;
+      description
+        "The global operational state of the DHCP client.";
+    }
+
+    leaf dhcp-state {
+      type string;
+      description
+        "The state of the DHCP client, as described in RFC 2131.";
+    }
+
+    leaf lease-time {
+      type uint32;
+      units seconds;
+      description
+        "The duration of the current lease in seconds.  The received
+         value of the IP Address Least Time option, option 51.";
+      reference
+        "RFC 2132, Section 9.2";
+    }
+
+    leaf lease-time-remaining {
+      type uint32;
+      units seconds;
+      description
+        "The remaining time of the current lease in seconds.";
+    }
+
+    leaf renewal-time {
+      type uint32;
+      units seconds;
+      description
+        "The initial time before the current lease is renewed (T1), in
+         seconds.";
+    }
+
+    leaf renewal-time-remaining {
+      type uint32;
+      units seconds;
+      description
+        "The remaining time before the current lease is renewed (T1),
+         in seconds.";
+    }
+
+    leaf rebinding-time {
+      type uint32;
+      units seconds;
+      description
+        "The initial time before the current lease is rebound (T2), in
+         seconds.";
+    }
+
+    leaf rebinding-time-remaining {
+      type uint32;
+      units seconds;
+      description
+        "The remaining time before the current lease is rebound (T2),
+         in seconds.";
+    }
+
+    leaf dhcp-server-identifier {
+      type inet:ipv4-address;
+      description
+        "The IP address of the server providing the current lease.
+         The received value of the Server Identifier option, option
+         54.";
+      reference
+        "RFC 2132, Section 9.7";
+    }
+
+    container option-value {
+      description
+        "Contains the values of options received.";
+
+      leaf subnet-mask {
+        type inet:ipv4-address;
+        description
+          "Subnet Mask option, option 1";
+        reference
+          "RFC 2132, Section 3.3";
+      }
+
+      leaf time-offset {
+        type int32;
+        units seconds;
+        description
+          "Time Offset option, option 2.  Offset from Coordinated
+           Universal Time (UTC), in seconds.";
+        reference
+          "RFC 2132, Section 3.4";
+      }
+
+      leaf-list router {
+        type inet:ipv4-address;
+        max-elements 63;
+        description
+          "Router Option, option 3";
+        reference
+          "RFC 2132, Section 3.5";
+      }
+
+      leaf-list domain-name-server {
+        type inet:ipv4-address;
+        max-elements 63;
+        description
+          "Domain Name Server Option, option 6";
+        reference
+          "RFC 2132, Section 3.8";
+      }
+
+      leaf-list log-server {
+        type inet:ipv4-address;
+        max-elements 63;
+        description
+          "Log Server Option, option 7";
+        reference
+          "RFC 2132, Section 3.9";
+      }
+
+      leaf host-name {
+        type string;
+        description
+          "Host Name Option, option 12";
+        reference
+          "RFC 2132, Section 3.14";
+      }
+
+      leaf domain-name {
+        type string;
+        description
+          "Domain Name option, option 15";
+        reference
+          "RFC 2132, Section 3.17";
+      }
+
+      leaf-list ntp-servers {
+        type inet:ipv4-address;
+        max-elements 63;
+        description
+          "Network Time Protocol (NTP) Servers Option, option 42";
+        reference
+          "RFC 2132, Section 8.3";
+      }
+
+      leaf lease-time {
+        type uint32;
+        units seconds;
+        description
+          "IP Address Lease Time, option 51, in seconds";
+        reference
+          "RFC 2132, Section 9.2";
+      }
+
+      leaf tftp-server-name {
+        type string;
+        description
+          "TFTP Server Name option, option 66";
+        reference
+          "RFC 2132, Section 9.4";
+      }
+
+      leaf bootfile-name {
+        type string;
+        description
+          "Bootfile Name option, option 67";
+        reference
+          "RFC 2132, Section 9.5";
+      }
+
+      leaf bootfile-uri {
+        type string;
+        description
+          "Ciena Bootfile URI Sub-Option (16) of the Vendor-Identifying
+           Vendor-Specific Information Option, option 125";
+        reference
+          "RFC 3925, Section 4";
+      }
+    }
+  }
+
+  container dhcp-tpid-rotation {
+    description
+      "Top level container for the DHCP TPID rotation configuration.";
+
+    leaf state {
+      type on-off-state;
+      description
+        "The state of the TPID rotation controller.  When 'on', the
+         egress TPID used by the DHCP and DHCPv6 clients while searching
+         for an appropriate server on the remote interface is
+         periodically rotated to the next TPID value in the sequence
+         0x8100, 0x88a8, 0x9100, and untagged.";
+    }
+  }
+
+  container dhcp-tpid-rotation-state {
+    config false;
+    description
+      "DHCP TPID rotation operational state.";
+    leaf last-tpid {
+      type enumeration {
+        enum tpid-none {
+          description
+            "No TPID has been set by the TPID rotation controller.
+             Egress frames use the default TPID.";
+        }
+        enum tpid-untagged {
+          description
+            "Egress frames are untagged.";
+        }
+        enum tpid-8100 {
+          description
+            "Egress frames use TPID 0x8100";
+        }
+        enum tpid-88a8 {
+          description
+            "Egress frames use TPID 0x88a8";
+        }
+        enum tpid-9100 {
+          description
+            "Egress frames use TPID 0x9100";
+        }
+      }
+      description
+        "The value of the last used TPID in the rotation.";
+    }
+  }
+
+  container dhcp-l2-relay-agent {
+    description
+      "This is the top-level container for the DHCP layer-2 relay agent
+       entity.";
+    reference
+      "RFC 3046";
+
+    leaf admin-state {
+      type admin-state;
+      description
+        "The global administrative state of the DHCP L2 relay agent.";
+    }
+
+    leaf circuit-id-type {
+      type enumeration {
+        enum cid-string {
+          description
+            "The circuit is identified by a string entered by the
+             user.";
+        }
+        enum slot-port {      // 6.x only
+          description
+            "The circuit is identified by the slot and port number of
+             the device port to which it is connected.";
+        }
+        enum slot-port-vlan { // 6.x only
+          description
+            "The circuit is identified by the slot and port number of
+             the device port to which it is connected, and the VLAN
+             ID.";
+        }
+        enum li-vs {          // 8.x only
+          description
+            "The circuit is identified by the logical interface and
+             virtual switch ID of the logical interface to which it is
+             connected.";
+        }
+      }
+      description
+        "Set the type of data contained in the Agent Circuit ID
+         Sub-option.";
+      reference
+        "RFC 3046, Section 3.1";
+    }
+
+    leaf remote-id-type {
+      type enumeration {
+        enum device-hostname {
+          description
+            "The remote host is identified by the host name of this
+             device.";
+        }
+        enum device-mac {
+          description
+            "The remote host is identified by the MAC address of this
+             device.";
+        }
+        enum rid-string {
+          description
+            "The remote host is identified by a string entered by the
+             user.";
+        }
+      }
+      description
+        "Sets the type of data contained in the Agent Remote ID
+         Sub-option.";
+      reference
+        "RFC 3046, Section 3.2";
+    }
+
+    leaf replace-option82 {
+      type on-off-state;
+      description
+        "Specifies whether or not the relay agent should replace
+         an existing option 82.";
+    }
+
+    list relay-agent {
+      key "relay-type relay-id";
+
+      leaf relay-type {
+        type relay-type;
+        description
+          "The type of network element to which the relay agent is
+           attached.";
+      }
+
+      leaf relay-id {
+        type string;
+        description
+          "The name or VID of the VLAN, VS or MPLS-VC to which this
+           relay agent is attached.";
+      }
+
+      leaf admin-state {
+        type admin-state;
+        description
+          "The administrative state of this DHCP relay agent.";
+      }
+
+      description
+        "List of relay agents and their configuration data.";
+    }
+
+    list relay-interface {
+      key "relay-type relay-id interface-id sub-vlan";
+
+      leaf relay-type {
+        type relay-type;
+        description
+          "The type of network element to which the relay interface is
+           attached.";
+      }
+
+      leaf relay-id {
+        type string;
+        description
+          "The name or VID of the VLAN, VS or MPLS-VC to which this
+           relay agent is attached.";
+      }
+
+      leaf interface-id {
+        type string;
+        description
+          "The name or port number of this relay agent interface.";
+      }
+
+      leaf sub-vlan {
+        type uint32 {
+          range "0..4094";
+        }
+        description
+          "The VID of the sub-VLAN associated with this relay agent
+           interface.  Zero means none.";
+      }
+
+      leaf trust-mode {
+        type enumeration {
+          enum client-trusted {
+            description
+              "Trust clients on this logical interface.";
+          }
+          enum server-trusted {
+            description
+              "Trust servers on this logical interface.";
+          }
+          enum dualrole-trusted {
+            description
+              "Trust both clients and servers on this logical
+               interface.";
+          }
+          enum untrusted {
+            description
+              "Trust neither clients nor servers on this logical
+               interface.";
+          }
+        }
+        description
+          "Grouping of relay interface attributes common to all
+           interface types.";
+      }
+
+      leaf cid-string {
+        type string {
+          length "0..64";
+        }
+        description
+          "Set the value of the Agent Circuit ID Sub-option for this
+           logical interface as a string.";
+        reference
+          "RFC 3046, Section 3.1";
+      }
+
+      leaf rid-string {
+        type string {
+          length "0..64";
+        }
+        description
+          "Set the value of the Agent Remote ID Sub-option for this
+           logical interface as a string.";
+        reference
+          "RFC 3046, Section 3.2";
+      }
+
+      description
+        "List of relay agents interfaces and their configuration data.";
+    }
+  }
+
+  container dhcp-l2-relay-agent-state {
+    config false;
+    description
+      "DHCP L2 relay agent operational values.";
+
+    list relay-agent {
+      key "relay-type relay-id";
+
+      leaf relay-type {
+        type relay-type;
+        description
+          "The type of network element to which the relay agent is
+           attached.";
+      }
+
+      leaf relay-id {
+        type string;
+        description
+          "The name or VID of the VLAN, VS or MPLS-VC to which this
+           relay agent is attached.";
+      }
+
+      leaf oper-state {
+        type oper-state;
+        description
+          "The operational state of thise DHCP relay agent.";
+      }
+
+      description
+        "List of relay agents and their configuration data.";
+    }
+
+    container statistics {
+      config false;
+      description
+        "DHCP L2 relay agent statistics.";
+
+      // Global statistics
+
+      leaf forwarded {
+        type uint32;
+        description
+          "The number of DHCP packets forwarded rather than relayed.
+           The are valid DHCP frames that didn't need to be processed by
+           the relay.";
+      }
+
+      leaf relayed {
+        type uint32;
+        description
+          "The number of DHCP packets processed by the relay and not
+           dropped.";
+      }
+
+      leaf dropped {
+        type uint32;
+        description
+          "The number of DHCP packets dropped by the relay.";
+      }
+
+      leaf not-for-relay {
+        type uint32;
+        description
+          "The number of DHCP packets passed to the relay but determined
+           to not belong to the relay.  These packets were dropped.";
+      }
+
+      // Relay instance statistics
+
+      list relay-agent {
+        key "relay-type relay-id";
+
+        leaf relay-type {
+          type relay-type;
+          description
+            "The type of network element to which the relay agent is
+             attached.";
+        }
+
+        leaf relay-id {
+          type string;
+          description
+            "The name or VID of the VLAN, VS or MPLS-VC to which this
+             relay agent is attached.";
+        }
+
+        leaf for-relay {
+          type uint32;
+          description
+            "The number of packets received by the relay agent instance
+             that were actually intended for a relay.";
+        }
+
+        leaf relayed-client-messages {
+          type uint32;
+          description
+            "The number of messages received from a DHCP client that
+             were relayed.";
+        }
+
+        leaf relayed-server-messages {
+          type uint32;
+          description
+            "The number of messages received from a DHCP server that
+             were relayed.";
+        }
+
+        leaf option-82-added {
+          type uint32;
+          description
+            "The number of packets that have had option 82 added.";
+        }
+
+        leaf option-82-removed {
+          type uint32;
+          description
+            "The number of packets that have had option 82 removed.";
+        }
+
+        leaf option-82-replaced {
+          type uint32;
+          description
+            "The number of packets that have had option 82 replaced.";
+        }
+
+        leaf option-82-adding-would-have-exceeded-mtu {
+          type uint32;
+          description
+            "The number of packets that should have had option 82 added
+             but doing so would have exceeded the MTU.  The packets are
+             forwarded without option 82 added.";
+        }
+
+        leaf dropped-received-on-untrusted-client-interfaces {
+          type uint32;
+          description
+            "The number of packets dropped because they were received on
+             untrusted client interfaces.";
+        }
+
+        leaf dropped-received-on-untrusted-server-interfaces {
+          type uint32;
+          description
+            "The number of packets dropped because they were received on
+             untrusted server interfaces.";
+        }
+
+        leaf dropped-spoofed-dhcp-packets {
+          type uint32;
+          description
+            "The number of packets dropped because they were spoofed.";
+        }
+
+        leaf dropped-no-trusted-server-interfaces {
+          type uint32;
+          description
+            "The number of packets dropped because there were no trusted
+             server interfaces configured.";
+        }
+
+        leaf dropped-no-trusted-client-interfaces {
+          type uint32;
+          description
+            "The number of packets dropped because there were no trusted
+             client interfaces configured.";
+        }
+
+        leaf dropped-relay-configuration {
+          type uint32;
+          description
+            "The number of packets dropped because the configuration of
+             that relay interface was invalid.  This usually means that
+             the circuit-id-type was set to cid-string but the interface
+             had no cid-string configured, or the remote-id-type was set
+             to rid-string but the interface had no rid-string
+             configured."; }
+
+        leaf general-errors {
+          type uint32;
+          description
+            "The number general errors encountered by the L2 relay
+             agent.";
+        }
+
+        description
+          "List of relay agents and their statistics.";
+      }
+    }
+  }
+
+  rpc dhcp-client-lease-renew {
+    description
+      "Renew the lease.";
+  }
+}

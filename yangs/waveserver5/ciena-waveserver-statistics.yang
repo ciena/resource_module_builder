@@ -1,0 +1,773 @@
+module ciena-waveserver-statistics {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-statistics";
+  prefix stats;
+
+  import ciena-waveserver-chassis {
+    prefix chassis;
+  }
+
+  import ciena-waveserver-module {
+    prefix module;
+  }
+
+  import ciena-waveserver-port {
+    prefix port;
+  }
+
+  import ciena-waveserver-ptp {
+    prefix ptp;
+  }
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines various statistics that can be monitored on components
+     of devices on the Waveserver Platform. It augments the native ciena-waveserver
+     models for chassis, module, etc. with specific instant/min/max/avg stats for
+     certain supported statistics such as temperature, cpu/disk/memory utilization.";
+
+  revision 2021-12-06 {
+    description
+      "Added leafs 'carrier-frequency-offset' and 'error-vector-magnitude'
+       to PTP 'statistics/coherent' container.
+       Added container 'temperature-out' to 'statistics' container.";
+    reference
+      "Waveserver OS R2.2 user's guide.";
+  }
+  revision 2021-08-11 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of this module.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+
+  typedef percentage {
+    type decimal64 {
+      fraction-digits 1;
+      range "0.0 .. 100.0";
+    }
+    description
+      "Numerical value with 1 digit precision representing a percentage.";
+  }
+
+  typedef temperature {
+    type decimal64 {
+      fraction-digits 1;
+    }
+    description
+      "Temperature value, in Celsius.";
+  }
+
+  grouping stats-percentage {
+    description
+      "Statistics grouping for percentage values.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type percentage;
+      units "percent";
+      description
+        "Current value, as a percentage.";
+    }
+
+    leaf min {
+      ui:ui-name "Minimum";
+      type percentage;
+      units "percent";
+      description
+        "Minimum recorded value over the monitored time interval, as a percentage.";
+    }
+
+    leaf max {
+      ui:ui-name "Maximum";
+      type percentage;
+      units "percent";
+      description
+        "Maximum recorded value over the monitored time interval, as a percentage.";
+    }
+
+    leaf avg {
+      ui:ui-name "Average";
+      type percentage;
+      units "percent";
+      description
+        "Average value over the monitored time interval, as a percentage.";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Time interval over which the min/max/avg values are evaluated.";
+    }
+  }
+
+  grouping stats-temperature {
+    description
+      "Statistics grouping for temperature readings, in Celsius.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type temperature;
+      units "C";
+      description
+        "Current temperature value, in Celsius degrees.";
+    }
+
+    leaf min {
+      ui:ui-name "Minimum";
+      type temperature;
+      units "C";
+      description
+        "Minimum recorded temperature over the monitored time interval.";
+    }
+
+    leaf max {
+      ui:ui-name "Maximum";
+      type temperature;
+      units "C";
+      description
+        "Maximum recorded temperature over the monitored time interval.";
+    }
+
+    leaf avg {
+      ui:ui-name "Average";
+      type temperature;
+      units "temperature";
+      description
+        "Average temperature over the monitored time interval.";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Time interval over which the min/max/avg values are evaluated.";
+    }
+  }
+
+  grouping stats-decimal3 {
+    description
+      "Statistics grouping for containers requiring an average, max, min and interval values.";
+    leaf min {
+      ui:ui-name "Minimum";
+      type cienawstypes:decimal-3-dig;
+      description
+        "Minimum recorded value over the monitored time interval.";
+    }
+
+    leaf max {
+      ui:ui-name "Maximum";
+      type cienawstypes:decimal-3-dig;
+      description
+        "Maximum recorded value over the monitored time interval.";
+    }
+
+    leaf avg {
+      ui:ui-name "Average";
+      type cienawstypes:decimal-3-dig;
+      description
+        "Average value over the monitored time interval.";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Time interval over which the min/max/avg values are evaluated.";
+    }
+  }
+
+  grouping stats-uint64-instant {
+    description
+      "The generic grouping for stats using a uint64 value and interval.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type uint64;
+      description
+        "Generic uint64 value";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Collection interval for stat";
+    }
+  }
+
+  grouping stats-int64-instant {
+    description
+      "The generic grouping for stats using a uint64 value and interval.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type int64;
+      description
+        "Generic int64 value";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Collection interval for stat";
+    }
+  }
+
+  grouping stats-exponential-instant {
+    description
+      "The generic grouping for status using a exponential value and interval.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type cienawstypes:string-sci;
+      description
+        "Generic value in scientific notation";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Collection interval for stat";
+    }
+  }
+
+  grouping stats-decimal3-instant {
+    description
+      "The generic grouping for status using a decimal-3-dig value and interval.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type cienawstypes:decimal-3-dig;
+      description
+        "Generic value to 3 decimal places";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Collection interval for stat";
+    }
+  }
+
+  grouping stats-sci-string-instant {
+    description
+      "The generic grouping for status using a string value in scientific notation and interval.";
+    leaf instant {
+      ui:ui-name "Instant";
+      type cienawstypes:string-sci;
+      description
+        "Generic string representation of a number in scientific notation";
+    }
+
+    leaf interval {
+      ui:ui-name "Interval";
+      type uint32;
+      units "seconds";
+      description
+        "Collection interval for stat";
+    }
+  }
+
+  grouping stats-ethernet-counts {
+    description
+      "The grouping used to represent tx and rx ethernet counters.";
+    container bytes {
+      ui:ui-name "Bytes";
+      description
+        "Number of transmitted bytes in good and bad packets including FCS bytes and
+         excluding frame bits.";
+      uses stats-uint64-instant;
+    }
+
+    container packets {
+      ui:ui-name "Packets";
+      description
+        "Number of transmitted packets, including all unicast, multicast, broadcast,
+          MAC control, and bad packets";
+      uses stats-uint64-instant;
+    }
+
+    container crc-errored-packets {
+      ui:ui-name "Crc errored packets";
+      description
+        "Number of transmitted packets with an FCS error";
+      uses stats-uint64-instant;
+    }
+
+    container link-utilization {
+      ui:ui-name "Link Utilization";
+      description
+        "Percent link utilization derived from bytes and port speed";
+      uses stats-decimal3;
+    }
+
+    container frame-error-ratio {
+      ui:ui-name "frame error ratio";
+      description
+        "The frame error ratio, expressed in scientific notation.";
+      uses stats-sci-string-instant;
+    }
+  }
+
+  grouping stats-otn {
+    description
+      "The generic grouping for otu and odu stats.";
+    container background-block-error {
+      ui:ui-name "Background block errors";
+      description
+        "Background block errors";
+      uses stats-uint64-instant;
+    }
+
+    container errored-seconds {
+      ui:ui-name "Errored Seconds";
+      description
+        "Number of erroneous seconds";
+      uses stats-uint64-instant;
+    }
+
+    container severely-errored-seconds {
+      ui:ui-name "Severely Errored Seconds";
+      description
+        "Number of severely erroneous seconds";
+      uses stats-uint64-instant;
+    }
+
+    container unavailable-seconds {
+      ui:ui-name "Unavailable Seconds";
+      description
+        "Number of unavailable seconds";
+      uses stats-uint64-instant;
+    }
+
+    container background-block-error-far-end {
+      ui:ui-name "Far End background block errors";
+      description
+        "Background block errors on the far end";
+      uses stats-uint64-instant;
+    }
+
+    container errored-seconds-far-end {
+      ui:ui-name "Far End errored Seconds";
+      description
+        "Number of erroneous seconds on the far end";
+      uses stats-uint64-instant;
+    }
+
+    container severely-errored-seconds-far-end {
+      ui:ui-name "Far End severely Errored Seconds";
+      description
+        "Number of severely erroneous seconds on the far end";
+      uses stats-uint64-instant;
+    }
+
+    container unavailable-seconds-far-end {
+      ui:ui-name "Far End unavailable Seconds";
+      description
+        "Number of unavailable seconds on the far end";
+      uses stats-uint64-instant;
+    }
+  }
+
+  augment "/chassis:waveserver-chassis" {
+    description
+      "Chassis statistics.";
+    container statistics {
+      ui:ui-name "Chassis Statistics";
+      config false;
+      description
+        "Chassis statistics.";
+      container temperature-in {
+        ui:ui-name "Chassis Temperature";
+        description
+          "Chassis air intake temperature statistics.";
+        uses stats-temperature;
+      }
+
+      container temperature-out {
+        ui:ui-name "Chassis Temperature";
+        description
+          "Chassis air exhaust temperature statistics.";
+        uses stats-temperature;
+      }
+    }
+  }
+
+  augment "/chassis:waveserver-chassis/chassis:control-module" {
+    description
+      "Control module statistics.";
+    container statistics {
+      ui:ui-name "CM Statistics";
+      config false;
+      description
+        "Control module statistics.";
+      container temperature {
+        ui:ui-name "CM Temperature";
+        description
+          "CM temperature statistics.";
+        uses stats-temperature;
+      }
+
+      container cpu-utilization {
+        ui:ui-name "CPU Utilization";
+        description
+          "CM CPU utilization statistics. Percent of non-idle CPU in use.";
+        uses stats-percentage;
+      }
+
+      container disk-utilization {
+        ui:ui-name "Disk Utilization";
+        description
+          "CM Disk utilization statistics. Percent of total disk space used.";
+        uses stats-percentage;
+      }
+
+      container memory-utilization {
+        ui:ui-name "Memory Utilization";
+        description
+          "CM Memory utilization statistics. Percent of total memory in use.";
+        uses stats-percentage;
+      }
+    }
+  }
+
+  augment "/chassis:waveserver-chassis/chassis:access-panel" {
+    description
+      "Access panel statistics.";
+    container statistics {
+      ui:ui-name "Access Panel Statistics";
+      config false;
+      description
+        "Access panel statistics.";
+      container temperature {
+        ui:ui-name "AP Temperature";
+        description
+          "AP temperature statistics.";
+        uses stats-temperature;
+      }
+    }
+  }
+
+  augment "/module:waveserver-modules/module:modules" {
+    description
+      "Module statistics.";
+    container statistics {
+      ui:ui-name "Module Statistics";
+      config false;
+      description
+        "Module statistics.";
+      container temperature {
+        ui:ui-name "Module Temperature";
+        description
+          "Module temperature statistics.";
+        uses stats-temperature;
+      }
+    }
+  }
+
+  augment "/port:waveserver-ports/port:ports" {
+    when "port:id/port:type = 'OTUCn' or port:id/port:type = 'OTUCn-Flex' or port:id/port:type = 'Ethernet'" {
+      description
+        "Port statistics";
+    }
+    description
+      "Port statistics container augment";
+    container statistics {
+      ui:ui-name "Port Statistics";
+      config false;
+      description
+        "Port statistics";
+    }
+  }
+
+  augment "/port:waveserver-ports/port:ports/stats:statistics" {
+    when "../port:id/port:type = 'OTUCn' or ../port:id/port:type = 'OTUCn-Flex'" {
+      description
+        "Port OTN statistics specific to OTUCn, OTUCn-Flex";
+    }
+    description
+      "Port OTN statistics specific to OTUCn, OTUCn-Flex";
+    container otu {
+      ui:ui-name "OTU Statistics";
+      description
+        "Otu statistics";
+      uses stats-otn;
+    }
+
+    container odu {
+      ui:ui-name "ODU Statistics";
+      description
+        "Odu statistics";
+      uses stats-otn;
+    }
+  }
+
+  augment "/port:waveserver-ports/port:ports/stats:statistics" {
+    when "../port:id/port:type = 'Ethernet'" {
+      description
+        "Ethernet port statistics";
+    }
+    description
+      "Ethernet port statistics";
+    container ethernet {
+      ui:ui-name "Ethernet Statistics";
+      description
+        "Ethernet statistics";
+      container rx {
+        ui:ui-name "RX Ethernet Statistics";
+        description
+          "RX ethernet counters";
+        uses stats-ethernet-counts;
+      }
+
+      container tx {
+        ui:ui-name "TX Ethernet Statistics";
+        description
+          "TX ethernet counters";
+        uses stats-ethernet-counts;
+      }
+
+      container rx-pcs {
+        description
+          "Statistics from RX-PCS";
+        container sync-header-errors {
+          ui:ui-name "Sync Header Errors";
+          description
+            "The number of Sync Header Errors";
+          uses stats-uint64-instant;
+        }
+
+        container block-errors {
+          ui:ui-name "Block Errors";
+          description
+            "The number of Block Errors";
+          uses stats-uint64-instant;
+        }
+
+        container lane-bip-errors {
+          ui:ui-name "Lane Bip Errors";
+          description
+            "The number of PCS lane BIP errors";
+          uses stats-uint64-instant;
+        }
+
+        container errored-seconds {
+          ui:ui-name "Errored Seconds";
+          description
+            "Number of erroneous seconds";
+          uses stats-uint64-instant;
+        }
+
+        container severely-errored-seconds {
+          ui:ui-name "Severely Errored Seconds";
+          description
+            "Number of severely erroneous seconds";
+          uses stats-uint64-instant;
+        }
+
+        container unavailable-seconds {
+          ui:ui-name "Unavailable Seconds";
+          description
+            "Number of unavailable seconds";
+          uses stats-uint64-instant;
+        }
+      }
+
+      container tx-pcs {
+        description
+          "Statistics from TX-PCS";
+        container block-errors {
+          ui:ui-name "Block Errors";
+          description
+            "The number of Block Errors";
+          uses stats-uint64-instant;
+        }
+
+        container lane-bip-errors {
+          ui:ui-name "Lane Bip Errors";
+          description
+            "The number of PCS lane BIP errors";
+          uses stats-uint64-instant;
+        }
+      }
+
+      container rx-fec {
+        description
+          "Ethernet port FEC layer counts";
+        container corrected-codewords {
+          ui:ui-name "Corrected codewords";
+          description
+            "The number of FEC layer corrected codewords";
+          uses stats-uint64-instant;
+        }
+
+        container uncorrected-codewords {
+          ui:ui-name "Uncorrected codewords";
+          description
+            "The number of FEC layer corrected codewords";
+          uses stats-uint64-instant;
+        }
+
+        container symbol-errors {
+          ui:ui-name "Symbol errors";
+          description
+            "FEC layer symbol error count.";
+          uses stats-uint64-instant;
+        }
+      }
+    }
+  }
+
+  augment "/ptp:waveserver-ptps/ptp:ptps" {
+    when "ptp:type = 'WL5e'" {
+      description
+        "Coherent Optical PTP Statistics";
+    }
+    description
+      "Coherent Optical PTP Statistics";
+    container statistics {
+      ui:ui-name "PTP Statistics";
+      config false;
+      description
+        "PTP statistics";
+      container coherent {
+        ui:ui-name "Coherent Statistics";
+        description
+          "Coherent Optical PTP Statistics";
+        container pre-fec-ber {
+          ui:ui-name "Pre Fec Bit Error Rate";
+          description
+            "Pre-FEC bit error rate";
+          uses stats-exponential-instant;
+        }
+
+        container q-factor {
+          ui:ui-name "Q Factor";
+          description
+            "Q-factor";
+          uses stats-decimal3-instant;
+        }
+
+        container polarization-dependent-loss {
+          ui:ui-name "Polarization Dependent Loss";
+          description
+            "Polarization dependent loss (in dB)";
+          uses stats-decimal3-instant;
+        }
+
+        container esnr {
+          ui:ui-name "ESNR";
+          description
+            "Electrical Signal-to-Noise Ratio (in dB)";
+          uses stats-decimal3-instant;
+        }
+
+        container snr-external {
+          ui:ui-name "Signal Noise Ratio External";
+          description
+            "Signal Noise Ratio External (in dB)";
+          uses stats-decimal3-instant;
+        }
+
+        container cycle-slip-indicator {
+          ui:ui-name "Cycle Slip Indicator";
+          description
+            "Cycle Slip Indicator";
+          uses stats-uint64-instant;
+        }
+
+        container differential-group-delay {
+          ui:ui-name "Differential Group Delay";
+          description
+            "Differential Group Delay (in ps)";
+          uses stats-decimal3-instant;
+        }
+
+        container uncorrected-block {
+          ui:ui-name "Uncorrected Block Count";
+          description
+            "The uncorrected block count";
+          uses stats-uint64-instant;
+        }
+
+        container uncorrected-second {
+          ui:ui-name "Uncorrected Second";
+          description
+            "The uncorrected second count";
+          uses stats-uint64-instant;
+        }
+
+        container high-correction-count-second {
+          ui:ui-name "High Correction Count Second";
+          description
+            "The number of high correction count seconds";
+          uses stats-uint64-instant;
+        }
+
+        container chromatic-dispersion-rx {
+          ui:ui-name "Chromatic Dispersion RX";
+          description
+            "The actual rx link dispersion in (ps/nm)";
+          uses stats-int64-instant;
+        }
+
+        container carrier-frequency-offset {
+          ui:ui-name "Carrier Frequency Offset";
+          description
+            "Carrier frequency offset (the difference in Tx and Rx frequencies)";
+          uses stats-int64-instant;
+        }
+
+        container error-vector-magnitude {
+          ui:ui-name "Error Vector Magnitude";
+          description
+            "Error vector magnitudei (in dB)";
+          uses stats-decimal3-instant;
+        }
+      }
+    }
+  }
+
+  augment "/port:waveserver-ports/port:ports/port:channels" {
+    when "port:id/port:type = 'ODUk'" {
+      description
+        "Channel OTN statistics specific to ODUk";
+    }
+    description
+      "Channel OTN statistics specific to ODUk";
+    container statistics {
+      ui:ui-name "Port Statistics";
+      config false;
+      description
+        "Port statistics";
+      container odu {
+        ui:ui-name "ODU Channel Statistics";
+        description
+          "ODU Channel Statistics";
+        uses stats-otn;
+      }
+    }
+  }
+}

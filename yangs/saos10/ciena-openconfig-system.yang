@@ -1,0 +1,312 @@
+module ciena-openconfig-system {
+  namespace "http://www.ciena.com/ns/yang/ciena-openconfig-system";
+  prefix "ciena-oc-sys";
+
+  import openconfig-system { prefix oc-sys; }
+  import yuma-ncx { prefix ncx; }
+  import ietf-yang-types { prefix yang; }
+  import ciena-ssh-types { prefix sshtypes; }
+  import ciena-file-transfer-types { prefix ciena-ftt; }
+  import ciena-types { prefix cn-type; }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+      
+  description
+    "This YANG module defines Ciena's augmentations to openconfig-system.
+
+      Copyright (c) 2018 Ciena Corporation.  All rights 
+      reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this 
+      information or reproduction of this material is strictly 
+      forbidden unless prior written permission is obtained from 
+      Ciena Corporation.";
+
+  revision 2021-07-30 {
+    description
+      "Added leaf data node to display MD5 and SHA1 fingerprint of
+      installed SSH User Public Keys";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2020-10-29 {
+    description
+      "User generated keys are not part of SSH server configurations,
+       hence moving their state out of SSH server state hierarchy";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2020-09-29 {
+    description
+      "Added supported objects for SSH server configurations";
+    reference
+      "RFC 4253: The Secure Shell (SSH) Transport Layer Protocol.";
+  }
+  
+  revision 2018-01-29 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  augment "/oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:config" {
+    leaf password {
+      type string;
+      ncx:password;
+      description
+        "The user password in cleartext, only the hashed
+        value will be stored";
+    }
+  }
+
+  augment "/oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:state" {
+    leaf lockout-time {
+      type uint16;
+      description
+        "Amount of time left before the lockout ends";
+    }
+    leaf last-failure {
+       type yang:date-and-time;
+       description
+          "Last timestamp of user login failure";
+    }
+  }
+
+  augment "/oc-sys:system/oc-sys:ssh-server/oc-sys:config" {
+     description
+        "Augmenting SSH server attributes to SSH server config";
+
+     leaf public-key-authentication {
+        type cn-type:admin-state;
+        default "enabled";
+        description 
+           "Admin state of public key authentication on SSH server";
+     }
+
+     leaf-list encryption-algorithm {
+        type identityref {
+          base sshtypes:encryption-algo;
+        }
+       description
+         "Encryption algorithm configuration on  SSH server";
+     }
+
+     leaf-list kex-algorithm {
+        type identityref {
+          base sshtypes:kex-algo; 
+        }
+       description
+         "Key exchange algorithm configuration on  SSH server";
+     }
+
+     leaf-list mac-algorithm {
+        type identityref {
+          base sshtypes:mac-algo; 
+        }
+       description
+         "Mac algorithm configuration on  SSH server";
+     }
+
+     leaf-list pka-algorithm {
+        type identityref {
+          base sshtypes:pka-algo; 
+        }
+       description
+         "Public key algorithm configuration on SSH server";
+     }
+
+     leaf rekey-limit {
+        type enumeration {
+           enum 1G {
+              description
+                 "Rekey after transmitting 1G bytes.";
+           }
+           enum 500M {
+              description
+                 "Rekey after transmitting 500M bytes.";
+           }
+           enum default {
+              description
+                 "default value of rekey limit as per OpenSSH default configuration.";
+           }
+        }
+        description
+           "Max number of bytes that are transmitted before the 
+           session key is renegotiated.";
+     }
+
+     leaf rekey-time {
+        type uint32 {
+           range "0..3600";
+        }
+        units seconds;
+        description
+           "Max time in seconds after which SSH key is renegotiated.
+           0 represents default value of rekey-time as per OpenSSH default configuration.";
+     }
+  }
+
+  augment "/oc-sys:system/oc-sys:state" {
+     description
+        "State of User generated keys either host key or client public key";
+
+     container user-generated-host-key {
+        description
+           "SSH server host key information.";
+
+        leaf host-key-status {
+          type enumeration {
+            enum generated {
+              description
+                "SSH server host key is generated.";
+            }
+            enum not-generated {
+              description
+                "SSH server host key is not generated.";
+            }
+          }
+          description
+            "This leaf specifies the status of the
+            SSH host key.";
+        }
+
+        leaf host-key-fingerprint {
+           type string;
+           description
+              "This leaf displays the SHA256 fingerprint 
+              of SSH host key if it has been generated";
+        }
+
+        leaf host-key-type {
+          type identityref {
+            base sshtypes:pka-algo;
+          }
+          description
+            "This leaf displays the public key algorithm
+            used to generate host key";
+        }
+     }
+
+     container user-public-keys {
+        description
+           "SSH client public key information.";
+
+        list user {
+           key "user";
+           description
+              "User list.";
+           leaf user {
+              type string;
+              description
+                 "The user for which public key has been installed.";
+           }
+           leaf fingerprint-md5 {
+              type string;
+              description
+                 "This leaf displays the MD5 fingerprint of user public key.";
+           }
+           leaf fingerprint-sha1 {
+              type string;
+              description
+                 "This leaf displays the SHA1 fingerprint of user public key.";
+           }
+        }
+     }
+  }
+
+  //RPCs
+  rpc ssh-server-host-key {
+    description
+      "SSH server host key generate or delete operation.";
+    input {
+      leaf operation {
+        type enumeration {
+          enum generate {
+            description
+              "Generate SSH server host key.";
+          }
+          enum delete {
+            description
+              "Delete SSH server host key.";
+          }
+        }
+        mandatory true;
+        description 
+          "Generate or delete user generated SSH server host key";
+      }
+      leaf algorithm {
+        type identityref {
+          base sshtypes:pka-algo;  
+        }
+        default sshtypes:ssh-rsa;
+        description 
+          "Public key authentication to generate SSH server host key";
+      } 
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  rpc ssh-user-pubkey-install {
+    description
+      "Install SSH client's public key.";
+    input {
+      leaf user {
+        type string;
+        mandatory true;
+        description
+          "The user to which this public key belongs.";
+      }
+
+      uses ciena-ftt:file-transfer-parameters;
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  rpc ssh-user-pubkey-delete {
+    description
+      "delete user's public key";
+    input {
+      leaf user {
+        type string;
+        mandatory true;
+        description
+          "The user for which public key needs to be deleted.";
+      }
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+}

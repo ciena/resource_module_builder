@@ -1,0 +1,84 @@
+module ciena-ddy-msg-tracing {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddy-msg-tracing";
+  prefix ddy-msg-tracing;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This is the model for the data driven messaging component of the
+     Bifrost framework.";
+
+  revision 2019-10-23 {
+    version:version "version" {
+      version:string "0.1.0";
+    }
+    description
+      "Initial revision";
+  }
+
+  grouping message-trace {
+    list msg-trace-list {
+      yang:alias "yang-msg-trace-list";
+      description
+        "Message tracing tag list. The tags are carried in the downstream messages.
+         Framework push/pop tag at the messaging boundary. This allows tracking of
+         all messages belonging to a message span.";
+      leaf tag {
+        type string;
+        description
+          "Tag name.";
+      }
+
+      leaf timestamp {
+        type uint64;
+        units "ns";
+        description
+          "UTC Time stamp in nsec.";
+      }
+
+      leaf extended-options {
+        type bits {
+          bit timestamp {
+            position 0;
+            description
+              "Record the timestamp.";
+          }
+          bit trigger-all-logs {
+            position 1;
+            description
+              "Enable verbose logging in the path of the message.";
+          }
+        }
+        description
+          "Extended message tracing features";
+      }
+    }
+  }
+
+  augment "/yang:yang-rpc-action/yang:input" {
+    uses message-trace;
+  }
+
+  augment "/yang:yang-rpc-action/yang:output" {
+    uses message-trace;
+  }
+
+  augment "/yang:yang-delivery" {
+    uses message-trace;
+  }
+}

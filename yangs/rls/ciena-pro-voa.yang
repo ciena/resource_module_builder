@@ -1,0 +1,205 @@
+module ciena-pro-voa {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-voa";
+  prefix pro-voa;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's variable optical attenuator (VOA) object.";
+
+  revision 2020-11-18 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.3.0";
+    }
+    description
+      "Introduce new leaves min-power and max-power";
+  }
+  revision 2020-10-22 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+    description
+      "Introduce new leaf los-threshold,
+       los-threshold-ranges, los-hysteresis,
+       loss-of-signal";
+  }
+  revision 2020-10-16 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+    description
+      "Introduce a new leaf: opaque";
+  }
+  revision 2020-08-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Initial version";
+  }
+
+  grouping voa {
+    leaf name {
+      type string;
+      description
+        "VOA Facility name";
+    }
+
+    leaf target-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0";
+      description
+        "Target Loss in dB.";
+    }
+
+    leaf baseline-target-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      description
+        "Target Loss baseline in dB.";
+    }
+
+    leaf baseline-time-stamp {
+      type string;
+      description
+        "Time stamp for target loss baseline.";
+    }
+
+    container target-loss-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf loss {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      config false;
+      description
+        "Actual measured attenuation introduced by the VOA in dB.";
+    }
+
+    leaf current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Measured output power at the VOA in dBm";
+    }
+
+    leaf min-power {
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "Minimum tidemarked output power at the VOA in dBm";
+    }
+
+    leaf max-power {
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "Maximum tidemarked output power at the VOA in dBm";
+    }
+
+    leaf voa-reset-required {
+      type boolean;
+      default "true";
+      description
+        "Indicates whether VOA is to be reset by the controller";
+    }
+
+    uses ciena-pro-types:admin-state;
+
+    container diagnostic {
+      config false;
+      description
+        "Facility diagnostic state";
+      leaf low-optical-return-loss {
+        type boolean;
+        description
+          "Low Optical Return Loss at Output";
+      }
+
+      leaf parent-failed {
+        type boolean;
+        description
+          "Parent Object Failed";
+      }
+
+      leaf loss-of-signal {
+        type boolean;
+        description
+          "Loss of Signal
+           Raised- when current-power falls below los-threshold
+           Cleared- when current-power rises above
+           los-threshold + los-hysteresis";
+      }
+    }
+
+    leaf opaque {
+      type boolean;
+      default "false";
+      description
+        "A value of true indicates that the VOA will attempt to achieve the
+         highest possible attenuation achievable by the VOA. A value of false
+         indicates VOA behaviour is prescribed by other attributes in
+         this container.";
+    }
+
+    leaf los-threshold {
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      description
+        "Threshold at which to declare loss-of-signal";
+    }
+
+    container los-threshold-ranges {
+      leaf min {
+        type ciena-pro-optical-types:power-dBm-1-precision;
+      }
+
+      leaf max {
+        type ciena-pro-optical-types:power-dBm-1-precision;
+      }
+    }
+
+    leaf los-threshold-hysteresis {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      default "3";
+      description
+        "Hysteresis value used for clearing the loss-of-signal alarm";
+    }
+  }
+}

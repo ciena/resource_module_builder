@@ -1,0 +1,565 @@
+module ciena-pro-cct {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-cct";
+  prefix cct;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-pro-optical-types {
+    prefix common-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's Card Calibration Table (CCT) Service.";
+
+  revision 2021-06-24 {
+    version:version "version" {
+      version:string "0.7.0";
+    }
+    description
+      "Add CCT Vintage to the identification section.";
+  }
+  revision 2021-05-31 {
+    version:version "version" {
+      version:string "0.6.0";
+    }
+    description
+      "Add support for Amp Spectral Four Wave Mixing (FWM).";
+  }
+  revision 2021-05-14 {
+    version:version "version" {
+      version:string "0.5.0";
+    }
+    description
+      "Add partitioning coeffecients";
+  }
+  revision 2021-03-17 {
+    version:version "version" {
+      version:string "0.4.0";
+    }
+    description
+      "Add Wavelength Dependent Loss (WDL) coefficients";
+  }
+  revision 2021-02-25 {
+    version:version "version" {
+      version:string "0.3.0";
+    }
+    description
+      "Add leaf for max output power.";
+  }
+  revision 2021-01-28 {
+    version:version "version" {
+      version:string "0.2.0";
+    }
+    description
+      "Support multi-stage AMPs";
+  }
+  revision 2020-09-14 {
+    version:version "version" {
+      version:string "0.1.0";
+    }
+    description
+      "Initial version";
+  }
+
+  typedef cct-status_t {
+    type enumeration {
+      enum "success" {
+        description
+          "Successfully retrieved and processed the CCT information.";
+      }
+      enum "pending" {
+        description
+          "Retrieving CCT information";
+      }
+      enum "file-retrieval-timeout" {
+        description
+          "Failed to retrieve CCT information, retrying...";
+      }
+      enum "checksum-error" {
+        description
+          "The retrieved CCT information has a checksum error.";
+      }
+      enum "unsupported-cct-file-error" {
+        description
+          "The retrieved CCT information is not supported by the CCT service.
+           Some identification information may be available.";
+      }
+      enum "decoding-error" {
+        description
+          "An unexpected error occurred while processing the CCT information.
+           Some CCT information may be available.";
+      }
+    }
+    description
+      "The processing status of the CCT information.";
+  }
+
+  grouping cct-data {
+    leaf name {
+      type string;
+      description
+        "The name is the identifier of the slot.";
+    }
+
+    leaf cct-status {
+      type cct-status_t;
+      config false;
+      description
+        "The processing status of the CCT information";
+    }
+
+    container identification {
+      config false;
+      description
+        "CCT identification data.";
+      leaf pec {
+        type string;
+        config false;
+        description
+          "Product Engineering Code (PEC)";
+      }
+
+      leaf hardware-id {
+        type string;
+        config false;
+        description
+          "Hardware ID";
+      }
+
+      leaf hardware-release {
+        type string;
+        config false;
+        description
+          "Hardware release";
+      }
+
+      leaf firmware-identifier {
+        type string;
+        config false;
+        description
+          "Firmware identifier";
+      }
+
+      leaf clei-code {
+        type string;
+        config false;
+        description
+          "Common Language Equipment Identifier (CLEI) code";
+      }
+
+      leaf serial-number {
+        type string;
+        config false;
+        description
+          "Serial number";
+      }
+
+      leaf manufacturing-date {
+        type yang:date-and-time;
+        config false;
+        description
+          "Manufacturing date";
+      }
+
+      leaf manufacturing-id {
+        type string;
+        config false;
+        description
+          "Manufacturing identifier";
+      }
+
+      leaf revision-id {
+        type string;
+        config false;
+        description
+          "Revision identifier";
+      }
+
+      leaf vintage {
+        type string;
+        config false;
+        description
+          "CCT vintage.";
+      }
+
+      list compatible-modules {
+        key "pec";
+        leaf pec {
+          type string;
+          description
+            "Product Engineering Code (PEC)";
+        }
+
+        leaf hardware-release {
+          type string;
+          config false;
+          description
+            "Hardware release";
+        }
+
+        leaf firmware-identifier {
+          type string;
+          config false;
+          description
+            "Firmware identifier";
+        }
+      }
+    }
+
+    list insertion-loss {
+      key "name frequency";
+      leaf name {
+        type string;
+        description
+          "Name of the link";
+      }
+
+      leaf frequency {
+        type common-types:frequency;
+        description
+          "Frequency corresponding to the insertion loss";
+      }
+
+      leaf loss {
+        type common-types:loss;
+        units "dB";
+        description
+          "Insertion loss";
+      }
+    }
+
+    list wdl-coefficients {
+      key "name";
+      description
+        "List of Wavelength Dependent Loss (WDL) coefficients for each link.
+         Each link can have up to 4 polynomial coefficients";
+      leaf name {
+        type string;
+        description
+          "Name of the link";
+      }
+
+      leaf center-frequency {
+        type common-types:frequency;
+        description
+          "Center frequency";
+      }
+
+      list coeff {
+        key "index";
+        leaf index {
+          type enumeration {
+            enum "A0" {
+              description
+                "Index of A0.";
+            }
+            enum "A1" {
+              description
+                "Index of A1.";
+            }
+            enum "A2" {
+              description
+                "Index of A2.";
+            }
+            enum "A3" {
+              description
+                "Index of A3.";
+            }
+          }
+          description
+            "Index of the WDL polynomial coefficient.";
+        }
+
+        leaf value {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          description
+            "Value of the WDL coefficient in:
+             0.0001dB       for A0 (index = 0)
+             0.0001dB/THz   for A1 (index = 1)
+             0.0001dB/THz^2 for A2 (index = 2)
+             0.0001dB/THz^3 for A3 (index = 3)";
+        }
+      }
+    }
+
+    list edfa {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "Erbium Doped Fiber Amplifier (EDFA) name";
+      }
+
+      leaf parent-link-from {
+        type string;
+        description
+          "Name of the AMP parent-link From port";
+      }
+
+      leaf parent-link-to {
+        type string;
+        description
+          "Name of the AMP parent-link To port";
+      }
+
+      leaf stage {
+        type uint8;
+        description
+          "Identifies the stage index, if data applies to a single stage of a multi-stage amp.
+           If data is not stage specific, this leaf is not populated.";
+      }
+
+      list gain-modes {
+        key "gain-mode";
+        leaf gain-mode {
+          type string;
+          description
+            "Gain mode (high, low...)";
+        }
+
+        leaf min-gain {
+          type common-types:gain;
+          units "dB";
+          description
+            "Minimum supported EDFA gain";
+        }
+
+        leaf max-gain {
+          type common-types:gain;
+          units "dB";
+          description
+            "Maximum supported EDFA gain";
+        }
+
+        leaf design-flat-gain {
+          type common-types:gain;
+          units "dB";
+          description
+            "EDFA gain setting to achieve the Design Flat Gain (DFG)";
+        }
+
+        leaf residual-gain-tilt-at-dfg {
+          type common-types:gain;
+          units "dB";
+          description
+            "EDFA residual gain tilt at the Design Flat Gain (DFG)";
+        }
+
+        leaf max-output-power {
+          type common-types:power;
+          description
+            "Guaranteed EOL maximum output power.";
+        }
+
+        list gain-ripple {
+          key "fr";
+          leaf fr {
+            type common-types:frequency;
+            description
+              "Frequency associated to the gain-ripple";
+          }
+
+          leaf gain {
+            type common-types:gain;
+            units "dB";
+            description
+              "Gain for associated frequency characterized at DFG";
+          }
+        }
+
+        list gain-tilt-partition-coeff {
+          key "derivation-type";
+          description
+            "For a given stage edfa, these coefficients are used to derive the proportion of the overall
+             gain or tilt contributed by the stage using the equation:
+             stage-gain (or stage-tilt) = gain-coeff * overall-gain + tilt-coeff * overall-tilt + constant";
+          leaf derivation-type {
+            type string;
+            description
+              "gain or tilt";
+          }
+
+          leaf gain-coeff {
+            type common-types:coeff-2-precision;
+            description
+              "The value of the gain partitioning coefficient.";
+          }
+
+          leaf tilt-coeff {
+            type common-types:coeff-2-precision;
+            description
+              "The value of the tilt partitioning coefficient.";
+          }
+
+          leaf constant {
+            type common-types:delta-dB-2-precision;
+            description
+              "The value of the constant.";
+          }
+        }
+
+        list noise-figures {
+          key "gain-tilt input-power output-power top-offset";
+          leaf gain-tilt {
+            type common-types:gain;
+            units "dB";
+            description
+              "Gain tilt";
+          }
+
+          leaf input-power {
+            type common-types:power;
+            units "dBm";
+            description
+              "Input power";
+          }
+
+          leaf output-power {
+            type common-types:power;
+            units "dBm";
+            description
+              "Output power";
+          }
+
+          leaf top-offset {
+            type common-types:power;
+            units "dB";
+            default "0";
+            description
+              "TOP offset, applicable only to to S-Series XLA and T-Series RLA.
+               Set to 0 for all RLS cards.";
+          }
+
+          list noise-figures {
+            key "fr";
+            leaf fr {
+              type common-types:frequency;
+              description
+                "Frequency associated to the noise figures";
+            }
+
+            leaf nf {
+              type common-types:gain;
+              units "dB";
+              description
+                "Noise figure";
+            }
+          }
+        }
+
+        list fwm {
+          key "gain-tilt input-power-tilt output-power gain";
+          leaf gain-tilt {
+            type common-types:delta-dB-2-precision;
+            description
+              "Gain tilt";
+          }
+
+          leaf input-power-tilt {
+            type common-types:delta-dB-2-precision;
+            description
+              "Input power tilt";
+          }
+
+          leaf output-power {
+            type common-types:power;
+            description
+              "Output power";
+          }
+
+          leaf gain {
+            type common-types:gain;
+            description
+              "Gain";
+          }
+
+          list data {
+            key "fr";
+            leaf fr {
+              type common-types:frequency;
+              description
+                "Frequency associated to the FWM value";
+            }
+
+            leaf value {
+              type common-types:delta-dB-2-precision;
+              description
+                "FWM value.";
+            }
+          }
+        }
+
+        leaf dgt-reference-frequency {
+          type common-types:frequency;
+          description
+            "Dynamic Gain Tilt (DGT) reference frequency";
+        }
+
+        list dynamic-gain-tilt {
+          key "fr";
+          leaf fr {
+            type common-types:frequency;
+            description
+              "Frequency associated to the dynamic gain tilt";
+          }
+
+          leaf dgt {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            units "dB/dB";
+            description
+              "Dynamic Gain Tilt (dgt) is a measure of how the gain
+               as a function of a frequency changes in response to a 1 dB
+               gain change at the defined reference frequency";
+          }
+        }
+      }
+
+      leaf dgt-reference-frequency {
+        type common-types:frequency;
+        description
+          "Dynamic Gain Tilt (DGT) reference frequency.
+             Deprecated. Leaf under gain-modes will be used.";
+      }
+
+      list dynamic-gain-tilt {
+        key "fr";
+        leaf fr {
+          type common-types:frequency;
+          description
+            "Frequency associated to the dynamic gain tilt";
+        }
+
+        leaf dgt {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          units "dB/dB";
+          description
+            "Dynamic Gain Tilt (dgt) is a measure of how the gain
+             as a function of a frequency changes in response to a 1 dB
+             gain change at the defined reference frequency.
+             Deprecated. dgt under gain-modes will be used.";
+        }
+      }
+    }
+  }
+}

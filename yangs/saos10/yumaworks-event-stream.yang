@@ -1,0 +1,161 @@
+module yumaworks-event-stream {
+    yang-version 1.1;
+    namespace "http://yumaworks.com/ns/yumaworks-event-stream";
+
+    prefix "ywes";
+    import ietf-netconf-acm { prefix nacm; }
+    import ietf-yang-types { prefix yang; }
+    import yuma-ncx { prefix ncx; }
+    import yumaworks-types { prefix ywt; }
+
+    organization "YumaWorks, Inc.";
+
+    contact
+        "Support <support at yumaworks.com>";
+
+    description
+       "Event Stream Configuration support.
+        This module is only loaded if the with-yumaworks-event-stream
+        parameter is set to 'true'.
+
+        Copyright (c) 2021 YumaWorks, Inc. All rights reserved.
+
+        Redistribution and use in source and binary forms, with or
+        without modification, is permitted pursuant to, and subject
+        to the license terms contained in, the BSD 3-Clause License
+        http://opensource.org/licenses/BSD-3-Clause.
+
+       ";
+
+    revision 2021-05-15 {
+      description
+        "Change event stream name from yang-identifier to NcxNumName.
+         Accepts all the same chars except first char allowed to
+         be a number.";
+    }
+
+    revision 2021-01-25 {
+      description "Initial version";
+    }
+
+    container event-streams {
+      nacm:default-deny-write;
+      description
+         "Event stream configuration information.
+          This configuration is used in addition to the
+          --event-stream and --event-stream-map CLI parameters.
+
+          If notifications are disabled because --with-notifications
+          is set to 'false' then configuration of this subtree will
+          have no affect.
+
+          Event Stream Usage:
+
+          - Event types are assigned to event streams based on the module
+            that contains the notification definition for the event.
+          - All events in the module have to be assigned to the same
+            event stream.
+          - A module can be assigned to only one event-stream at a time.
+          - If a module is not assigned to an event stream then the
+            'NETCONF' event stream will be used.
+          - If the module instrumentation sends the event to a specific
+            event-stream then that event-stream is used, or the
+            'NETCONF' stream is used if the stream name is invalid.
+          - If the module instrumentation does not specify an
+            event stream when the event is generated, then the
+            module-map list and CLI configured event-stream-map
+            parameters will be checked for a mapping. If none,
+            or the event stream name is invalid, then the 'NETCONF'
+            event stream will be used.";
+
+      list event-stream {
+        ncx:user-write "create delete";
+        description
+          "A list of event streams.
+           This configured list is used in addition to any
+           bootstrap event-streams created with CLI parameters.
+           Entries can be created and deleted but not modified.
+           If an entry is deleted then the notification event stream
+           will be deleted and all subscriptions to the event-stream
+           will be terminated.";
+
+        key name;
+
+        leaf name {
+          type ywt:NcxNumName;
+          description
+            "Name of the event-stream. This value must not
+             be the same as any event stream name used in a
+             --event-stream CLI parameter, in order to prevent
+             confusing logging messages with duplicate names.
+             A 'duplicate entry' error message will be returned
+             in this case. The event stream name 'NETCONF' is
+             reserved and cannot be used.";
+        }
+
+        leaf eventlog-size {
+          description
+           "Specifies the maximum number of notification events
+            that will be saved in each notification replay buffer.
+            The oldest entries will be deleted first.
+            The value 0 will cause the server to periodically
+            clean out the messages that have already been
+            delivered. The eventlog-size is per event stream,
+            not total size.
+
+            If this parameter is not provided then the default will be
+            the value of the --eventlog-size CLI parameter. The default
+            for this parameter is 1000 but it can be explicitly set at
+            the command line or the netconfd-pro.conf config file.";
+
+           type uint32;
+        }
+      }  // list event-stream
+
+      list module-map {
+        description
+          "A list of module to event stream mappings.
+           This configured list is used in addition to any
+           bootstrap event-stream module mappings created with
+           the --event-stream-map CLI parameter.";
+
+        key module-name;
+
+        leaf module-name {
+          type yang:yang-identifier;
+          description
+            "Name of the module to be mapped. This value must not
+             be the same as any module used in an --event-stream-map
+             CLI parameter.";
+        }
+
+        leaf stream-name {
+          type ywt:NcxNumName;
+          mandatory true;
+          description
+            "Name of the event stream to use for events from
+             this module.";
+        }
+      }  // list module-map
+
+    }  // container event-streams
+
+
+    rpc clear-eventlog {
+      nacm:default-deny-all;
+      description
+        "Delete any events stored in the eventlog for the specified
+         event stream. This operation has no affect if the event stream
+         does not have any stored events or its eventlog is not enabled.";
+       input {
+        leaf stream-name {
+          type ywt:NcxNumName;
+          mandatory true;
+          description
+            "Name of the event stream to use to clear the eventlog.";
+        }
+      }
+    }
+
+
+}

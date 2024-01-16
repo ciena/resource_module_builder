@@ -1,0 +1,232 @@
+module ciena-mef-mirror-session {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-mirror-session";
+    prefix "mef-mirror-session";
+
+    import ciena-mef-logical-port {
+       prefix "mef-logical-port";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                     U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's management data definition for the
+         definition of mirroring parameters to be used for ingress and egress mirroring sessions (port/other)";
+
+    revision "2021-02-10" {
+        description
+          "Update descriptions of ingress/egress/destination logical-ports and encap-parameter.";
+    }
+
+    revision "2018-08-16" {
+        description
+          "Initial Version.";
+    }
+
+/*
+ * typedefs
+ */
+
+   typedef vlan-id {
+      type uint16 {
+         range "1..4094";
+      }
+      description
+         "Represents a IEEE 802.1Q VLAN-ID.";
+   }
+
+/*
+ * features
+ */
+
+/*
+ * grouping
+ */
+   grouping l2-encap-params {
+      list vlan-stack {
+         key "tag";
+
+         leaf tag {
+            type uint8;
+               description
+                  "encap => '1' represents push outermost, '2' represents push outermost (always push to outer)";
+         }
+
+         leaf push-tpid {
+            type enumeration {
+               enum tpid-8100 {
+                  value 33024;
+                  description
+                     "Identifies the frame as IEEE 802.1Q VLAN tagged";
+               }
+               enum  tpid-88a8 {
+                  value 34984;
+                  description
+                     "Identifies the frame as IEEE 802.1ad VLAN tagged";
+               }
+               enum tpid-9100 {
+                  value 37120;
+                  description
+                     "Identifies the frame as IEEE 802.1QinQ VLAN tagged";
+               }
+            }
+            default tpid-8100;
+
+            description
+               "Set the Tag Protocol IDentifier for the VLAN tag being pushed.";
+         }
+
+         leaf push-pcp {
+            type enumeration {
+               enum pcp-0 {
+                  value 0;
+                  description
+                     "Priority Code Point 0";
+               }
+               enum pcp-1 {
+                  value 1;
+                  description
+                     "Priority Code Point 1";
+               }
+               enum pcp-2 {
+                  value 2;
+                  description
+                     "Priority Code Point 2";
+               }
+               enum pcp-3 {
+                  value 3;
+                  description
+                     "Priority Code Point 3";
+               }
+               enum pcp-4 {
+                  value 4;
+                  description
+                     "Priority Code Point 4";
+               }
+               enum pcp-5 {
+                  value 5;
+                  description
+                     "Priority Code Point 5";
+               }
+               enum pcp-6 {
+                  value 6;
+                  description
+                     "Priority Code Point 6";
+               }
+               enum pcp-7 {
+                  value 7;
+                  description
+                     "Priority Code Point 7";
+               }
+            }
+            description
+               "Set the Priority Code Point of the VLAN tag being pushed";
+         }
+
+         leaf push-dei {
+            type enumeration {
+               enum enabled {
+                  description
+                     "Turn on drop eligibility";
+               }
+               enum disabled {
+                  description
+                     "Turn off drop eligibility";
+               }
+            }
+            description
+               "Set the Drop Eligible Indicator of the VLAN tag being pushed";
+         }
+
+         leaf push-vid {
+            type vlan-id;
+               mandatory true;
+
+            description
+               "Set the VLAN IDentifier of the VLAN tag being pushed";
+         }
+
+         description
+            "L2 VLAN Tag(s) that would be used to encapsulate a mirrored frame egressing a destination logical port.";
+      }
+   }
+
+/*
+ * Configuration model.
+ */
+    container mirror-sessions {
+        description
+            "List of mirror sessions. Each mirror session mirrors the classified ingress/egress traffic to a destination port.";
+
+        list mirror-session {
+            key "name";
+
+            description
+                "Mirror the classified ingress/egress traffic to a destination port.";
+
+            leaf name {
+                type string;
+                description
+                    "This object indicates the identifier and is a
+                     text string that is used to identify a mirror-session.
+                     Unique string values are chosen to uniquely identify
+                     mirror-session.";
+            }
+
+            leaf destination-logical-port {
+                type mef-logical-port:logical-port-ref;
+
+                description
+                   "Logical Port to which the ingress/egress mirror classified traffic should be mirrored.";
+            }
+
+            choice encap-parameters {
+               case l2-encap {
+                  uses l2-encap-params;
+
+                  description
+                        "L2 VLAN Tag(s) that would be used to encapsulate a mirrored frame egressing a destination logical port.";
+               }
+            }
+
+            list egress-mirror-logical-ports
+            {
+                key "logical-port";
+
+                leaf logical-port {
+                    type mef-logical-port:logical-port-ref;
+
+                    description
+                        "Logical-Port whose Egress traffic is Mirrored to the destination-logical-port using this Mirror Session.";
+                }
+
+                description
+                        "Logical-Ports whose Egress traffic is Mirrored to the destination-logical-port using this Mirror Session.";
+            }
+
+            list ingress-mirror-logical-ports
+            {
+                key "logical-port";
+
+                leaf logical-port {
+                    type mef-logical-port:logical-port-ref;
+
+                    description
+                        "Logical-Port whose Ingress traffic is Mirrored to the destination-logical-port using this Mirror Session.";
+                }
+
+                description
+                        "Logical-Ports whose Ingress traffic is Mirrored to the destination-logical-port using this Mirror Session.";
+            }
+        }
+    }
+}

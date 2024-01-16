@@ -1,0 +1,348 @@
+module ciena-6500r-connection-validation {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-connection-validation";
+  prefix cv;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ietf-inet-types {
+    prefix ietf-inet-types;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes slot specific connection validation object for Ciena's 6500 RLS platform";
+
+  revision 2021-03-19 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "Added far-end-cv-output-power leaf";
+  }
+  revision 2020-07-21 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Added active-port-sequence and timestamp leafs";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.1.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-06-05 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Added auto-derive-link";
+  }
+  revision 2019-10-05 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Added power-validity-threshold-ranges";
+  }
+  revision 2019-05-27 {
+    description
+      "Initial revision";
+  }
+
+  grouping shelf-specific-ids {
+    leaf ipv4-address {
+      type ietf-inet-types:ipv4-address-no-zone;
+      description
+        "IPv4 address of the shelf.";
+    }
+
+    leaf ipv6-address {
+      type ietf-inet-types:ipv6-address-no-zone;
+      description
+        "IPv6 address of the shelf.";
+    }
+
+    leaf system-name {
+      type string;
+      description
+        "An alpha-numeric string which indicates System name.";
+    }
+
+    leaf vendor-id {
+      type uint8;
+      description
+        "A number which indicates Vendor's id.";
+    }
+  }
+
+  grouping ciena-6500r-connection-validation-mount {
+    container cv {
+      container config {
+        container tx {
+          uses ciena-6500r-types:admin-state;
+
+          list port-sequence {
+            key "port";
+            leaf port {
+              type instance-identifier;
+              description
+                "The provisioned sequence of tx ports for connection validation testing, used when cv-mode is full";
+            }
+          }
+
+          list active-port-sequence {
+            key "port";
+            leaf port {
+              type instance-identifier;
+              description
+                "The sequence of tx ports currently undergoing connection validation testing.
+                 This is set by the system based on the cv mode.";
+            }
+          }
+
+          leaf dwell-time {
+            type uint32;
+            units "Milliseconds";
+            description
+              "Indicates the amount of time spent per tx port.";
+          }
+        }
+
+        container rx {
+          uses ciena-6500r-types:admin-state;
+
+          list port-sequence {
+            key "port";
+            leaf port {
+              type instance-identifier;
+              description
+                "The provisioned sequence of rx ports for connection validation testing, used when cv-mode is full";
+            }
+          }
+
+          list active-port-sequence {
+            key "port";
+            leaf port {
+              type instance-identifier;
+              description
+                "The sequence of rx ports currently undergoing connection validation testing.
+                 This is set by the system based on the cv mode.";
+            }
+          }
+
+          leaf dwell-time {
+            type uint32;
+            units "Milliseconds";
+            description
+              "Indicates the amount of time spent per rx port.";
+          }
+
+          leaf high-fiber-loss-threshold {
+            type ciena-6500r-types:loss;
+            description
+              "Insertion loss threshold above the expected-loss used to raise/clear the high fiber loss alarm.";
+          }
+
+          leaf power-validity-threshold {
+            type ciena-6500r-types:power;
+            description
+              "Power threshold value to validate the provisioned connection.";
+          }
+
+          container power-validity-threshold-ranges {
+            leaf min {
+              type ciena-6500r-types:power;
+            }
+
+            leaf max {
+              type ciena-6500r-types:power;
+            }
+          }
+        }
+      }
+
+      container ports {
+        list tx {
+          key "name";
+          leaf name {
+            type string;
+            description
+              "Connection validation identification/name";
+          }
+
+          leaf port-id {
+            type string;
+            description
+              "Idenfication string used to validate provisioned connection.";
+          }
+
+          leaf custom-id {
+            type string;
+            description
+              "An alpha-numeric string which indicates Custom id.";
+          }
+
+          container shelf-ids {
+            uses shelf-specific-ids;
+          }
+
+          leaf output-power {
+            type ciena-6500r-types:power;
+            config false;
+            description
+              "Output power.";
+          }
+
+          container diagnostic {
+            config false;
+            description
+              "Facility diagnostic state.";
+            leaf cv-tx-failure {
+              type boolean;
+              description
+                "Tx port failed to run connection validation.";
+            }
+          }
+        }
+
+        list rx {
+          key "name";
+          leaf name {
+            type string;
+            description
+              "Connection validation identification/name";
+          }
+
+          leaf expected-port-id {
+            type string;
+            description
+              "Expected port id from the far-end tx port.";
+          }
+
+          leaf actual-port-id {
+            type string;
+            config false;
+            description
+              "Actual port id from the far-end tx port.";
+          }
+
+          leaf expected-custom-id {
+            type string;
+            description
+              "Expected custom id from the far-end tx port.";
+          }
+
+          leaf actual-custom-id {
+            type string;
+            config false;
+            description
+              "Actual custom id from the far-end tx port.";
+          }
+
+          leaf far-end-output-power {
+            type ciena-6500r-types:power;
+            config false;
+            description
+              "Output power of the far-end tx port. This received in an encoded message.";
+          }
+
+          leaf measured-input-power {
+            type ciena-6500r-types:power;
+            config false;
+            description
+              "Measured input power.";
+          }
+
+          leaf far-end-cv-output-power {
+            type ciena-6500r-types:power;
+            config false;
+            description
+              "CV signal power of the far-end tx port. This received in an encoded message.";
+          }
+
+          leaf measured-cv-power {
+            type ciena-6500r-types:power;
+            config false;
+            description
+              "Measured input power from the CV signal.";
+          }
+
+          leaf expected-loss {
+            type ciena-6500r-types:loss;
+            description
+              "Power delta value to validate the provisioned connection.";
+          }
+
+          container expected-nbr-ids {
+            uses shelf-specific-ids;
+          }
+
+          container actual-nbr-ids {
+            config false;
+            uses shelf-specific-ids;
+          }
+
+          leaf auto-derive-link {
+            type enumeration {
+              enum "Unknown" {
+                description
+                  "Unknown.";
+              }
+              enum "Local" {
+                description
+                  "Link auto-derived at local end.";
+              }
+              enum "Remote" {
+                description
+                  "Link auto-derived at the remote end.";
+              }
+            }
+          }
+
+          leaf timestamp {
+            type yang:date-and-time;
+            description
+              "Time when the cv packet received successfully";
+          }
+
+          container diagnostic {
+            config false;
+            description
+              "Facility diagnostic state.";
+            leaf cv-tx-failure {
+              type boolean;
+              description
+                "CV Tx Failure.";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-connection-validation-mount-actions;
+
+  uses ciena-6500r-connection-validation-mount;
+}

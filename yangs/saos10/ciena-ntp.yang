@@ -1,0 +1,763 @@
+module ciena-ntp {
+  namespace "http://www.ciena.com/ns/yang/ciena-ntp";
+  prefix "ciena-ntp";
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import openconfig-system {
+    prefix oc-sys;
+  }
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines the nodes
+    for the NTP client for the NETCONF protocol.
+
+    Copyright (c) 2022 Ciena Corporation.  All rights
+    reserved.
+
+    All information contained herein is, and remains
+    the property of Ciena Corporation. Dissemination of this
+    information or reproduction of this material is strictly
+    forbidden unless prior written permission is obtained from
+    Ciena Corporation.";
+
+  revision 2022-02-16 {
+    description
+      "Removing augmented then deviated NTP leaves
+       sync-notification, auth-key and peer-server";
+    reference
+      "";
+  }
+
+  revision 2020-09-24 {
+    description
+      "Add NTP admin-state default
+       value of 'enabled'";
+    reference
+      "";
+  }
+
+  revision 2019-07-02 {
+    description
+      "Add support for IPv6 addresses
+      to ntp-state container";
+    reference
+      "";
+  }
+
+  revision 2018-06-14 {
+    description
+      "Change augment from ietf-system to
+       openconfig-system; Added IPv4
+       addresses to multicast server";
+    reference
+      "";
+  }
+
+  revision 2017-12-01 {
+    description
+      "Cleaned up pyang warnings.";
+    reference
+      "";
+  }
+
+  revision 2016-02-03 {
+    description
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  /*
+   * Typedefs
+   *
+   */
+
+  typedef float {
+    type decimal64 {
+      fraction-digits 3;
+    }
+    description "NTP float type";
+  }
+
+  /*
+   * Configuration data nodes
+   */
+  augment /oc-sys:system {
+    description
+      "Replace the openconfig NTP container.";
+    container ntp {
+      description
+        "Configuration parameters for NTP.";
+
+      leaf admin-state {
+        type ciena:admin-state;
+        description
+          "Setting this node to 'enabled' enables the
+           NTP client on Ciena devices.";
+        default enabled;
+      }
+
+      leaf mode {
+        type enumeration {
+          enum polling {
+            value 1;
+            description "";
+          }
+          enum broadcast {
+            value 2;
+            description "";
+          }
+          enum multicast {
+            value 3;
+            description "";
+          }
+        }
+        description
+          "Setting this node to 'broadcast' causes the
+           client to not poll the NTP server at all. Instead, it
+           waits for configured NTP servers to broadcast
+           their current time. When the client receives the first
+           message, it retrieves a reliable time from that
+           server. If it is set to polling then device
+           polls the NTP server.";
+      }
+
+      leaf polling-interval-min {
+        type int32 {
+          range "16..4096";
+        }
+        units "seconds";
+        description
+          "The polling frequency (interval in seconds) at which NTP server is
+           polled if the NTP client is configured to be in polling mode and is
+           not currently synchronized to an NTP server. The value of this node
+           should only be a power of 2. The NTP client accepts the following
+           values 2^4(16 seconds) to 2^12(4096 seconds).";
+      }
+
+      leaf polling-interval-max {
+        type int32 {
+          range "16..4096";
+        }
+        units "seconds";
+        description
+          "The polling frequency (interval in seconds) at which NTP server is
+           polled if the NTP client is configured to be in polling mode and is
+           currently synchronized to an NTP server. The value of this node
+           should only be a power of 2. The NTP client accepts the following
+           values 2^4(16 seconds) to 2^12(4096 seconds).";
+      }
+
+      container authentication {
+        description
+          "Configuration of authentication.";
+
+        leaf auth-admin-state {
+          type ciena:admin-state;
+          description
+            "Set to enabled to use authentication for NTP client.";
+        }
+
+        list auth-entry {
+
+          key "auth-key-id";
+          description
+            "An entry in the auth-entry list.";
+
+          leaf auth-key-id {
+            type uint32 {
+              range "1..65534";
+            }
+            description
+              "This node specifies the key ID.
+               It is also used as key in the table.";
+          }
+
+          leaf auth-key-enc {
+            type string {
+              length "0..259";
+            }
+            description
+              "Used to specify the encrypted key to use with this key
+               identifier. This node may be populated with the pre-encrypted
+               string while creating a new entry in this list. When read, this
+               node returns the encrypted string for the entry in the list.
+               Refer to the auth-key-type leaf for the Authentication Type
+               used.";
+          }
+
+          leaf auth-key-type {
+            type enumeration {
+              enum md5 {
+                value 1;
+                description "";
+              }
+              enum sha1 {
+                value 2;
+                description "";
+              }
+              enum none {
+                value 3;
+                description "";
+              }
+            }
+            description
+              "Used to specify the type of authentication key used.";
+          }
+
+        } // end auth-entry
+
+      } // end authentication container
+
+      container associations {
+        description
+          "Configuration of peering and client servers.";
+
+        // The client connects to a remote NTP server to obtain the time.
+        // NTP Servers set by user, and not by DHCP.
+        // NTP Servers set by DHCP are available by the oper. state.
+        container remote-ntp-server {
+          description
+            "Remote NTP Servers.";
+
+          list server-entry {
+            key "address";
+            description
+              "List of server-entries and their configuration data";
+
+            leaf admin-state {
+              type ciena:admin-state;
+              description
+                "This node is used to specify the user administrative state
+                 of the server entry.";
+            }
+
+            leaf address {
+              type inet:host;
+              description
+                "The IP address or host name of the NTP server.
+                 If this node contains a hostname; then the operational state
+                 node resolved-address will contain the resolved address.";
+            }
+
+            leaf auth-key-id {
+              type uint32 {
+                range "0..4294967295";
+              }
+              description
+                "This node is used to specify the auth key ID that the server
+                 uses. A 0 key ID implies no auth key";
+            }
+
+          }
+
+        } // end remote-ntp-server
+
+        container multicast-server {
+          description
+            "Configuration for Multicast.";
+          leaf-list ipv6-address {
+            type inet:ipv6-address;
+            description "The IPv6 address of the multicast server.";
+          }
+          leaf-list ipv4-address {
+            type inet:ipv4-address;
+            description "The IPv4 address of the multicast server.";
+          }
+        }
+
+      } // end associations container
+
+    } // end ntp containter
+  }
+  /*
+   * Operational state data nodes
+   */
+  container ntp-state {
+    config false;
+    description "";
+
+    leaf delay {
+      type float;
+      units "milliseconds";
+      description
+        "When NTP client is synchronized, this indicates the round trip time
+         taken by the reply packet to return in response, to a query sent by
+         the NTP server.";
+    }
+
+    leaf offset {
+      type float;
+      units "milliseconds";
+      description
+        "When NTP client is synchronized, this contains the difference between
+         the reference clock and the system clock .";
+    }
+
+    leaf jitter {
+      type float;
+      units "milliseconds";
+      description
+        "When NTP is synchronized, it indicates the magnitude of
+         jitter between several time queries .";
+    }
+
+    leaf drift {
+      type float;
+      units "milliseconds";
+      description
+        "The Drift of the local clock.  This value is only valid when NTP
+         client is enabled and has a valid peer.";
+    }
+
+    leaf fast-offset {
+      type float;
+      units "milliseconds";
+      description
+        "The Fastest Offset seen of the local clock.  This value is only
+         valid when NTP client is enabled and has a valid peer.";
+    }
+
+    leaf slow-offset {
+      type float;
+      units "milliseconds";
+      description
+        "The Slowest Offset seen of the local clock.  This value is only
+         valid when NTP is enabled and has a valid peer.";
+    }
+
+    leaf driftPPM {
+      type float;
+      units "parts per million";
+      description
+        "The frequency error in the local clock. This value is only
+         valid when NTP client is enabled and has a valid peer.";
+    }
+
+    leaf synchronized {
+      type boolean;
+      description
+        "This node indicates the synchronized state of the NTP client.";
+    }
+
+    leaf dhcp-ntp-option-state {
+      type enumeration {
+        enum enable {
+          value 1;
+          description "";
+        }
+        enum disable {
+          value 2;
+           description "";
+        }
+      }
+      description
+        "This node is used to get the DHCP NTP Option State";
+    }
+
+    leaf scope {
+      type enumeration {
+        enum user {
+          value 1;
+          description "";
+        }
+        enum dhcp {
+          value 2;
+          description "";
+        }
+        enum both {
+          value 3;
+          description "";
+        }
+      }
+      description
+        "This node is used to specify the from where the configuration was
+         set. The scope indicates scope if the entry is configured by dhcp,
+         user, or both.";
+    }
+
+    container associations {
+      description
+        "Operational state of user set remote ntp servers.";
+
+      container remote-ntp-server {
+        description "Contains NTP Servers.";
+        list server-entry {
+          key "address";
+          description "";
+
+          leaf admin-state {
+            type ciena:admin-state;
+            description
+              "This node is used to specify the user administrative state of
+               the server entry.";
+          }
+
+          leaf address {
+            type inet:host;
+            description
+              "The IP address or host name of the NTP server.
+               If this node contains a hostname; then the operational state
+               node resolved-address will contain the resolved address.";
+          }
+
+          leaf resolved-address {
+            type inet:ip-address;
+            description
+              "This will be the resolved ip address of
+               remote-ntp-server address leaf if a hostname is used.";
+          }
+
+          leaf auth-key-id {
+            type uint32 {
+              range "0..4294967295";
+            }
+            description
+              "This node is used to specify the auth key ID that the
+               server uses. A 0 key ID implies no auth key";
+          }
+
+          leaf scope {
+            type enumeration {
+              enum user {
+                value 1;
+                description "";
+              }
+              enum dhcp {
+                value 2;
+                description "";
+              }
+              enum both {
+                value 3;
+                description "";
+              }
+            }
+            description
+              "This node is used to specify the from where the configuration
+               was set. The scope indicates scope if the entry is configured
+               by dhcp, user, or both.";
+          }
+
+          leaf oper-state {
+            type enumeration {
+              enum enable {
+                value 1;
+                description "";
+              }
+              enum disable {
+                value 2;
+                description "";
+              }
+            }
+            description
+              "This node gets the operational state of the remote NTP server";
+          }
+
+          leaf server-state {
+            type enumeration {
+              enum reach {
+                value 1;
+                description "";
+              }
+              enum unReach {
+                value 2;
+                description "";
+              }
+              enum error {
+                value 3;
+                description "";
+              }
+            }
+            config false;
+            description
+              "This node is used to specify the reach state of the remote
+               server.";
+          }
+
+          leaf server-condition {
+            type enumeration {
+              enum reject {
+                value 1;
+                description "";
+              }
+              enum insane {
+                value 2;
+                description "";
+              }
+              enum correct {
+                value 3;
+                description "";
+              }
+              enum standby {
+                value 4;
+                description "";
+              }
+              enum candidate {
+                value 5;
+                description "";
+              }
+              enum selected {
+                value 6;
+                description "";
+              }
+              enum syspeer {
+                value 7;
+                description "";
+              }
+              enum ppspeer {
+                value 8;
+                description "";
+              }
+              enum reaching {
+                value 255;
+                description "";
+              }
+              enum error {
+                value 256;
+                description "";
+              }
+            }
+            description
+              "This node reflects the server condition of the remote server.";
+          }
+
+          leaf auth-state {
+            type enumeration {
+              enum ok {
+                value 1;
+                description "";
+              }
+              enum bad {
+                value 2;
+                description "";
+              }
+              enum none {
+                value 3;
+                description "";
+              }
+              enum error {
+                value 4;
+                description "";
+              }
+            }
+
+            description
+              "This node indicates the auth state of the remote NTP server.";
+          }
+
+          leaf offset {
+            type float;
+            units "milliseconds";
+            description
+              "When remote NTP server is synchronized, this contains the
+               difference between the reference clock and the system clock.";
+          }
+
+        } // end dhcp set remote ntp servers list
+
+      } // end dhcp-set-remote-ntp-servers
+
+    } // end associations container
+
+    container broadcast-server {
+      description "Operational State for the Broadcast Server.";
+
+      leaf address {
+        type inet:ip-address;
+        description
+          "Specifies the NTP broadcast address.";
+      }
+
+      leaf key-id {
+        type uint32 {
+          range "0..65534";
+        }
+        description
+          "This node is used to specify the cleartext key ID that the server
+           uses. A 0 key ID implies no key.";
+      }
+
+      leaf admin-state {
+        type ciena:admin-state;
+
+        description
+          "This node is used to specify the user administrative state of the
+           broadcast address.";
+      }
+
+      leaf reach-state {
+        type enumeration {
+          enum reach {
+            value 1;
+            description "";
+          }
+          enum unReach {
+            value 2;
+            description "";
+          }
+          enum error {
+            value 3;
+            description "";
+          }
+        }
+        description
+          "This node is used to specify the reach state of the broadcast
+           server.";
+      }
+
+      leaf status {
+        type enumeration {
+          enum reject {
+            value 1;
+            description "";
+          }
+          enum insane {
+            value 2;
+            description "";
+          }
+          enum correct {
+            value 3;
+            description "";
+          }
+          enum standby {
+            value 4;
+            description "";
+          }
+          enum candidate {
+            value 5;
+            description "";
+          }
+          enum selected {
+            value 6;
+            description "";
+          }
+          enum syspeer {
+            value 7;
+            description "";
+          }
+          enum ppspeer {
+            value 8;
+            description "";
+          }
+          enum reaching {
+            value 255;
+            description "";
+          }
+          enum error {
+            value 256;
+            description "";
+          }
+        }
+        description
+          "This node reflects the current connection status of the broadcast
+           server.";
+      }
+
+      leaf oper-state {
+        type enumeration {
+          enum enabled {
+            value 1;
+            description "";
+          }
+          enum disabled {
+            value 2;
+            description "";
+          }
+          enum notConfigured
+          {
+            value 3;
+            description "";
+          }
+        }
+        description
+          "This node is used to specify the operational state of the
+           broadcast server";
+      }
+
+    } // end broadcast container
+
+    container statistics {
+      description "Packet statistics of NTP.";
+
+      leaf packets-sent {
+        type uint32;
+        description
+          "Indicates the total number of packets sent.";
+      }
+
+      leaf sent-fail {
+        type uint32;
+        description
+          "Indicates the number of times packet
+           sending failed.";
+      }
+
+      leaf received {
+        type uint32;
+        description
+          "Indicates the total number of packets received.";
+      }
+
+      leaf dropped {
+        type uint32;
+        description
+          "Indicates the number of packets dropped.";
+      }
+
+    }
+
+  } // end ntp-state container
+
+  // sync-change-notification [on/off]
+  notification sync-status-change-notification {
+    description
+      "This notification is sent whenever there is a change in the
+       synchronization state for the NTP client. The sync-notification
+       leaf should be enabled to receive this notification.";
+
+    leaf sync-state {
+      type enumeration {
+        enum synchronized {
+          value 1;
+          description "";
+        }
+        enum not-synchronized {
+          value 2;
+          description "";
+        }
+      }
+      description
+        "This node indicates the synchronized state of the NTP client.";
+    }
+
+  } // end sync-change-notification
+
+  /* RPC Operations */
+  rpc drift-clear {
+    description
+      "An RPC operation to clear the drift, stats, etc. and should should
+       return the status of the operation.";
+  }
+
+} // end module

@@ -1,0 +1,488 @@
+module ciena-osrp-snc {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-snc";
+  prefix snc;
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-osrp-osrp-conn {
+    prefix ciena-osrp-osrp-conn;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's OSRP Sub-network Connection (SNC)
+     object model for the 6500r platform";
+
+  revision 2021-02-05 {
+    ciena-common-version:string "2.4.1";
+    description
+      "Parameter associated-snc-group is made read-only.";
+  }
+  revision 2020-12-11 {
+    ciena-common-version:string "2.4.0";
+    description
+      "added end to end channel diagnostics config and action.";
+  }
+  revision 2020-12-08 {
+    ciena-common-version:string "2.3.0";
+    description
+      "Added guard-band and spectral-width in spectral-constraints container and removed ietf-yang-types import. ";
+  }
+  revision 2020-11-19 {
+    ciena-common-version:string "2.2.1";
+    description
+      "tansmission typing error changed to transmission. ";
+  }
+  revision 2020-10-30 {
+    ciena-common-version:string "2.2.0";
+    description
+      "6500r-series Release 2.2
+       discovered-transmission-info list added.";
+  }
+  revision 2020-10-20 {
+    ciena-common-version:string "2.1.0";
+    description
+      "6500r-series Release 2.0
+       mandatory check for name in actions input removed.";
+  }
+  revision 2020-07-14 {
+    ciena-common-version:string "2.0.0";
+    description
+      "6500r-series Release 2.0
+       EEDIAG Rpc is removed.";
+  }
+  revision 2019-09-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+  revision 2019-04-22 {
+    description
+      "Initial revision.";
+  }
+
+  grouping ciena-osrp-snc-mount {
+    list snc {
+      key "name";
+      leaf name {
+        type ciena-osrp-types:snc-key;
+        mandatory true;
+        description
+          "Name of Snc.";
+      }
+
+      container allocated-spectrum {
+        config false;
+        description
+          "Specifies the spectrum allocated to snc.";
+        leaf frequency {
+          type ciena-osrp-types:frequency;
+          config false;
+          description
+            "Allocated Center Frequency for snc (GHz).";
+        }
+      }
+
+      leaf associated-snc-group {
+        type ciena-osrp-types:snc-group-key;
+        config false;
+        description
+          "Name of snc-group which snc belongs to.";
+      }
+
+      list discovered-transmission-info {
+        key "node-name transmission-mode";
+        config false;
+        description
+          "Specifies the transmission related information.";
+        leaf node-name {
+          type ciena-osrp-types:node-name;
+          config false;
+          description
+            "Identifies the name of the node, the transmission-mode corresponds to.";
+        }
+
+        leaf transmission-mode {
+          type ciena-osrp-types:transmission-mode;
+          config false;
+          description
+            "Identifies  transmission-mode";
+        }
+
+        leaf dispersion {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          units "ps-nm";
+          config false;
+          description
+            "Value of dispersion of an optical channel in ps/nm
+             with two decimal precision.";
+        }
+
+        leaf link-optimization-mode {
+          type ciena-osrp-types:link-optimization-mode;
+          config false;
+          description
+            "Link Optimization Mode.";
+        }
+      }
+
+      container spectrum-constraints {
+        leaf frequency {
+          type ciena-osrp-types:frequency;
+          description
+            "Explicit Center Frequency constraint for snc (GHz). Default 0, which means OSRP will assign frequency itself.";
+        }
+
+        leaf freq-exclusivity {
+          type ciena-osrp-types:freq-exclusive;
+          default "preferred";
+          description
+            "Specifies whether to exclusively use the frequency or not. (Future use)";
+        }
+
+        leaf guard-band {
+          type ciena-osrp-types:spectrum;
+          default "0";
+          description
+            "Guard-band size of the snc(GHz). Default 0GHz.";
+        }
+
+        leaf spectral-width {
+          type ciena-osrp-types:spectrum;
+          mandatory true;
+          description
+            "Spectral-width for snc (GHz).";
+        }
+      }
+
+      leaf local-end-point-port {
+        type ciena-osrp-types:port-name;
+        mandatory true;
+        description
+          "Local (Originating) end point port name.";
+      }
+
+      leaf remote-end-point-port {
+        type ciena-osrp-types:port-name;
+        mandatory true;
+        description
+          "Remote (Terminating) end point port name.";
+      }
+
+      leaf secondary-state {
+        type ciena-osrp-types:secondary-state;
+        config false;
+        description
+          "Secondary state of the snc.";
+      }
+
+      list transmission-info-constraint {
+        key "node-name transmission-mode";
+        description
+          "Specifies the transmission related information.";
+        leaf node-name {
+          type ciena-osrp-types:node-name;
+          description
+            "Identifies the name of the node, the transmission-mode corresponds to.";
+        }
+
+        leaf transmission-mode {
+          type ciena-osrp-types:transmission-mode;
+          description
+            "Identifies  transmission-mode";
+        }
+
+        leaf dispersion {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          units "ps-nm";
+          description
+            "Value of dispersion of an optical channel in ps/nm
+             with two decimal precision.";
+        }
+
+        leaf link-optimization-mode {
+          type ciena-osrp-types:link-optimization-mode;
+          description
+            "Link Optimization Mode.";
+        }
+      }
+
+      container peer {
+        config false;
+        uses ciena-osrp-types:hop-info;
+      }
+
+      container end-to-end-channel-diagnostics-config {
+        description
+          "Specifies the end to end channel status configuration of snc.";
+        leaf action {
+          type ciena-osrp-types:dp-fault-action;
+          default "alarm";
+          description
+            "Specifies action to be taken if data path fault exist beyond hold-off time. Default alarm";
+        }
+
+        leaf action-hold-off {
+          type ciena-osrp-types:timeperiod-sec;
+          default "900";
+          description
+            "Data Path fault action hold off time. Action can be either
+             alarm or mesh-restoration. Range 300secs - 1800secs (5mins - 30mins). Default 15mins.";
+        }
+
+        leaf interval {
+          type ciena-osrp-types:timeperiod-sec;
+          default "10";
+          description
+            "Time interval between subsequent end-to-end-channel-diagnostics messages in case data path fault persists. Defaut 10secs";
+        }
+
+        leaf enabled {
+          type ciena-osrp-types:yes-no;
+          default "yes";
+          description
+            "Indicates if end-to-end-channel-diagnostics is required. Default yes.";
+        }
+      }
+
+      uses snc-common-config;
+
+      action show-snc-diagnostics {
+        description
+          "Retrieve Subnetwork Connection diagnostics on the originating node.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-key;
+            description
+              "Name of Snc.";
+          }
+        }
+
+        output {
+          list output {
+            key "index";
+            uses snc-common-diag-config;
+          }
+        }
+      }
+
+      action clear-snc-diagnostics {
+        description
+          "Clear Subnetwork Connection diagnostics on originating node.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-key;
+            description
+              "Name of Snc.";
+          }
+        }
+      }
+
+      action show-end-to-end-channel-diagnostics {
+        description
+          "Retrieve Subnetwork Connection channel controller status on all the nodes of current working path.";
+        input {
+          leaf name {
+            type ciena-osrp-types:snc-key;
+            description
+              "Name of snc.";
+          }
+        }
+
+        output {
+          list snc {
+            key "name";
+            leaf name {
+              type ciena-osrp-types:snc-group-key;
+              description
+                "Identifies the name of Subnetwork Connection.";
+            }
+
+            leaf diagnostics-start-timestamp {
+              type ciena-osrp-types:timestamp;
+              description
+                "Time when query was last initiated for collecting diagnostics from all the nodes.";
+            }
+
+            leaf diagnostics-end-timestamp {
+              type ciena-osrp-types:timestamp;
+              description
+                "Time when previous query was completed after collecting diagnostics from all the nodes.
+                 This will be set to zero whenever query is initiated again and will be reset again after query completion.";
+            }
+
+            list node {
+              key "node-name";
+              description
+                "Specifies rx proxy and mux/demux channel controller status.";
+              leaf node-name {
+                type ciena-osrp-types:node-name;
+                description
+                  "Identifies name of the osrp node.";
+              }
+
+              uses ciena-osrp-osrp-conn:channel-controller-state;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-osrp-snc-mount-actions;
+
+  grouping snc-common-config {
+    leaf admin-state {
+      type ciena-osrp-types:admin-state;
+      default "unlocked";
+      description
+        "Administrative state.";
+    }
+
+    leaf circuit-id {
+      type ciena-osrp-types:snc-group-ckt-name;
+      config false;
+      description
+        "Circuit identifier tagged against media-channel connections created for snc-group or
+         network-media-channel connections created for snc.";
+    }
+
+    leaf creation-time-stamp {
+      type ciena-osrp-types:timestamp;
+      config false;
+      description
+        "Creation timestamp.";
+    }
+
+    leaf end-point-state {
+      type ciena-osrp-types:end-point-state;
+      config false;
+      description
+        "End-point state.";
+    }
+
+    leaf incarnation-num {
+      type uint32;
+      default "1";
+      config false;
+      description
+        "Incarnation number of connection.";
+    }
+
+    leaf label {
+      type ciena-osrp-types:label;
+    }
+
+    leaf mesh-restorable {
+      type ciena-osrp-types:yes-no;
+      default "yes";
+      description
+        "Indicates if mesh-restoration is enabled.";
+    }
+
+    leaf primary-state {
+      type ciena-osrp-types:primary-state;
+      config false;
+      description
+        "Primary state of the snc-group or snc.";
+    }
+
+    leaf remote-node-name {
+      type ciena-osrp-types:node-name;
+      mandatory true;
+      description
+        "Specifies the name of the remote (terminating) end node on which all snc-group and its sncs terminate.";
+    }
+
+    leaf uuid {
+      type ciena-osrp-types:uuid;
+    }
+  }
+
+  grouping snc-common-diag-config {
+    leaf index {
+      type uint32 {
+        range "1..80";
+      }
+      description
+        "Index of diagnostics list.";
+    }
+
+    leaf name {
+      type ciena-osrp-types:snc-key;
+      description
+        "Name of Snc.";
+    }
+
+    leaf blocked-type {
+      type enumeration {
+        enum "unknown";
+        enum "local";
+        enum "node";
+        enum "link";
+        enum "bundle";
+      }
+      description
+        "Identifies the entity type that is blocked.";
+    }
+
+    leaf bundle-id {
+      type uint32;
+      description
+        "Identifies the bundle id.";
+    }
+
+    leaf failure-cause {
+      type string {
+        length "0..1024";
+      }
+      description
+        "Failure cause of the snc.";
+    }
+
+    leaf link-name {
+      type ciena-osrp-types:link-key;
+      description
+        "Identifies the name of the problematic link.";
+    }
+
+    leaf node-name {
+      type ciena-osrp-types:node-name;
+      description
+        "Identifies the name of the problematic node.";
+    }
+
+    leaf remote-node-name {
+      type ciena-osrp-types:node-name;
+      description
+        "Identifies the name of the problematic remote node.";
+    }
+
+    leaf timestamp {
+      type ciena-osrp-types:timestamp;
+      description
+        "Recorded failure timestamp.";
+    }
+  }
+
+  uses ciena-osrp-snc-mount;
+}

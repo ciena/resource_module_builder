@@ -1,0 +1,1356 @@
+module ciena-itut-g8032-draft {
+  namespace "http://www.ciena.com/ns/yang/ciena-itut-g8032-draft";
+  prefix g8032;
+
+  import ietf-interfaces {
+    prefix "if";
+  }
+
+  import ieee802-dot1q-types  {
+    prefix "dot1q-types";
+  }
+
+  import ietf-yang-types {
+    prefix "yang";
+  }
+
+  import ciena-mef-fd {
+     prefix "ciena-mef-fd";
+  }
+
+  import mef-cfm {
+     prefix "mef-cfm";
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Ciena Corporation
+      - Web URL: http://www.ciena.com/
+      - E-mail:  yang@ciena.com
+      - Postal:  7035 Ridge Road
+               Hanover, Maryland 21076
+               U.S.A.
+      - Phone:   +1 800-921-1144
+      - Fax:     +1 410-694-5750
+    ";
+
+  description
+    "This YANG module describes configuration and operational
+    data model for ITU.T G.8032 Ethernet Ring Protocol (ERP).
+
+    G.8032 provides a loop avoidance and protection switching
+    mechanism in ethernet ring network.
+
+    An Ethernet ring node (which is assumed to be compliant to an
+    IEEE 802.1Q bridge) is connected to adjacent Ethernet ring
+    nodes participating in the same Ethernet ring, using two
+    independent links. A ring link is bounded by two adjacent
+    Ethernet ring nodes and a port for a ring link is called a
+    ring port. The minimum number of Ethernet ring nodes in
+    an Ethernet ring is two.
+
+    An Automatic Protection Switching(APS) protocol is used to
+    coordinate the protection actions over the ring.";
+
+  revision 2022-03-01 {
+    description
+      "Change data-members type to leafref directly in the main yang.
+       Added must condition in erp-instance-construct with respect to sub-ring support in 10.8
+       Length of ring-name-type changed to 1..44 to match with backend supported length
+       Added cfm-instance maintenance-association-end-point-reference under port hierarchy in g8032-ring";
+  }
+
+  revision 2020-09-21 {
+    description
+      "Changes to add backward support for telemetry notifications";
+  }
+
+  revision 2020-03-18 {
+    description
+      "Changes to support telemetry filtering";
+  }
+
+  revision 2016-04-06 {
+    description
+      "This YANG model describes the configuration and
+      operational state information in support of G.8032.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015)";
+  }
+
+  // Ring types associated with the ERP instance
+
+  identity erp-instance-type {
+    description
+      "Represents the configured ERP ring type.";
+  }
+
+  identity sub-ring-no-virtual-channel {
+    base erp-instance-type;
+    description
+      "Identify for a sub-ring without a virtual channel.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 9.7.2, 10.1.14";
+  }
+
+  identity sub-ring-virtual-channel {
+    base erp-instance-type;
+    description
+      "Identify for a sub-ring with a virtual channel.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 9.7.1";
+  }
+
+  identity major-ring {
+    base erp-instance-type;
+    description
+      "Identify for a major-ring.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 9.3";
+  }
+
+  // G.8032 protocol version types
+
+  identity g8032-version-type {
+    description
+      "The G.8032 protocol version.";
+  }
+
+  identity g8032-version1 {
+    base g8032-version-type;
+    description
+      "ITU-T G.8032 version 1";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.13";
+  }
+
+  identity g8032-version2 {
+    base g8032-version-type;
+    description
+      "ITU-T G.8032 version 2";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.13";
+  }
+
+  // Ring state types
+
+  identity ring-state-type {
+    description
+      "Protocol states for a ring instance.";
+  }
+
+  identity initializing {
+    base ring-state-type;
+    description
+      "Ring protocol state machine is initializing and it is not
+      yet operational.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  identity idle {
+    base ring-state-type;
+    description
+      "Ring is operational in normal state, RPL link is blocked
+      and no failure or administrative condition exists. Owner
+      node is transmitting R-APS (NR, RB) PDUs.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  identity pending {
+    base ring-state-type;
+    description
+      "Ring does not have any failure or administrative
+      condition however RPL is blocked. In case of revertive
+      mode operation wait-to-restore timer is running.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  identity protection {
+    base ring-state-type;
+    description
+      "One or more failure condition exists on the ring. Failed
+      nodes are transmitting R-APS (SF) PDUs. Upon reaching to
+      protection state ring unblocks RPL link to allow user
+      traffic.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  identity manual-switch {
+    base ring-state-type;
+    description
+      "User has manually switched ring. This is usually done to
+      perform maintenance operation on the ring node.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  identity force-switch {
+    base ring-state-type;
+    description
+      "User has force-switched ring. This state overrides
+      protection state.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+  }
+
+  // Port state types
+
+  identity port-state-type {
+    description
+      "States associated with a ring port.";
+  }
+
+  identity forwarding {
+    base port-state-type;
+    description
+      "Ring port is in normal state and ready to forward
+      traffic ring controlled data traffic.";
+  }
+
+  identity blocking {
+    base port-state-type;
+    description
+      "Ring port is blocked and it is not forwarding any data
+      traffic. In normal operations a port is blocked if it is
+      a RPL port.";
+  }
+
+  identity failed {
+    base port-state-type;
+    description
+      "Ring port has local failure. Port is blocked and it is
+      not forwarding any traffic.";
+  }
+
+  identity local-ms {
+    base port-state-type;
+    description
+      "Ring port has been blocked by administrative manual
+      switch action.";
+  }
+
+  identity local-fs {
+    base port-state-type;
+    description
+      "Ring port has been blocked by administrative force switch
+      action.";
+  }
+
+  // FOP event types
+
+  identity fop-event-type {
+    description
+      "Represents Failure of Protocol events";
+  }
+
+  identity fop-pm {
+    base fop-event-type;
+    description
+      "Failure of Protocol, Provisioning Mismatch (FOP-PM)
+      event.
+
+      This event is generated when a node ID mismatch is
+      detected by ERP control process by comparing the node ID
+      of the RPL owner and the node ID in a received
+      R-APS(NR, RB) frame.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  identity fop-pm-clear {
+    base fop-event-type;
+    description
+      "This event is generated when Protocol, Provisioning
+      Mismatch (FOP-PM) defect is cleared.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  identity fop-to {
+    base fop-event-type;
+    description
+      "Failure of Protocol, Timeout (FOP-TO) event.
+
+      This event is generated when ERP control process does not
+      receive periodic R-APS frame for a defined timeout
+      interval (>= 3.5 times R-APS interval).";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  identity fop-to-clear {
+    base fop-event-type;
+    description
+      "This event is generated when Protocol, Timeout (FOP-TO)
+      defect is cleared";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  identity fop-norpl {
+     base fop-event-type;
+     description
+       "Failure of Protocol, Timeout (FOP-NORPL) event.
+       This event is generated when ERP control process does not
+       receive periodic R-APS frame).";
+     reference
+       "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  identity fop-norpl-clear {
+     base fop-event-type;
+     description
+       "This event is generated when Protocol, Timeout (FOP-NORPL)
+       defect is cleared";
+     reference
+       "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+  identity any {
+     base fop-event-type;
+     description
+       "This is used is telemetry for any event";
+     reference
+       "ITU-T G.8032/Y.1344 (08/2015); Section 10.4";
+  }
+
+  typedef rpl-type {
+    type enumeration {
+      enum none {
+        description
+            "No RPL.";
+      }
+      enum owner {
+        description
+            "An RPL owner.";
+      }
+      enum neighbor {
+        description
+            "An RPL neighbor owner.";
+      }
+      enum next-neighbor {
+        description
+            "Represents next-neighbour node in the ring.";
+      }
+    }
+    description
+      "The disposition of the RPL ownership associated with a ring
+      Interface.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1";
+  }
+
+  typedef reversion-mode {
+    type enumeration {
+      enum revertive {
+        description
+            "Represents revertive mode operation of a G.8032
+            ethernet ring.";
+      }
+      enum non-revertive {
+        description
+            "Represents non-revertive mode operation of a
+            G.8032 ethernet ring.";
+      }
+    }
+    description
+      "This typedef defines G.8032 ring protection operation mode.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 9.1, 10.2.3.1";
+  }
+
+  typedef ring-name-type {
+    type string {
+      length "1..44";
+    }
+    description
+      "The ring name type identifier.";
+  }
+
+  typedef ring-id-type {
+    type uint8 {
+      range "1..239";
+    }
+    default 1;
+    description
+      "G.8032 Ring ID";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.1";
+  }
+
+  typedef ring-port-type {
+    type enumeration {
+      enum port0 {
+        description
+          "Port 0 of the ring node.";
+      }
+      enum port1 {
+        description
+          "Port 1 of the ring node.";
+      }
+    }
+    description
+      "Each ring instance has maximum of two ports. This definition
+      labels these ports as port0 and port1 for identifications.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1 (Figure 10-1)";
+  }
+
+  typedef hold-off-timer-type {
+    type uint16 {
+      range "0..10000";
+    }
+    units "milliseconds";
+    default "0";
+    description
+      "The hold-off timer is used to coordinate the timing of
+      protection switches.
+
+      When a new defect or more severe defect occurs (new SF), this
+      event is not to be reported immediately to protection switching
+      if the provisioned hold-off timer value is non-zero. Instead,
+      the hold-off timer is started. When the hold-off timer expires,
+      the trail that started the timer is checked as to whether a
+      defect still exists. If one does exist, that defect is
+      reported to protection switching.
+
+      Hold off timer values SHOULD be specified in multiple of 100.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.8";
+  }
+
+  typedef guard-timer-type {
+    type uint16 {
+      range "10..2000";
+    }
+    units "milliseconds";
+    default "500";
+    description
+      "The guard timer is used to prevent Ethernet ring nodes from
+      acting upon outdated R-APS messages and prevents the
+      possibility of forming a closed loop.
+
+      This timer period SHOULD be greater than the maximum expected
+      forwarding delay in which an R-APS message traverses the
+      entire ring.
+
+      The period of the guard timer MAY be configured by the operator
+      in 10 ms steps between 10 ms and 2 seconds.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.5";
+  }
+
+  typedef wtr-timer-type {
+    type uint8 {
+      range "1..12";
+    }
+    units "minutes";
+    default "5";
+    description
+      "In revertive mode the 'wait to restore' (WTR) timer
+      is used to prevent frequent operation of the protection
+      switching due to intermittent signal failure defects.
+
+      When recovering from a Signal fail, the delay timer
+      must be long enough to allow the recovering network to
+      become stable.
+
+      WTR timer is activated on RPL owner node. When WTR
+      timer is expired RPL owner node initiates the reversion
+      process by transmitting an R-APS (NR, RB) message.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.4";
+  }
+
+  typedef erps-instance-status-type {
+     type enumeration {
+        enum clear {
+           description
+              "Reason for erp-instance-state: The ring is clear (VirtRingStatus_Clear)";
+        }
+        enum localSf {
+           description
+              "Reason for erp-instance-state: The ring has local signal-failure (VirtRingStatus_LocalSf)";
+        }
+        enum localFs {
+           description
+              "Reason for erp-instance-state: Local force-switch (VirtRingStatus_LocalFs)";
+        }
+        enum remoteSf {
+           description
+              "Reason for erp-instance-state: Remote signal-failure (VirtRingStatus_RemoteSf)";
+        }
+        enum remoteFs {
+           description
+              "Reason for erp-instance-state: Remote force-switch (VirtRingStatus_RemoteFs)";
+        }
+        enum provMismatch {
+           description
+              "Reason for erp-instance-state: Provisioning mismatch (VirtRingStatus_ProvMismatch)";
+        }
+        enum noPduRxd {
+           description
+              "Reason for erp-instance-state: No PDU received (VirtRingStatus_NoPduRxd)";
+        }
+        enum noRplOwner {
+           description
+              "Reason for erp-instance-state: No rpl owner (VirtRingStatus_NoRplOwner)";
+        }
+     }
+     description
+        "Erps Instance Status Type";
+  }
+
+  typedef erps-instance-port-status-type {
+     type enumeration {
+        enum clear {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_Clear (The link is clear)";
+        }
+        enum down {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_Down (The link is down)";
+        }
+        enum ccmFail {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_CcmFail (The link has CCM Failure)";
+        }
+        enum localFs {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_LocalFs (Local force-switch)";
+        }
+        enum remoteFs {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_RemoteFs (Remote force-switch)";
+        }
+        enum remoteSf {
+           description
+              "Reason for erp-instance-port-state: LinkStatus_RemoteSf (Remote signal-failure)";
+        }
+     }
+     description
+        "Erps Instance Port Status Type";
+  }
+
+  grouping ring-identifier {
+    description
+      "This grouping defines ring-name and instance-name 
+      combination.";
+    leaf ring-name {
+      type leafref {
+        path "/g8032-rings/g8032-ring/ring-name";
+      }
+      mandatory true;
+      description
+        "G.8032 ring name.";
+    }
+
+    leaf instance-name {
+      type leafref {
+        path "/g8032-rings/" +
+             "g8032-ring[ring-name = current()/../ring-name]/" +
+             "erp-instances/erp-instance/instance-name";
+      }
+      mandatory true;
+      description
+        "ERP instance name.";
+    }
+  } // ring-identifier
+
+  grouping aps-statistics {
+    description
+      "R-APS statistics";
+    leaf tx-raps {
+      type yang:counter64;
+      mandatory true;
+      description
+        "Number of R-APS messages transmitted";
+    }
+    leaf rx-raps {
+      type yang:counter64;
+      mandatory true;
+      description
+        "Number of R-APS messages received";
+    }
+    leaf tx-raps-nrrb {
+      type yang:counter64;
+      description
+        "Number of R-APS(NR,RB) messages transmitted";
+    }
+    leaf rx-raps-nrrb {
+      type yang:counter64;
+      description
+        "Number of R-APS(NR,RB) messages received";
+    }
+    leaf tx-raps-nr {
+      type yang:counter64;
+      description
+        "Number of R-APS(NR) messages transmitted";
+    }
+    leaf rx-raps-nr {
+      type yang:counter64;
+      description
+        "Number of R-APS(NR) messages received";
+    }
+    leaf tx-raps-sf {
+      type yang:counter64;
+      description
+        "Number of R-APS(SF) messages transmitted";
+    }
+    leaf rx-raps-sf {
+      type yang:counter64;
+      description
+        "Number of R-APS(SF) messages received";
+    }
+    leaf tx-raps-fs {
+      type yang:counter64;
+      description
+        "Number of R-APS(FS) messages transmitted";
+    }
+    leaf rx-raps-fs {
+      type yang:counter64;
+      description
+        "Number of R-APS(FS) messages received";
+    }
+    leaf tx-raps-ms {
+      type yang:counter64;
+      description
+        "Number of R-APS(MS) messages transmitted";
+    }
+    leaf rx-raps-ms {
+      type yang:counter64;
+      description
+        "Number of R-APS(MS) messages received";
+    }
+  } // aps-statistics
+
+  container g8032-rings {
+    description
+      "Contains all the G.8032 system specific related
+      configuration.";
+
+    leaf ring-system-control {
+      type enumeration {
+        enum disabled {
+          description
+            "Disables G.8032 ring protection on a system wide
+            basis. There may be occasions during troubleshooting
+            that requires the operator to globally disable.";
+        }
+        enum enabled {
+          description
+            "Enables G.8032 ring protection on a system wide
+            basis.";
+        }
+      }
+      default "enabled";
+      description
+        "Setting this control allows the enablement or disablement
+        of the G.8032 protection switching on a system wide
+        basis.";
+    }
+
+    leaf notification-enabled {
+      type boolean;
+      default "false";
+      description
+        "Enable/disable ring status change notification. If true,
+        any change in ring state will be notified via
+        ring-state-change notification.";
+    }
+
+    leaf raps-version {
+      type identityref {
+        base g8032-version-type;
+      }
+      description
+        "The version of the ERP R-APS protocol being used.";
+      reference
+        "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.13";
+    }
+
+    list g8032-ring {
+      key "ring-name";
+      description
+        "Provides configuration nodes in support of ERP instances
+        on the device.";
+
+      leaf ring-name {
+        type ring-name-type;
+        description
+          "G.8032 ring name.";
+      }
+
+      leaf ring-id {
+        type ring-id-type;
+        default "1";
+        description
+          "The Ring ID.";
+        reference
+          "ITU-T G.8032 (08/2015); Section 10.1.1";
+      }
+
+      leaf ring-description {
+        type string {
+          length "1..255";
+        }
+        description
+          "Textual description of the ring.";
+      }
+
+      container ring-ports {
+        description
+          "Ring port configurations.";
+        list ring-port {
+          key "port-id";
+          min-elements 2;
+          max-elements 2;
+          description
+            "List of the ring ports.
+             If all of the ERP instances for this ring are sub-rings 
+             that terminate at this node, this list may have only 1 
+             entry.";
+
+          leaf port-id {
+            type ring-port-type;
+            description
+              "Port identifier (port0 or port1).";
+          }
+
+          leaf interface {
+            type if:interface-ref;
+            mandatory true;
+            description
+              "Port interface reference of the Ring.";
+          }
+
+          container cfm-instance {
+            description
+               "Represents a cfm MEP that can be used to detect
+                signal failure on a ring port. It is a metric used
+                for ring protection switching.";
+
+            uses mef-cfm:maintenance-association-end-point-reference;
+          }
+
+        } // ring-port
+      } // ring-ports
+
+      container erp-instances {
+        description
+          "Collection of ring instances.";
+        list erp-instance {
+          key "instance-name";
+          description
+            "There can be multiple ERP instances associated with a
+            given G.8032 ring. Each ERP instance must have a
+            separate set of data member VLAN identifiers.";
+
+          leaf instance-name {
+            type ring-name-type;
+            description
+              "The ERP instance name.";
+          }
+
+          leaf instance-description {
+            type string {
+              length "1..255";
+            }
+            description
+              "Textual description of the instance.";
+          }
+
+          leaf raps-vid {
+            type dot1q-types:vlanid;
+            mandatory true;
+            description
+              "The VLAN identifier used by the ERP instance for
+              ring APS control messages.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 9.5";
+          }
+
+          leaf raps-level {
+            type uint8 {
+              range "0..7";
+            }
+            mandatory true;
+            description
+              "The Maintenance Entity Level used by the ERP instance 
+               for ring APS control messages.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.3";
+          }
+
+          leaf raps-priority {
+            type dot1q-types:priority-type;
+            description
+              "The priority assigned to the R-APS PDUs.";
+          }
+
+          leaf-list data-members {
+            min-elements 0;
+            type leafref {
+               path "/ciena-mef-fd:fds/ciena-mef-fd:fd/ciena-mef-fd:name";
+            }
+            description
+              "The range of data member identifiers protected
+              by the ERP instance.";
+          }
+
+          leaf erp-instance-construct {
+            type identityref {
+              base erp-instance-type;
+            }
+            must '. != "sub-ring-virtual-channel"' {
+               description
+                  "The ERP instance cannot be sub-ring-virtual-channel";
+            }
+
+            mandatory true;
+            description
+              "Type of ERP instance.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 9.3, 9.7";
+          }
+
+          leaf reversion {
+            type reversion-mode;
+            default "revertive";
+            description
+              "Configuration node specifying the reversion
+              capabilities of this ERP instance.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 9.1, 10.2.3.1";
+          }
+
+          leaf wtr-timer {
+            type wtr-timer-type;
+            description
+              "The wait-to-restore timer associated with the ERP
+              instance.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.4";
+          }
+
+          leaf guard-timer {
+            type guard-timer-type;
+            description
+              "The guard timer is used to prevent Ethernet ring nodes
+              from acting upon outdated R-APS messages and prevents
+              the possibility of forming a closed loop.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.5";
+          }
+
+          leaf hold-off-time {
+            type hold-off-timer-type;
+            description
+              "The hold-off timer is used to coordinate the
+              timing of protection switches.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.8";
+          }
+
+          container ports {
+            must "../erp-instance-construct != 'major-ring' or " +
+                 "count(port) = 2" {
+              error-message "A major ring must have 2 ring ports";
+              description "A major ring must have 2 ring ports";
+            }
+            description
+              "Port specific configurations for ring instances.";
+            list port {
+              key "port-id";
+              min-elements 1;
+              max-elements 2;
+              description
+                "List of the ring ports.
+                 If this is a major ring, or this node is in a 
+                 sub-ring but is not the interconnection node where 
+                 the sub-ring terminates, then this list must have 2 
+                 entries.
+                 If this is a sub-ring (with or without a virtual 
+                 channel), and this is an interconnection node where 
+                 the sub-ring terminates, then this list must have 
+                 only 1 entry.";
+
+              leaf port-id {
+                type leafref {
+                  path "../../../../../ring-ports/ring-port/port-id";
+                }
+                description
+                  "Port id of the ring instance. This leaf
+                  identifies one of the two ring ports.";
+              }
+
+              leaf rpl {
+                type rpl-type;
+                default "none";
+                description
+                  "RPL port role for the ring instance.";
+                reference
+                  "ITU-T G.8032/Y.1344 (08/2015); Section 10.1";
+              }
+            } // port
+          } // ports
+        } // erp-instance
+      } // erp-instances
+    } // g8032-ring
+  } // g8032-rings
+
+  container g8032-rings-state {
+    config false;
+    description
+      "Contains all the G.8032 system specific related
+      operational state nodes.";
+
+    leaf max-instances-supported {
+      type uint32;
+      mandatory true;
+      description
+        "Maximum number of G.8032 rings instances supported on the
+        device.";
+    }
+
+    list g8032-ring {
+      key "ring-name";
+      description
+        "Provides configuration nodes in support of ERP instances
+        on the device.";
+
+      leaf ring-name {
+        type leafref {
+          path "/g8032-rings/g8032-ring/ring-name";
+        }
+        description
+          "G.8032 ring name.";
+      }
+
+      container erp-instances {
+        description
+          "Collection of ring instances.";
+        list erp-instance {
+          key "instance-name";
+          description
+            "There can be multiple ERP instances associated with a
+            given G.8032 ring. Each ERP instance must have a
+            separate set of data member VLAN identifiers.";
+
+          leaf instance-name {
+            type leafref {
+              path "/g8032-rings/g8032-ring[ring-name = " +
+                   "current()/../../../ring-name]/" +
+                   "erp-instances/erp-instance/instance-name";
+            }
+            description
+              "The G.8032 ERP instance name.";
+          }
+
+          leaf wtb-timer {
+            type uint16 {
+              range "5010..7000";
+            }
+            units "milliseconds";
+            description
+              "The WTB timer is used when clearing Forced switch and
+              Manual switch commands. As multiple Forced switch
+              commands are allowed to co-exist in an Ethernet ring,
+              the WTB timer ensures that clearing of a single Forced
+              switch command does not trigger the re-blocking of the
+              RPL. The timer is defined to be 5 seconds longer than
+              the Guard Timer.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.4";
+          }
+
+          container ports {
+            description
+              "Operational state for the ring instance ports.";
+            list port {
+              key port-id;
+              min-elements 1;
+              max-elements 2;
+              description
+                "Collection of ring port states.";
+
+              leaf port-id {
+                type leafref {
+                  path "/g8032-rings/" +
+                       "g8032-ring[ring-name = " +
+                          "current()/../../../../../ring-name]/" +
+                       "erp-instances/" +
+                       "erp-instance[instance-name = " +
+                          "current()/../../../instance-name]/" +
+                       "ports/port/port-id";
+                }
+                description
+                  "Port id of the ring instance. This leaf identifies
+                  one of the two ring ports.";
+              }
+
+              container flush-logic-remote {
+                description
+                  "Remote node-id, bpr values, used by flush logic
+                  of the ERP control process.";
+                reference
+                  "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.10";
+
+                leaf node-id {
+                  type yang:mac-address;
+                  mandatory true;
+                  description
+                    "Node ID of the last R-APS message received
+                    over the ring port.
+
+                    During initialization this value is set to
+                    00:00:00:00:00:00 by ERP control process.";
+                  reference
+                    "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.10";
+                }
+
+                leaf bpr {
+                  type uint8 {
+                    range "0 | 1";
+                  }
+                  mandatory true;
+                  description
+                    "Blocked port reference (BPR) of the last
+                    R-APS message received over the ring port.
+
+                    During initialization this value is set to 0
+                    by ERP control process.";
+                  reference
+                    "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.10";
+                }
+              } // flush-logic-remote
+
+              leaf port-state {
+                type identityref {
+                  base port-state-type;
+                }
+                mandatory true;
+                description
+                  "Ring port state";
+              }
+
+              leaf erps-instance-port-status {
+                 type erps-instance-port-status-type;
+                 description
+                    "This object specifies the reason of the link state";
+              }
+
+              leaf force-switch {
+                 type boolean;
+                 default "false";
+                 description
+                    "Force switch trigger information";
+              }
+
+              container raps-statistics {
+                description
+                  "R-APS packet statistics";
+                uses aps-statistics;
+              }
+            } // port
+          } // ports
+
+          leaf ring-instance-state {
+            type identityref {
+              base ring-state-type;
+            }
+            mandatory true;
+            description
+              "Ring instance state. This represent protocol state
+              machine state.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 
+              (Table 10-2)";
+          }
+
+          leaf erps-instance-status {
+             type erps-instance-status-type;
+             description
+                "This object specifies the reason of the ring state";
+          }
+
+          leaf number-of-switchovers {
+             type uint32;
+             description
+                "This object specifies the number of switchovers";
+          }
+
+          leaf uptime-from-last-failure {
+             type uint32;
+             description
+                "This object specifies the time for which the node has been up";
+          }
+
+          leaf total-down-time {
+             type uint32;
+             description
+                "This object specifies the total time for which the node has been down";
+          }
+        } // erp-instance
+      } // erp-instances
+    } // g8032-ring
+  } // g8032-rings-state
+
+  /*
+   * Notifications
+   */
+
+  notification ring-state-change-event {
+    description
+      "Notify ring state change events.";
+    uses ring-identifier {
+      description
+        "Uniquely identifies a ring instance.";
+    }
+
+    leaf current-state {
+      type identityref {
+        base ring-state-type;
+      }
+      mandatory true;
+      description
+        "New state of the ring instance.";
+      reference
+        "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+    }
+
+    leaf previous-state {
+      type identityref {
+        base ring-state-type;
+      }
+      mandatory true;
+      description
+        "Previous state of the ring instance.";
+      reference
+        "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+    }
+  } // ring-state-change-event
+
+  notification fop-event {
+    description
+      "Failure of Protocol (FOP) events.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4, and " +
+      "ITU-T G.8021/Y.1341 (04/2015); Section 6.1.4.3";
+    uses ring-identifier {
+      description
+        "Uniquely identifies a ring instance.";
+    }
+
+    leaf event-type {
+      type identityref {
+        base fop-event-type;
+      }
+      description
+        "G.8032 Failure of Protocol event types.";
+    }
+  } // fop-event
+
+  notification ring-state-change-events {
+    description
+      "Notify ring state change events.";
+    list ring-state-change-event {
+      leaf ring-name {
+        type leafref {
+          path "/g8032-rings/g8032-ring/ring-name";
+        }
+      }
+
+      list erp-instance-list {
+        leaf instance-name {
+          type leafref {
+            path "/g8032-rings/g8032-ring[ring-name = " +
+              "current()/../../ring-name]/" +
+              "erp-instances/erp-instance/instance-name";
+          }
+          description
+            "The G.8032 ERP instance name.";
+        }
+
+        leaf current-state {
+          type identityref {
+            base ring-state-type;
+          }
+          description
+            "New state of the ring instance.";
+          reference
+            "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+        }
+
+        leaf previous-state {
+          type identityref {
+            base ring-state-type;
+          }
+          description
+            "Previous state of the ring instance.";
+          reference
+            "ITU-T G.8032/Y.1344 (08/2015); Section 10.1.2 (Table 10-2)";
+        }//previous state
+      }
+
+    } // ring-state-change-event
+  }// ring-state-change-events
+
+  notification fop-events {
+    description
+      "Failure of Protocol (FOP) events.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Section 10.4, and " +
+      "ITU-T G.8021/Y.1341 (04/2015); Section 6.1.4.3";
+    list fop-event {
+      leaf ring-name {
+        type leafref {
+          path "/g8032-rings/g8032-ring/ring-name";
+        }
+      }
+      list erp-instance-list {
+        leaf instance-name {
+          type leafref {
+            path "/g8032-rings/g8032-ring[ring-name = " +
+              "current()/../../ring-name]/" +
+              "erp-instances/erp-instance/instance-name";
+          }
+          description
+            "The G.8032 ERP instance name.";
+        }
+        list events-list {
+          leaf event-type {
+            type identityref {
+              base fop-event-type;
+            }
+            description
+              "G.8032 Failure of Protocol event types.";
+          }
+          leaf status {
+            type boolean;
+            default false;
+            
+            description
+              "Status of FOP events.";
+          }//status
+        }//events
+      }//erps instance
+    }//fop event
+  }//fop events
+
+  /*
+   * Remote Procedure Calls
+   */
+
+  rpc clear-statistics {
+    description
+      "Clear ring statistics.";
+
+    input {
+      uses ring-identifier {
+        description
+          "Uniquely identifies ring instance.";
+      }
+    }
+
+    output {
+      leaf errstr {
+        type string;
+        description
+          "Error message from the device if RPC failed.";
+      }
+    }
+  } // clear-statistics
+
+  rpc clear-ring {
+    description
+      "Clear an existing Forced-Switch (FS) or Manual-Switch (MS)
+      condition on the ring port.";
+    reference
+      "ITU-T G.8032/Y.1344 (08/2015); Sections 8, 10.1.9, 
+      10.2.4.1, 10.2.5.1";
+
+    input {
+      uses ring-identifier {
+        description
+          "Uniquely identifies ring instance.";
+      }
+    }
+
+    output {
+      leaf errstr {
+        type string;
+        description
+          "Error message from the device if RPC failed.";
+      }
+    }
+  } // clear-ring
+
+  rpc switch-ring {
+    description
+      "Perform administrative action on the ring (instance).";
+
+    input {
+      uses ring-identifier {
+        description
+          "Uniquely identifies ring instance.";
+      }
+
+      leaf port-id {
+        type leafref {
+          path "/g8032-rings/" +
+               "g8032-ring[ring-name = current()/../ring-name]/" +
+               "erp-instances/erp-instance[instance-name = " +
+               "current()/../instance-name]/ports/port/port-id";
+        }
+        mandatory true;
+        description
+          "Ring port to perform switch operation.";
+      }
+
+      leaf operation {
+        type enumeration {
+          enum manual {
+            description
+              "Trigger manual switch. This operation is allowed
+              only when a ring instance is in idle or pending state.
+
+              This action allows administrator to temporarily block
+              another ring port and unblock RPL link to perform
+              maintenance operation in the ring.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.2.4";
+          }
+          enum forced {
+            description
+              "Trigger force switch. This operation overrides all
+              other state of the ring.";
+            reference
+              "ITU-T G.8032/Y.1344 (08/2015); Section 10.2.5";
+          }
+        }
+        mandatory true;
+        description
+          "G.8032 administrative operation types.";
+        reference
+          "ITU-T G.8032/Y.1344 (08/2015); Section 8, 10.1.9";
+      }
+    } // input
+
+    output {
+      leaf errstr {
+        type string;
+        description
+          "Error message from the device if RPC failed, including
+          failures where switch operation is not permitted on the
+          ring instance under protocol restrictions.";
+      }
+    } // output
+  } // switch-ring
+
+} // ciena-itut-g8032-draft

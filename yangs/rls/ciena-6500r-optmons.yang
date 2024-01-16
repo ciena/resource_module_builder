@@ -1,0 +1,296 @@
+module ciena-6500r-optmons {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-optmons";
+  prefix optmons;
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform optmon model";
+
+  revision 2021-03-24 {
+    version:version "version" {
+      version:string "2.6.0";
+    }
+    description
+      "Add direction leaf";
+  }
+  revision 2021-01-19 {
+    version:version "version" {
+      version:string "2.5.0";
+    }
+    description
+      "Added degrade-low, degrade-high, out-of-range-low and out-of-range-high thresholds and hysteresis.";
+  }
+  revision 2020-12-17 {
+    version:version "version" {
+      version:string "2.4.0";
+    }
+    description
+      "Added degrade-low, degrade-high, out-of-range-low and out-of-range-high diagnostic points.";
+  }
+  revision 2020-07-17 {
+    version:version "version" {
+      version:string "2.3.0";
+    }
+    description
+      "Added service-state, debounce-time and debounce-cycle-number.";
+  }
+  revision 2020-07-17 {
+    version:version "version" {
+      version:string "2.2.0";
+    }
+    description
+      "Adding new low-pwr-threshold-hysteresis field.";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "2.1.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-06-10 {
+    version:version "version" {
+      version:string "2.1.0";
+    }
+    description
+      "Removed config false for parameters that should be saved in datastore.";
+  }
+  revision 2020-05-19 {
+    version:version "version" {
+      version:string "2.0.0";
+    }
+    description
+      "Adding Optical Return Loss field";
+  }
+  revision 2019-11-11 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Modified based on RLS Release 2.0 requirements";
+  }
+  revision 2019-09-03 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Added parameter ranges
+       Added tidemarked power parms";
+  }
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Added additional info for alarms";
+  }
+  revision 2017-01-01 {
+    description
+      "Initial revision";
+  }
+
+  grouping ciena-6500r-optmons-mount {
+    list optmons {
+      key "name";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "OPTMON identification/name";
+      }
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        mandatory true;
+        description
+          "Optmon Parent";
+      }
+
+      leaf low-pwr-threshold {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dBm";
+        description
+          "Threshold in dBm at which to raise Low Optical Power alarm";
+      }
+
+      container low-pwr-threshold-ranges {
+        leaf min {
+          type decimal64 {
+            fraction-digits 1;
+          }
+        }
+
+        leaf max {
+          type decimal64 {
+            fraction-digits 1;
+          }
+        }
+      }
+
+      leaf low-pwr-threshold-hysteresis {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dB";
+        description
+          "The hysteresis value used to calculate the OPTMON LOS clear threshold.";
+      }
+
+      leaf current-power {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dBm";
+        config false;
+        description
+          "Current input power at the optical monitor.";
+      }
+
+      leaf min-power {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dBm";
+        config false;
+        description
+          "Minimum tidemarked power at the optical monitor.";
+      }
+
+      leaf max-power {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dBm";
+        config false;
+        description
+          "Maximum tidemarked power at the optical monitor.";
+      }
+
+      uses ciena-6500r-types:admin-state;
+
+      leaf service-state {
+        type enumeration {
+          enum "active" {
+            value 1;
+            description
+              "Optmon is in active state.";
+          }
+          enum "idle" {
+            value 2;
+            description
+              "Optmon is in idle state";
+          }
+        }
+        description
+          "Service state of the optmon";
+      }
+
+      leaf debounce-time {
+        type uint32;
+        units "seconds";
+        description
+          "Debounce time in seconds";
+      }
+
+      leaf debounce-cycle-number {
+        type uint32;
+        description
+          "Number of debounce cycles";
+      }
+
+      leaf optical-return-loss {
+        type ciena-6500r-types:loss-dB-1-precision;
+        config false;
+        description
+          "Optical return loss (ORL) is the amount of light that is reflected back up the fiber toward the source by
+           light reflections off the interface of the polished end surface of the mated connectors and air, you should
+           probably check your connection.";
+      }
+
+      leaf direction {
+        type enumeration {
+          enum "forward" {
+            description
+              "In the direction of traffic";
+          }
+          enum "reverse" {
+            description
+              "Opposite the direction of traffic";
+          }
+        }
+        default "forward";
+        description
+          "Specifies the direction optical power is monitored relative to the direction of traffic.";
+      }
+
+      uses ciena-pro-optical-types:monitoring-thresholds-grouping;
+
+      uses ciena-pro-optical-types:monitoring-hysteresis-grouping;
+
+      container diagnostic {
+        config false;
+        description
+          "Facility diagnostic state.";
+        leaf low-optical-power {
+          type boolean;
+          description
+            "Low Optical Power";
+        }
+
+        leaf low-optical-return-loss {
+          type boolean;
+          description
+            "Low Optical Return Loss";
+        }
+
+        uses ciena-pro-optical-types:monitoring-diagnostic-grouping;
+
+        leaf parent-failed {
+          type boolean;
+          description
+            "Parent Object Failed";
+        }
+      }
+
+      leaf alarm-additional-info {
+        type string {
+          length "1..80";
+        }
+        description
+          "Additional info associated to a raised alarm.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-optmons-mount-actions;
+
+  uses ciena-6500r-optmons-mount;
+}

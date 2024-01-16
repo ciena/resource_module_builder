@@ -1,0 +1,443 @@
+module ciena-rstp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-rstp";
+  prefix "ciena-rstp";
+
+  import ciena-ieee-rstp {
+    prefix ieee-rstp;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-mef-logical-port {
+    prefix mef-logical-port;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+    Hanover, Maryland 21076
+    U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's specific augmentations 
+    to the Rapid Spanning Tree Protocol yang model.
+
+    Copyright (c) 2018 Ciena Corporation.  All rights 
+    reserved.
+
+    All information contained herein is, and remains the
+    property of Ciena Corporation. Dissemination of this 
+    information or reproduction of this material is strictly
+    forbidden unless prior written permission is obtained 
+    from Ciena Corporation.";
+
+  revision "2018-05-02" {
+    description 
+      "Initial Version.";
+    reference
+      "IEEE-802.1D-2004";
+  }
+
+  typedef rstp-admin-state { 
+    type enumeration { 
+      enum disable {
+        description 
+          "Administrative state is disabled.";
+      }
+      enum enable {
+        description 
+          "Administrative state is enabled.";
+      }
+    }
+    description 
+      "RSTP admininistrative state.";
+  }
+
+  typedef compliance-mode {
+    type enumeration {
+      enum ieee802.1w {
+        description
+          "RSTP operate in as defined by the 802.1w standard.";
+      }
+      enum ieee802.1D {
+        description
+          "RSTP operate in as defined by the 802.1D standard.";
+      }
+      enum ciena-enhanced {
+        description
+          "Enables the use of Ciena-specific optimizations to the RSTP 
+          protocol. This compliance mode encompasses the operations 
+          available under the 802.1D mode too.";
+      }
+    }
+    description 
+      "RSTP version running on the bridge.";
+  }
+
+  grouping domain-config {
+    description
+      "Grouping for RSTP domain config data";
+
+
+    leaf domain-identifier {
+      type uint16 {
+        range "0..255";
+      }
+      mandatory true;
+      description
+        "Integer that identifies a domain on the device. By default,
+        domain with identifier 0 and name 'default' is created and
+        all ports are assigned to that domain.";
+    }
+
+    leaf priority {
+      type uint16 {
+        range "0..15";
+      }
+      description
+        "Priority for the given domain. This value is used in the 
+        priority component of the Bridge Identifier of BPDUs 
+        transmitted from ports on this bridge that are part of this
+        domain.";
+    }
+
+    leaf compliance {
+      type compliance-mode;
+      description 
+        "Determines which standard version the domain complies
+        with - 802.1w/802.1D/ciena-enhanced.";
+    }
+  }
+
+  grouping domain-oper-data {
+    description
+      "Grouping for RSTP domain operational data";
+
+    leaf designated-root-address {
+      type yang:mac-address;
+      description
+        "The designated root mac address for this domain.";
+    }
+
+    leaf designated-root-priority {
+      type uint16 {
+        range "0..15";
+      }
+      description
+        "The designated root priority for this domain.";
+    }
+
+    leaf designated-root-cost {
+      type uint32;
+      description
+        "The path cost to the root for this domain.";
+    }
+
+    leaf designated-bridge-priority {
+      type uint16;
+      description
+        "The designated bridge priority for this domain.";
+    }
+
+    leaf designated-bridge-address {
+      type yang:mac-address;
+      description
+        "The designated bridge MAC address for this domain.";
+    }
+
+    leaf root-port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "The port number of the port which offers the lowest cost
+        path from this bridge to the root bridge of this domain.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpRootPort";
+    }
+
+    leaf-list port-list {
+      type mef-logical-port:logical-port-ref;
+      description
+        "The list of ports mapped to this domain.";
+    }
+  }
+
+  augment "/ieee-rstp:rstp/ieee-rstp:config" {
+    description 
+      "Augmentation for configuration data.";
+
+    leaf admin-state {
+      type rstp-admin-state;
+      default disable;
+      description 
+        "Enable or disable RSTP on this device.";
+    }
+
+    leaf mode {
+      type enumeration {
+        enum rstp {
+          description
+            "Rapid Spanning Tree Protocol.";
+        }
+        enum rstp-domain {
+          description
+            "RSTP Domain.";
+        }
+      }
+      default rstp;
+      description 
+        "Sets the mode to RSTP or RSTP domain on this device.";
+    }
+
+    leaf compliance {
+      type compliance-mode;
+      default ciena-enhanced;
+      description 
+        "Determines which standard version the RSTP bridge complies
+        with - 802.1w/802.1D/ciena-enhanced.";
+    }
+
+    leaf loopback-blocking {
+      type rstp-admin-state;
+      default enable;
+      description 
+        "This is configured to block a port that loops back its own
+        BPDU.";
+    }
+  }
+
+  augment "/ieee-rstp:rstp" {
+    description 
+      "Augmentation for RSTP domain.";
+
+    container domains {
+      description 
+        "RSTP Domain specific configuration and operational 
+        information.";
+
+      list domain {
+        must "(config/domain-identifier != 0 and "
+           + "/ieee-rstp:rstp/ieee-rstp:config/ciena-rstp:mode = 'rstp-domain') or "
+           + "(config/domain-identifier = 0 and "
+           + "/ieee-rstp:rstp/ieee-rstp:config/ciena-rstp:mode[.='rstp-domain' or "
+           + ".='rstp'])" {
+          error-message 
+            "For non-zero domain identifier, mode must be rstp-domain";
+          description
+            "Mode must be rstp-domain for non-zero domain identifiers.";
+        }
+
+        key "name";
+        unique "config/domain-identifier";
+
+        description 
+          "The list of domains on the device.";
+
+        leaf name {
+          type string {
+            length "1..32";
+          } 
+
+          description
+            "The name of the domain.";
+        }
+
+        container config {
+          description
+            "RSTP Domain configuration information."; 
+          uses domain-config;
+        }
+
+        container state {
+          config false;
+          description
+            "Contains operational parameters for the domain.";
+          uses domain-oper-data;
+        }
+      }
+    }
+  }
+
+  augment "/mef-logical-port:logical-ports/"
+        + "mef-logical-port:logical-port/"
+        + "ieee-rstp:rstp-port-config" {
+    description 
+      "Augmentation for port configuration data.";
+
+    leaf admin-state {
+      type rstp-admin-state;
+      default enable;
+      description 
+        "Enable or disable RSTP on port.";
+    }
+
+    leaf domain {
+      type leafref {
+          path "/ieee-rstp:rstp/ciena-rstp:domains/"
+             + "ciena-rstp:domain/ciena-rstp:name";
+        }
+        description
+          "RSTP domain to which this port belongs.";
+    }
+
+    leaf legacy-tx {
+      type rstp-admin-state;
+      default disable;
+      description 
+        "Enable or disable the transmission of 802.1w format RSTP BPDUs
+        to enable interoperability with 802.1w devices under certain 
+        conditions.";
+    }
+  }
+
+  //
+  // Notifications
+  //
+
+  notification rstp-port-backup {
+    description
+      "A notification is sent whenever device detects self loop i.e. 
+      same cable connected to two ports on the same device.";
+
+    leaf bridge-mac-address {
+      type ieee-rstp:bridge-mac-address-ref;
+      description
+        "MAC address of the device.";
+    }
+
+    leaf port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "Ports that are connected back to back.";
+    }
+  }
+
+  notification rstp-oper-edge {
+    description
+      "A notification is sent whenever the OperEdge value of the port
+      changes.";
+
+    leaf bridge-mac-address {
+      type ieee-rstp:bridge-mac-address-ref;
+      description
+        "MAC address of the device.";
+    }
+
+    leaf port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "Port whose oper Edge has changed.";
+    }
+
+    leaf oper-edge-port {
+      type boolean;
+      description
+        "The value of the operEdgePort parameter, as determined by the
+        operation of the Bridge Detection state machine.";
+    }
+  }
+
+  notification rstp-self-loop {
+    description
+      "A notification is sent whenever device detects detects same cable
+      connected to a port in a loop back.
+      Also if loop-back blocking is enabled on the device then RSTP will
+      block this port (self disable).";
+
+    leaf bridge-mac-address {
+      type ieee-rstp:bridge-mac-address-ref;
+      description
+        "MAC address of the device.";
+    }
+
+    leaf port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "Port on the device.";
+    }
+  }
+
+  notification rstp-port-flap {
+    description
+      "A notification is sent whenever the device detects a port 
+      flapping. Notification is generated under following criteria.
+      If device detects port flapped more than once within 1 minute
+      timer period and it has not sent a notification within last 5
+      minutes then it will generate this notification.";
+
+    leaf bridge-mac-address {
+      type ieee-rstp:bridge-mac-address-ref;
+      description
+        "MAC address of the device.";
+    }
+
+    leaf port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "Port that has flapped.";
+    }
+  }
+
+  notification rstp-root-port-lost {
+    description
+      "A notification is sent whenever the device detects that root
+      port is lost. This notification indicates either the link failure
+      or RSTP is disabled on the remote link.";
+
+    leaf bridge-mac-address {
+      type ieee-rstp:bridge-mac-address-ref;
+      description
+        "MAC address of the device.";
+    }
+
+    leaf port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "Root port.";
+    }
+  }
+
+  // RPCs
+  rpc clear-rstp-statistics {
+    description
+      "RPC to clear the RSTP statistics of a specific or all logical 
+      ports.";
+
+    input { 
+      choice clear-scope {
+        description
+          "Clear statistics for all or for a specific logical port.";
+        case logical-port {
+          leaf logical-port {
+            type mef-logical-port:logical-port-ref;
+            description
+              "Clear statistics for this logical port.";
+          }
+        }
+
+        case all {
+          leaf all {
+            type empty;
+            description
+              "Clear statistics for all logical ports.";
+          }
+        }
+      }
+    }
+
+    output {
+      leaf status {
+        type string; 
+        description 
+          "Status of the clear statistics operation.";
+      }
+    }
+  } // end rpc clear-statistics
+}

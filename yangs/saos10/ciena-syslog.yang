@@ -1,0 +1,274 @@
+module ciena-syslog {
+  namespace "http://www.ciena.com/ns/yang/ciena-syslog";
+  prefix "ciena-syslog";
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ietf-syslog {
+    prefix syslog;
+  }
+  
+  import ietf-syslog-types {
+    prefix syslogtypes;
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  
+  description
+    "This YANG module defines Ciena's global configuration for syslog settings.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2020-10-16 {
+    description
+      "Augmented container for remote syslog server's operational data.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2020-09-28 {
+    description
+      "Added max-elements limit of 16 to list dest.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2020-04-22 {
+    description
+      "Removed max-elements limit from leaf severity.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2019-01-31 {
+    description
+      "Added defaults to leaves.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2016-08-14 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  /*
+   * Typedefs
+   */
+  typedef syslog-scope {
+    type enumeration {
+      enum user {
+        description
+          "Syslog server is configured by user.";
+      }
+      enum dhcp {
+        description
+          "Syslog server is configured by DHCP server.";
+      }
+      enum both {
+        description
+          "Syslog server is configured by both, user and DHCP server";
+      }
+    }
+    description
+      "Whether syslog server was configured by the
+       user, DHCP server or both.";
+  }
+
+  typedef syslog-oper-state {
+    type enumeration {
+      enum enabled {
+        description
+          "Syslog server's oper state is enabled.";
+      }
+      enum disabled {
+        description
+          "Syslog server's oper state is disabled.";
+      }
+      enum unresolved {
+        description
+          "Syslog server's oper state is unresolved.";
+      }
+    }
+    description
+      "Describes the oper state of syslog destination target.";
+  }
+
+  /*
+   * Configuration data nodes
+   */
+  augment /syslog:syslog/syslog:log-actions/syslog:remote {
+    description
+      "A replacement for the syslog destination in the ietf-syslog YANG model.
+         SAOS only supports one facility per syslog collector and a list of severities per facility.";
+
+    leaf admin-state {
+      type ciena:admin-state;
+      default enabled;
+      description
+        "The administrative state of Syslog.";
+    }
+
+    list dest {
+      key address;
+      max-elements 16;
+      description
+        "A replacement for the ietf-syslog destination list.";
+      
+      leaf address {
+        type "inet:host";
+        description
+          "Syslog UDP address.";
+      }
+
+      leaf admin-state {
+        type ciena:admin-state;
+        default enabled;
+        description
+          "The administrative state of the Syslog server.";
+      }
+      
+      leaf port {
+        type "inet:port-number" {
+          range "514..65535";
+        }
+        default 514;
+        description
+          "UDP port number.";
+      }
+        
+      leaf facility {
+        type identityref {
+          base syslogtypes:syslog-facility;
+        }
+        default syslogtypes:local6;
+        description
+          "Describes the Syslog facility.";
+      }
+        
+      leaf-list severity {
+        type syslogtypes:severity;
+        description
+          "Set a list of severities for the facility.
+           The severity will default to LOG_INFO if
+           none is specified.";
+      }
+      
+      leaf custom-prefix {
+        type string {
+          length "0..15";
+        }
+        description
+          "Syslog message prefix.";
+      }
+    }
+  }
+
+  /*
+   * Operational data nodes
+   */
+  augment /syslog:syslog {
+    container syslog-state {
+      config false;
+      description
+        "The operational attributes for syslog destination target.";
+
+      list dest {
+       key address;
+       description
+         "A syslog destination list.";
+
+       leaf oper-state {
+         type syslog-oper-state;
+           description
+             "Operational state of syslog destination target.";
+       }
+
+       leaf scope {
+         type syslog-scope;
+         description
+           "Scope of syslog destination target.";
+       }
+
+       leaf address {
+         type "inet:host";
+         description
+           "Syslog IP address or hostname.";
+       }
+
+       leaf admin-state {
+         type ciena:admin-state;
+         description
+           "Administrative state of syslog server.";
+       }
+
+       leaf port {
+         type "inet:port-number" {
+           range "514..65535";
+         }
+         description
+           "UDP port number.";
+       }
+
+       leaf facility {
+         type identityref {
+           base syslogtypes:syslog-facility;
+         }
+         description
+           "Describes syslog facility.";
+       }
+
+       leaf-list severity {
+         type syslogtypes:severity;
+         description
+           "Describes list of severities configured for
+            syslog destination target.";
+       }
+
+       leaf custom-prefix {
+         type string {
+           length "0..15";
+         }
+         description
+           "Syslog message prefix.";
+       }
+     }
+   }
+ }
+
+}

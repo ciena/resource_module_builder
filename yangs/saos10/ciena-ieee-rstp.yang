@@ -1,0 +1,608 @@
+module ciena-ieee-rstp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-ieee-rstp";
+  prefix rstp;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-mef-logical-port {
+    prefix mef-logical-port;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+    Hanover, Maryland 21076
+    U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module contains the schema definition for RSTP.";
+
+  revision "2019-09-05" {
+    description 
+      "Modified to add bridge-priority in oper data.";
+  }
+
+  revision "2018-04-30" {
+    description     
+      "Initial Version.";
+    reference
+      "IEEE Std 802.1D-2004";
+  }
+
+  //
+  // Type definitions
+  //
+
+  typedef bridge-mac-address-ref {
+    type leafref {
+      path "/rstp:rstp/rstp:state/rstp:bridge-address";     
+    }
+    description
+      "This type is used by the data models that needs to reference
+      bridge mac-address.";
+  }
+
+  typedef bridge-priority-type {
+    type uint32 {
+      range 0..61440;
+    }
+    description
+      "The manageable component of the Bridge Identifier.";
+    reference
+      "IEEE 802.1D 17.13.7 Bridge Identifier Priority";
+  }
+
+  typedef port-priority-type {
+    type uint8 {
+      range 0..240;
+    }
+    description
+      "The manageable component of the Port Identifier,
+      also known as the Port Priority.";
+    reference
+      "IEEE 802.1D 17.13.10 Port Identifier Priority";
+  }
+
+  // grouping statements
+
+  grouping rstp-bridge-config {
+    description
+      "Grouping for common RSTP configuration parameters.";
+
+
+    leaf force-protocol-version {
+      type enumeration {
+        enum stpCompatible {
+          description
+            "The value 'stpCompatible' indicates that the bridge is
+            running the Spanning Tree Protocol specified in
+            IEEE 802.1D-1998.";
+        }
+        enum rstp {
+          description
+            "The value rstp' indicates that the bridge is running the
+            Rapid Spanning Tree Protocol specified in IEEE 802.1w and
+            clause 17 of 802.1D-2004.";
+        }
+      }
+      default rstp;
+      description
+        "The version of Spanning Tree Protocol the bridge is currently
+        running.";
+    }
+
+    leaf bridge-priority {
+      type bridge-priority-type;
+      default 32768;
+      description
+        "The manageable component of the Bridge Identifier. (i.e., the 
+        first two octets of the (8 octet long) Bridge ID).  The other 
+        (last) 6 octets of the Bridge ID are given by the value of 
+        bridge-mac-address. On bridges supporting IEEE 802.1D 2004,
+        permissible values are 0-61440, in steps of 4096.";
+      reference
+        "IEEE 802.1D 17.13.7 Bridge Identifier Priority";
+    }
+
+    leaf bridge-hello-time {
+      type uint8 {
+        range 1..10;
+      }
+      units "seconds";
+      default 2;
+      description
+        "The interval between periodic transmissions of configuration
+        messages by designated ports.";
+      reference
+        "IEEE 802.1D 17.13.6 Bridge Hello Time";
+    }
+
+    leaf bridge-max-age {
+      type uint8 {
+        range 6..40;
+      }
+      units "seconds";
+      default 20;
+      description
+        "The value that all bridges use for MaxAge when this bridge is
+        acting as the root.";
+      reference
+        "IEEE 802.1D 17.13.8 Bridge Max Age";
+    }
+
+    leaf bridge-forward-delay {
+      type uint8 {
+        range 4..30;
+      }
+      units "seconds";
+      default 15;
+      description
+        "The delay used by STP bridges to transition root and designated
+        ports to forwarding.";
+      reference
+        "IEEE 802.1D 17.13.5 Bridge Forward Delay";
+    }
+
+    leaf transmit-hold-count {
+      type uint8 {
+        range 1..10;
+      }
+      default 6;
+      description
+        "The maximum number of BPDUs per second that the bridge can send
+        from an interface.";
+      reference
+        "IEEE 802.1D 17.13.12 Transmit Hold Count";
+    }
+  }
+
+  grouping rstp-bridge-state {
+    description
+      "Grouping for common RSTP operational parameters.";
+
+    leaf bridge-priority {
+      type bridge-priority-type;
+      description
+        "The manageable component of the Bridge Identifier. (i.e., the 
+        first two octets of the (8 octet long) Bridge ID).  The other 
+        (last) 6 octets of the Bridge ID are given by the value of 
+        bridge-mac-address. On bridges supporting IEEE 802.1D 2004,
+        permissible values are 0-61440, in steps of 4096.";
+      reference
+        "IEEE 802.1D 17.13.7 Bridge Identifier Priority";
+    }
+
+    leaf bridge-address {
+      type yang:mac-address;
+      description
+        "A unique 48-bit Universally Administered MAC Address assigned
+        to the bridge.";
+    }
+
+    leaf designated-root-priority {
+      type bridge-priority-type;
+      description
+        "The bridge priority of the root of the spanning tree, as 
+        determined by the Spanning Tree Protocol, as executed by this
+        node.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpDesignatedRoot";
+    }
+
+    leaf designated-root-address {
+      type yang:mac-address;
+      description
+        "The bridge address of the root of the spanning tree, as 
+        determined by the Spanning Tree Protocol, as executed by this
+        node.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpDesignatedRoot";
+    }
+
+    leaf root-cost {
+      type uint32;
+      description
+        "The cost of the path to the root as seen from this bridge.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpRootCost";
+    }
+
+    leaf root-port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "The port number of the port which offers the lowest cost path
+        from this bridge to the root bridge.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpRootPort";
+    }
+
+    leaf max-age {
+      type uint8;
+      units "seconds";
+      description
+        "The maximum age of Spanning Tree Protocol information learned
+        from the network on any port before it is discarded. This is 
+        the actual value that this bridge is currently using.";
+      reference
+        "IEEE 802.1D 17.18.7 rootTimes";
+    }
+
+    leaf hello-time {
+      type uint8;
+      units "seconds";
+      description
+        "The amount of time between the transmission of Configuration
+        bridge PDUs by this node on any port when it is the root of the
+        spanning tree or trying to become so. This is the actual value
+        that this bridge is currently using.";
+      reference
+        "IEEE 802.1D 17.18.7 rootTimes";
+    }
+
+    leaf forward-delay {
+      type uint8;
+      units "seconds";
+      description
+        "This time value controls how fast a port changes its spanning
+        state when moving towards the Forwarding state. The value
+        determines how long the port stays in Learning states, which
+        precede the Forwarding state.  This value is also used, when a
+        topology change has been detected and is underway, to age all
+        dynamic entries in the Forwarding Database. [Note that this 
+        value is the one that this bridge is currently using, in 
+        contrast to bridge-forward-delay which is the value that this
+        bridge and all others would start using if/when this bridge 
+        were to become the root.].";
+      reference
+        "IEEE 802.1D 17.18.7 rootTimes";
+    }
+
+    leaf time-since-topology-change {
+      type yang:timeticks;
+      description
+        "The time since the last time a topology change was detected by
+        the bridge entity. For RSTP, this reports the time since the 
+        tcWhile timer for any port on this Bridge was nonzero.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpTimeSinceTopologyChange";
+    }
+
+    leaf topology-changes {
+      type yang:counter64;
+      description
+        "The total number of topology changes detected by this bridge
+        since the management entity was last reset or initialized.";
+      reference
+        "RFC4188 BRIDGE-MIB dot1dStpTopChanges";
+    }
+  }
+
+  grouping port-config {
+    description
+      "Grouping for port specific RSTP configuration parameters.";
+
+    leaf port-priority {
+      type port-priority-type;
+      default 128;
+      description
+        "The manageable component of the Port Identifier,
+        also known as the Port Priority.";
+      reference
+        "IEEE 802.1D 17.13.10 Port Identifier Priority";
+    }
+
+    leaf admin-path-cost {
+      type uint32 {
+        range 0..200000000;
+      }
+      default 0;
+      description
+        "The port's contribution, when it is the Root Port, to the Root
+        Path Cost for the Bridge.
+        A value of '0' assigns the automatically calculated default Path
+        Cost value to the port. If the default Path Cost is being used,
+        this object returns '0' when read.";
+      reference
+        "IEEE 802.1D 17.13.11 Port Path Cost";
+    }
+
+    leaf admin-edge-port {
+      type boolean;
+      default false;
+      description
+        "The administrative value of the Edge Port parameter. A value
+        of true(1) indicates that this port should be assumed as an 
+        edge-port, and a value of false(2) indicates that this port 
+        should be assumed as a non-edge-port.
+        Note that even when this object's value is true, the value of
+        the corresponding instance of oper-edge-port can be false if a
+        BPDU has been received.";
+      reference
+        "IEEE 802.1D 17.13.1 Admin Edge Port";
+    }
+
+    leaf protocol-migration {
+      type boolean;
+      default false;
+      description
+        "When set to true, forces the Port Protocol Migration state
+        machine to transmit RST BPDUs for a MigrateTime period, to test
+        whether all STP Bridges on the attached LAN have been removed
+        and the Port can continue to transmit RSTP BPDUs. Setting this
+        has no effect if the Bridge is operating in STP Compatibility
+        mode.
+        After taking the value of true, the system automatically sets it
+        to false.";
+      reference
+        "IEEE 802.1D 14.8.2.4, 17.19.13, 17.24";
+    }
+
+    leaf admin-point-to-point-mac {
+      type enumeration {
+        enum force-true {
+          description 
+            "A value of force-true indicates that this port should 
+            always be treated as if it is connected to a point-to-point
+            link.";
+        }
+        enum force-false {
+          description 
+            "A value of force-false indicates that this port should be
+            treated as having a shared media connection.";
+        }
+        enum auto {
+          description 
+            "A value of auto indicates that this port is considered to 
+            have a point-to-point link if it is an Aggregator and all of
+            its members are aggregatable, or if the MAC entity is 
+            configured for full duplex operation, either through 
+            auto-negotiation or by management means.";
+        }
+      }
+      default auto;
+      description
+        "The administrative point-to-point status of the LAN segment
+        attached to this port.";
+      reference
+        "IEEE 802.1D 6.4.3, 14.8.2";
+    }
+  }
+
+  grouping port-oper-data {
+    description
+      "Grouping for port specific RSTP operational data";
+
+    leaf port-role {
+      type enumeration {
+        enum disabled {
+          description
+            "The port is not operational or is excluded from the active 
+            topology by management.";
+        }
+        enum root {
+          description
+            "The port that receives the best BPDU on a bridge is the 
+            root port.";
+        }
+        enum designated {
+          description
+            "A port is designated if it can send the best BPDU on the
+            segment to which it is connected.";
+        }
+        enum alternate {
+          description
+            "An alternate port receives more useful BPDUs from another 
+            bridge and is a port blocked.";
+        }
+        enum backup {
+          description
+            "A backup port receives more useful BPDUs from the same 
+            bridge it is on and is a port blocked.";
+        }
+      }
+      description
+        "The current role of the bridge port.";
+      reference
+        "IEEE 802.1D 17.7 Port Role assignments";
+    }
+
+    leaf port-state {
+      type enumeration {
+        enum discarding {
+          description
+            "A port that would cause a loop if it were sending data, so
+            it is only receiving BPDUs, untill a topology change removes
+            the possibliity of a loop.";
+        }
+        enum learning {
+          description
+            "Building bridging tables; no forwarding of data.";
+        }
+        enum forwarding {
+          description
+            "Sending and receiving data, normal operation.";
+        }
+      }
+
+      description
+        "The current state of the bridge port. This state controls what
+        action a port takes on reception of a frame.";
+      reference 
+        "IEEE 802.1D 7.4 Port States and the active topology";
+    }
+
+    leaf oper-point-to-point-mac {
+      type boolean;
+      description
+        "The current point-to-point status of the LAN segment attached
+        to this port. True indicates that the MAC is connected to a 
+        point-to-point LAN. i.e., there is at most one other system
+        attached to the LAN. False indicates that the MAC is connected
+        to a non-point-to-point LAN. i.e., there can be more than one
+        other system attached to the LAN.";
+      reference
+        "IEEE 802.1D 6.4.3, 14.8.2";
+    }
+
+    leaf oper-edge-port {
+      type boolean;
+      description
+        "The value of the operEdgePort parameter, as determined by the
+        operation of the Bridge Detection state machine.";
+      reference
+        "IEEE 802.1D 17.19.17 operEdge";
+    }
+
+    leaf oper-path-cost {
+      type uint32;
+      description
+        "The operational value of the path cost.";
+      reference
+        "IEEE 802.1D 17.13.11 Port Path Cost";
+    }
+
+    leaf designated-root-priority {
+      type bridge-priority-type;
+      description
+        "The bridge priority of the bridge recorded as the root in the
+        configuration BPDUs transmitted by the designated bridge for the
+        segment to which this port is attached.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedRoot";
+    }
+
+    leaf designated-root-mac-address {
+      type yang:mac-address;
+      description
+        "The MAC address of the bridge recorded as the root in the 
+        configuration BPDUs transmitted by the designated bridge for the
+        segment to which this port is attached.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedRoot";
+    }
+
+    leaf designated-cost {
+      type uint32;
+      description
+        "The path cost of the Designated Port of the segment connected 
+        to this port. This value is compared to the Root Path Cost field
+        in received BPDUs.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedCost";
+    }
+
+    leaf designated-bridge-priority {
+      type bridge-priority-type;
+      description
+        "The priority of the bridge that this port considers to be the 
+        designated bridge for this port's segment.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedBridge";
+    }
+
+    leaf designated-bridge-address {
+      type yang:mac-address;
+      description
+        "The MAC address of the bridge that this port considers to be
+        the designated bridge for this port's segment.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedBridge";
+    }
+
+    leaf designated-port-priority {
+      type port-priority-type;
+      description
+        "The priority of the port on the Designated Bridge for this
+        port's segment.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedPort";
+    }
+
+    leaf designated-port {
+      type mef-logical-port:logical-port-ref;
+      description
+        "The identifier of the port on the Designated Bridge for this
+        port's segment.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortDesignatedPort";
+    }
+
+    leaf forward-transitions {
+      type yang:counter64;
+      description
+        "The number of times this port has transitioned from the 
+        Learning state to the Forwarding state.";
+      reference 
+        "RFC4188 BRIDGE-MIB dot1dStpPortForwardTransitions";
+    }
+
+    leaf bpdu-sent {
+      type yang:counter64;
+      description
+        "The number of BPDU packet sent.";
+    }
+
+    leaf bpdu-received {
+      type yang:counter64;
+      description
+        "The number of BPDU packet received.";
+    }
+  }
+
+  container rstp {
+    description
+      "RSTP configuration and operational information.";
+
+    container config {
+      description
+        "Contains RSTP configuration parameters for the bridge.";
+
+      uses rstp-bridge-config;
+    }
+
+    container state {
+      config false;
+      description
+        "Contains RSTP operational parameters for the bridge.";
+
+      uses rstp-bridge-state;
+    }
+  }
+
+  // RSTP port configuration table
+
+  augment "/mef-logical-port:logical-ports/"
+        + "mef-logical-port:logical-port" {
+    description
+      "Augmenting port specific RSTP config data to logical-port.";
+
+    container rstp-port-config {
+      description
+        "RSTP configuration for a particular port.";
+
+      uses port-config;
+
+    }
+  }
+
+  augment "/mef-logical-port:logical-port-oper-status/"
+        + "mef-logical-port:logical-port-status" {
+    description
+      "Augmenting port specific operational data to logical port.";
+
+    container rstp-port-oper-data {
+      config false;
+      description
+        "Port specific operational data.";
+      uses port-oper-data;
+    }
+  }
+}

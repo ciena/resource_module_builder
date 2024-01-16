@@ -1,0 +1,346 @@
+module ciena-6500r-protection {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-protection";
+  prefix protection;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform protection model";
+
+  revision 2020-12-07 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Fix link-pilot-status enumerations.";
+  }
+  revision 2020-11-25 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Added units and description to the hold-off timer, and remote-switch-mismatch to the diagnostic container.";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Added additional info for alarms";
+  }
+  revision 2018-11-13 {
+    description
+      "Initial revision";
+  }
+
+  grouping port-pair {
+    leaf out {
+      type leafref {
+        path "/ports:port/ports:name";
+      }
+      description
+        "out port";
+    }
+
+    leaf in {
+      type leafref {
+        path "/ports:port/ports:name";
+      }
+      description
+        "in port";
+    }
+  }
+
+  grouping protection-switches {
+    leaf name {
+      type ciena-6500r-types:object-name;
+      description
+        "switch group identification";
+    }
+
+    uses port-pair {
+      refine "in" {
+        description
+          "switch in port";
+      }
+      refine "out" {
+        description
+          "switch out port";
+      }
+    }
+
+    leaf state {
+      type enumeration {
+        enum "pending" {
+          description
+            "Switch is in a pending state";
+        }
+        enum "standby" {
+          description
+            "Switch is in a standby state";
+        }
+        enum "working" {
+          description
+            "Switch is in a working state";
+        }
+      }
+      config false;
+      description
+        "State of the switch";
+    }
+
+    leaf status {
+      type enumeration {
+        enum "pending" {
+          description
+            "Switch is in a pending state";
+        }
+        enum "idle" {
+          description
+            "No switch";
+        }
+        enum "complete" {
+          description
+            "Switch has been performed";
+        }
+        enum "fail" {
+          description
+            "Switch has failed";
+        }
+        enum "deny" {
+          description
+            "Switch has been denied";
+        }
+        enum "complete-revertive" {
+          description
+            "Switch has been performed in revertive mode";
+        }
+      }
+      config false;
+      description
+        "Switch status";
+    }
+
+    leaf reason {
+      type enumeration {
+        enum "pending" {
+          description
+            "Switch is in a pending state";
+        }
+        enum "signal-ok" {
+          description
+            "Signal is able to carry traffic";
+        }
+        enum "manual" {
+          description
+            "Manual switch by user";
+        }
+        enum "forced" {
+          description
+            "Forced switch by user";
+        }
+        enum "lockout" {
+          description
+            "Lockout by user";
+        }
+        enum "remote" {
+          description
+            "The switch is initiated at the far end";
+        }
+        enum "signal-fail" {
+          description
+            "Signal is unable to carry traffic";
+        }
+        enum "wait-to-restore" {
+          description
+            "Wait to restore switch by user";
+        }
+      }
+      config false;
+      description
+        "Switch reason";
+    }
+
+    leaf link-pilot-status {
+      type enumeration {
+        enum "pending" {
+          value 0;
+          description
+            "Switch is in a pending state";
+        }
+        enum "signal-ok" {
+          value 1;
+          description
+            "Switch link pilot is in a working state";
+        }
+        enum "signal-fail" {
+          value 2;
+          description
+            "Switch link pilot signal failed";
+        }
+      }
+      config false;
+      description
+        "Link pilot signal status for switch";
+    }
+  }
+
+  grouping ciena-6500r-protection-mount {
+    list protection-group {
+      key "name";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "protection group identification";
+      }
+
+      leaf standard {
+        type enumeration {
+          enum "G8731" {
+            value 1;
+            description
+              "G8731";
+          }
+        }
+        default "G8731";
+        description
+          "Standard used on Remote Equipment";
+      }
+
+      leaf revertive {
+        type boolean;
+        default "false";
+        description
+          "Revertive behavior of the module. If True, then
+           automatically revert after protection switch once the
+           fault is restored.";
+      }
+
+      leaf loss-of-electrical-power {
+        type boolean;
+        default "false";
+        description
+          "Indicates how the switch should react when there is a loss of power.
+           By default (FALSE), the switch should stay where it is. When enabled
+           (TRUE) it indicates the switch should go back to its default position (Switch 1).";
+      }
+
+      leaf wait-to-restore {
+        type uint8 {
+          range "1..60";
+        }
+        units "Minutes";
+        default "5";
+        description
+          "The time that must elapse before an APS path
+           that has recovered from an signal failure (SF) or signal
+           degradation (SD) condition can be used again to transport
+           the normal traffic signal. During this time period, an SF or
+           SD condition shall override the wait-to-restore time period.
+           This leaf can only take effect when the revertive leaf
+           equals true.";
+      }
+
+      leaf bidirect-switch {
+        type boolean;
+        default "true";
+        description
+          "Indicates how the switch should react when there is a bidirect switch.
+           By default (TRUE).";
+      }
+
+      leaf hold-off {
+        type uint16 {
+          range "0..65535";
+        }
+        units "milliseconds";
+        default "0";
+        description
+          "The time that must elapse before an automatic switch can occur in revertive mode.";
+      }
+
+      list switch {
+        key "name";
+        description
+          "Switch ports of the protection group";
+        uses protection-switches;
+      }
+
+      list common {
+        key "name";
+        description
+          "Common ports of the protection group";
+        leaf name {
+          type ciena-6500r-types:object-name;
+          description
+            "Common group identification";
+        }
+
+        uses port-pair {
+          refine "in" {
+            description
+              "common in port";
+          }
+          refine "out" {
+            description
+              "common out port";
+          }
+        }
+      }
+
+      container diagnostic {
+        config false;
+        leaf protection-switch-complete {
+          type boolean;
+          description
+            "Protection Switch Complete";
+        }
+
+        leaf remote-switch-mismatch {
+          type boolean;
+          description
+            "The local switch does not match the switch at the far end in bi-directional mode.";
+        }
+      }
+
+      leaf alarm-additional-info {
+        type string {
+          length "1..80";
+        }
+        description
+          "Additional info associated to a raised alarm.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-protection-mount-actions;
+
+  uses ciena-6500r-protection-mount;
+}

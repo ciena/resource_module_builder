@@ -1,0 +1,1411 @@
+module ieee1914-dot3-roe {
+  yang-version 1.1;
+  namespace "urn:ieee:std:1914.3:yang:ieee1914-dot3";
+  prefix ieee1914-dot3-roe;
+
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  organization
+    "IEEE 1914 Working Group";
+  contact
+    "WG Web:   <https://sagroups.ieee.org/1914/>
+     WG List:  <mailto:stds-1914-wg@ieee.org>
+
+     WG Chair: Jinri HUANG
+               <mailto:huangjinri@chinamobile.com>
+
+     Editor: Jessy ROUYER
+             <mailto:jessy.rouyer@nokia.com>
+
+     Postal: C/O IEEE 1914 Working Group
+           IEEE Standards Association
+           445 Hoes Lane
+           P.O. Box 1331
+           Piscataway
+           NJ 08855-1331
+           USA";
+  description
+    "This module specifies the configuration and state parameters for Radio
+     over Ethernet (RoE).
+
+     This version of this YANG module is part of IEEE Std 1914.3a; see the
+     standard itself for legal notices.";
+
+  revision 2021-10-01 {
+     description
+       "Updated to specify presence on the roe-interface in canonical order.";
+     reference
+       "IEEE Std 1914.3 and IEEE Std 1914.3a IEEE Standard for Radio over
+        Ethernet Encapsulations and Mappings.";
+  }
+
+  revision 2021-08-16 {
+     description
+       "Updated to specify that container roe-interface is a presence container.";
+    reference
+      "IEEE Std 1914.3 and IEEE Std 1914.3a IEEE Standard for Radio over
+       Ethernet Encapsulations and Mappings.";
+  }
+
+  revision 2020-08-10 {
+    description
+      "Initial version.";
+    reference
+      "IEEE Std 1914.3 and IEEE Std 1914.3a IEEE Standard for Radio over
+       Ethernet Encapsulations and Mappings.";
+  }
+
+  // extension statements
+  // feature statements
+
+  feature STRUCTURE-AGNOSTIC-TUNNELING-MODE {
+    description
+      "The structure-agnostic RoE mapper tunneling mode is supported. It works
+         as a simple Ethernet tunnel. It does not remove any line coding bits
+         and does not interpret any special characters (such as
+         K-characters).";
+    reference
+      "8.2.1.a and MA1 in A.2.1 of IEEE Std 1914.3";
+  }
+
+  feature STRUCTURE-AGNOSTIC-LINE-CODING-AWARE-MODE {
+    description
+      "The structure-agnostic RoE mapper line-coding-aware mode is supported.
+         It removes the line coding bits such as for CPRI encoded with 8b/10b
+         or 64b/66b. As part of the decoding, all PCS functions (e.g.
+         scrambling, line-coding) and any function below the PCS function that
+         affects the digital signal (e.g. forward error correction, FEC) are
+         also undone.";
+    reference
+      "8.2.1.b and MA2 in A.2.1 of IEEE Std 1914.3";
+  }
+
+  feature STRUCTURE-AWARE-CPRI-MODE {
+    description
+      "The structure-aware CPRI mode is supported. It is suitable for I/Q
+         mapping methods 1 and 3 which are specified in the CPRI standard.";
+    reference
+      "8.3 and MA3 in A.2.1 of IEEE Std 1914.3";
+  }
+
+  feature NATIVE-TIME-DOMAIN-MODE {
+    description
+      "The native RoE time domain mode is supported. It uses native RoE time
+         domain packets that contain time domain I/Q for a given flow.";
+    reference
+      "8.4 and MA4 in A.2.1 of IEEE Std 1914.3";
+  }
+
+  feature NATIVE-FREQUENCY-DOMAIN-MODE {
+    description
+      "The native RoE frequency domain mode is supported. It uses native RoE
+       frequency domain packets that contain frequency domain I/Q for a given
+       flow.";
+    reference
+      "8.5 and MA5 in A.2.1 of IEEE Std 1914.3";
+  }
+
+  feature NATIVE-ROE-PRACH-PACKET {
+    if-feature "PRACH";
+    description
+      "Native RoE PRACH packet type is supported.";
+    reference
+      "8.5 and DNP in A.2.2.1 of IEEE Std 1914.3";
+  }
+
+  // subType-related features
+
+  feature MAPPED-SUBTYPES {
+    description
+      "The assignment of mapped subTypes (.mapSubtype) to OUI/CID is
+       supported.";
+    reference
+      "5.3.5, 5.5.2, MA6 in A.2.1, and MSS in A.2.2.3 of IEEE Std 1914.3";
+  }
+
+  feature ROE-CONTROL-PACKETS-SUBTYPE {
+    description
+      "RoE control packets implementing the 8-bit subType field (used to
+        define the RoE subtype and the type of flow carried by the RoE
+        packets) are supported.";
+    reference
+      "5.5.2, 9 and CP in A.2.2.2 of IEEE Std 1914.3";
+  }
+
+  feature CPRI-SLOW-CM-PACKET {
+    if-feature "STRUCTURE-AWARE-CPRI-MODE";
+    description
+      "CPRI Slow C&M data packet type is supported.";
+    reference
+      "8.3 and DCM in A.2.2.1 of IEEE Std 1914.3";
+  }
+
+  feature SEQUENCE-NUMBER-MODE {
+    description
+      "The sequence number field (used to identify the order of successive
+       packets) is supported.";
+    reference
+      "5.5.5.2 and SN in A.2.3.2 of IEEE Std 1914.3";
+  }
+
+  feature TIMESTAMP-MODE {
+    description
+      "The timestamp field (used to identify the order of successive packets)
+       is supported.";
+    reference
+      "5.5.5.3 and TS in A.2.3.2 of IEEE Std 1914.3";
+  }
+
+  feature FRACTIONAL-NANOSECOND-ACCURACY {
+    if-feature "TIMESTAMP-MODE";
+    description
+      "Timestamp supports fractional nanosecond accuracy.";
+    reference
+      "5.5.5.3 and NS in A.2.3.2 of IEEE Std 1914.3";
+  }
+
+  feature COMPRESSION {
+    description
+      "Compression is supported.";
+    reference
+      "CMPR in A.2.4.3 of IEEE Std 1914.3";
+  }
+
+  feature ENCRYPTION {
+    description
+      "Encryption is supported.";
+    reference
+      "ENCR in A.2.4.3 of IEEE Std 1914.3";
+  }
+
+  feature FFT {
+    if-feature "NATIVE-FREQUENCY-DOMAIN-MODE";
+    description
+      "(i)FFT functionality is supported.";
+    reference
+      "8.5.2 and NRFF in A.2.6 of IEEE Std 1914.3";
+  }
+
+  feature PRACH {
+    if-feature "NATIVE-FREQUENCY-DOMAIN-MODE";
+    description
+      "PRACH functionality is supported.";
+    reference
+      "8.5.5 and NRPF in A.2.6 of IEEE Std 1914.3";
+  }
+
+  feature RB-MAP {
+    if-feature "NATIVE-FREQUENCY-DOMAIN-MODE";
+    description
+      "rbMap is supported.";
+    reference
+      "8.5.2 and RBM in A.2.6 of IEEE Std 1914.3";
+  }
+
+  // identity statements
+
+  identity radio-interface-type {
+    description
+      "A generic radio interface.";
+  }
+
+  identity cpri {
+    base radio-interface-type;
+    description
+      "A CPRI radio interface.";
+  }
+  
+  identity cienaieee1914dot3roe {
+    base if:interface-type;
+    description
+      "IEEE 1914.3 Radio over Ethernet.";
+  }
+
+  // typedef statements
+
+  typedef subtype {
+    type enumeration {
+      enum ROE-CONTROL-SUBTYPE {
+        value 0;
+        if-feature "ROE-CONTROL-PACKETS-SUBTYPE";
+        description
+          "RoE packet that contains control or management information.";
+      }
+      enum ROE-STRUCTURE-AGNOSTIC-DATA-SUBTYPE {
+        value 1;
+        description
+          "Data payload packet with RoE common frame header and
+           structure-agnostic payload.";
+      }
+      enum ROE-STRUCTURE-AWARE-CPRI-DATA-SUBTYPE {
+        value 2;
+        if-feature "STRUCTURE-AWARE-CPRI-MODE";
+        description
+          "Data payload packet with RoE common frame header and
+           structure-aware CPRI time domain I/Q data.";
+      }
+      enum ROE-SLOW-CM-CPRI-SUBTYPE {
+        value 3;
+        if-feature "CPRI-SLOW-CM-PACKET";
+        description
+          "C&M payload packet with RoE common frame header and CPRI
+           structure-aware Slow C&M payload.";
+      }
+      enum ROE-NATIVE-TIME-DOMAIN-DATA-SUBTYPE {
+        value 4;
+        if-feature "NATIVE-TIME-DOMAIN-MODE";
+        description
+          "Time domain data payload packet with RoE common frame header.";
+      }
+      enum ROE-NATIVE-FREQUENCY-DOMAIN-DATA-SUBTYPE {
+        value 5;
+        if-feature "NATIVE-FREQUENCY-DOMAIN-MODE";
+        description
+          "Frequency domain data payload packet with RoE common frame header.
+           This subtype can be used to carry native frequency domain I/Q data
+           or structure-aware CPRI frequency domain I/Q data.";
+      }
+      enum ROE-NATIVE-PRACH-DATA-SUBTYPE {
+        value 6;
+        if-feature "NATIVE-ROE-PRACH-PACKET";
+        description
+          "PRACH I/Q data payload with RoE common frame header. This subtype
+           can be used to carry native PRACH I/Q data or structure-aware CPRI
+           frequency domain PRACH I/Q data.";
+      }
+      enum MAPPED-SUBTYPES {
+        value 7;
+        if-feature "MAPPED-SUBTYPES";
+        description
+          "Companies and/or organizations owning an OUI or CID can use this
+           subType range for their own subtypes and payload structures";
+      }
+      enum EXPERIMENTAL {
+        value 8;
+        description
+          "Reserved for experimental types. The nature and purpose of an
+           experimental subtype cannot be known in advance; thus the structure
+           after the common RoE header is defined as opaque. Entities
+           implementing the experimental subtype can interpret the RoE packet
+           according to their implementation.";
+      }
+    }
+    description
+      "Type definition for the subType field.";
+    reference
+      "Table 3 in 5.5.2 of IEEE Std 1914.3";
+  } // subtype
+
+  typedef order-info-type {
+    type enumeration {
+      enum SEQNUM {
+        value 0;
+        description
+          "The sequence number field is used to identify the order of
+           successive packets.";
+        reference
+          "5.5.5.2 of IEEE Std 1914.3-2018";
+      }
+      enum TIMESTAMP {
+        value 1;
+        description
+          "The timestamp field is used to identify the timing order of
+                   successive packets.";
+        reference
+          "5.5.5.3 of IEEE Std 1914.3-2018";
+      }
+    }
+    description
+      "Type definition for ordering information that is assigned to each flow
+       and is presented in one of two methods: a sequence number or
+       timestamp.";
+    reference
+      "5.5.5 of IEEE Std 1914.3";
+  } // order-info-type
+
+  typedef mapper-type {
+    type enumeration {
+      enum STRUCTURE-AGNOSTIC-TUNNELING {
+        value 0;
+        description
+          "RoE mapper or de-mapper in structure-agnostic tunneling mode.";
+        reference
+          "8.2.a of IEEE Std 1914.3";
+      }
+      enum STRUCTURE-AGNOSTIC-LINE-CODING-AWARE {
+        value 1;
+        description
+          "RoE mapper or de-mapper in structure-agnostic mode without line
+           encoding.";
+        reference
+          "8.2.b of IEEE Std 1914.3";
+      }
+      enum STRUCTURE-AWARE-CPRI {
+        value 2;
+        description
+          "RoE mapper or de-mapper in structure-aware mode.";
+        reference
+          "8.3 of IEEE Std 1914.3";
+      }
+      enum NATIVE-TIME-DOMAIN {
+        value 3;
+        description
+          "RoE mapper or de-mapper in native time domain mode.";
+        reference
+          "8.4 of IEEE Std 1914.3";
+      }
+      enum NATIVE-FREQUENCY-DOMAIN {
+        value 4;
+        description
+          "RoE mapper or de-mapper in native frequency domain mode.";
+        reference
+          "8.5 of IEEE Std 1914.3";
+      }
+    }
+    description
+      "Operating mode of a (de)mapper.
+       0 indicates structure-agnostic tunneling mode.
+       1 indicates structure-agnostic mode without line encoding.
+       2 indicates structure-aware mode.
+       3 indicates native time domain mode.
+       4 indicates native frequency domain mode.";
+    reference
+      "Tables 10 and 11 of IEEE Std 1914.3";
+  } // mapper-type
+
+  typedef structure-aware-mapper-type {
+    type enumeration {
+      enum DATA {
+        value 0;
+        description
+          "RoE mapper or de-mapper in structure-aware mode handling CPRI
+                   I/Q data.";
+        reference
+          "Table 3 of IEEE Std 1914.3";
+      }
+      enum SLOW {
+        value 1;
+        description
+          "RoE mapper or de-mapper in structure-aware mode handling slow
+                   C&M data.";
+        reference
+          "8.3.8 and Table 14 in 8.3.5 of IEEE Std 1914.3";
+      }
+      enum FAST {
+        value 2;
+        description
+          "RoE mapper or de-mapper in structure-aware mode handling fast
+                   C&M channel.";
+        reference
+          "8.3.7 and Table 14 in 8.3.5 of IEEE Std 1914.3";
+      }
+      enum VSD {
+        value 3;
+        description
+          "RoE mapper or de-mapper in structure-aware mode handling
+           vendor-specific data (VSD).";
+        reference
+          "8.3.9 and Table 14 in 8.3.5 of IEEE Std 1914.3";
+      }
+      enum AXC {
+        value 4;
+        description
+          "RoE mapper or de-mapper in structure-aware mode handling Ctrl_AxC
+           channels.";
+        reference
+          "8.3.9 and Table 14 in 8.3.5 of IEEE Std 1914.3";
+      }
+    }
+    description
+      "Type of data handled by a structure-aware (de)mapper.
+       0 indicates it handles data other than the following.
+       1 indicates it handles the slow C&M channel.
+       2 indicates it handles the fast C&M channel.
+       3 indicates it handles vendor-specific data (VSD).
+       4 indicates it handles Ctrl_AxC channels.";
+    reference
+      "Table 14 of IEEE Std 1914.3";
+  } // structure-aware-mapper-type
+
+  typedef hyper-frame-filtering-options {
+    type enumeration {
+      enum FILTERING-DISABLED {
+        value 0;
+        description
+          "An RoE control packet is generated on every hyper-frame.
+           When the .filter-mode is set to 0 (filtering disabled), the packet
+           is generated and sent as soon as the required amount of control
+           word data has been collected. The packetizer does not wait until
+           the entire hyper-frame has been received.";
+      }
+      enum NONZERO-CONTENT {
+        value 1;
+        description
+          "An RoE control packet is generated whenever the contents are not
+           all zero.";
+      }
+      enum PERIODIC-GENERATION {
+        value 2;
+        description
+          "An RoE control packet is generated according to the modulo logic.";
+      }
+      enum PATTERN-MATCH {
+        value 3;
+        description
+          "An RoE control packet is generated whenever a pattern match is
+           detected.";
+      }
+    }
+    description
+      "Hyper-frame filtering options.";
+    reference
+      "Table 17 of IEEE Std 1914.3";
+  } // hyper-frame-filtering-options
+
+  // grouping statements
+
+  grouping timestamp {
+    description
+      "A timestamp comprised of integer and fractional nanosecond portions.";
+    reference
+      "5.5.5.3 of IEEE Std 1914.3-2018";
+    leaf integer-nanosecond {
+      type uint32 {
+        range "0..16777215";
+      }
+      units "nanoseconds";
+      default "0";
+      description
+        "The integer nanosecond portion of the timestamp.";
+      reference
+        "5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+    leaf fractional-nanosecond {
+      if-feature "FRACTIONAL-NANOSECOND-ACCURACY";
+      type uint8 {
+        range "0..31";
+      }
+      default "0";
+      description
+        "The fractional nanosecond portion of the timestamp.
+         It counts in fractions of a nanosecond (0.03125 ns) where 0
+         represents 0 ns and 31 represents 0.96875 ns.";
+      reference
+        "5.5.5.3 of IEEE Std 1914.3-2018";
+    }
+  }
+
+  grouping ethernet-links {
+    description
+      "Ethernet link grouping. A given RoE node can support up to 65536
+       Ethernet links.";
+    reference
+      "7.3.3 of IEEE Std 1914.3-2018";
+    list ethernet-link {
+      key "eth-id";
+      max-elements 65536;
+      description
+        "List of Ethernet links uniquely identified by their eth-id.";
+      reference
+        "Table 7 of IEEE Std 1914.3";
+      leaf eth-id {
+        type uint16;
+        description
+          "Each Ethernet port in a given node has a unique identifier.";
+        reference
+          "enParam 0 in Table 7 of IEEE Std 1914.3";
+      }
+    }
+  } // ethernet-links
+
+  grouping cpri-port {
+    description
+      "CPRI port grouping. A given RoE node can support up to 65 536 physical
+       CPRI (or other protocol) ports, and each port is assigned a unique
+       identifier.";
+    reference
+      "7.3.4 of IEEE Std 1914.3-2018";
+    container cpri-port {
+      description
+        "CPRI port parameters.";
+      reference
+        "Table 8 of IEEE Std 1914.3";
+      leaf cpri-id {
+        type uint16;
+        description
+          "Each CPRI port in a node has a unique identifier.";
+        reference
+          "enParam 0 in Table 8 of IEEE Std 1914.3";
+      }
+      /* Editor's note: The cpri-speed leaf is proposed to be replaced by the
+      following, which would be compatible with at most eleven line bit rate
+      options for a CPRI-like port. Comments on adopting this proposal are
+      welcome.
+
+      typedef
+      leaf cpri-speed {
+        type uint8 {
+          range "0..10";
+        }
+        description
+          "The line bit rate option from which is derived the speed of the
+          CPRI port in Mbps: values 1 to 10 correspond to CPRI line bit rate
+          options 1 to 10, respectively and value 0 corresponds to CPRI line
+          bit rate option 7A.";
+        reference
+          "enParam 1 in Table 8 of IEEE Std 1914.3 and 4.2.1 of CPRI
+          Specification V7.0";
+      }
+       */
+      leaf cpri-speed {
+        type uint64;
+        units "Mbps";
+        description
+          "The speed of the CPRI port in Mbps.";
+        reference
+          "enParam 1 in Table 8 of IEEE Std 1914.3";
+      }
+      leaf cpri-ver {
+        type uint8;
+        config false;
+        description
+          "CPRI protocol version at location Z.2.0, i.e., control word 2 as
+           extracted by the control process.";
+        reference
+          "enParam 2 in Table 8 and 8.3.6(.c) of IEEE Std 1914.3";
+      }
+      leaf cpri-hdlc {
+        type uint8 {
+          range "0..7";
+        }
+        config false;
+        description
+          "HDLC bit rate at location Z.66.0, i.e., control word 66 as
+           extracted by the control process.";
+        reference
+          "enParam 3 in Table 8 and 8.3.6(.d) of IEEE Std 1914.3";
+      }
+      leaf cpri-l1 {
+        type uint8 {
+          range "0..31";
+        }
+        config false;
+        description
+          "L1 signaling at location Z.130.0, i.e., control word 130 as
+           extracted by the control process.";
+        reference
+          "enParam 4 in Table 8 and 8.3.6(.e) of IEEE Std 1914.3";
+      }
+      leaf cpri-eth {
+        type uint8 {
+          range "0|20..63";
+        }
+        config false;
+        description
+          "Ethernet pointer at location Z.194.0, i.e., control word 194 as
+           extracted by the control process.";
+        reference
+          "enParam 5 in Table 8 and 8.3.6(.f) of IEEE Std 1914.3";
+      }
+    }
+  } // cpri-port
+
+  grouping mapper-demapper {
+    description
+      "Parameters common to RoE mappers and de-mappers.";
+    reference
+      "Table 9 in 7.3.5 of IEEE Std 1914.3-2018";
+    leaf this {
+      type enumeration {
+        enum MAPPER {
+          description
+            "This is a mapper.";
+        }
+        enum DEMAPPER {
+          description
+            "This is a de-mapper.";
+        }
+      }
+      description
+        "Selects whether this is a mapper or a de-mapper.";
+    }
+    leaf subtype {
+      type subtype;
+      config false;
+      description
+        "The RoE subType and the type of flow carried by the RoE packets.";
+      reference
+        "5.5.2 of IEEE Std 1914.3";
+    }
+    list subtype-mapping {
+      if-feature "MAPPED-SUBTYPES";
+      key "subtype";
+      max-elements 64;
+      description
+        "The subType mapping object assigns OUI/CID defined subTypes into the
+         mapped subType space. This is used to maintain and assign mapped
+         subTypes from the RoE subType space to particular organizationally
+         unique identifier (OUI) or company identifier (CID) entities and
+         their specified subType/payload structures";
+      reference
+        "5.3.5/Table 2 and 7.3.8/Table 12 in IEEE Std 1914.3";
+      leaf subtype {
+        type uint8 {
+          range "128..191";
+        }
+        description
+          "RoE subType being mapped.";
+      }
+      leaf oui-cid-mapping {
+        type uint32 {
+          range "0..16777215";
+        }
+        description
+          "OUI/CID identifier part of .mapSubtype";
+      }
+      leaf payload-structure-mapping {
+        type uint16;
+        default "0xFFFF";
+        description
+          "Payload structure identifier part of .mapSubtype.";
+      }
+    }
+    leaf ID {
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "mapperID or deMapperID: each RoE mapper or de-mapper in a given node
+         has a unique identifier.
+         For an RoE de-mapper, this deMapperID is also the flow-id.";
+      reference
+        "enParam 0 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    leaf flow-id {
+      when "../this = 'MAPPER'";
+      type uint8 {
+        range "0..254";
+      }
+      default "0";
+      description
+        "For an RoE mapper: allows setting the flow-id. The flow-id can be
+         assigned by the master controller to map to the receiver’s
+         deMapperID.
+         For an RoE de-mapper, the flow-id = .deMapperID.";
+      reference
+        "Table 4 and enParam 1 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    leaf src-id {
+      type uint16;
+      default "0";
+      description
+        "For an RoE mapper: identifies the source Ethernet link or CPRI port.
+         For an RoE de-mapper: identifies the source Ethernet link.";
+      reference
+        "enParam 2 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    leaf dest-id {
+      type uint16;
+      default "0";
+      description
+        "For an RoE mapper: identifies the destination Ethernet link.
+         For an RoE de-mapper: identifies the destination Ethernet link or
+         CPRI port.";
+      reference
+        "enParam 3 in Table 10 of IEEE Std 1914.3";
+    }
+    leaf order-info-type {
+      type order-info-type;
+      default "SEQNUM";
+      description
+        "order-info type.
+         0 indicates seq-num is used.
+         1 indicates timeStamp is used.";
+      reference
+        "enParam 4 in Tables 10 and 11 of IEEE Std 1914.3.
+         A.2.3.2 SN and TS of IEEE Std 1914.3.";
+    }
+    container order-info-seq-num {
+      when "../order-info-type = 'SEQNUM'";
+      if-feature "SEQUENCE-NUMBER-MODE";
+      description
+        "Sequence number field. Used to describe the initial value,
+         behavior, and number space wrap properties of the sequence number.";
+      reference
+        "5.5.5.2 of IEEE Std 1914.3-2018";
+      leaf seq-num-p-max {
+        type uint32;
+        default "0xFFFFFFFF";
+        description
+          "Maximum numerical value of the p-counter field so that .seq-num-p-max
+           is less than 2^(32–p).";
+        reference
+          "enumParam 0 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-p-val {
+        type uint32;
+        config false;
+        description
+          "The counter value of the p-counter field. When the .seq-num-p-val >
+           .seq-num-p-max, then the counter field wraps to a value .seq-num-p-val
+           modulo (.seq-num-p-max+1). The counter wrap also causes .seq-num-q-val to
+           be incremented by .seq-num-q-inc, based on the setting of
+           .seq-num-q-inc-prop.";
+        reference
+          "enumParam 1 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-p-inc-prop {
+        type uint8 {
+          range "0..2|7";
+        }
+        default "1";
+        description
+          "0x0: No increment.
+           0x1: Increments by a fixed value indicated by .seq-num-p-inc on every
+           packet sent.
+           0x2: Increments by the RoE payload size on every sent packet.
+           0x7: experimental.";
+        reference
+          "enumParam 2 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-p-inc {
+        type uint32;
+        default "1";
+        description
+          "The increment value of .seq-num-p-val on every sent packet.
+           Designated value when .seq-num-p-inc-prop equals 0x1, which is fixed
+           during the lifetime of an RoE flow and ignored when .seq-num-p-inc-prop
+           equals any other value.";
+        reference
+          "enumParam 3 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-q-max {
+        type uint32;
+        default "0";
+        description
+          "Maximum numerical value of the q-counter field so that .seq-num-q-max
+           is less than 2^(p–q).";
+        reference
+          "enumParam 4 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-q-val {
+        type uint32;
+        config false;
+        description
+          "The counter value of the q-counter field. When the .seq-num-q-val >
+           .seq-num-q-max, then the counter field wraps to a value .seq-num-q-val
+           modulo (.seq-num-q-max+1).";
+        reference
+          "enumParam 5 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-q-inc-prop {
+        type uint8 {
+          range "0..1|7";
+        }
+        default "1";
+        description
+          "0x0: No increment.
+           0x1: Increments by a fixed value indicated by .seq-num-q-inc on every
+           .seq-num-p-val wrap event.
+           0x7: experimental.";
+        reference
+          "enumParam 6 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-q-inc {
+        type uint32;
+        default "1";
+        description
+          "The increment value of .seq-num-q-val on every .seq-num-p-val wrap event.
+           Designated value when .seq-num-q-inc-prop equals 0x1 and ignored when
+           .seq-num-q-inc-prop equals other values.";
+        reference
+          "enumParam 7 in Table 5 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num-rsvd {
+        type uint32;
+        default "0";
+        description
+          "Static value for the optional reserved bits of the seq-num field,
+           when valid. Remains unchanged for the lifetime of the flow.";
+        reference
+          "enumParam 8 in Table 5 of IEEE Std 1914.3-2018";
+      }
+    }
+    container order-info-timestamp {
+      when "../order-info-type = 'TIMESTAMP'";
+      if-feature "TIMESTAMP-MODE";
+      description
+        "timeStamp field. Provides the start-of-frame marker, a condensed
+         sequence number, and the absolute time for presentation of the
+         packet information by the demapper at the receiving endpoint.";
+      reference
+        "5.5.5.3 of IEEE Std 1914.3-2018";
+      leaf start-of-frame {
+        type uint8 {
+          range "0..1";
+        }
+        config false;
+        description
+          "Start of frame (SoF) marker. An SoF bit set to 1 indicates
+           that the start of the payload field (not counting the rbMap
+           field) is the start of the radio frame. An SoF bit set to 0
+           indicates that the start of the payload is not the start of
+           the radio frame.";
+        reference
+          "5.5.5.3 of IEEE Std 1914.3-2018";
+      }
+      leaf seq-num {
+        type uint8 {
+          range "0..3";
+        }
+        config false;
+        description
+          "The 2 least significant bits (LSBs) of the p-counter from the
+           .seq-num information.";
+        reference
+          "5.5.5.3 of IEEE Std 1914.3-2018";
+      }
+      container presentation-timestamp {
+        config false;
+        description
+          "The presentation timestamp.";
+        reference
+          "5.5.5.3 of IEEE Std 1914.3-2018";
+        uses timestamp;
+      }
+    }
+    leaf mapper-type {
+      type mapper-type;
+      default "STRUCTURE-AGNOSTIC-TUNNELING";
+      description
+        "Allows selecting the operating mode of this RoE (de)mapper.
+         0 indicates structure-agnostic tunneling mode.
+         1 indicates structure-agnostic mode without line encoding.
+         2 indicates structure-aware mode.
+         3 indicates native time domain mode.
+         4 indicates native frequency domain mode.";
+      reference
+        "enParam 5 in Table 10 of IEEE Std 1914.3";
+    }
+    leaf structure-aware-mapper-type {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI'";
+      if-feature "STRUCTURE-AWARE-CPRI-MODE";
+      type structure-aware-mapper-type;
+      default "DATA";
+      description
+        "Allows selecting the type of data that this structure-aware
+         (de)mapper handles.
+         0 indicates it handles data other than the following.
+         1 indicates it handles the slow C&M channel.
+         2 indicates it handles the fast C&M channel.
+         3 indicates it handles vendor-specific data (VSD).
+         4 indicates it handles Ctrl_AxC channels.";
+      reference
+        "Table 14 in 8.3.5 of IEEE Std 1914.3";
+    }
+    leaf encrypt {
+      if-feature "ENCRYPTION";
+      type uint8 {
+        range "0..15";
+      }
+      default "0";
+      description
+        "Selects/enables encryption on a given flow. The value 0x0 is for no
+         encryption.";
+      reference
+        "enParam 6 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    leaf compress {
+      if-feature "COMPRESSION";
+      type uint8 {
+        range "0..15";
+      }
+      default "0";
+      description
+        "Selects/enables compression on a given flow. The value 0x0 is for no
+         compression.";
+      reference
+        "enParam 7 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    container len-pack-octets {
+      when "../mapper-type = 'STRUCTURE-AGNOSTIC-TUNNELING' or ../mapper-type = 'STRUCTURE-AGNOSTIC-LINE-CODING-AWARE' or "
+         + "../mapper-type = 'NATIVE-TIME-DOMAIN' or ../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      description
+        "Allows len-pack to be specified in octets when this (de)mapper is not
+         operating in structure-aware mode.";
+      leaf len-pack {
+        type uint16;
+        units "octets";
+        description
+          "Packet length in octets: identifies the amount of data to include
+           per packet payload.";
+        reference
+          "enParam 8 in Tables 10 and 11 of IEEE Std 1914.3";
+      }
+    }
+    container len-pack-containers {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI'";
+      description
+        "Allows len-pack to be specified in container sets when this (de)mapper
+         is operating in structure-aware mode.";
+      leaf len-pack {
+        type uint16;
+        units "container sets";
+        description
+          "Packet length in container sets: identifies the amount of data to
+           include per packet payload.";
+        reference
+          "enParam 8 in Tables 10 and 11 of IEEE Std 1914.3";
+      }
+    }
+    container accept-time-window {
+      if-feature "TIMESTAMP-MODE";
+      description
+        "Accepted Time Window: a timestamp that is used with the order-info
+         timestamp and the arrival time of the timestamped radio data at
+         de-mapper to determine if an RoE packet experienced excess transit
+         delay.";
+      reference
+        "enParam 9 in Tables 10 and 11 of IEEE Std 1914.3";
+      uses timestamp;
+    }
+    leaf sample-width {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI' or ../mapper-type = 'NATIVE-TIME-DOMAIN' or
+            ../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      type uint8;
+      default "16";
+      description
+        "Sample Width: indicates the number of bits in each I portion and in
+         each Q portion of an I/Q sample. By default, 16-bit I and 16-bit Q
+         width is assumed.";
+      reference
+        "enParam 10 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    list containers {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI'";
+      key "container-id";
+      max-elements 256;
+      description
+        "The content of a CPRI basic frame is divided into
+         (de)mapper[(de)mapperID].num-containers bit fields (i.e.,
+         containers). The container parameters fully describe a complete
+         CPRI basic frame. The RoE packet payload is then constructed
+         based on the data extracted from the CPRI basic frames.";
+      reference
+        "Table 13 in 8.3.1 of IEEE Std 1914.3";
+      leaf container-id {
+        type uint8;
+        mandatory true;
+        description
+          "ContainerID of this container, unique when used by this
+           (de)mapper.";
+        reference
+          "8.3.1 of IEEE Std 1914.3";
+      }
+      leaf ID {
+        type leafref {
+          path "../../ID";
+        }
+        config false;
+        description
+          "The (de)mapperID to which this container belongs.";
+        reference
+          "enParam 0 of Table 13 in IEEE Std 1914.3";
+      }
+      leaf flow-id {
+        type leafref {
+          path "../../flow-id";
+        }
+        config false;
+        description
+          "The .flow-id identifies to which RoE mapper/RoE de-mapper this
+           container belongs. If the container is for data packets (8.3.3),
+           the .flow-id typically equates to an AxC that is placed into
+           separate RoE packets/flows.
+           For data packets:
+           The .flow-id this mapper will insert into the generated RoE frame
+           common header. An RoE.container’s .flow-id will equal the .flow-id
+           used by its parent (de)mapper.
+           On the mapper, this parameter may be different from the .mapperID.
+           On the de-mapper, this parameter is equal to the .deMapperID.";
+        reference
+          "8.3.2 and enParam 1 of Table 13 in IEEE Std 1914.3";
+      }
+      leaf len-skip {
+        type uint8;
+        default "0";
+        description
+          "The number of reserved bits in front of the extracted
+           container.";
+        reference
+          "enParam 2 of Table 13 in IEEE Std 1914.3";
+      }
+      leaf len-container {
+        type uint16 {
+          range "8..1023";
+        }
+        default "8";
+        description
+          "The size of the container in bits.";
+        reference
+          "enParam 3 of Table 13 in IEEE Std 1914.3";
+      }
+      leaf modulo {
+        type uint16 {
+          range "0..256";
+        }
+        default "0";
+        description
+          "Values from 0 to 256. Value 0 turns off the modulo logic.";
+        reference
+          "enParam 4 of Table 13 in IEEE Std 1914.3";
+      }
+      leaf index {
+        when '../modulo != 0';
+        type uint8;
+        mandatory true;
+        description
+          "Index to match after the modulo operation. Valid values from 0 to
+           .modulo-1. .index is not used when .modulo = 0.";
+        reference
+          "enParam 5 of Table 13 in IEEE Std 1914.3";
+      }
+    } // containers
+    leaf num-containers {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI'";
+      type uint8;
+      config false;
+      description
+        "Reflects the number of containers associated with this RoE mapper or
+         RoE de-mapper.";
+      reference
+        "enParam 32 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    leaf num-ctrl-conts {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI'";
+      type uint8;
+      config false;
+      description
+        "Reflects the number of control containers associated with this RoE
+         mapper or RoE de-mapper.";
+      reference
+        "enParam 33 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    list ctrl-word-conts {
+      when "../mapper-type = 'STRUCTURE-AWARE-CPRI' and (../structure-aware-mapper-type = 'VSD' "
+         + "or ../structure-aware-mapper-type = 'AXC')";
+      key "ctrl-word-id";
+      max-elements 256;
+      description
+        "CPRI control word RoE (de)mapper container parameters.";
+      reference
+        "Table 15 in 8.3.9 of IEEE Std 1914.3";
+      leaf ctrl-word-id {
+        type uint8;
+        description
+          "Each control word has a unique identifier.";
+        reference
+          "enParam 0 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf flow-id {
+        type leafref {
+          path "../ctrl-word-id";
+        }
+        config false;
+        description
+          "The .flow-id used in the control process container construction for
+           generated RoE packets. The .flow-id is equal to .ctrl-word-id.
+           The .flow-id maps to RoE header flow-id field.";
+        reference
+          "enParam 1 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-sel {
+        type uint8 {
+          range "0..15";
+        }
+        description
+          "A 4-bit mask for selecting subchannel words (Xs) to extract. Bit 0
+           corresponds to Xs word with index 0, and Bit 3 corresponds to
+           Xs = 3. The selected subchannel words are equal to logical OR of
+           the corresponding subchannel masks. The mask defined by .cw-sel
+           applies to the area defined by the .cw-start and .cw-size.
+
+           0000b indicates Subchannel processing disabled; container not in
+           use.
+           0001b corresponds to Xs 0 set to 1.
+           0010b corresponds to Xs 1 set to 1.
+           0100b corresponds to Xs 2 set to 1.
+           1000b corresponds to Xs 3 set to 1.
+
+           For example, 1111b corresponds to Xs 0..3 all set to 1.";
+        reference
+          "Table 16 and enParam 2 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-start {
+        type uint8 {
+          range "0..63";
+        }
+        description
+          "The first subchannel (Ns) allocated for parser.";
+        reference
+          "enParam 3 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-size {
+        type uint8 {
+          range "0..63";
+        }
+        description
+          "Number of consecutive subchannels allocated for the control data.";
+        reference
+          "enParam 4 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf filter-mode {
+        type hyper-frame-filtering-options;
+        description
+          "Controls the generation of the RoE packets from the extracted CPRI
+           control words.";
+        reference
+          "enParam 5 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf hfn-modulo {
+        type uint8 {
+          range "1..150";
+        }
+        description
+          "Modulo operation applied to current CPRI hyper-frame number.
+           Whether the modulo is applied depends on the .filter-mode setting.";
+        reference
+          "enParam 6 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf hfn-index {
+        type uint8 {
+          range "0..149";
+        }
+        description
+          "The index to match after the modulo operation.";
+        reference
+          "enParam 7 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-offset {
+        type uint16 {
+          range "0..4095";
+        }
+        description
+          "The offset into the extracted control word buffer for masking and
+           value comparison operation. Whether the offset-based mask and value
+           comparison is applied depends on the .filter-mode setting.";
+        reference
+          "enParam 8 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-value {
+        type uint32;
+        description
+          "The value against which to compare after the mask operation.";
+        reference
+          "enParam 9 in Table 15 of IEEE Std 1914.3";
+      }
+      leaf cw-mask {
+        type uint32;
+        description
+          "The bit mask (logical AND) for the offset-based comparison
+           operation.";
+        reference
+          "enParam 10 in Table 15 of IEEE Std 1914.3";
+      }
+    }
+    list ffts {
+      when "../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      if-feature "FFT";
+      key "fft-id";
+      description
+        "List of FFT objects associated with this RoE mapper or de-mapper.";
+      reference
+        "8.5.2 of IEEE Std 1914.3";
+      leaf fft-id {
+        type uint8;
+        description
+          "Each (i)FFT in each node has a unique identifier.";
+        reference
+          "enParam 0 in Table 18 of IEEE Std 1914.3-2018";
+      }
+      leaf rb-fft {
+        type uint16;
+        default "100";
+        description
+          "The number of resource blocks on which the (i)FFT operates.";
+        reference
+          "enParam 1 in Table 18 of IEEE Std 1914.3-2018";
+      }
+      leaf fft-size {
+        type uint16;
+        units "bins";
+        default "2048";
+        description
+          "The size (in bins) of the (i)FFT.";
+        reference
+          "enParam 2 in Table 18 of IEEE Std 1914.3-2018";
+      }
+      leaf cp-len0 {
+        type uint16;
+        default "160";
+        description
+          "Identifies the cyclic prefix length N(CP,l) when l = 0. Symbols are
+           transmitted in increasing order of l, starting with l = 0.";
+        reference
+          "enParam 3 in Table 18 of IEEE Std 1914.3-2018";
+      }
+      leaf cp-len-other {
+        type uint16;
+        default "144";
+        description
+          "Identifies the cyclic prefix length N(CP,l) for symbols when l > 0.
+           Symbols are transmitted in increasing order of l, starting with
+           l = 0.";
+        reference
+          "enParam 4 in Table 18 of IEEE Std 1914.3-2018";
+      }
+      leaf map-rb {
+        if-feature "RB-MAP";
+        type uint8;
+        default "0";
+        description
+          "The number of bits per .rb-fft to be allocated to the rbMap field of
+           the RoE native frequency domain subtype.
+           When .map-rb = 0, the rbMap field is zero size; all the resource
+           blocks are contained in the packet.";
+        reference
+          "enParam 4 in Table 18 of IEEE Std 1914.3-2018";
+      }
+    }
+    leaf num-fft {
+      when "../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      if-feature "FFT";
+      type uint8;
+      config false;
+      description
+        "Defines the number of (i)FFT objects.";
+      reference
+        "enParam 34 in Tables 10 and 11 of IEEE Std 1914.3";
+    }
+    list prachs {
+      when "../this = 'MAPPER' and ../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      if-feature "PRACH";
+      key "prach-id";
+      description
+        "List of PRACH objects associated with this RoE mapper.";
+      reference
+        "8.5.5 of IEEE Std 1914.3";
+      leaf prach-id {
+        type uint8;
+        description
+          "Each PRACH in each node has a unique identifier.";
+        reference
+          "enParam 0 in Table 19 of IEEE Std 1914.3-2018";
+      }
+      leaf prach-config-index {
+        type uint8;
+        default "0";
+        description
+          "The PRACH configuration index, which sets the preamble format, and
+           system frame number and sub-frame number position(s) of the PRACH
+           in time in radio frames. Set by system information block 2 (SIB2)
+           prach-ConfigIndex in E-UTRA.";
+        reference
+          "enParam 1 in Table 19 of IEEE Std 1914.3-2018";
+      }
+      leaf prach-offset {
+        type uint16;
+        default "0";
+        description
+          "Sets the PRACH position in frequency/subcarrier position,
+           n^RA(PRBoffset), and is expressed as a physical resource block
+           number. Set by SIB2, prach-FreqOffset in E-UTRA.";
+        reference
+          "enParam 1 in Table 19 of IEEE Std 1914.3-2018";
+      }
+      leaf prach-sample-width {
+        type uint8;
+        units "bits";
+        default "16";
+        description
+          "Indicates the total number of bits in each I/Q sample, in bits. By
+           default, 16-bit I and 16-bit Q width is assumed.";
+        reference
+          "enParam 1 in Table 19 of IEEE Std 1914.3-2018";
+      }
+    }
+    leaf num-prach {
+      when "../this = 'MAPPER' and ../mapper-type = 'NATIVE-FREQUENCY-DOMAIN'";
+      if-feature "PRACH";
+      type uint8;
+      config false;
+      description
+        "Defines the number of PRACH objects.";
+      reference
+        "enParam 35 in Tables 10 of IEEE Std 1914.3";
+    }
+    container arrival-time-offset {
+      when "../this = 'MAPPER'";
+      description
+        "A timestamp specifying the arrival time offset between the arrival of
+         CPRI frames at CPRI ingress of this mapper and the expected
+         presentation time at CPRI egress of the corresponding de-mapper.
+
+         At the mapper function, the desired presentation time at the far-end
+         de-mapper is determined by adding the arrival time offset to the
+         CPRI ingress time and then placing it into the RoE header’s timeStamp
+         field.";
+      reference
+        "6.3 and C.3 of IEEE Std 1914.3";
+      uses timestamp;
+    }
+  } // mapper-demapper
+
+  // data definition statements
+  // augment statements
+
+  augment "/if:interfaces/if:interface" {
+   when "if:type = 'cienaieee1914dot3roe'";
+    description
+      "Augments the IETF network interface model with the Radio over Ethernet
+       port.";
+    container roe-interface {
+
+      presence "RoE Interface configuration";
+
+      description
+        "An RoE interface. Augments the IETF network interface model.
+         Each RoE interface uses mappers, de-mappers, and interconnects one
+         CPRI (or CPRI-like) port and one RoE node which could be an Ethernet
+         bridge or an IP router. As such, an RoE interface can be seen as
+         extending a given port of such RoE node. The set of Ethernet links
+         (logical connections) carry Ethernet frames to/from the switching
+         fabric of the RoE node across a port of this node.";
+
+      leaf radio-interface-type {
+        type identityref {
+          base radio-interface-type;
+        }
+        default "cpri";
+        description
+          "Selects the radio interface type.";
+      }
+      uses cpri-port {
+        when "radio-interface-type = 'cpri'";
+      }
+      list mapper-demapper {
+        key "ID";
+        description
+          "List of RoE mappers and de-mappers, each uniquely identified by
+           their ID.";
+        uses mapper-demapper;
+      }
+      uses ethernet-links;
+    }
+  }
+
+  // rpc statements
+  // notification statements
+}

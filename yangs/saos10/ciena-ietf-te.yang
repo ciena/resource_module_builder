@@ -1,0 +1,619 @@
+module ciena-ietf-te {
+  namespace "http://ciena.com/ns/yang/ciena-ietf-te";
+  prefix ciena-te;
+
+  /* Import TE types */
+
+  import ietf-te-types {
+    prefix te-types;
+  }
+
+  import openconfig-interfaces {
+     prefix "oc-if";
+  }
+
+  import ciena-openconfig-interfaces {
+    prefix "cn-oc-if";
+  }
+
+  import ciena-l3-types {
+    prefix cn-l3-types;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "Copyright (c) 2022 Ciena Corporation.  All rights
+    reserved.
+
+    All information and intellectual property contained in this
+    YANG module (Specification) is, and remains the property
+    of Ciena Corporation. Ciena retains all title and ownership
+    in the Specification, including any revisions.
+
+    Ciena grants all interested parties that access the
+    Specification with the intent to use or distribute (you) a
+    non-exclusive, no-cost license to use and distribute
+    unmodified copies of the Specification solely in connection
+    with the management of Ciena products sold by or on
+    behalf of Ciena, provided this copyright notice and license
+    appear on all copies. Ciena may rescind or modify this
+    license at any time.
+
+    This Specification is supplied 'as is', and Ciena makes no
+    warranty, either express or implied, as to the use, operation,
+    condition, or performance of the Specification. You agree
+    that Ciena has no liability for your use of the Specification";
+
+  revision "2022-06-24" {
+    description
+      "Added TE metric's default value.
+       Added TE performance Advertisement profile name type change. 
+       Added TE performance metrics advertisement profiles.
+       Added TE bandwidth change threshold under TE globals.
+       Added TE igp distribute timer under TE globals.
+       Updated default value and units for igp timer under TE globals.";
+  }
+
+  revision "2020-10-28" {
+    description
+      "Initial version";
+    reference
+      "IETF-DRAFT: A YANG Data Model for Traffic Engineering Tunnels, Label Switched Paths and Interfaces 
+       and RFC 8795";
+  }
+
+  grouping max-link-bandwidth-config {
+    description
+      "Maximum bandwidth grouping";
+    leaf max-link-bandwidth {
+      type te-types:te-bandwidth;
+      description
+         "Maximum bandwidth that can be seen on this link in this
+         direction.  It is a string containing a non-negative decimal or 
+         formatted as external hexadecimal-significant character 
+         sequences specified in IEEE 754 and ISO/IEC C99. 
+         Units are in bytes per second.";
+    }
+  }
+
+  grouping max-resv-link-bandwidth-config {
+    description
+      "Maximum reservable bandwidth grouping";
+    choice max-resv-link-bandwidth-type {
+      description
+        "Maximum reservable bandwidth type choice";
+      case value {
+        leaf max-resv-link-bandwidth {
+          type te-types:te-bandwidth;
+          description
+            "Maximum amount of bandwidth that can be reserved in this
+            direction in this link.  It is a string containing a non-negative 
+            decimal or formatted as external hexadecimal-significant 
+            character sequences specified in IEEE 754 and ISO/IEC C99. 
+            Units are in bytes per second.";
+        }
+      }
+      case percent {
+        leaf max-resv-link-bandwidth-percent {
+          type uint32 {
+            range "1..100";
+          }
+          description
+            "Percentage of max-link-bandwidth that can be reserved in this
+             direction in this link.";
+        }
+      }
+    }    
+  }
+
+  grouping te-delay-metric-config {
+    description
+      "Delay metric grouping";
+    leaf te-delay-metric {
+      type uint32 {
+        range "1..16777215";
+      }
+      units microseconds;
+      description
+        "Traffic Engineering unidirectional delay metric.";
+    }
+  }
+
+  grouping te-metric-extensions-threshold-config {
+    description
+      "Configurable thresholds for advertising TE Metric Extensions.";
+    leaf delay-maximum-threshold {
+      type uint32;
+      units microseconds;
+      description
+        "Maximum threshold exceeding which Unidirectional delay is considered anomalous.
+         Value greater than zero.";
+    }
+  }  
+
+  /* TE interface metric */
+
+  grouping te-metric-config {
+    description
+      "TE interface metric grouping.";
+    leaf te-metric {
+      type te-types:te-metric {
+        range "1..16777215";
+      }
+      default "10";
+      description
+        "TE interface metric.";
+    }
+  }
+
+  /**
+   * TE interface device groupings
+   */
+
+  grouping te-admin-groups-config {
+    description
+      "TE interface affinities grouping.";
+    choice admin-group-type {
+      description
+        "TE interface administrative groups
+         representation type.";
+      case named-admin-groups {
+        list named-admin-groups {
+          if-feature "te-types:extended-admin-groups";
+          if-feature "te-types:named-extended-admin-groups";
+          key "named-admin-group";
+          description
+            "A list of named admin-group entries.";
+          leaf named-admin-group {
+            type leafref {
+              path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                   "/ciena-te:named-admin-group/ciena-te:name";
+            }
+            description
+              "A named admin-group entry.";
+          }
+        }
+      }
+    }
+  }
+
+  /* TE interface SRLGs */
+
+  grouping te-srlgs-config {
+    description
+      "TE interface SRLG grouping.";
+    choice srlg-type {
+      description
+        "Choice of SRLG configuration.";
+      case value-srlgs {
+        list srlg-values {
+          key "value";
+          description
+            "List of SRLG values that
+             this link is part of.";
+          leaf value {
+            type uint32 {
+              range "0..4294967295";
+            }
+            description
+              "Value of the SRLG";
+          }
+        }
+      }
+    }
+  }
+
+
+  grouping performance-advertisement-profile {
+    description
+      "Performance advertisement profile grouping.";
+    leaf performance-advertisement-profile {
+      type leafref {
+        path "/ciena-te:te/ciena-te:globals/ciena-te:performance-advertisement-profiles/ciena-te:performance-advertisement-profile/ciena-te:name";
+      }
+      description
+        "Performance advertisement profile name.";
+    }
+  }
+
+  /* TE interface attributes grouping */
+
+  grouping te-attributes {
+    description
+      "TE attributes configuration grouping.";
+    uses te-metric-config;
+    uses te-delay-metric-config;
+    uses te-admin-groups-config;
+    uses te-srlgs-config;
+    uses max-link-bandwidth-config;
+    uses max-resv-link-bandwidth-config;
+    uses te-metric-extensions-threshold-config;
+    uses performance-advertisement-profile;
+  }
+
+  /**
+   * TE global device groupings
+   */
+  /* TE interface container data */
+
+  grouping interfaces-grouping {
+    description
+      "TE interface configuration data grouping.";
+    container interfaces {
+      description
+        "Configuration data model for TE interfaces.";
+      list interface {
+        key "interface";
+        description
+          "TE interfaces.";
+        leaf interface {
+          type leafref {
+             path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]"
+               + "/oc-if:config/cn-oc-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']"
+          {
+            error-message "TE properties can be set only on 'ip', 'ip-unnumbered' and 'point-to-point' interface";
+          }
+
+          description
+            "TE interface name.";
+        }
+
+        leaf admin-status {
+          type te-types:te-admin-status;
+          default "up";
+          description
+            "The administrative state of the link.
+             If status is down then no TE attribute will be signalled";
+        }
+
+        /* TE interface parameters */
+        uses te-attributes;
+      }
+    }
+  }
+
+  /**
+   * TE global generic groupings
+   */
+  /* Global named admin-groups configuration data */
+
+  grouping named-admin-groups-properties {
+    description
+      "Global named administrative groups configuration
+       grouping.";
+    leaf name {
+      type string{
+        length "1..31";
+      }
+      description
+        "A string name that uniquely identifies a TE
+         interface named admin-group.";
+    }
+    leaf bit-position {
+      type uint32 {
+        range "0..31";
+      }
+      mandatory true;
+      description
+        "Bit position representing the administrative group.";
+      reference
+        "RFC3209 and RFC7308";
+    }
+  }
+
+  grouping named-admin-groups {
+    description
+      "Global named administrative groups configuration
+       grouping.";
+    container named-admin-groups {
+      description
+        "TE named admin groups container.";
+      list named-admin-group {
+        if-feature "te-types:extended-admin-groups";
+        if-feature "te-types:named-extended-admin-groups";
+        key "name";
+        description
+          "List of named TE admin-groups.";
+        uses named-admin-groups-properties;
+      }
+    }
+  }
+
+  grouping performance-advertisement-profiles {
+    description
+      "Grouping for Performance advertisement profiles.";
+    container performance-advertisement-profiles {
+      description
+        "Performance advertisement profile container.";
+
+      list performance-advertisement-profile {
+        key "name";
+        max-elements 128;
+        description
+          "Performance advertisement profile.";
+
+        leaf name  {
+          type cn-l3-types:string-max-256;
+          description
+            "Performance advertisement profile name.";
+        }
+
+        leaf description  {
+          type cn-l3-types:string-max-256;
+          description
+            "Performance advertisement profile description.";
+        }
+
+        leaf enable {
+          type boolean;
+          default "true";
+          description
+            "Enable/Disable Performance advertisement.";
+        }
+
+        leaf protocol-accelerated-interval {
+          type uint16 {
+            range "1..3600";
+          }
+          units seconds;
+          default "10";
+          description
+            "Interval, in seconds, for TE performance metric computation. 
+             This provides accelerated computation in case measurement
+             protocol has higher measurement interval."; 
+        }
+
+        leaf max-advertisements {
+          type uint16 {
+            range "1..3600";
+          }
+          default "30";
+          description
+            "Maximum number of periodic and accelerated advertisements allowed within maximum 
+             advertisement-interval (3600 sec).
+             Exceeding this limit, periodic advertisements are delayed by suppression-interval 
+             till the expiry of maximum advertisement-interval.";
+        }
+
+        container throttle {
+          description
+            "Throttling of TE performance metric advertisements.";
+
+          container advertisement-periodic {
+            description
+              "Periodic advertisements of TE performance metrics.";
+
+            leaf advertisement-interval {
+              type uint16 {
+                range "30..3600";
+              }
+              units seconds;
+              default "120";
+              description
+                "Interval, in seconds, to advertise the TE performance metric values.
+                 Note: Advertisement interval should be greater than measurement 
+                       interval used by the measurement protocol.";
+            }
+
+            leaf suppression-interval {
+              type uint16 {
+                range "0..3600";
+              }
+              units seconds;
+              default "120";
+              description
+                "Interval, in seconds, to suppress periodic advertisement of the TE 
+                 performance metric values.";
+            }
+
+            container threshold-out {
+              description
+                "Thresholds for periodic advertisements of TE performance metrics.";
+
+              leaf one-way-min-delay {
+                type uint16 {
+                  range "0..100";
+                }
+                default "10";
+                units "percent";
+                description
+                  "Percentage change in Unidirectional minimum delay metric.";
+              }
+
+              leaf one-way-delay-min-change {
+                type uint32 {
+                  range "0..500000";
+                }
+                units "microseconds";
+                default "1000";
+                description
+                  "Minimum change, in microseconds, in Unidirectional minimum delay metric."; 
+              }
+            }
+          }
+
+          container  advertisement-accelerated {
+            description
+              "Accelerated advertisements of TE performance metrics.";
+
+            leaf enable {
+              type boolean;
+              default "false";
+              description
+                "Enable/Disable accelerated advertisement of TE performance metrics.";
+            }
+
+            container threshold {
+              description
+                "Thresholds for accelerated advertisements of TE performance metrics.";
+
+              leaf one-way-min-delay {
+                type uint16 {
+                  range "0..100";
+                }
+                default "15";
+                units "percent";
+                description
+                  "Percentage change in Unidirectional minimum delay metric.";
+              }
+
+              leaf one-way-delay-min-change {
+                type uint32 {
+                  range "0..500000";
+                }
+                units "microseconds";
+                default "500";
+                description
+                  "Minimum change, in microseconds, in Unidirectional minimum delay metric.";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping bandwidth-change-threshold {
+    description
+      "Bandwidth threshold configuration grouping";
+
+    container bandwidth-change-threshold {
+      description
+        "Global bandwidth threshold configuration that 
+         applies to all the interfaces.";
+
+      container up-threshold {
+        description
+          "Thresholds for up bandwidth advertisements.";
+
+        leaf up-threshold1 {
+          type uint16 {
+            range "0..100";
+          }
+          default "5";
+          units "percent";
+          description
+            "Percentage of up threshold value for advertisement of bandwidth.";
+        }
+      }
+    
+      container down-threshold {
+        description
+          "Thresholds for down bandwidth advertisements.";
+
+        leaf down-threshold1 {
+          type uint16 {
+            range "0..100";
+          }
+          default "5";
+          units "percent";
+          description
+            "Percentage of down threshold value for advertisement of bandwidth.";
+        }
+      }
+    }
+  }
+
+  grouping igp-bandwidth-distribute-timer {
+    description
+      "Igp timer grouping for bandwidth distribution.";
+   
+    container igp-bandwidth-distribute-timer {
+      description
+        "Igp timer container for bandwidth distribution.";
+
+      leaf igp-bandwidth-distribute-time {
+        type uint32 {
+          range "0..4294967295";
+        }
+        default "15";
+        units "seconds";
+        description
+          "Interval at which igp will distribute bandwidth information in seconds.";
+      }
+    }
+  }
+
+  /* TE globals container data */
+
+  grouping globals-grouping {
+    description
+      "Globals TE system-wide configuration data grouping.";
+    container globals {
+      description
+        "Globals TE system-wide configuration data container.";
+      uses named-admin-groups;
+      uses performance-advertisement-profiles;
+      uses bandwidth-change-threshold;
+      uses igp-bandwidth-distribute-timer;
+    }
+  }
+
+ grouping performance-thresholds {
+    description
+      "Performance thresholds grouping.";
+    container performance-thresholds {
+      description
+        "Performance thresholds container.";
+      uses performance-advertisement-profile;
+  }
+ }
+
+  /**
+   * TE device container data
+   */
+  container te {
+    description
+      "TE global container.";
+      /* TE Global Data */
+      uses globals-grouping;
+      uses interfaces-grouping;
+      uses performance-thresholds;
+  }
+
+
+  container te-state {
+    config false;
+    description
+      "TE global container information.";
+
+    container interfaces {
+      description
+        "Configuration data model for TE interfaces.";
+
+      list interface {
+        key "interface";
+        description
+          "TE interfaces.";
+
+        leaf interface {
+          type leafref {
+             path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          description
+            "TE interface name.";
+        }
+
+        leaf link-index {
+          type uint64; 
+          description
+            "The link identifier represents a unique value, which is
+            locally defined in a router.";
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,491 @@
+module ciena-6500r-system {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-system";
+  prefix system;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-common-exceptions {
+    prefix except;
+  }
+
+  import ciena-ddy-msg {
+    prefix ciena-ddy-msg;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ietf-yang-types {
+    prefix ietf-yang-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's system object for the 6500R platform";
+
+  revision 2021-01-25 {
+    ciena-common-version:string "1.8.0";
+    description
+      "6500R Release 2.3 -
+       Added new rpc cancel restore,
+       Adde a new parameter restore in progress";
+  }
+  revision 2021-01-05 {
+    ciena-common-version:string "1.7.0";
+    description
+      "6500R Release 2.3 -
+       Added support for getting backup information";
+  }
+  revision 2020-12-09 {
+    ciena-common-version:string "1.6.0";
+    description
+      "6500R Release 2.2 -
+       Added support for software version in backup file while performing backup";
+  }
+  revision 2020-10-23 {
+    ciena-common-version:string "1.5.0";
+    description
+      "6500R Release 2.2 - Added system set time support";
+  }
+  revision 2020-10-21 {
+    ciena-common-version:string "1.4.0";
+    description
+      "Added time change notification";
+  }
+  revision 2020-10-16 {
+    ciena-common-version:string "1.3.0";
+    description
+      "6500R Release 2.1-
+       Added secure-erase rpc,
+       Increment the length of database backup file";
+  }
+  revision 2020-10-05 {
+    ciena-common-version:string "1.2.0";
+    description
+      "6500R Release 2.1 - Added foreign spectrum licensing support";
+  }
+  revision 2019-05-14 {
+    ciena-common-version:string "1.1.0";
+    description
+      "6500R Release 1.0-
+       Added container: member";
+  }
+  revision 2019-04-30 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500R Release 1.0-
+       Added container: system
+       Added alarmable identity
+       Added reset-to-factory-default rpc";
+  }
+
+  identity backup-restore-failure {
+    base except:exception;
+    description
+      "An exception type for backup and restore RPCs";
+  }
+
+  identity alarmable {
+    base ciena-ddy-msg:ddm-importance;
+    description
+      "If this service fails, this indicates it should be alarmed with
+       a 'Software service failed' alarm.";
+  }
+
+  container system {
+    description
+      "6500R System configuration data and operational data.";
+    container id {
+      description
+        "System identification attributes.";
+      container site {
+        description
+          "System site attributes.";
+        leaf id {
+          type uint16 {
+            range "0..65535";
+          }
+          description
+            "An integer to uniquely identify the site where this 6500R is
+             located. This is used to help group devices together with terminal
+             equipment. All equipment in a common site should share the
+             same site identifier. ";
+        }
+
+        leaf name {
+          type string {
+            length "0..32";
+          }
+          description
+            "The name for the site where the device is located.";
+        }
+
+        leaf description {
+          type string {
+            length "0..64";
+          }
+          description
+            "The site description";
+        }
+
+        leaf latitude {
+          type decimal64 {
+            fraction-digits 6;
+            range "-90.0 .. 90.0";
+          }
+          description
+            "Geographic coordinate for the site location in degrees.";
+        }
+
+        leaf longitude {
+          type decimal64 {
+            fraction-digits 6;
+            range "-180.0 .. 180.0";
+          }
+          description
+            "Geographic coordinate for the site location in degrees.";
+        }
+
+        leaf address {
+          type string {
+            length "0..128";
+          }
+          description
+            "The street address of the site.";
+        }
+      }
+
+      container member {
+        description
+          "6500R system member attributes.";
+        leaf name {
+          type string {
+            length "0..32";
+          }
+          description
+            "A name for the 6500R chassis.";
+        }
+      }
+    }
+
+    container diagnostic {
+      config false;
+      leaf-list failed-domains {
+        type string;
+        description
+          "List of failed domains in this deployment.  Failed domains
+           have failed to start and have exceeded the max number of
+           relaunches by directory services.";
+      }
+    }
+
+    container backups {
+      config false;
+      list backup {
+        key "filename";
+        leaf filename {
+          type string {
+            length "1..512";
+          }
+          description
+            "Name of the backup file. This is placed in the
+             public backups directory on success";
+        }
+
+        leaf restore-in-progress {
+          type boolean;
+          description
+            "Is the database backup is selected to restore onto a shelf?";
+        }
+
+        leaf member-name {
+          type leafref {
+            path "../../../id/member/name";
+          }
+          description
+            "A name for the 6500R chassis.";
+        }
+
+        leaf timestamp {
+          type ietf-yang-types:date-and-time;
+          description
+            "The database backup performed date and time ";
+        }
+
+        leaf software-version {
+          type string;
+          description
+            "Actual software release version that is currently running and is expected to match active-version after an upgrade is completed.
+             Format: RLS-xx.yy.zz.bbbb";
+        }
+
+        leaf mac-address {
+          type ietf-yang-types:mac-address;
+          description
+            "The MAC address of system";
+        }
+
+        leaf user-name {
+          type string;
+          description
+            "Name of user who created the backup";
+        }
+      }
+    }
+
+    list features {
+      key "feature";
+      description
+        "List of optional features supported on this system.  There
+         are modeled as name/value pairs for forwards compatibility.
+         Please refer to product documentation for list of supported
+         features";
+      leaf feature {
+        type string;
+        description
+          "Feature name";
+      }
+
+      leaf enabled {
+        type boolean;
+        description
+          "Is the feature enabled?";
+      }
+    }
+
+    container spectrum-licensing {
+      description
+        "Displays status of spectrum licensing";
+      leaf local-used {
+        type uint32;
+        default "0";
+        description
+          "Number of 6.25 GHz spectrum licence units used locally";
+      }
+
+      leaf network-available {
+        type uint32;
+        config false;
+        description
+          "Number of unused 6.25 GHz spectrum licence units available on the licence server.
+           This is used for long term trending and is not intended to reflect the instantaneous
+           availability.";
+      }
+
+      leaf last-nw-avail-refresh {
+        type ietf-yang-types:date-and-time;
+        config false;
+        description
+          "Time of the last network-available count refresh";
+      }
+    }
+  }
+
+  rpc reset-to-factory-default {
+    description
+      "Reset the device to default settings.  This is a traffic
+       affecting operation in which the database and filesystems
+       are cleaned and the device is restarted.";
+    input {
+      leaf confirm {
+        type enumeration {
+          enum "traffic-impacting-operation";
+        }
+        mandatory true;
+        description
+          "Confirmation string to safeguard against accidental
+           reset and traffic impact.";
+      }
+
+      leaf clean-all {
+        type boolean;
+        default "true";
+        description
+          "Flag that indicates if all data is to be erased.  If set
+           to false, the software load images are not removed, but the
+           system configuration is cleared.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc secure-erase {
+    description
+      "Reset the device using secure erase. This is a traffic
+       affecting operation in which the database and filesystems
+       are cleaned, and restarted after the operation is complete depending upon whether the request is to restart, or not. ";
+    input {
+      leaf confirm {
+        type enumeration {
+          enum "traffic-impacting-operation";
+        }
+        mandatory true;
+        description
+          "Confirmation string to safeguard against accidental
+           reset and traffic impact.";
+      }
+
+      leaf slot {
+        type string;
+        mandatory true;
+        description
+          "Which slot is to be cleaned.";
+      }
+
+      leaf no-boot {
+        type boolean;
+        mandatory true;
+        description
+          "Flag that indicates if a card should be rebooted after the secure-erase operation is complete.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc database-backup {
+    description
+      "Save the current database to a tarred file in the public
+       backups directory.";
+    input {
+      leaf filename {
+        type string {
+          length "1..64";
+        }
+        default "backup.tar";
+        description
+          "Name of the file to backup to.  This will be placed in the
+           public backups directory on success";
+      }
+
+      leaf add-member-name {
+        type boolean;
+        default "false";
+        description
+          "Flag to indicate if a provisioned member name should be
+           prepended to the filename.  If so, the filename will be in
+           the format of [<member-name>-][<timestamp>-]filename
+           depending on the values of the other optional fields";
+      }
+
+      leaf add-timestamp {
+        type boolean;
+        default "false";
+        description
+          "Flag to indicate if a provisioned site name should be
+           prepended to the filename.  If so, the filename will be in
+           the format of [<member-name>-][<timestamp>-]filename
+           depending on the values of the other optional fields";
+      }
+
+      leaf add-swver {
+        type boolean;
+        default "false";
+        description
+          "Flag to indicate if a RLS software version should be
+           prepended to the filename.  If so, the filename will be in
+           the format of [<member-name>-][<timestamp>-][<swver>-]filename
+           depending on the values of the other optional fields";
+      }
+    }
+
+    output {
+      leaf filename {
+        type string;
+        description
+          "Name of the file the backup was saved to.";
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc database-restore {
+    description
+      "Take a database from the public backups directory and untar its
+       contents to a local restore directory, ready to be committed";
+    input {
+      leaf filename {
+        type string;
+        default "backup.tar";
+        description
+          "Name of the backup to restore from.  This must be in the
+           public backups directory and must be the full filename
+           including extension.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-system-time {
+    description
+      "Set a new system time in UTC timezone.
+       Supported time string format: YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DD or HH:MM:SSZ.
+       Only UTC is supported";
+    input {
+      leaf time {
+        type ietf-yang-types:date-and-time;
+        description
+          "New system time to be set.
+           Supported command format : YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DD or HH:MM:SSZ";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc database-commit {
+    description
+      "Checks to see if a database of the proper version is present
+       and if so will clean the current database and restart the services
+       to restore the database.  Current database will be backed up in
+       the public backups directory as site-shelf-timestamp-revert.tar
+       in case there is a problem with the commit action.";
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc database-cancel {
+    description
+      "After selecting a backup file to restore onto a shelf, this allows user to cancel or back out it.
+       This way user can cancel and does not need to commit the restore file once it is chosen for restore.
+       It will clean the current database.";
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  notification time-change {
+    description
+      "This notification is sent to report that the time has changed.";
+    leaf time {
+      type ietf-yang-types:date-and-time;
+      description
+        "Time change";
+    }
+  }
+}

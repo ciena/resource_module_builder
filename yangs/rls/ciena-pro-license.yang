@@ -1,0 +1,906 @@
+module ciena-pro-license {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-license";
+  prefix ciena-pro-license;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform license model";
+
+  revision 2021-05-17 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Introduced license-client-registration-secret-with-id rpc";
+  }
+  revision 2018-02-13 {
+    description
+      "Initial version";
+  }
+
+  container license {
+    leaf name {
+      type string {
+        length "1..63";
+      }
+      description
+        "Management name";
+    }
+
+    container license-client {
+      leaf registration-id {
+        type string {
+          length "0..63";
+        }
+        config true;
+        description
+          "The license registration id. The default is empty.";
+      }
+
+      uses ciena-6500r-types:admin-state;
+
+      leaf operation-state {
+        type enumeration {
+          enum "Enabled" {
+            description
+              "Service is Enabled.";
+          }
+          enum "Disabled" {
+            description
+              "Service is Disabled.";
+          }
+        }
+        description
+          "Identify the operation state";
+      }
+
+      leaf compliance-state {
+        type enumeration {
+          enum "not compliant" {
+            value 0;
+          }
+          enum "compliant" {
+            value 1;
+          }
+        }
+        default "compliant";
+        config false;
+        description
+          "The compliant state indicates all the subsystems are in working condition and all the necessary licenses are presented.";
+      }
+
+      list inventory {
+        key "index";
+        config false;
+        max-elements 200;
+        description
+          "All the license feature inventory list.";
+        leaf index {
+          type uint32;
+          config false;
+          description
+            "Unique index, read-only attribute.";
+        }
+
+        leaf source {
+          type enumeration {
+            enum "pre-installed" {
+              value 0;
+              description
+                "Pre-Installed License";
+            }
+            enum "local" {
+              value 1;
+              description
+                "Locally Held License";
+            }
+            enum "pre-authorized" {
+              value 2;
+              description
+                "Pre-Authorized License";
+            }
+            enum "server" {
+              value 3;
+              description
+                "License Served from an External Server";
+            }
+            enum "unknown" {
+              value 4;
+            }
+          }
+          default "unknown";
+          config false;
+          description
+            "The field provides the information about where the license data is from. The default is unknown.";
+        }
+
+        leaf feature {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature name.";
+        }
+
+        leaf version {
+          type string {
+            length "1..15";
+          }
+          config false;
+          description
+            "The license feature version.";
+        }
+
+        leaf description {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature description.";
+        }
+
+        leaf host-id {
+          type string {
+            length "1..63";
+          }
+          config false;
+          description
+            "This field is host id. If it is floating, it means this license feature can be acquired by any device. For node-locked license feature, this field contains a device id string.";
+        }
+
+        leaf type {
+          type enumeration {
+            enum "trial" {
+              value 0;
+            }
+            enum "served" {
+              value 1;
+            }
+            enum "pre-authorized" {
+              value 2;
+            }
+            enum "served-external" {
+              value 3;
+            }
+            enum "unknown" {
+              value 4;
+            }
+          }
+          default "unknown";
+          config false;
+          description
+            "This field is the type of license feature. A trial license type expires in certain time period. The default is empty.";
+        }
+
+        leaf count {
+          type uint32;
+          config false;
+          description
+            "The license feature count value.";
+        }
+
+        leaf checkedout-count {
+          type uint32;
+          config false;
+          description
+            "The license feature checked out count value.";
+        }
+
+        leaf expiration-date {
+          type string {
+            length "1..31";
+          }
+          config false;
+          description
+            "The license expiry date.";
+        }
+
+        leaf time-remaining {
+          type ciena-6500r-types:DECIMAL;
+          config false;
+          description
+            "The license feature remaining time to expiry.";
+        }
+
+        leaf issuer {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature issuer name.";
+        }
+
+        leaf issued-date {
+          type string {
+            length "1..31";
+          }
+          config false;
+          description
+            "The license feature issued date.";
+        }
+
+        leaf notice {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature notice string.";
+        }
+
+        leaf state {
+          type enumeration {
+            enum "valid" {
+              value 0;
+            }
+            enum "expired" {
+              value 1;
+            }
+            enum "invalid" {
+              value 2;
+            }
+            enum "unknown" {
+              value 3;
+            }
+          }
+          default "unknown";
+          config false;
+          description
+            "The license feature current status information. The default is empty.";
+        }
+      }
+
+      list arrears {
+        key "index";
+        config false;
+        max-elements 200;
+        description
+          "List of licenses in arrears resulting in a License Violation Alarm.";
+        leaf index {
+          type uint32;
+          config false;
+          description
+            "Unique index, read-only attribute.";
+        }
+
+        leaf feature {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature name.";
+        }
+
+        leaf description {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license feature description.";
+        }
+
+        leaf installed-count {
+          type uint32;
+          config false;
+          description
+            "Count of permanent licenses activated.";
+        }
+
+        leaf checkedout-count {
+          type uint32;
+          config false;
+          description
+            "Count of licenses currently in use.";
+        }
+
+        leaf arrear-count {
+          type uint32;
+          config false;
+          description
+            "Count of licenses currently in arrears.";
+        }
+      }
+    }
+
+    container license-server {
+      description
+        "RLS external license server information";
+      leaf host-address {
+        type string {
+          length "0..256";
+          pattern ".+:[0-9]+";
+        }
+        description
+          "The license server host name and port number, separated by a colon.";
+      }
+
+      leaf protocol {
+        type enumeration {
+          enum "https" {
+            value 0;
+          }
+          enum "http" {
+            value 1;
+          }
+        }
+        default "https";
+        description
+          "The protocol to communicate with the external license server. The default is https.";
+      }
+
+      leaf num-license-servers {
+        type uint32;
+        config false;
+        description
+          "The number of license servers that the license client communicates. The default is 0.";
+      }
+
+      leaf sync-interval {
+        type uint32 {
+          range "15 .. 1440";
+        }
+        default "15";
+        description
+          "Time (in minutes) to sync with the external license server: 15 min is default; Once a day (1440min) max allowed.";
+      }
+    }
+
+    container license-files {
+      list downloaded-file {
+        key "index";
+        config false;
+        max-elements 50;
+        leaf index {
+          type uint32;
+          config false;
+          description
+            "Unique id, read-only attribute.";
+        }
+
+        leaf date-and-time {
+          type string {
+            length "1..31";
+          }
+          config false;
+          description
+            "The license file downloaded date and time, in string format.";
+        }
+
+        leaf filename {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license file name";
+        }
+
+        leaf size {
+          type uint32;
+          config false;
+          description
+            "The license file size";
+        }
+      }
+
+      list processed-file {
+        key "index";
+        config false;
+        max-elements 50;
+        leaf index {
+          type uint32;
+          config false;
+          description
+            "Unique id, read-only attribute.";
+        }
+
+        leaf date-and-time {
+          type string {
+            length "1..31";
+          }
+          config false;
+          description
+            "The license file processed date and time, in string format.";
+        }
+
+        leaf filename {
+          type string {
+            length "1..127";
+          }
+          config false;
+          description
+            "The license file name";
+        }
+
+        leaf size {
+          type uint32;
+          config false;
+          description
+            "The license file size";
+        }
+      }
+    }
+  }
+
+  rpc license-file-download {
+    description
+      "Perform license file download";
+    input {
+      leaf remote-host {
+        type string {
+          length "1..63";
+        }
+        description
+          "Remote server name or IP address";
+      }
+
+      leaf download-mode {
+        type enumeration {
+          enum "none" {
+            value 0;
+          }
+          enum "tftp" {
+            value 1;
+          }
+          enum "ftp" {
+            value 2;
+          }
+          enum "sftp" {
+            value 3;
+          }
+          enum "scp" {
+            value 4;
+          }
+          enum "http" {
+            value 5;
+          }
+          enum "https" {
+            value 6;
+          }
+        }
+        description
+          "The protocol to access server, supported protcols are ftp, sftp, http";
+      }
+
+      leaf remote-path {
+        type string {
+          length "0..255";
+        }
+        description
+          "The remote host file system path that stores license file";
+      }
+
+      leaf login-id {
+        type string {
+          length "1..31";
+        }
+        description
+          "The user name string to authenticate remote server.";
+      }
+
+      leaf password {
+        type string {
+          length "1..31";
+        }
+        description
+          "The password for the username.";
+      }
+
+      leaf filename {
+        type string {
+          length "0..128";
+        }
+        description
+          "The license file name that is going to be downloaded, which includes the full path on the remote server.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-file-delete {
+    description
+      "Perform deletion of already downloaded license file";
+    input {
+      leaf filename {
+        type string {
+          length "0..128";
+        }
+        description
+          "The license file name that has already been downloaded.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-client-activate {
+    description
+      "Perform activation of license file";
+    input {
+      leaf filename {
+        type string {
+          length "0..128";
+        }
+        description
+          "The license file name that has already been downloaded on RLS, just file name.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-client-acquire {
+    description
+      "Perform acquisition of a license feature.";
+    input {
+      leaf feature-name {
+        type string {
+          length "0..96";
+        }
+        description
+          "The license feature name that is going to be acquired.";
+      }
+
+      leaf feature-version {
+        type string {
+          length "0..8";
+        }
+        description
+          "The license feature version that is going to be acquired.";
+      }
+
+      leaf feature-count {
+        type uint32 {
+          range "0 .. 999";
+        }
+        description
+          "The license feature count that is going to be acquired.";
+      }
+
+      leaf feature-src-pid {
+        type uint32;
+        description
+          "The acquirer's process id (or unique id) that can identify the origin of the acquisition action.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+    }
+  }
+
+  rpc license-client-release {
+    description
+      "Perform release of an acquired license feature.";
+    input {
+      leaf feature-name {
+        type string {
+          length "0..96";
+        }
+        description
+          "The license feature name that is going to be released.";
+      }
+
+      leaf feature-version {
+        type string {
+          length "0..8";
+        }
+        description
+          "The license feature version that is going to be released.";
+      }
+
+      leaf feature-src-pid {
+        type uint32;
+        description
+          "The original process id (or unique id) that did the acquisition action.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+    }
+  }
+
+  rpc license-client-registration-secret-with-id {
+    description
+      "Set both license keycode string and registration Id";
+    input {
+      leaf registration-id {
+        type string {
+          length "0..64";
+        }
+        description
+          "License client registration id";
+      }
+
+      leaf secret-keycode {
+        type string {
+          length "0..64";
+        }
+        description
+          "The license keycode that will be verified against the input registation-id.";
+      }
+
+      leaf validate-only {
+        type boolean;
+        default "false";
+        description
+          "Indicate if this RPC is only for validation";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc license-client-registration-secret {
+    description
+      "Performs checks against the set registration id to enable license dormancy feature.";
+    input {
+      leaf secret-keycode {
+        type string {
+          length "0..64";
+        }
+        description
+          "The license keycode that will be verified against the set registation-id.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-client-is-license-compliant {
+    description
+      "Performs checks against the client and returns the current compliant state.";
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is complaint; non-zero is non-compliant";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-client-is-dormancy-set {
+    description
+      "Performs checks against the client and returns if the dormancy state is enabled.";
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is complaint; non-zero is non-compliant";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-file-generate-request {
+    description
+      "Generate a license capability file.";
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-server-clear {
+    description
+      "Clear all license servers configured.";
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+    }
+  }
+
+  rpc license-client-server-sync-now {
+    description
+      "Performs a license feature sync with the external license server if configured.
+       Interface for External Yang (NEW for 2.1)";
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is sync-complete; non-zero is failed sync - additional info in return string";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc license-client-query-server-available-count {
+    description
+      "Queries the configured license server for available counts for a specified feature.";
+    input {
+      leaf feature-name {
+        type string {
+          length "1..127";
+        }
+        description
+          "The license feature name that is going to be queried.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 990";
+        }
+        description
+          "return code: 0 is successfull comms with the externalserver.
+                        non-zero is failed comms - additional info in return string";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+
+      leaf available-count {
+        type uint32;
+        description
+          "Count of Available Licenses in the external server.
+           Value will be zero incase of failed comms with the server.";
+      }
+    }
+  }
+}

@@ -1,0 +1,704 @@
+module ciena-openconfig-if-ethernet-port {
+    namespace "http://ciena.com/ns/yang/ciena-openconfig-if-ethernet-port";
+    prefix cn-oc-if-eth;
+
+    import openconfig-interfaces {
+        prefix oc-if;
+    }
+
+    import ciena-openconfig-interfaces {
+        prefix cn-oc-if;
+    }
+
+    import ietf-yang-types {
+        prefix "ietf-yt";
+    }
+
+    import ciena-packet-otn-port {
+        prefix cn-pkt-otn-port;
+    }
+
+    import ciena-packet-ptp {
+        prefix cn-pkt-ptp;
+    }
+
+    import ciena-packet-typedefs {
+       prefix cntypes;
+    }
+
+    import ciena-flexe {
+       prefix ciena-flexe;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This module contains the Ciena proprietary YANG
+         augmentations to the standard openconfig-interface
+         YANG module for IEEE 802.3 CSMA/CD Ethernet port
+         definitions.
+
+         Copyright (c) 2022 Ciena Corporation.  All rights reserved.
+
+         All information contained herein is, and remains
+         the property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained from
+         Ciena Corporation.";
+
+    revision "2022-08-09" {
+       description
+          "Added 'control' as an ownership option.";
+    }
+
+    revision "2022-04-08" {
+       description
+          "Changed type of auto-negotiation leaf from boolean to enum
+          to include auto option.";
+    }
+
+    revision "2021-12-16" {
+        description
+            "Added flexe-protection-group for flexe-mac to flexe-channel binding.
+             Added auto-negotiation operational state.";
+    }
+
+    revision "2020-08-20" {
+        description
+            "Added ownership operational state.";
+    }
+
+    revision "2020-04-05" {
+        description
+            "Added ettp-mode for flexe-mac and l1-cross-connects.
+             Added flexe-channel for flexe-mac to flexe-channel binding.
+             Added 200 Gb and 400Gb in port-speed leaf.";
+    }
+
+    revision "2019-11-02" {
+        description
+            "Changing leaf 'port-id' to 'otn-port-id' for clarity";
+    }
+
+    revision "2019-06-12" {
+        description
+            "Augment of ettp stats for richer set of elements";
+    }
+
+    revision "2018-11-06" {
+        description
+            "Added PTP id, OTN-port port-id and channel-id linkrefs to
+             the openconfig interface config when cn-oc-if:type is ettp.
+             Supporting forward-error-correction config in ettp with default
+             set to auto.";
+        reference
+            "";
+    }
+
+    revision "2018-01-18" {
+        description
+            "Initial version";
+        reference
+            "";
+    }
+
+    typedef ettp-ownership {
+       type enumeration {
+          enum data {
+             description
+                "ETTP as a data interface.";
+          }
+          enum local-management {
+             description
+                "ETTP as a local-management interface.";
+          }
+          enum delegated {
+             description
+                "ETTP as a delegated interface.";
+          }
+          enum control {
+             description
+                "ETTP as a control interface for offload and/or interconnecting clustered components.";
+          }
+          enum not-owned {
+             description
+                "ETTP is not owned.";
+          }
+       }
+    }
+    
+    augment "/oc-if:interfaces/"
+          + "oc-if:interface/"
+          + "oc-if:config" {
+        when "cn-oc-if:type = 'ettp'";
+
+        leaf mode {
+            description
+                "Determines the configured mode of this ettp (auto/specific).";
+            type enumeration {
+                enum auto {
+                     description
+                         "This is the default port mode whereby the mode of
+                          the port is determined and assigned by the system.";
+                }
+                enum rj45 {
+                    description
+                        "Connector is standardized as the IEC 60603-7
+                        8P8C modular connector with eight conductors.";
+                }
+                enum sfp {
+                    description
+                         "Small form-factor pluggable (SFP) connector.";
+                }
+
+             }
+             default auto;
+        }
+
+        leaf link-flap-detect {
+            type boolean;
+            default "false";
+            description
+                "Enable the detection of link flap. Only when it is enabled
+                 do the following leaves apply. If disabled, the leaves and their
+                 values stay, but have have no impact on detection of flap.";
+        }
+
+        leaf link-flap-count {
+            type uint8;
+            default 5;
+            description
+                "The number of times the link can flap before the device
+                 declares the link to be down. This is measured over the
+                 time period defined by the next leaf link-flap-detect-time.
+                 Once down, the device will wait for link-flap-hold-time before
+                 trying to bring the link back up.";
+        }
+
+        leaf link-flap-detect-time {
+            type uint32 {
+                range "1..600";
+            }
+            default 10;
+            description
+                "The amount of time in seconds the device will count the
+                 number of times the link has flapped, before declaring the
+                 link to be down.";
+        }
+
+        leaf link-flap-hold-time {
+            type uint32 {
+                range "1..600";
+            }
+            default 300;
+            description
+                "The amount of time in seconds the device will hold the
+                 link in down state before trying to bring it up again.";
+        }
+
+        leaf forward-error-correction
+        {
+           type cntypes:ettp-fec-enum;
+           description
+              "Forward error correction";
+           default auto;
+        }
+
+        leaf advertised-duplex {
+            type bits {
+                bit full;
+                bit half;
+            }
+            description
+                "The duplex mode this port supports and advertised
+                 to the other end.";
+        }
+
+        leaf advertised-port-speed {
+            type bits {
+                bit ten-mega-bits;
+                bit hundred-mega-bits;
+                bit one-giga-bits;
+                bit ten-giga-bits;
+                bit twenty-five-giga-bits;
+            }
+            description
+                "The port-speed this port supports and advertised to the other end.";
+        }
+
+        leaf advertised-flow-control-on {
+            type bits {
+                bit asym-tx;
+                bit asym-rx;
+                bit sym;
+            }
+            description
+                "The advertised flow control models this port
+                 supports. If nothing or a blank string is specified then it means
+                 advertised-flow-control is off";
+        }
+
+        leaf duplex {
+            description
+                "Determines the duplex mode of this ettp."; 
+            type enumeration {
+                enum half;
+                enum full;
+            }
+            default full;
+        }
+
+        leaf port-speed {
+            type enumeration {
+                enum auto {
+                    description
+                        "Port Speed is auto";
+                }
+                enum 10Mb {
+                    description
+                        "Port Speed is 10Mb";
+                }  
+                enum 100Mb {
+                    description
+                        "Port Speed is 100Mb";
+                }
+                enum 1Gb {
+                    description
+                        "Port Speed is 1Gb";
+                }
+                enum 10Gb {
+                    description
+                        "Port Speed is 10Gb";
+                }
+                enum 25Gb {
+                    description
+                        "Port Speed is 25Gb";
+                }
+                enum 40Gb {
+                    description
+                        "Port Speed is 40Gb";
+                }
+                enum 100Gb {
+                    description
+                        "Port Speed is 100Gb";
+                }
+                enum 200Gb {
+                    description
+                        "Port Speed is 200Gb";
+                }
+                enum 400Gb {
+                    description
+                        "Port Speed is 400Gb";
+                }
+            }
+            description
+                "Set the port speed for ethernet ports. The value 'auto' enables
+                 automatic port speed detection. If the leaf is not configured,
+                 the port speed of the interface is an internal operational value
+                 dependent on the platform.";
+        }
+
+        leaf flow-control {
+            type enumeration {
+                enum off;
+                enum asym-tx;
+                enum asym-rx;
+                enum sym;
+            }
+            description
+                "Configures the ports flow control operation.";
+        }
+
+        leaf inter-packet-gap {
+            type uint32 {
+                range "1..12";
+            }
+            units bytes;
+            description
+                "Ethernet devices must allow a minimum idle period between
+                 transmission of Ethernet packets known as the interpacket
+                 gap (IPG).";
+        }
+
+        leaf auto-negotiation {
+            type enumeration {
+                enum auto {
+                    description
+                        "auto-negotiation is auto, enables the auto-negotiation
+                         on the port if it is supported else it is operationally
+                         disabled";
+                }
+                enum true {
+                    description
+                        "auto-negotiation is true, enables the auto-negotiation
+                         on the port";
+                }
+                enum false {
+                    description
+                        "auto-negotiation is false, disables the auto-negotiation
+                         on the port";
+                }
+            }
+            default auto;
+            description
+                 "Change the auto-negotiation settings for the port";
+        }
+
+        leaf terminal-loopback {
+            type boolean;
+            description
+                 "Loopback in the terminal direction. Traffic due to egress the interface is looped back in the ingress direction";
+        }
+
+        leaf facility-loopback {
+            type boolean;
+            description
+               "Loopback in the facility direction. Traffic ingressing the interface is looped back in the egress direction";
+        }
+
+        leaf license-activate {
+            type boolean;
+            description
+                "A boolean indicating if port licensing is activated or not.";
+        }
+
+        leaf otn-port-id {
+            type leafref {
+                path "/cn-pkt-otn-port:otn-ports/cn-pkt-otn-port:ports/cn-pkt-otn-port:port-id";
+            }
+            description
+                "Unique, access identifier string of the port in '<slot>/<port>' format.";
+        }
+
+        leaf offload-activate {
+            type boolean;
+            description
+                "A boolean indicating if port offload for path of light is activated or not.";
+        }
+
+        leaf channel-id {
+            type string;
+            description
+                "Channel number or ODU4 tributary number within the parent OTU port object.";
+        }
+
+        leaf ptp-id {
+            type leafref {
+                path "/cn-pkt-ptp:ptps/cn-pkt-ptp:ptp/cn-pkt-ptp:ptp-id";
+            }
+            description
+                "Unique, access identifier string of the PTP (e.g., '1/1').";
+        }
+
+        leaf ownership {
+            type ettp-ownership;
+
+            default data;
+
+            description
+                "Designation of ETTP ownership role.";
+        }
+
+        leaf ettp-mode {
+            description
+                "Determines the configured ettp-mode of this ettp (standard-ethernet/other).";
+            type enumeration {
+                enum standard-ethernet {
+                    description
+                        "This is the default ETTP mode whereby the mode of ETTP is standard ethernet.";
+                }
+                enum l1-cross-connect {
+                    description
+                        "ETTP as a L1 cross-connect interface.";
+                }
+                enum flexe-mac {
+                    description
+                        "ETTP as a FlexE MAC interface.";
+                }
+            }
+            default standard-ethernet;
+        }
+
+        leaf flexe-channel {
+            type leafref {
+                path "/ciena-flexe:flexe-channels/ciena-flexe:flexe-channel/ciena-flexe:name";
+            }
+            must "../ettp-mode = 'flexe-mac'" {
+                error-message
+                    "Flexe-channel can be set only on interfaces of ettp-mode 'flexe-mac'.";
+            }
+            description
+                "Identifier of the FlexE Channel bound to the ETTP.";
+        }
+
+        leaf flexe-protection-group {
+            type leafref {
+                path "/ciena-flexe:flexe-protection-groups/ciena-flexe:flexe-protection-group/ciena-flexe:name";
+            }
+            must "../ettp-mode = 'flexe-mac'" {
+                error-message
+                    "flexe-protection-group can be set only on interfaces of ettp-mode 'flexe-mac'.";
+            }
+            description
+                "Identifier of the FlexE Protection Group bound to the ETTP.";
+        }
+    } // end augment "/oc-if:interfaces/oc-if:interface/oc-if:config"
+
+    // operational state parameters for Ethernet interfaces
+    augment "/oc-if:interfaces/"
+          + "oc-if:interface/"
+          + "oc-if:state" {
+        when "../oc-if:config/cn-oc-if:type = 'ettp'";
+
+        leaf mode {
+            type enumeration {
+                enum rj45 {
+                    description
+                        "Connector is standardized as the IEC 60603-7
+                        8P8C modular connector with eight conductors.";
+                }
+                enum sfp {
+                    description
+                        "Small form-factor pluggable (SFP) connector.";
+                }
+            }
+            description
+                "The (manual) configured mode on the port.";
+        }
+
+        leaf operational-state {
+            type enumeration {
+                enum linkflap;
+            }
+        }
+
+        leaf duplex {
+            description
+                "Determines the duplex mode of this ettp.";
+            type enumeration {
+                enum half;
+                enum full;
+            }
+        }
+
+        leaf flow-control {
+            type enumeration {
+                enum unknown;
+                enum off;
+                enum asym-tx;
+                enum asym-rx;
+                enum sym;
+            }
+            description
+                "Shows ports flow control configuration.";
+        }
+
+        leaf port-type {
+            type enumeration {
+                enum ethernet;
+                enum fast-ethernet;
+                enum gig-ethernet;
+                enum lag-port;
+                enum unknown;
+                enum gig-hundred-fx;
+                enum triple-speed;
+                enum ten-gig-ethernet;
+                enum hundred-gig-ethernet;
+                enum gig-ten-gig-ethernet;
+            }
+            description
+                "The port type for the port";
+        }
+
+        leaf speed {
+            type ietf-yt:gauge64;
+            units "bits/second";
+            description
+                "An estimate of the interface's current bandwidth in bits
+                 per second.  For interfaces that do not vary in
+                 bandwidth or for those where no accurate estimation can
+                 be made, this node should contain the nominal bandwidth.
+                 For interfaces that have no concept of bandwidth, this
+                 node is not present.";
+            reference
+              "RFC 2863: The Interfaces Group MIB -
+                         ifSpeed, ifHighSpeed";
+        }
+
+        leaf license-status {
+            type enumeration {
+                 enum acquired;
+                 enum not-acquired;
+                 enum expired;
+            }
+            description
+               "The port license acquire status";
+        }
+
+        leaf link-flap-state {
+            type enumeration  {
+                enum none;
+                enum link-flap;
+            }
+            description
+              "ETTP link-flap state. None implies no current link flap.";
+        }
+
+        leaf ownership {
+            type ettp-ownership;
+
+            description
+                "ETTP ownership operational-state";
+        }
+
+        leaf auto-negotiation {
+            type boolean;
+            description
+                 "ETTP auto-negotiation operational state.";
+        }
+    } // end augment "/oc-if:interfaces/oc-if:interface/oc-if:state"
+
+    // operational statistics parameters for Ethernet interfaces
+    augment "/oc-if:interfaces/"
+          + "oc-if:interface/"
+          + "oc-if:state/"
+          + "oc-if:counters" {
+        when "../../oc-if:config/cn-oc-if:type[.='ettp' or .='lag']";
+
+        leaf in-discards-octets {
+           type ietf-yt:counter32;
+           description
+              "The number of inbound octets that were chosen to be
+              discarded even though no errors had been detected to
+              prevent their being deliverable to a higher-layer
+              protocol.  One possible reason for discarding such a
+              octets could be to free up buffer space.";
+        }
+
+        leaf out-discards-octets {
+           type ietf-yt:counter32;
+           description
+              "The number of outbound octets that were chosen to be
+              discarded even though no errors had been detected to
+              prevent their being transmitted.  One possible reason
+              for discarding such a octets could be to free up buffer
+              space.";
+        }
+
+        leaf link-flap-events {
+           type ietf-yt:counter32;
+           description
+              "The number of link-flap events which occurred for an ETTP.";
+        }
+
+        leaf in-undersize-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be undersized.";
+        }
+
+        leaf in-fragment-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be less than 64 octets in size.";
+        }
+
+        leaf in-64-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be 64 octets in size";
+        }
+
+        leaf in-65-to-127-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 65 to 127 octets in size";
+        }
+
+        leaf in-128-to-255-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 128 to 255 octets in size";
+        }
+
+        leaf in-256-to-511-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 256 to 511 octets in size";
+        }
+
+        leaf in-512-to-1023-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 512 to 1023 octets in size";
+        }
+
+        leaf in-1024-to-1518-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 1024 to 1518 octets in size";
+        }
+        leaf in-1519-to-2047-octet-pkts {
+           type ietf-yt:counter64;
+           description "The number of inbound packets that were deemed to be from 1519 to 2047 octets in size";
+        }
+
+        leaf in-2048-to-4095-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 2048 to 4095 octets in size";
+        }
+
+        leaf in-4096-to-9216-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 4096 to 9216 octets in size";
+        }
+
+        leaf out-1519-to-2047-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of outbound packets that were deemed to be from 1519 to 2047 octets in size";
+        }
+
+        leaf out-2048-to-4095-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of outbound packets that were deemed to be from 2048 to 4095 octets in size";
+        }
+
+        leaf out-4096-to-9216-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of outbound packets that were deemed to be from 4096 to 9216 octets in size";
+        }
+
+        leaf in-oversize-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be more than 9216 octets in size";
+        }
+        leaf in-jabber-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be more than maximum frame size allowed";
+        }
+
+        leaf in-crc-error-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be have crc errors";
+        }
+
+    } // end augment "/oc-if:interfaces/oc-if:interface/oc-if:state/oc-if:statistics"
+}

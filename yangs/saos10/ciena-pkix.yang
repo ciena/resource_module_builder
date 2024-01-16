@@ -1,0 +1,393 @@
+module ciena-pkix {
+  namespace "http://www.ciena.com/ns/yang/ciena-pkix";
+  prefix pkix;
+
+  import ciena-pkix-types {
+    prefix pkix-types;
+  }
+
+  import ciena-packet-typedefs {
+    prefix cntypes;
+  }
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines the nodes for Public Key Infrastructure
+     (PKI) Security Certificates CA (Certificate Authority) and CRL
+     (Certificate Revocation List) for the NETCONF protocol.
+     
+     Copyright (c) 2016-2022 Ciena Corporation.  All rights reserved.
+     
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision   2020-10-14  {
+    description
+      "Adding csr generate event, user to install/uninstall events, and range for cert name lengths
+       Adding default for check-expiry, check-fingerprint, check-ip-host";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision   2020-08-04  {
+    description
+      "Adding uninstalled certificates";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision   2020-01-20  {
+    description
+      "Adding list of acceptable fingerprints.
+       Adding next-update in crl";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision   2019-12-20  {
+    description
+      "Adding list of acceptable ips/hostnames and updating the
+      description text for container pkix";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision   2018-05-01  {
+    description
+      "Update to reflect requirements for the 10.1 release";
+    reference
+      "No specific reference; standard not available.";
+  }
+  revision 2017-10-18 {
+    description
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  container pkix {
+    description
+      "PKIX management configuration data for peer authentication";
+    container peer-auth-profiles {
+      description
+        "Controls how a peer certificate is validated";
+      list peer-auth-profile {
+        key "peer-auth-profile-name";
+        description
+          "The peer-auth-profile list.";
+        leaf peer-auth-profile-name {
+          type string;
+          description
+            "The user defined peer-auth-profile name.";
+        }
+        leaf check-cert-expiry {
+          type boolean;
+          default "false";
+          description
+            "Enforces the expiry dates provided in the certificates.";
+        }
+        leaf check-ip-host {
+          type boolean;
+          default "false";
+          description
+            "Validates the peer hostname or ip against the certificate subject name";
+        }
+        leaf check-fingerprint {
+          type boolean;
+          default "false";
+          description
+            "Verifies the peer certificate fingerprint against locally configured value";
+        }
+        leaf periodic-reauthorization-max-interval {
+          type uint32 {
+            range "600..86400";
+          }
+          units "seconds";
+          description
+            "The maximum amount of time to wait before 
+             reauthorizing the connection.";
+        }
+        leaf-list ip-host-list{
+          type string;
+          description
+            "List of acceptable server connections. Can be IP or it can be hostname";
+        }
+        leaf-list fingerprint-list{
+          type cntypes:fingerprint;
+          description
+            "List of acceptable certificate fingerprints";
+        }
+      }
+    }
+  }
+
+  /*
+   * Operational state data nodes
+   */
+
+  container pkix-state {
+    config false;
+    description
+      "Device Certificates, CA certificates and CRL state.";
+    container ca-certificates {
+      description
+        "CA certificates.";
+      list ca-certificate {
+        key "ca-name";
+        description
+          "The CA certificate list.";
+        leaf ca-name {
+          type string {
+             length "1..255";
+          }
+          description
+            "The user defined CA  name.";
+        }
+        uses pkix-types:pkix-certificate-fields;
+      }
+    }
+    container crls {
+      description
+        "Certificate Revocation Lists.";
+      list crl {
+        key "crl-name";
+        leaf crl-name {
+          type string {
+             length "1..255";
+          }
+          description
+            "The user defined crl name";
+        }
+        leaf issuer-common-name {
+          type string;
+          description
+            "The CRL issuer common name.";
+        }
+        leaf last-update {
+          type string;
+          description
+            "The CRL last update.";
+        }
+        leaf revoked-cert-count {
+          type int32;
+          description
+            "The CRL revoked certificate count.";
+        }
+        leaf next-update {
+          type string;
+          description
+            "The CRL next update.";
+        }
+        description
+          "The CRL Certificate List.";
+      }
+    }
+    container device-certificates {
+      description
+        "device certificates.";
+      list device-certificate {
+        key "certificate-name";
+        description
+          "The device certificate list.";
+        leaf certificate-name {
+          type string {
+             length "1..255";
+          }
+          description
+            "The device certificate name";
+        }
+	    leaf algorithm-identifier {
+          type identityref {
+            base pkix-types:key-algorithm;
+          }
+          description
+            "Identifies which algorithm was used to generate the key.
+            Also referred to within SAOS as key-type.";
+        }
+        leaf private-key {
+          type enumeration {
+            enum "present" {
+              description
+                "key is present";
+            }
+            enum "not-present" {
+              description
+                "key is not present";
+            }
+          }
+          description
+            "The state of the d certificate name";
+        }
+        uses pkix-types:pkix-certificate-fields;
+      }
+    }
+    container uninstalled-certificates {
+      leaf-list uninstalled-certificate-name{
+        type string {
+             length "1..255";
+        }
+      }
+    }
+
+  }
+
+  /*
+   * RPC Operations
+   */
+
+  /*
+   * Notifications
+   */
+
+  notification ca-certificate-change {
+    description
+      "CA certificate change notification";
+    leaf ca-certificate {
+      type leafref {
+        path "/pkix:pkix-state/pkix:ca-certificates/pkix:ca-certificate/pkix:ca-name";
+      }
+      description
+        "CA certificate that changed";
+    }
+    leaf operation {
+      type string;
+      description
+        "The operation done on the CA certificate";
+    }
+    leaf result {
+      type string;
+      description
+        "The result of the operation";
+    }
+    leaf user {
+      type string;
+      description
+        "The user of the operation";
+    }
+  }
+
+  notification crl-change {
+    description
+      "CRL change notification";
+    leaf crl {
+      type leafref {
+        path "/pkix:pkix-state/pkix:crls/pkix:crl/pkix:crl-name";
+      }
+      description
+        "CRL that changed";
+    }
+    leaf operation {
+      type string;
+      description
+        "The operation done on the CRL";
+    }
+    leaf result {
+      type string;
+      description
+        "The result of the operation";
+    }
+    leaf user {
+      type string;
+      description
+        "The user of the operation";
+    }
+  }
+
+  notification device-certificate-change {
+    description
+      "Device certificate change notification";
+    leaf device-certificate {
+      type leafref {
+        path "/pkix:pkix-state/pkix:device-certificates/pkix:device-certificate/pkix:certificate-name";
+      }
+      description
+        "Device certificate that changed";
+    }
+    leaf operation {
+      type string;
+      description
+        "The operation done on the device certificate";
+    }
+    leaf result {
+      type string;
+      description
+        "The result of the operation";
+    }
+    leaf user {
+      type string;
+      description
+        "The user of the operation";
+    }
+  }
+
+  notification csr-generate {
+    description
+      "Csr generation notification";
+    leaf key-name {
+      description
+        "Unique Key Name";
+      type string;
+    }
+    leaf user {
+      type string;
+      description
+        "The user of the operation";
+    }
+    leaf operation {
+      type string;
+      description
+        "The operation done on the csr";
+    }
+    leaf result {
+      type string;
+      description
+        "The result of the operation";
+    }
+  }
+
+  notification certificate-expiry {
+    description
+      "Certificate expiry notification";
+    leaf cert-name {
+      description
+        "Cert Name";
+      type string;
+    }
+    leaf days-until {
+      type uint32;
+      description
+        "Days until expiration";
+    }
+    leaf expired {
+      type boolean;
+      description
+        "Whether cert is expired";
+    }
+  }
+}

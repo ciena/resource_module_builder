@@ -1,0 +1,521 @@
+module ciena-waveserver-alarm {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-alarm";
+  prefix alarm;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines alarm data for the Waveserver Platform.";
+
+  revision 2021-02-07 {
+    description
+      "Added 'statistics-all' to contain cumulative for global alarm count across all types";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2019-01-08 {
+    description
+      "Groupify the module for inclusion into other external modules.
+       Added 'info' alarm-severity value for alarm history list.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2017-12-15 {
+    description
+      "Updated defined alarm severity type from enum to bits, to accommodate multi-severity alarms.
+       Added 'reset' alarm-reason enum value for alarm history.
+       Added 'intermittent' boolean attribute to active alarms container.
+       Added 'return-string' to provide description in responses to RPC requests.";
+    reference
+      "Waveserver Ai R1.1 user's guide.";
+  }
+  revision 2017-06-16 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.4 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Added alarm-instance-string typedef with chassis-specific descriptions.
+       Removed 'cleared' and 'info' alarm-severity enum values.
+       Removed 'reset', 'delete', and 'config' alarm-reason enum values.
+       Updated description strings.
+       Moved 'reason' leaf into 'alarm-group' grouping.";
+    reference
+      "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef alarm-severity {
+    type enumeration {
+      enum "critical" {
+        value 3;
+        description
+          "Critical Alarm Severity.";
+      }
+      enum "major" {
+        value 4;
+        description
+          "Major Alarm Severity.";
+      }
+      enum "minor" {
+        value 5;
+        description
+          "Minor Alarm Severity.";
+      }
+      enum "warning" {
+        value 6;
+        description
+          "Warning Alarm Severity.";
+      }
+      enum "info" {
+        value 8;
+        description
+          "Info Alarm Severity. Applicable for historical alarms only.";
+      }
+    }
+    description
+      "Alarm Severity.";
+  }
+
+  typedef alarm-severity-bits {
+    type bits {
+      bit critical {
+        position 3;
+        description
+          "Critical Alarm Severity";
+      }
+      bit major {
+        position 4;
+        description
+          "Major Alarm Severity";
+      }
+      bit minor {
+        position 5;
+        description
+          "Minor Alarm Severity";
+      }
+      bit warning {
+        position 6;
+        description
+          "Warning Alarm Severity";
+      }
+    }
+    description
+      "Alarm Severity bits. A list of the supported severities of the defined alarm.";
+  }
+
+  typedef alarm-reason {
+    type enumeration {
+      enum "reset" {
+        value 1;
+        description
+          "Alarm was raised due to reset/restart operation.";
+      }
+      enum "set" {
+        value 2;
+        description
+          "Alarm is active or became active.";
+      }
+      enum "acknowledge" {
+        value 5;
+        description
+          "Alarm has been manually acknowledged.";
+      }
+      enum "clear" {
+        value 6;
+        description
+          "Alarm was cleared.";
+      }
+      enum "intermittent" {
+        value 10;
+        description
+          "Alarm is intermittent.";
+      }
+    }
+    description
+      "The reason for the alarm entry.";
+  }
+
+  typedef alarm-instance-string {
+    type string {
+      length "0..32";
+    }
+    description
+      "The object instance the alarm is raised against.
+
+       Example formats:
+
+       Waveserver      Waveserver Ai
+       ----------      -------------
+       Chassis         Chassis
+       DCN             DCN
+       ILAN-<n>        ILAN-<n>
+       PSU-<n>         PSU-<n>
+       CFU-<n>         CFU-<n>
+       n/a             Module-<s>
+       XCVR-<p>        XCVR-<s>-<p>
+       PTP-<p>         PTP-<s>-<p>
+       Port-<p>        Port-<s>-<p>
+       n/a             Channel-<s>-<p>.<c>
+       Service-<n>     Service-<n>
+       ";
+  }
+
+  grouping alarm-group {
+    description
+      "Grouping for common alarm attributes used in 'active' and 'history' lists.";
+    leaf alarm-table-id {
+      ui:ui-name "Alarm Table ID";
+      type uint32;
+      config false;
+      description
+        "A unique identifier per alarm description on a product. Alarm table id may not represent the same alarm type on a Waveserver 400G and Waverver Ai";
+    }
+
+    leaf reason {
+      ui:ui-name "Alarm Reason.";
+      type alarm-reason;
+      config false;
+      description
+        "The reason for the alarm entry.";
+    }
+
+    leaf severity {
+      ui:ui-name "Alarm Severity.";
+      type alarm-severity;
+      config false;
+      description
+        "The alarm severity. Critical alarms are service affecting. Other severities are not service affecting.";
+    }
+
+    leaf local-date-time {
+      ui:ui-name "Local Date and Time";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "The local date and time when alarm was updated.
+
+         The string format follows IETF yang date-and-time specifications,
+         compliant with RFC-6991: YYYY-MM-DDTHH:MM:SS[+|-]hh:mm
+
+         The base date and time portion of the string represents Coordinated
+         Universal Time (UTC), and a non-zero hh:mm offset suffix indicates the
+         system-configured local timezone offset at the time the alarm event
+         was recorded, and not necessarily when the alarm was retrieved.
+
+         When system timezone is set to UTC or no time-offset value is provisioned,
+         the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+      reference
+        "RFC 3339: Date and Time on the Internet: Timestamps
+         RFC 6991: Common Yang Data Types";
+    }
+
+    leaf instance {
+      ui:ui-name "Alarm Instance";
+      type alarm-instance-string;
+      config false;
+      description
+        "The object instance the alarm is raised against.";
+    }
+
+    leaf description {
+      ui:ui-name "Alarm Description";
+      type cienawstypes:string-maxl-44;
+      config false;
+      description
+        "The alarm description.";
+    }
+
+    leaf site-identifier {
+      ui:ui-name "Site Identifier";
+      type uint16 {
+        range "0..65535";
+      }
+      config false;
+      description
+        "An integer to uniquely identify the site where this Waveserver is located.";
+    }
+
+    leaf group-identifier {
+      ui:ui-name "Group Identifier";
+      type uint8 {
+        range "0..99";
+      }
+      config false;
+      description
+        "An integer to uniquely identify a group of Waveservers within a site.";
+    }
+
+    leaf member-identifier {
+      ui:ui-name "Member Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      config false;
+      description
+        "An integer to uniquely identify a Waveserver chassis within a group of Waveservers.";
+    }
+  }
+
+  grouping waveserver-alarms-group {
+    ui:ui-name "Alarms";
+    description
+      "Waveserver alarms operational data.";
+    list active {
+      ui:ui-name "Active alarm";
+      key "alarm-instance-id";
+      config false;
+      description
+        "Active alarms";
+      leaf alarm-instance-id {
+        ui:ui-name "Alarm Instance ID";
+        type uint32;
+        description
+          "The alarm Instance ID uniquely identifies the occurence of the alarm since the last restart of the Waveserver. It can be used to correlate the raise and clear of the occurence.";
+      }
+
+      leaf acknowledged {
+        ui:ui-name "Acknowledged";
+        type boolean;
+        config false;
+        description
+          "Alarm has been acknowledged. Acknowledged alarms are not counted in the alarm statistics.";
+      }
+
+      leaf intermittent {
+        ui:ui-name "Intermittent";
+        type boolean;
+        config false;
+        description
+          "Alarm condition is intermittent.";
+      }
+
+      uses alarm-group;
+    }
+
+    list history {
+      ui:ui-name "Alarm History";
+      key "history-id";
+      config false;
+      description
+        "Alarm history";
+      leaf history-id {
+        ui:ui-name "Alarm History ID";
+        type uint32;
+        config false;
+        description
+          "The alarm history ID uniquely identifies the alarm and action (set or clear) since the Waveserver was installed.";
+      }
+
+      leaf alarm-instance-id {
+        ui:ui-name "Alarm Instance ID";
+        type uint32;
+        config false;
+        description
+          "The alarm instance ID.";
+      }
+
+      uses alarm-group;
+    }
+
+    list defined {
+      ui:ui-name "Defined Alarm";
+      key "alarm-table-id";
+      config false;
+      description
+        "Defined Alarm Table";
+      leaf alarm-table-id {
+        ui:ui-name "Alarm Table ID";
+        type uint32;
+        config false;
+        description
+          "The alarm table ID.";
+      }
+
+      leaf enabled {
+        ui:ui-name "Enabled";
+        type boolean;
+        config false;
+        description
+          "Alarm is enabled.";
+      }
+
+      leaf active {
+        ui:ui-name "Active";
+        type boolean;
+        config false;
+        description
+          "Alarm is active.";
+      }
+
+      leaf threshold {
+        ui:ui-name "Alarm Threshold";
+        type uint32;
+        config false;
+        description
+          "The alarm threshold.";
+      }
+
+      leaf cap {
+        ui:ui-name "Alarm Cap";
+        type uint32;
+        config false;
+        description
+          "The alarm cap.";
+      }
+
+      leaf severity {
+        ui:ui-name "Alarm Severity";
+        type alarm-severity-bits;
+        config false;
+        description
+          "The alarm severity (or severities) supported for this alarm type.";
+      }
+
+      leaf instance {
+        ui:ui-name "Instance";
+        type alarm-instance-string;
+        config false;
+        description
+          "The object instance the alarm is raised against.";
+      }
+
+      leaf description {
+        ui:ui-name "Description";
+        type cienawstypes:string-maxl-44;
+        config false;
+        description
+          "The alarm description.";
+      }
+    }
+
+    list statistics {
+      ui:ui-name "Alarm Statistics";
+      key "index";
+      config false;
+      description
+        "Waveserver Alarm Statistics.";
+      leaf index {
+        ui:ui-name "Alarm Statistics Table Index";
+        type uint32;
+        config false;
+        description
+          "The alarm statistics table index.";
+      }
+
+      leaf active {
+        ui:ui-name "Active";
+        type boolean;
+        description
+          "There is alarm active for the alarm type. Acknowledged alarms are not counted.";
+      }
+
+      leaf disabled {
+        ui:ui-name "Disabled";
+        type boolean;
+        description
+          "There is alarm disabled for the alarm type.";
+      }
+
+      leaf count {
+        ui:ui-name "On";
+        type uint32;
+        description
+          "The count of active alarms for the alarm type. Acknowledged alarms are not counted.";
+      }
+
+      leaf cumulative {
+        ui:ui-name "Cumulative";
+        type uint32;
+        description
+          "The cumulative count of active alarms for the alarm type ";
+      }
+
+      leaf type {
+        ui:ui-name "Alarm Type";
+        type cienawstypes:string-maxl-32;
+        description
+          "The alarm type.";
+      }
+    }
+
+    container statistics-all {
+      ui:ui-name "Global Alarm Statistics";
+      config false;
+      description
+        "Cumulative Statistics for all active alarms";
+      leaf cumulative {
+        ui:ui-name "Cumulative";
+        type uint32;
+        description
+          "The cumulative count of active alarms.";
+      }
+    }
+  }
+
+  container waveserver-alarms {
+    ui:ui-name "Alarms";
+    config false;
+    description
+      "Waveserver alarms operational data.";
+    uses waveserver-alarms-group;
+  }
+
+  rpc waveserver-alarm-acknowledge-active {
+    description
+      "Acknowledge an active alarm";
+    input {
+      leaf alarm-instance-id {
+        type uint32;
+        description
+          "The instance ID of the active alarm. If not specified, all alarms will be acknowledged.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-alarm-clear-history {
+    description
+      "Clear the alarm history.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

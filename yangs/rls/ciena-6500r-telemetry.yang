@@ -1,0 +1,199 @@
+module ciena-6500r-telemetry {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-telemetry";
+  prefix telemetry;
+
+  import ciena-6500r-types {
+    prefix types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's Telemetry object for the 6500 RLS platform";
+
+  revision 2020-11-27 {
+    version:version "version" {
+      version:string "1.1.2";
+    }
+    description
+      "Added diagnostic/ots-fdi and diagnostic/ots-rdi";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.1.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-06-10 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Removed config false for parameters that should be saved in datastore.";
+  }
+  revision 2020-01-29 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Intro of remote-defect-indicator";
+  }
+  revision 2019-11-06 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Modified based on RLS Release 2.0 requirements";
+  }
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Added additional info for alarms";
+  }
+  revision 2018-01-01 {
+    description
+      "RLS Release 1.0";
+  }
+
+  grouping ciena-6500r-telemetry-mount {
+    list telemetry {
+      key "name";
+      leaf name {
+        type types:object-name;
+        description
+          "Telemetry Facility name";
+      }
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        mandatory true;
+        description
+          "Amp facility parent.";
+      }
+
+      leaf low-pwr-threshold {
+        type types:power-dBm-1-precision;
+        description
+          "Telemetry low power threshold (dBm).";
+      }
+
+      container low-pwr-threshold-ranges {
+        leaf min {
+          type types:power-dBm-1-precision;
+        }
+
+        leaf max {
+          type types:power-dBm-1-precision;
+        }
+      }
+
+      leaf target-tx-power {
+        type types:power-dBm-1-precision;
+        description
+          "This is the fixed target power reported by the card (dBm).";
+      }
+
+      leaf frequency {
+        type decimal64 {
+          fraction-digits 3;
+        }
+        units "THz";
+        description
+          "Provisioned Frequency of the Telemetry Gain Signal is PEC specific
+           driven through template default and not editable (THz).";
+      }
+
+      leaf measured-telemetry-raman-gain {
+        type types:gain-dB-1-precision;
+        config false;
+        description
+          "Measured Telemetry raman gain is reported by card based on telemetry
+           signal power delta with raman pumps on/off (dB).";
+      }
+
+      leaf measured-tx-power {
+        type types:power-dBm-1-precision;
+        config false;
+        description
+          "This is the measured Tx power reported by the card (dBm).";
+      }
+
+      leaf measured-rx-power {
+        type types:power-dBm-1-precision;
+        config false;
+        description
+          "This is the measured Rx power reported by the card (dBm).";
+      }
+
+      uses types:admin-state;
+
+      container diagnostic {
+        config false;
+        description
+          "Facility diagnostic state.";
+        leaf parent-failed {
+          type boolean;
+          description
+            "Parent Object Failed";
+        }
+
+        leaf loss-of-signal {
+          type boolean;
+          description
+            "Telemetry Loss of Signal";
+        }
+
+        leaf remote-defect-indicator {
+          type boolean;
+          description
+            "Telemetry remote defect indicator (RDI)";
+        }
+
+        leaf ots-fdi {
+          type boolean;
+          description
+            "Telemetry received a Forward Defect Indicator (FDI) in the Optical Transport Section (OTS)";
+        }
+
+        leaf ots-rdi {
+          type boolean;
+          description
+            "Telemetry received a Reverse Defect Indicator (RDI) in the Optical Transport Section (OTS)";
+        }
+      }
+
+      leaf alarm-additional-info {
+        type string {
+          length "1..80";
+        }
+        description
+          "Additional info associated to a raised alarm.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-telemetry-mount-actions;
+
+  uses ciena-6500r-telemetry-mount;
+}

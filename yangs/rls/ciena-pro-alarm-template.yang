@@ -1,0 +1,142 @@
+module ciena-pro-alarm-template {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-alarm-template";
+  prefix alarm-template;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-pro-alarm {
+    prefix alarm;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's alarm template object for the R-Series 6500 platform";
+
+  revision 2020-08-20 {
+    version:version "version" {
+      version:string "2.1.0";
+    }
+    description
+      "Add template states to reflect provisioning state.";
+  }
+  revision 2019-11-19 {
+    version:version "version" {
+      version:string "2.0.0";
+    }
+    description
+      "Enhance templates to include list of severity and service affecting values.
+       Maintain old/original definitions for backwards compatibility and simplicity
+       for alarms that don't have a need or any use for separate high and low levels.";
+  }
+  revision 2019-03-20 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Split templates from base alarm object model.";
+  }
+
+  typedef template-state {
+    type enumeration {
+      enum "enabled" {
+        value 0;
+      }
+      enum "inhibited" {
+        value 1;
+      }
+    }
+    default "enabled";
+    description
+      "State values for the template that indicate if the template produces
+       alarm-records that are enabled and therefore visible or if the
+       alarms are created in another state.
+
+       The default is enabled.";
+  }
+
+  grouping alarm-definition {
+    uses alarm:alarm;
+
+    list severity-level {
+      key "level";
+      description
+        "The combinations of severity and service affecting code values that apply to each
+         of an alarm's defined levels.
+
+         If only a single severity level is required for any given alarm, meaning there
+         are no seperate, specific alarm severity levels, then this field should not be
+         specified and the unqualified severity and service affecting code should be used.";
+      leaf level {
+        type identityref {
+          base alarm:alarm-level;
+        }
+      }
+
+      uses alarm:alarm-level-grouping;
+    }
+  }
+
+  grouping template-grouping {
+    description
+      "Grouping of alarm template parameters.  Used in all forms of alarm templates.";
+    leaf name {
+      type alarm:alarm-name-string;
+      description
+        "Identifying name of the alarm template.";
+    }
+
+    leaf type {
+      type enumeration {
+        enum "high" {
+          value 1;
+        }
+        enum "low" {
+          value 2;
+        }
+      }
+      description
+        "Alarm template type.  This field is optional.
+         This field has been deprecated but maintained for backwards compatibility.
+         It is used when defining single alarms for high and low levels.  The better
+         way to do this is to provide a list of alarm-level values using the alarm-level
+         list field.";
+    }
+
+    uses alarm-definition;
+
+    leaf template-state {
+      type template-state;
+      description
+        "The state of the alarm template, which controls whether and how alarm records
+         are generated when the alarm is raised.
+         The default is 'enabled' if not supplied.";
+    }
+
+    leaf provisionable {
+      type boolean;
+      default "true";
+      description
+        "Value must be present and set to 'false' if any given alarm may not
+         be edited.
+         Any other value - set to 'true' or not present - then editing will be
+         permitted.";
+    }
+  }
+
+  list alarm-template {
+    key "name";
+    description
+      "List of system defined alarm templates.";
+    uses template-grouping;
+  }
+}

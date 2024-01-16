@@ -1,0 +1,144 @@
+module ciena-6500r-mc {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-mc";
+  prefix ciena-6500r-mc;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module implements Ciena's media channel and network media channel objects for the 6500r-Series platform";
+
+  revision 2020-12-15 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "introduce snc-circuit-id";
+  }
+
+  grouping network-media-channel {
+    leaf network-id {
+      type string;
+      description
+        "This is used to stitch network media channel fragments end-to-end and must ideally be set
+         to the network unique identifier of the end-to-end network media channel this fragment relates
+         to or at a minimum to the center frequency value";
+    }
+
+    leaf owner {
+      type string;
+      description
+        "This identifies the provisioning ownership of this network media channel";
+    }
+
+    leaf snc-circuit-id {
+      type string;
+      description
+        "This is the control plane snc circuit id";
+    }
+
+    leaf center-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Center frequency of the network media channel";
+    }
+
+    leaf spectral-width {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Spectral width of the network media channel";
+    }
+
+    leaf user-label {
+      type string;
+      description
+        "User provisioned label";
+    }
+  }
+
+  grouping media-channel {
+    leaf name {
+      type string;
+      description
+        "Media channel name";
+    }
+
+    leaf owner {
+      type string;
+      description
+        "This identifies the provisioning ownership of this media channel";
+    }
+
+    leaf auto-created-default {
+      type boolean;
+      description
+        "Identifies if this instance is an auto-created default";
+    }
+
+    leaf min-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Minimum frequency edge of the media channel";
+    }
+
+    leaf low-freq-deadband {
+      type common-types:frequency;
+      default "6.250";
+      description
+        "Deadband associated with min-freq edge to account for filter roll off. ";
+    }
+
+    leaf max-freq {
+      type common-types:frequency;
+      mandatory true;
+      description
+        "Maximum frequency edge of the media channel";
+    }
+
+    leaf high-freq-deadband {
+      type common-types:frequency;
+      default "6.250";
+      description
+        "Deadband associated with max-freq edge to account for filter roll off. ";
+    }
+
+    leaf ase-replacement-on-fault {
+      type enumeration {
+        enum "Enabled" {
+          value 1;
+          description
+            "ase replacement is Enabled.";
+        }
+        enum "Disabled" {
+          value 2;
+          description
+            "ase replacement is Disabled.";
+        }
+      }
+      description
+        "If set to disabled, channel should not be replaced with ASE on fault";
+    }
+
+    list nmc {
+      key "network-id";
+      uses network-media-channel;
+    }
+  }
+}

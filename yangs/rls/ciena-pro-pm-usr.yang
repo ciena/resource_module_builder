@@ -1,0 +1,442 @@
+module ciena-pro-pm-usr {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pm-usr";
+  prefix pm-pit;
+
+  import ciena-pro-pm-types {
+    prefix pm-types;
+  }
+
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+
+  import ciena-6500r-types {
+    prefix types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's pm runtime objects for the 6500r platform";
+
+  revision 2021-03-29 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Add custom options and facilities";
+  }
+  revision 2020-12-02 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Add custom and custom config";
+  }
+  revision 2020-08-18 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Add signal type for sdmon nmcmon support";
+  }
+  revision 2019-04-28 {
+    description
+      "Initial revision";
+  }
+
+  feature historical-pm-retrieval {
+    description
+      "The device supports the ability to directly retrieve the historical
+       PM data from the YANG model.";
+  }
+
+  container pm {
+    list current {
+      key "pm-resource-instance";
+      config false;
+      description
+        "List of current PM entries";
+      leaf pm-resource-instance {
+        type instance-identifier;
+        config false;
+        mandatory true;
+        description
+          "Retrieves all PM associated with the resource instance";
+      }
+
+      leaf start-time {
+        type ietf-yang:date-and-time;
+        config false;
+        mandatory true;
+        description
+          "Represents the start time of the bin (15m, 24h granularity) or the start of data collection (notApplicable/untimed granularity).";
+      }
+
+      leaf retrieval-time {
+        type ietf-yang:date-and-time;
+        config false;
+        mandatory true;
+        description
+          "Represents the time when the data is being read, not the bin start or end time.";
+      }
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        config false;
+        mandatory false;
+      }
+
+      leaf signal-type {
+        type pm-types:signal-type;
+        config false;
+        mandatory false;
+      }
+
+      list pm-val {
+        key "montype";
+        config false;
+        leaf montype {
+          type pm-types:montype;
+        }
+
+        leaf location {
+          type pm-types:location;
+        }
+
+        leaf direction {
+          type pm-types:direction;
+        }
+
+        list measurement {
+          key "interval";
+          leaf interval {
+            type pm-types:current-interval;
+          }
+
+          uses pm-types:pm-measurement;
+
+          leaf update-time {
+            type ietf-yang:date-and-time;
+            description
+              "montype reset time for MIN/MAX";
+          }
+        }
+      }
+    }
+
+    list historical {
+      key "pm-resource-instance";
+      config false;
+      description
+        "List of historical PM";
+      leaf pm-resource-instance {
+        type instance-identifier;
+        config false;
+        mandatory true;
+        description
+          "Retrieves all PM associated with the resource instance";
+      }
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        config false;
+        mandatory false;
+      }
+
+      leaf signal-type {
+        type pm-types:signal-type;
+        config false;
+        mandatory false;
+      }
+
+      list pm-val {
+        key "montype";
+        leaf montype {
+          type pm-types:montype;
+        }
+
+        leaf location {
+          type pm-types:location;
+        }
+
+        leaf direction {
+          type pm-types:direction;
+        }
+
+        list measurement {
+          key "interval";
+          leaf interval {
+            type pm-types:historical-interval;
+            mandatory true;
+          }
+
+          list bin {
+            key "index";
+            config false;
+            leaf index {
+              type uint16 {
+                range "1..max";
+              }
+            }
+
+            uses pm-types:pm-measurement;
+
+            leaf update-time {
+              type ietf-yang:date-and-time;
+              config false;
+              mandatory true;
+              description
+                "The last time this montype was updated.";
+            }
+
+            leaf completion-time {
+              type ietf-yang:date-and-time;
+              config false;
+              mandatory true;
+              description
+                "The time at the end of the period; For example if bin starts at
+                 01:15:00 and ends at 01:29:59, the completion-time is 01:29:59";
+            }
+          }
+        }
+      }
+    }
+
+    list custom {
+      key "uid";
+      config false;
+      description
+        "List of custom PM entries";
+      leaf uid {
+        type string;
+        description
+          "client user name";
+      }
+
+      list instance {
+        key "pm-resource-instance";
+        leaf pm-resource-instance {
+          type instance-identifier;
+          config false;
+          mandatory true;
+          description
+            "Retrieves all PM associated with the resource instance";
+        }
+
+        leaf start-time {
+          type ietf-yang:date-and-time;
+          config false;
+          mandatory true;
+          description
+            "Represents the start time of the bin (15m, 24h granularity) or the start of data collection (notApplicable/untimed granularity).";
+        }
+
+        leaf retrieval-time {
+          type ietf-yang:date-and-time;
+          config false;
+          mandatory true;
+          description
+            "Represents the time when the data is being read, not the bin start or end time.";
+        }
+
+        leaf parent-port {
+          type leafref {
+            path "/ports:port/ports:name";
+          }
+          config false;
+          mandatory false;
+        }
+
+        leaf signal-type {
+          type pm-types:signal-type;
+          config false;
+          mandatory false;
+        }
+
+        leaf from {
+          type instance-identifier;
+          description
+            "From port identifier";
+        }
+
+        leaf to {
+          type instance-identifier;
+          description
+            "To port identifier";
+        }
+
+        leaf link-type {
+          type ciena-pro-link:link-type;
+        }
+
+        leaf integration-bandwidth {
+          type ciena-pro-optical-types:frequency;
+          units "GHz";
+          config false;
+          description
+            "How wide each measurement slice is";
+        }
+
+        leaf slice-spacing {
+          type ciena-pro-optical-types:frequency;
+          units "GHz";
+          config false;
+          description
+            "The offset between the center frequencies of neighboring measurement slices, the slices may overlap each other";
+        }
+
+        leaf min-freq {
+          type ciena-pro-optical-types:frequency;
+          config false;
+          description
+            "Minimum frequency limit of the OCM module (start frequency index converted to a frequency)";
+        }
+
+        leaf max-freq {
+          type ciena-pro-optical-types:frequency;
+          config false;
+          description
+            "Maximum frequency limit of the OCM module (calculated using start frequency index and the number of slices returned via SNMP)";
+        }
+
+        list pm-val {
+          key "montype";
+          config false;
+          leaf montype {
+            type pm-types:montype;
+          }
+
+          leaf location {
+            type pm-types:location;
+          }
+
+          leaf direction {
+            type pm-types:direction;
+          }
+
+          list measurement {
+            key "interval";
+            leaf interval {
+              type pm-types:custom-interval;
+            }
+
+            uses pm-types:pm-measurement;
+
+            leaf update-time {
+              type ietf-yang:date-and-time;
+              description
+                "The last time this montype was updated.";
+            }
+
+            list bin {
+              key "index";
+              config false;
+              leaf index {
+                type uint16 {
+                  range "1..max";
+                }
+              }
+
+              uses pm-types:pm-measurement;
+
+              leaf update-time {
+                type ietf-yang:date-and-time;
+                config false;
+                description
+                  "The last time this montype was updated.";
+              }
+
+              leaf completion-time {
+                type ietf-yang:date-and-time;
+                config false;
+                mandatory true;
+                description
+                  "The time at the end of the period; For example if bin starts at
+                   01:15:00 and ends at 01:29:59, the completion-time is 01:29:59";
+              }
+            }
+          }
+        }
+      }
+    }
+
+    list custom-config {
+      key "name";
+      leaf name {
+        type string;
+        mandatory true;
+        description
+          "client user name";
+      }
+
+      leaf-list facility {
+        type yang:target-node;
+        description
+          "Specify which facility to read";
+      }
+
+      leaf-list bin-type {
+        type pm-types:custom-interval;
+      }
+
+      leaf bin-index-range {
+        type uint16 {
+          range "1..300";
+        }
+        description
+          "Does not apply to untimed bin type";
+      }
+
+      leaf read-type {
+        type pm-types:read-type;
+      }
+    }
+  }
+
+  rpc reset-pm {
+    input {
+      leaf instance {
+        type instance-identifier;
+      }
+
+      leaf montype {
+        type pm-types:montype;
+      }
+
+      leaf interval {
+        type pm-types:current-interval;
+      }
+    }
+  }
+
+  rpc refresh-pm-updater {
+    input {
+      leaf frequency {
+        type uint16;
+        description
+          "fequency to get sdmon and nmcmon notifications in seconds and in the range of 1 to 900";
+      }
+    }
+  }
+}

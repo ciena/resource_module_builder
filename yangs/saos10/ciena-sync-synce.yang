@@ -1,0 +1,756 @@
+module ciena-sync-synce {
+  namespace "http://www.ciena.com/ns/yang/ciena-sync-synce";
+  prefix "synce";
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-sync {
+    prefix sync;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data model for the management of clock
+     synchronization in packet networks specific to Synchronous Ethernet 
+     (SyncE) timing references.
+
+     Copyright (c) 2018 Ciena Corporation. All rights reserved.
+
+     All information contained herein is, and remains the property of Ciena
+     Corporation. Dissemination of this information or reproduction of this
+     material is strictly forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+  revision "2020-12-14" {
+    description
+      "Add new AFTS related fields (backup syncE input reference) in frequency
+      protection group in sync-state.";
+    reference
+      "ITU-T G.781:  Synchronization layer functions.
+       ITU-T G.8262: Timing characteristics of synchronous Ethernet equipment
+                     slave clock.
+       ITU-T G.8264: Distribution of timing information through packet networks
+                     networks.";
+  }
+
+  revision "2018-06-01" {
+    description
+      "Initial version.";
+    reference
+      "ITU-T G.781:  Synchronization layer functions.
+       ITU-T G.8262: Timing characteristics of synchronous Ethernet equipment
+                     slave clock.
+       ITU-T G.8264: Distribution of timing information through packet networks
+                     networks.";
+  }
+
+  /*
+   * Identities
+   */
+
+  identity esmc-rx-timeout {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "SyncE input reference encountered a Ethernet Synchronization Messaging
+       Channel (ESMC) PDU RX timeout.";
+  }
+
+  /*
+   * Typedefs
+   */
+
+  typedef interface-type {
+    type oc-if:base-interface-ref;
+    description
+      "SyncE timing interface type.";
+  }
+
+  typedef input-reference-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:input-references" + 
+           "/synce:synce-input-reference" + 
+           "/synce:name";
+    }
+    description
+      "SyncE input reference leafref type.";
+  }
+
+  typedef output-reference-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:output-references" + 
+           "/synce:synce-output-reference" + 
+           "/synce:name";
+    }
+    description
+      "SyncE output reference leafref type.";
+  }
+
+  typedef input-reference-interface-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:input-references" + 
+           "/synce:synce-input-reference" + 
+           "/synce:interface";
+    }
+    description
+      "SyncE input reference interface leafref type.";
+  }
+
+  typedef output-reference-interface-leafref-type {
+    type leafref {
+      path "/sync:sync" + 
+           "/sync:output-references" + 
+           "/synce:synce-output-reference" + 
+           "/synce:interface";
+    }
+    description
+      "SyncE output reference interface leafref type.";
+  }
+
+  typedef input-reference-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:input-references" +
+           "/synce:synce-input-reference" +
+           "/synce:oper-state";
+    }
+    description
+      "SyncE input reference operational state leafref type.";
+  }
+
+  typedef output-reference-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:output-references" +
+           "/synce:synce-output-reference" +
+           "/synce:oper-state";
+    }
+    description
+      "SyncE output reference operational state leafref type.";
+  }
+
+  typedef ssm-code-type {
+    type uint8;
+    description
+      "SyncE SSM code type.";
+  }
+
+  /*
+   * Groupings
+   */
+
+  grouping synce-input-reference-config-grouping {
+    description
+      "SyncE input reference configuration attributes.";
+    leaf interface {
+      type synce:interface-type;
+      mandatory true;
+      description
+        "Interface used by a SyncE input reference.";
+    }
+    uses sync:sync-input-reference-config-grouping;
+    uses sync:sync-frequency-input-reference-config-grouping;
+  }
+
+  grouping synce-output-reference-config-grouping {
+    description
+      "SyncE output reference configuration attributes.";
+    leaf interface {
+      type synce:interface-type;
+      mandatory true;
+      description
+        "Interface used by a SyncE output reference.";
+    }
+  }
+
+  grouping synce-input-reference-state-grouping {
+    description
+      "SyncE input reference state attributes.";
+    uses sync:sync-input-reference-state-grouping;
+    uses sync:sync-frequency-input-reference-state-grouping;
+    leaf oper-rx-ssm {
+      type synce:ssm-code-type;
+      description
+        "Operational RX SSM code of SyncE input reference taking into account
+         SSM code on RX ESMC PDUs and forced-quality-level configuration.";
+    }
+    leaf rx-ssm {
+      type synce:ssm-code-type;
+      description
+        "SSM code of SyncE input reference in RX ESMC PDUs.";
+      
+    }
+  }
+
+  grouping synce-output-reference-state-grouping {
+    description
+      "SyncE output reference state attributes.";
+    uses sync:sync-output-reference-state-grouping;
+    uses sync:sync-frequency-output-reference-state-grouping;
+    leaf tx-ssm {
+      type synce:ssm-code-type;
+      description
+        "SSM code of SyncE output reference in TX ESMC PDUs.";
+    }
+  }
+
+  grouping synce-input-reference-statistics-grouping {
+    description
+      "SyncE input reference statistics grouping.";
+    leaf rx-ql-prc {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-PRC.";
+    }
+    leaf rx-ql-ssua {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-SSU-A.";
+    }
+    leaf rx-ql-ssub {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-SSU-B.";
+    }
+    leaf rx-ql-sec {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-SEC.";
+    }
+    leaf rx-ql-dnu {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-DNU.";
+    }
+    leaf rx-ql-stu {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-STU.";
+    }
+    leaf rx-ql-prs {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-PRS.";
+    }
+    leaf rx-ql-tnc {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-TNC.";
+    }
+    leaf rx-ql-st2 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-ST2.";
+    }
+    leaf rx-ql-st3 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-ST3.";
+    }
+    leaf rx-ql-smc {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-SMC.";
+    }
+    leaf rx-ql-st3e {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-ST3E.";
+    }
+    leaf rx-ql-prov {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-PROV.";
+    }
+    leaf rx-ql-dus {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-DUS.";
+    }
+    leaf rx-ql-inv0 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV0.";
+    }
+    leaf rx-ql-inv1 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV1.";
+    }
+    leaf rx-ql-inv2 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV2.";
+    }    
+    leaf rx-ql-inv3 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV3.";
+    }
+    leaf rx-ql-inv5 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV5.";
+    }
+    leaf rx-ql-inv6 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV6.";
+    }
+    leaf rx-ql-inv7 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV7.";
+    }
+    leaf rx-ql-inv8 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV8.";
+    }
+    leaf rx-ql-inv9 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV9.";
+    }
+    leaf rx-ql-inv10 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV10.";
+    }
+    leaf rx-ql-inv11 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV11.";
+    }
+    leaf rx-ql-inv12 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV12.";
+    }
+    leaf rx-ql-inv13 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV13.";
+    }
+    leaf rx-ql-inv14 {
+      type yang:counter64;
+      description
+        "Number of PDUs received with QL-INV14.";
+    }
+    leaf rx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to a receive error.";
+    }
+    leaf rx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs received.";
+    }
+  }
+
+  grouping synce-output-reference-statistics-grouping {
+    description
+      "SyncE output reference statistics grouping.";
+    leaf tx-ql-prc {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-PRC.";
+    }
+    leaf tx-ql-ssua {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-SSU-A.";
+    }
+    leaf tx-ql-ssub {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-SSU-B.";
+    }
+    leaf tx-ql-sec {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-SEC.";
+    }
+    leaf tx-ql-dnu {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-DNU.";
+    }
+    leaf tx-ql-stu {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-STU.";
+    }
+    leaf tx-ql-prs {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-PRS.";
+    }
+    leaf tx-ql-tnc {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-TNC.";
+    }
+    leaf tx-ql-st2 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-ST2.";
+    }
+    leaf tx-ql-st3 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-ST3.";
+    }
+    leaf tx-ql-smc {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-SMC.";
+    }
+    leaf tx-ql-st3e {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-ST3E.";
+    }
+    leaf tx-ql-prov {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-PROV.";
+    }
+    leaf tx-ql-dus {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-DUS.";
+    }
+    leaf tx-ql-inv0 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV0.";
+    }
+    leaf tx-ql-inv1 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV1.";
+    }
+    leaf tx-ql-inv2 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV2.";
+    }    
+    leaf tx-ql-inv3 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV3.";
+    }
+    leaf tx-ql-inv5 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV5.";
+    }
+    leaf tx-ql-inv6 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV6.";
+    }
+    leaf tx-ql-inv7 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV7.";
+    }
+    leaf tx-ql-inv8 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV8.";
+    }
+    leaf tx-ql-inv9 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV9.";
+    }
+    leaf tx-ql-inv10 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV10.";
+    }
+    leaf tx-ql-inv11 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV11.";
+    }
+    leaf tx-ql-inv12 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV12.";
+    }
+    leaf tx-ql-inv13 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV13.";
+    }
+    leaf tx-ql-inv14 {
+      type yang:counter64;
+      description
+        "Number of PDUs transmitted with QL-INV14.";
+    }
+    leaf tx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to a transmit error.";
+    }
+    leaf tx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs transmitted.";
+    }
+  }
+
+  /*
+   * Configuration data
+   */
+
+  augment "/sync:sync" + 
+          "/sync:input-references" {
+    description
+      "SyncE input reference configuration.";
+    list synce-input-reference {
+      key "name";
+      description
+        "A list of all SyncE input configuration entries.";
+      leaf name {
+        type sync:name-string-type;
+        description
+          "Name of SyncE input reference.";
+      }
+      uses synce:synce-input-reference-config-grouping;
+    }
+  }
+
+  augment "/sync:sync" + 
+          "/sync:output-references" {
+    description
+      "SyncE output reference configuration.";
+    list synce-output-reference {
+      key "name";
+      description
+        "A list of all SyncE output configuration entries.";
+      leaf name {
+        type sync:name-string-type;
+        description
+          "Name of SyncE output reference.";
+      }
+      uses synce:synce-output-reference-config-grouping;
+    }
+  }
+
+  augment "/sync:sync" + 
+          "/sync:protection-groups" + 
+          "/sync:frequency-protection-group" {
+    description
+      "SyncE input reference configuration in frequency protection-group.";
+    leaf-list synce-input-reference {
+      type synce:input-reference-leafref-type;
+      description
+        "List of SyncE input references that shall be considered as candidates
+         for clock selection in frequency protection-group.";
+    }
+    leaf threshold-quality-level {
+      type sync:quality-level-type;
+      description
+        "Threshold quality-level configuration of frequency protection-group.
+         Operational RX quality-level of input references added to this
+         protection-group must satisfy the configured threshold quality-level
+         in order to be considered selectable.";
+    }
+  }
+
+  /*
+   * State data
+   */
+
+  augment "/sync:sync-state" + 
+          "/sync:input-references" {
+    description
+      "SyncE input reference state.";
+    list synce-input-reference {
+      key "name";
+      description
+        "A list of all SyncE input state entries.";
+      leaf name {
+        type synce:input-reference-leafref-type;
+        description
+          "Name of SyncE input reference.";
+      }
+      uses synce:synce-input-reference-state-grouping;
+      container statistics {
+        description
+          "SyncE input reference statistics.";
+        uses synce:synce-input-reference-statistics-grouping;
+      }
+    }
+  }
+
+  augment "/sync:sync-state" + 
+          "/sync:output-references" {
+    description
+      "SyncE output reference state.";
+    list synce-output-reference {
+      key "name";
+      description
+        "A list of all SyncE output state entries.";
+      leaf name {
+         type synce:output-reference-leafref-type;
+         description
+           "Name of SyncE output reference.";
+      }
+      uses synce:synce-output-reference-state-grouping;
+      container statistics {
+        description
+          "SyncE output reference statistics.";
+        uses synce:synce-output-reference-statistics-grouping;
+      }
+    }
+  }
+
+  augment "/sync:sync-state" + 
+          "/sync:protection-groups" + 
+          "/sync:frequency-protection-group" {
+    description
+      "SyncE input reference selected in frequency protection-group.";
+    leaf selected-synce-input-reference-name {
+      type synce:input-reference-leafref-type;
+      description
+        "SyncE input reference name.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "Assisted Timing Support (ATS) backup SyncE input reference in frequency protection-group.";
+    leaf ats-backup-synce-input-reference-name {
+      type synce:input-reference-leafref-type;
+      description
+        "Assisted Timing Support (ATS) backup SyncE input reference name.";
+    }
+  }
+
+  /*
+   * RPC Operations
+   */
+
+  augment "/sync:sync-protection-group-selection-force-switch" +
+          "/sync:input" {
+    description
+      "Force-switch a SyncE input reference selection on protection-group.";
+    leaf synce-input-reference-name {
+      type synce:input-reference-leafref-type;
+      description
+        "Name of SyncE input reference.";
+    }
+  }
+
+  rpc sync-synce-statistics-clear {
+    description 
+      "Clear the statistics for a specific SyncE input/output reference or 
+       for all references.";
+    input {
+      leaf synce-input-reference-name {
+        type synce:input-reference-leafref-type;
+        description
+          "Name of SyncE input reference.";
+      }
+      leaf synce-output-reference-name {
+        type synce:output-reference-leafref-type;
+        description
+          "Name of SyncE output reference.";
+      }
+      leaf all {
+        type empty;
+        description
+          "All SyncE input/output references.";
+      }
+    }
+    output {
+      leaf status {
+        type string; 
+        description 
+          "Status of the statistics clear operation.";
+      }
+    }
+  }
+
+  /*
+   * Notifications
+   */
+
+  notification synce-input-reference-oper-state-change {
+    description
+      "Generated when the operational state of a SyncE input reference changes.";
+    leaf synce-input-reference-name {
+      type synce:input-reference-leafref-type;
+      description
+        "Name of SyncE input reference.";
+    }
+    leaf interface {
+      type synce:input-reference-interface-leafref-type;
+      description
+        "Interface of SyncE input reference.";
+    }
+    leaf oper-state {
+      type synce:input-reference-oper-state-leafref-type;
+      description
+        "Operational state of SyncE input reference.";
+    }
+  }
+
+  notification synce-output-reference-oper-state-change {
+    description
+      "Generated when the operational state of a SyncE output reference changes.";
+    leaf synce-output-reference-name {
+      type synce:output-reference-leafref-type;
+      description
+        "Name of SyncE output reference.";
+    }
+    leaf interface {
+      type synce:output-reference-interface-leafref-type;
+      description
+        "Interface of SyncE output reference.";
+    }
+    leaf oper-state {
+      type synce:output-reference-oper-state-leafref-type;
+      description
+        "Operational state of SyncE output reference.";
+    }
+  }
+
+  augment "/sync:frequency-protection-group-oper-state-change" {
+    description
+      "SyncE input reference selected in frequency protection-group.";
+    leaf selected-synce-input-reference-name {
+      type synce:input-reference-leafref-type;
+      description
+        "SyncE input reference name.";
+    }
+  }
+
+}

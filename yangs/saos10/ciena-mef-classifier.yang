@@ -1,0 +1,680 @@
+module ciena-mef-classifier {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-classifier";
+    prefix "classifier";
+    
+    import ietf-inet-types {
+        prefix "inet";
+    }
+
+    import ietf-yang-types {
+        prefix "yt";
+    }
+
+    revision 2021-01-27 {
+        description
+            "1) Added internal-cos-mask leaf for internal-cos classifier.
+             2) Added descriptions.
+             3) Modified accepted vlan-id range to include vlan-id of 0.";
+    }
+
+    revision 2020-12-21 {
+        description
+            "Added 'when' clause check for source-max and destination-max.";
+    }
+
+    revision 2020-11-18 {
+        description
+            "Added internal-cos for classifier.";
+    }
+
+    revision 2020-02-17 {
+        description
+            "Added icmp-type and updated tcp-flag.
+             Added ip-version for classifier.
+             Replaced ip-version type with enum excluding unknown.";
+    }
+
+    revision 2019-08-22 {
+        description
+            "Added local-termination case to filter-parameters";
+    }
+
+    revision 2017-05-10 {
+        description
+            "Various updates to classifers since first revision";
+    }
+    
+    /*
+     * Typedefs
+     */
+    typedef classifier-ref {
+        type leafref {
+            path "/classifier:classifiers/classifier:classifier/classifier:name";
+        }
+        description
+          "This type is used by data models that need to reference
+           configured classifier list.";
+    }
+    
+    /*
+     * Feature
+     */    
+    feature filter-parameters-type {
+        description
+            "Allows for configuration of filter parameters inline.";
+    }
+    
+    identity filter-param-type {
+        description
+            "This is the base identity of the filter-param-type.";
+    }
+    
+    identity vtag-stack {
+        base filter-param-type;
+    }
+
+    identity mpls-label {
+        base filter-param-type;
+    }
+    
+    identity dscp {
+        base filter-param-type;
+    }
+    
+    identity source-ip {
+        base filter-param-type;
+    }
+    
+    identity destination-ip {
+        base filter-param-type;
+    }
+    
+    identity l4-destination-port {
+        base filter-param-type;
+    }
+    
+    identity l4-source-port {
+        base filter-param-type;
+    }
+    
+    identity ip-protocol {
+        base filter-param-type;
+    }
+    
+    identity base-etype {
+        base filter-param-type;
+    }
+
+    identity any {
+        base filter-param-type;
+    }
+
+    feature vtag-stack-feature {
+        description
+            "Allows for configuration of vtag stack type inline.";
+    }
+    
+    identity vtag-stack-type {
+        description
+            "This is the base identity for vtag stack.";
+    }
+    
+    identity untagged {
+        base vtag-stack-type;
+    }
+    
+    identity l2cp {
+        base vtag-stack-type;
+    }
+    
+    identity tagged {
+        base vtag-stack-type;
+    }
+
+    identity ip-fragment {
+        base filter-param-type;
+    }
+
+    identity l4-application {
+        base filter-param-type;
+    }
+
+    identity tcp-flags {
+        base filter-param-type;
+    }
+
+    identity source-mac {
+        base filter-param-type;
+    }
+
+    identity destination-mac {
+        base filter-param-type;
+    }
+
+    identity local-termination {
+        base filter-param-type;
+    }
+
+    feature icmp-feature {
+        description
+            "Allows for configuration of ICMP type inline.";
+    }
+
+    identity icmp {
+        base filter-param-type;
+    }
+
+    identity icmp-feature-type {
+        description
+            "This is the base identity for ICMP.";
+    }
+
+    identity icmp-type {
+        base icmp-feature-type;
+    }
+
+    identity icmp-message-type {
+        base icmp-feature-type;
+    }
+
+    identity ip-version {
+        base filter-param-type;
+    }
+
+    identity internal-cos {
+        base filter-param-type;
+    }
+
+    grouping classifier-group {
+        description
+            "List of classifier templates. Classifiers can be referenced by various entities (flow-point/access-flow/qos-flow etc.)
+            to define their incoming classification.";
+
+        list classifier {
+            ordered-by user;    // User sets the order of this list.
+            key "name";
+
+            description
+               "List of classifier templates. Classifiers can be referenced by various entities 
+               (flow-point/access-flow/qos-flow etc.) to define their incoming classification.";
+            
+            leaf name {
+                type string;
+                description
+                    "A unique name for the classifier.";
+            }
+            
+            leaf filter-operation {
+                type enumeration {
+                    enum match-all;
+                    enum match-any;
+                }
+                description
+                   "Choose the scope of application of the rule";
+            }
+            
+            list filter-entry {
+                key "filter-parameter";
+
+                description
+                   "Add one filtering rule for this classifier.";
+                
+                ordered-by user;
+                
+                leaf filter-parameter {
+                    type identityref {
+                        base filter-param-type;
+                    }
+                    description
+                        "Indicates which filter parameter is used by this filter entry";
+                }
+                
+                leaf logical-not {
+                    type boolean;
+                    default "false";
+                    description
+                        "Opposite of what is specified in the 
+                         filter-parameters. If the filter-parameter
+                         specifies a tpid as tpid-8100, then anything
+                         other than tpid-8100 is considered an acceptable
+                         packet.";
+                }
+                
+                choice filter-parameters {
+                    case vtag-stack {
+                        choice vtag-stack-type {
+                            case untagged {
+                                leaf untagged-exclude-priority-tagged {
+                                    type boolean;
+                                    description
+                                        "Untagged exclude priority tagged.";
+                                }
+                            }
+                            
+                            case l2cp {
+                                leaf l2cp-exclude-priority-tagged {
+                                    type boolean;
+                                    description
+                                        "L2CP exclude priority tagged.";
+                                }
+                            }
+                            
+                            case tagged {
+                                list vtags {
+                                    key "tag";
+                                    
+                                    leaf tag {
+                                        type uint8;
+                                        description
+                                            "'1' represents outer most tag, '2' next outer most, etc";
+                                    }
+
+                                    leaf tpid {
+                                        type enumeration {
+                                            enum tpid-8100;
+                                            enum tpid-88a8;
+                                            enum tpid-9100;
+                                        }
+                                        description
+                                           "A specific value of VLAN Tag EtherType.";
+
+                                    }
+                                    
+                                    leaf pcp {
+                                        type uint8 {
+                                            range "0..7";
+                                        }
+                                        description
+                                           "A specific value of VLAN Tag PCP.";
+                                    }
+
+                                    leaf pcp-mask {
+                                        type uint8 {
+                                            range "1..7";
+                                        }
+                                        description
+                                            "Allow PCP values to be optionally coupled with a mask in a single classifier";
+                                    }
+
+                                    leaf dei {
+                                        type enumeration {
+                                            enum discard-eligible;
+                                            enum not-discard-eligible;
+                                        }
+                                        description
+                                            "Discard Eligibility Indication";
+                                    }
+                                    
+                                    leaf vlan-id {
+                                        type uint16 {
+                                            range "0..4094";
+                                        }
+                                        description
+                                           "A specific value of VLAN Tag VLAN-ID.";
+                                    }
+
+                                    leaf vlan-id-max {
+                                        type uint16 {
+                                            range "1..4094";
+                                        }
+                                        description
+                                            "The maximum value of VLAN ID for ranged VLAN-ID values.";
+                                    }
+                                    description
+                                        "List of VLAN tags.";
+                                }
+                            }
+                        }
+                    }
+                    
+                    case mpls-label-stack {
+                        list mpls-labels {
+                            key "label"; // Need a key. It cannot be a choice param.
+                            
+                            leaf label {
+                                type uint32;
+                            }
+                            choice labels {
+                                case any {
+                                    leaf label-any {
+                                        type empty;
+                                        description
+                                           "Any value of mpls-label.";
+                                    }
+                                    description
+                                        "Accept any label.";
+                                }
+                                
+                                case value {
+                                    leaf mpls-label {
+                                        type uint32;
+                                        description
+                                           "A specific value of mpls-label.";
+                                    }
+                                }
+                            }
+                            
+                            choice tc {
+                                case any {
+                                    leaf tc-any {
+                                        type empty;
+                                        description
+                                           "Any value of mpls TC.";
+                                    }
+                                    description
+                                        "Accept any tc value.";
+                                }
+                                
+                                case value {
+                                    leaf tc-value {
+                                        type uint8;
+                                        description
+                                           "A specific value of mpls TC.";
+                                    }
+                                }
+                            }
+
+                            description
+                                "List of MPLS labels.";
+                        }
+                    }
+                    
+                    case dscp {
+                        leaf dscp-min {
+                            type inet:dscp;
+                            description
+                                "The minimum value of DSCP.";
+                        }
+                        leaf dscp-max {
+                            type inet:dscp;
+                            description
+                                "The maximum value of DSCP for ranged DSCP values in a single classifier. Mutually exclusive to dscp-mask";
+                        }
+                        leaf dscp-mask {
+                            type inet:dscp;
+                            description
+                                "Allow DSCP values to be optionally coupled with a mask in a single classifier. Mutually exclusive to dscp-max";
+                        }
+                    }
+                    
+                    case source-ip {
+                        leaf source-address {
+                            type inet:ip-prefix;
+                            description
+                                "Classification on IP source-address (v4/v6) and masking.";
+                        }
+                    }
+
+                    case destination-ip {
+                        leaf destination-address {
+                            type inet:ip-prefix;
+                            description
+                                "Classification on IP destination-address (v4/v6) and masking.";
+                        }
+                    }
+                    
+                    case l4-source-port {
+                        leaf source-min {
+                            type inet:port-number;
+                            description
+                                "Exact/Minimum value of L4 source port number.";
+                        }
+                        leaf source-max {
+                            when "../source-min";
+                            type inet:port-number;
+                            description
+                                "Maximum value of L4 source port number.";
+                        }
+                    }
+                    
+                    case l4-destination-port {
+                        leaf destination-min {
+                            type inet:port-number;
+                            description
+                                "Exact/Minimum value of L4 destination port number.";
+                        }
+                        leaf destination-max {
+                            when "../destination-min";
+                            type inet:port-number;
+                            description
+                                "Maximum value of L4 destination port number.";
+                        }
+                    }
+                    
+                    case ip-protocol {
+                        leaf min-prot {
+                            type uint16;
+                            description
+                                "Exact/Minimum value of IP protocol.";
+                        }
+                        leaf max-prot {
+                            type uint16;
+                            description
+                                "Maximum value of IP protocol.";
+                        }
+                    }
+                    
+                    case base-etype {
+                        leaf base-ethertype {
+                            type uint16;
+                            description
+                                "Base Ethernet type.";
+                        }
+                    }
+
+                    case any {
+                        leaf any {
+                            type empty;
+                            description
+                               "Accept any classification. Wide-Open classifier";
+                        }
+                    }
+
+                    case ip-fragment {
+                        leaf ip-fragment {
+                            type boolean;
+                            description
+                               "IP-fragment bit true/false";
+                        }
+                    }
+
+                    case l4-application {
+                        leaf l4-application {
+                            type enumeration {
+                                enum twamp;
+                            }
+                            description
+                                "L4 application.";
+                        }
+                    }
+
+                    case tcp-flags {
+                        leaf tcp-flags {
+                            type bits {
+                                bit fin {
+                                    description
+                                        "Last packet from sender";
+                                }
+                                bit syn {
+                                    description
+                                        "Synchronize sequence numbers";
+                                }
+                                bit rst {
+                                    description
+                                        "Reset the connection";
+                                }
+                                bit psh {
+                                    description
+                                        "Push function";
+                                }
+                                bit ack {
+                                    description
+                                        "Indicates that the Acknowledgment field is significant";
+                                }
+                                bit urg {
+                                    description
+                                        "Indicates that the Urgent pointer field is significant";
+                                }
+                                bit ece {
+                                    description
+                                        "ECN-Echo has a dual role, depending on the value of the SYN flag. 
+                                           If the SYN flag is set (1), that the TCP peer is ECN capable.
+                                           If the SYN flag is clear (0), that a packet with Congestion Experienced flag set (ECN=11) 
+                                             in the IP header was received during normal transmission.";
+                                }
+                                bit cwr {
+                                    description
+                                        "Congestion window reduced (CWR) flag is set by the sending host to indicate that 
+                                         it received a TCP segment with the ECE flag set and had responded in congestion control mechanism.";
+                                }
+                                bit ns {
+                                    description
+                                        "ECN-nonce - concealment protection";
+                                }
+                            }
+                            description
+                                "List of TCP flags.";
+                        }
+                    }
+
+                    case source-mac {
+                        leaf source-mac {
+                            type yt:mac-address;
+                            description
+                                "Source MAC address.";
+                        }
+                        leaf source-mac-mask {
+                            type yt:mac-address;
+                            description
+                                "The mask of source MAC address.";
+                        }
+                    }
+                    
+                    case destination-mac {
+                        leaf destination-mac {
+                            type yt:mac-address;
+                            description
+                                "Destination MAC address.";
+                        }
+                        leaf destination-mac-mask {
+                            type yt:mac-address;
+                            description
+                                "The mask of destination MAC address.";
+                        }
+                    }
+
+                    case local-termination {
+                        leaf local-termination {
+                            type boolean;
+                            description
+                                "Classification of frames which are locally terminated.";
+                        }
+                    }
+
+                    case icmp {
+                        choice icmp-feature-type {
+                            case icmp-type {
+                                leaf icmp-type {
+                                    type uint8;
+                                    description
+                                        "ICMP type.";
+                                }
+                            }
+
+                            case icmp-message-type {
+                                leaf icmp-message-type {
+                                    type enumeration {
+                                        enum echo-reply {
+                                            description
+                                                "Echo reply (used to ping).";
+                                        }
+                                        enum destination-unreachable {
+                                            description
+                                                "Host/destination network/host/port isolated/unreachable.";
+                                        }
+                                        enum redirect-message {
+                                            description
+                                                "Redirect datagram for the host/network/ToS.";
+                                        }
+                                        enum echo-request {
+                                            description
+                                                "Echo request (used to ping).";
+                                        }
+                                        enum router-advertisement {
+                                            description
+                                                "Router advertisement.";
+                                        }
+                                        enum router-solicitation {
+                                            description
+                                                "Router discovery/selection/solicitation.";                                 
+                                        }
+                                        enum time-exceeded {
+                                            description
+                                                "TTL expired or fragment reassembly time exceeded.";
+                                        }
+                                        enum parameter-problem {
+                                            description
+                                                "Bad IP header.";
+                                        }
+                                        enum timestamp {
+                                            description
+                                                "Timestamp.";
+                                        }
+                                        enum timestamp-reply {
+                                            description
+                                                "Timestamp reply.";
+                                        }
+                                    }
+                                    description
+                                        "ICMP Message type.";
+                                }
+                            }
+                        }
+                    }
+
+                    case ip-version {
+                        leaf ip-version {
+                            type enumeration {
+                                enum ipv4 {
+                                    description
+                                        "The IPv4 protocol as defined in RFC 791.";
+                                }
+                                enum ipv6 {
+                                    description
+                                        "The IPv6 protocol as defined in RFC 2460.";
+                                }
+                            }
+                            description
+                                "To specify the IP version for the classifier.";
+                        }
+                    }
+
+                    case internal-cos {
+                        leaf internal-cos {
+                            type uint8 {
+                                range "0..63";
+                            }
+                            description
+                                "To specify the Internal Class-Of-Service for the classifier.";
+                        }
+                        leaf internal-cos-mask {
+                            type uint8 {
+                                range "1..63";
+                            }
+                            description
+                                "Allow internal-COS values to be optionally coupled with a mask in a single classifier.";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    container classifiers {
+       uses classifier-group;
+
+       description
+            "List of classifier templates. Classifiers can be referenced by various entities (flow-point/access-flow/qos-flow etc.),
+            to define their incoming classification.";
+    }
+}

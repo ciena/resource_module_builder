@@ -1,0 +1,677 @@
+module ciena-pro-pkix {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pkix";
+  prefix ciena-pro-pkix;
+
+  import ciena-pro-aaa-common {
+    prefix ciena-pro-aaa-common;
+  }
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines certificate management and support objects";
+
+  revision 2021-04-21 {
+    ciena-common-version:string "0.4.0";
+    description
+      "Add support for list of cerificate authority (CA) certificates and certificate-ca-load/certificate-ca-delete RPCs";
+  }
+  revision 2020-10-22 {
+    ciena-common-version:string "0.3.0";
+    description
+      "Make model platform independent";
+  }
+  revision 2019-11-29 {
+    ciena-common-version:string "0.2.0";
+    description
+      "Add support for self-signed certificate";
+  }
+  revision 2019-08-20 {
+    ciena-common-version:string "0.1.0";
+    description
+      "Add a leaf for identifying an active certificate.";
+  }
+  revision 2019-07-24 {
+    description
+      "Initial version.";
+  }
+
+  typedef pkix-country-name {
+    type string {
+      length "0|2";
+    }
+    description
+      "The country name (2 letter code).";
+  }
+
+  typedef pkix-province-name {
+    type ciena-pro-aaa-common:string-maxl-64;
+    description
+      "The state or province name.";
+  }
+
+  typedef pkix-locality-name {
+    type ciena-pro-aaa-common:string-maxl-64;
+    description
+      "The locality name (eg, city) .";
+  }
+
+  typedef pkix-organization-name {
+    type ciena-pro-aaa-common:string-maxl-64;
+    description
+      "The organization name (eg, company).";
+  }
+
+  typedef pkix-organization-unit-name {
+    type ciena-pro-aaa-common:string-maxl-64;
+    description
+      "The organization unit name (eg, section).";
+  }
+
+  typedef pkix-common-name {
+    type string {
+      length "1..64";
+    }
+    description
+      "The certificate common name (e.g. server FQDN).";
+  }
+
+  typedef pkix-email-address {
+    type string {
+      length "0..40";
+    }
+    description
+      "The email address.";
+  }
+
+  grouping server-settings-group {
+    description
+      "Grouping for common server settings attributes used in various RPCs.";
+    leaf server-to-use {
+      type enumeration {
+        enum "none" {
+          description
+            "Don't specify a remote server for the file transfer.";
+        }
+        enum "default-sftp-server" {
+          description
+            "Use the default SFTP server for the file transfer.";
+        }
+      }
+      description
+        "If server-to-use is specified with a value other than 'none' in the
+         RPC request, then the system will use the specified server for the
+         file transfer.";
+    }
+
+    leaf sftp-server-address {
+      type ciena-pro-aaa-common:string-maxl-64;
+      description
+        "The SFTP server IP address to use for the file transfer if
+         server-to-use is 'specified-sftp-server'. Otherwise this attribute
+         is ignored.";
+    }
+
+    leaf sftp-port {
+      type ietf:port-number;
+      default "22";
+      description
+        "Source SFTP Port.";
+    }
+
+    leaf sftp-user-name {
+      type ciena-pro-aaa-common:string-maxl-32;
+      description
+        "The SFTP user-name.";
+    }
+
+    leaf sftp-password {
+      type ciena-pro-aaa-common:string-maxl-128;
+      description
+        "The SFTP password.";
+    }
+  }
+
+  grouping certificate-information-group {
+    description
+      "Grouping of common attributes for a certificate.";
+    reference
+      "RFC 5246: The TLS Protocol, Section 7.4.2";
+    leaf public-key {
+      type string {
+        length "0..4196";
+      }
+      description
+        "A base64 encoded string that contains the value of the public key.
+         The interpretation of the content is defined by the key
+         algorithm.  For example, a DSA key is an integer, an RSA
+         key is represented as RSAPublicKey as defined in
+         [RFC3447], and an Elliptic Curve Cryptography (ECC) key
+         is represented using the 'publicKey' described in
+         [RFC5915]";
+      reference
+        "RFC 3447: Public-Key Cryptography Standards (PKCS) #1:
+                   RSA Cryptography Specifications Version 2.1.
+         RFC 5915: Elliptic Curve Private Key Structure.";
+    }
+
+    leaf subject-common-name {
+      type ciena-pro-aaa-common:string-maxl-64;
+      description
+        "Identification of the entity associated with the public key stored
+         in the subject public key field.";
+    }
+
+    leaf alternate-name {
+      type ciena-pro-aaa-common:string-maxl-64;
+      description
+        "Altername identification of the entity associated with the public key stored
+         in the subject public key field.";
+    }
+
+    leaf issuer-common-name {
+      type ciena-pro-aaa-common:string-maxl-64;
+      description
+        "Identification of the entity that has signed and issued the certificate.";
+    }
+
+    leaf valid-from {
+      type string {
+        length "0..45";
+      }
+      description
+        "The date that the certificate is valid from and the passed validity time.";
+    }
+
+    leaf valid-to {
+      type string {
+        length "0..45";
+      }
+      description
+        "The date that the certificate is valid to and the remaining time.";
+    }
+
+    leaf signature-algorithm {
+      type ciena-pro-aaa-common:string-maxl-64;
+      description
+        "Algorithm used to sign the certificate.";
+    }
+
+    leaf serial-number {
+      type string {
+        length "0..20";
+      }
+      description
+        "The certificate's serial number.";
+    }
+
+    leaf extended-key-usage {
+      type string {
+        length "0..255";
+      }
+      description
+        "Indicates purposes for which the certified public key may be used,
+         in addition to or in place of the basic purposes.";
+    }
+
+    leaf additional-data {
+      type string {
+        length "0..512";
+      }
+      description
+        "Indicates purposes for which the certified public key may be used,
+         in addition to or in place of the basic purposes.";
+    }
+  }
+
+  container certificates {
+    config false;
+    description
+      "Device certificate attributes.";
+    list device-certificates {
+      key "certificate-name";
+      description
+        "device certificates list.";
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-32;
+        description
+          "The device certificate name.";
+      }
+
+      leaf key-type {
+        type ciena-pro-aaa-common:string-maxl-64;
+        description
+          "The key type.";
+      }
+
+      leaf committed {
+        type boolean;
+        description
+          "set to TRUE if the certificate is committed and FALSE otherwise.";
+      }
+
+      leaf active {
+        type boolean;
+        description
+          "set to TRUE if the certificate is active and FALSE otherwise.";
+      }
+
+      container device-certificate {
+        config false;
+        description
+          "Device certificate attributes.";
+        uses certificate-information-group;
+      }
+    }
+
+    list ca-certificates {
+      key "certificate-name";
+      description
+        "CA certificates list.";
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-32;
+        description
+          "The CA certificate name.";
+      }
+
+      leaf certificate-hash {
+        type ciena-pro-aaa-common:string-maxl-32;
+        description
+          "A string to uniquely identify a certificate.";
+      }
+
+      leaf status {
+        type enumeration {
+          enum "valid" {
+            description
+              "The certificate file is valid.";
+          }
+          enum "invalid" {
+            description
+              "The certificate file is invalid.";
+          }
+        }
+        description
+          "The status of the CA certificate file.";
+      }
+
+      leaf key-type {
+        type ciena-pro-aaa-common:string-maxl-64;
+        description
+          "The key type.";
+      }
+
+      container ca-certificate {
+        config false;
+        description
+          "CA certificate attributes.";
+        uses certificate-information-group;
+      }
+    }
+  }
+
+  rpc certificate-load {
+    description
+      "Get file from a specified source.";
+    input {
+      leaf remote-file-name {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "The remote file name.";
+      }
+
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "The device certificate name.";
+      }
+
+      leaf password {
+        type ciena-pro-aaa-common:string-maxl-128;
+        description
+          "The password for activation. This is optional and only required if p12 file is encrypted.";
+      }
+
+      uses server-settings-group;
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate installation succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate installation failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-ca-load {
+    description
+      "Install a CA certificate.";
+    input {
+      leaf remote-file-name {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "The file name for the CA certificate.";
+      }
+
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-32;
+        description
+          "The CA certificate name. This is an optional input. If not specified, the certificate name will be auto-generated.";
+      }
+
+      uses server-settings-group;
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate installation succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate installation failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-delete {
+    description
+      "Delete certificate file";
+    input {
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "The device certificate name.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate deletion succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate deletion failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-ca-delete {
+    description
+      "Delete CA certificate file";
+    input {
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-32;
+        description
+          "The CA certificate name.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate deletion succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate deletion failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-activate {
+    description
+      "Activate a local p12-file.";
+    input {
+      leaf certificate-name {
+        type ciena-pro-aaa-common:string-maxl-256;
+        mandatory true;
+        description
+          "The device certificate name.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate activation succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate activation failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-commit {
+    description
+      "commit the activated certificate.";
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate commit succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate commit failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc certificate-create {
+    description
+      "Generate a self-signed certificate by specifying the mandatory common name as well as
+       other optional information that will incorporated into the certificate.
+       Optional fields can be left blank either by specifying the field without any value
+       or by entering '.' as the input value.";
+    input {
+      leaf common-name {
+        type pkix-common-name;
+        mandatory true;
+        description
+          "The certificate common name (e.g. server FQDN).";
+      }
+
+      leaf expiry-days {
+        type uint64 {
+          range "100..1825";
+        }
+        default "825";
+        description
+          "The number of days until certificate expires. If this input is specified the expiry range
+           range should be between 100 and 1825 days (up to 5 years). If this input is not specified,
+           the certificate will expire in 825 days.";
+      }
+
+      leaf key-type {
+        type enumeration {
+          enum "rsa-2048" {
+            description
+              "RSA key of size 2048.";
+          }
+          enum "rsa-3072" {
+            description
+              "RSA key of size 3072.";
+          }
+          enum "rsa-4096" {
+            description
+              "RSA key of size 4096.";
+          }
+          enum "ecdsa-256" {
+            description
+              "ECDSA key of size 256.";
+          }
+          enum "ecdsa-384" {
+            description
+              "ECDSA key of size 384.";
+          }
+          enum "ecdsa-521" {
+            description
+              "ECDSA key of size 521.";
+          }
+        }
+        default "rsa-4096";
+        description
+          "supported key types and lengths.";
+      }
+
+      leaf hash-algorithm {
+        type enumeration {
+          enum "sha-256" {
+            description
+              "SHA-256 hash algorithm.";
+          }
+          enum "sha-384" {
+            description
+              "SHA-384 hash algorithm.";
+          }
+          enum "sha-512" {
+            description
+              "SHA-512 hash algorithm.";
+          }
+        }
+        default "sha-512";
+        description
+          "Hash algorithm for signing certificates.";
+      }
+
+      leaf country-name {
+        type pkix-country-name;
+        description
+          "The country name (2 letter code).";
+      }
+
+      leaf province-name {
+        type pkix-province-name;
+        description
+          "The state or province name.";
+      }
+
+      leaf locality-name {
+        type pkix-locality-name;
+        description
+          "The locality name (eg, city) .";
+      }
+
+      leaf organization-name {
+        type pkix-organization-name;
+        description
+          "The organization name (eg, company).";
+      }
+
+      leaf organization-unit-name {
+        type pkix-organization-unit-name;
+        description
+          "The organization unit name (eg, section).";
+      }
+
+      leaf email-address {
+        type pkix-email-address;
+        description
+          "The email address.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type enumeration {
+          enum "success" {
+            description
+              "Certificate installation succeeded.";
+          }
+          enum "failure" {
+            description
+              "Certificate installation failed.";
+          }
+        }
+      }
+
+      leaf return-string {
+        type ciena-pro-aaa-common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+}
