@@ -21,6 +21,18 @@ module ciena-packet-xcvr-pluggable {
   description
     "This YANG module defines Ciena's XCVR common pluggable specific data for the NETCONF protocol. It will augment the ciena-packet-xcvr module.";
 
+  revision 2023-03-22 {
+    description
+      "Added new Identifier SFP56.;
+       Added new leaf reach-raw under XCVR transmitter properties";
+  }
+
+  revision 2022-10-09 {
+    description
+      "Added new Identifier SFPDD.
+       Adding new container power-consumption under XCVR diagnostics.";
+  }
+
   revision 2020-05-07 {
     description
       "Added bit Spec-Compliance-10GBASE-ER to specification-compliance";
@@ -125,10 +137,10 @@ module ciena-packet-xcvr-pluggable {
           description
             "Identifier value 0x02, Module/connector soldered to motherboard.";
         }
-        enum "SFP/SFP+/SFP28" {
+        enum "SFP/SFP+/SFP28/SFP56" {
           value 3;
           description
-            "Identifier value 0x03, SFP/SFP+/SFP28.";
+            "Identifier value 0x03, SFP/SFP+/SFP28/SFP56.";
         }
         enum "300 pin XBI" {
           value 4;
@@ -239,6 +251,11 @@ module ciena-packet-xcvr-pluggable {
           value 25;
           description
             "Identifier value 0x19, CFP2-DCO.";
+        }
+        enum "SFPDD" {
+          value 26;
+          description
+            "Identifier value 0x1A, SFPDD.";
         }
       }
       config false;
@@ -372,6 +389,12 @@ module ciena-packet-xcvr-pluggable {
       config false;
       description
         "Raw byte value of Device encoding mechanism. Some values may differ depending on if it is 8472 or 8x36. In the format of a HEX string. Reference SFF-8024, TABLE 4-2.";
+    }
+    leaf reach-raw {
+      type cntypes:string-maxl-32;
+      config false;
+      description
+        "Raw byte value of fiber reach.";
     }
   }
   augment "/xcvr:xcvrs/xcvr:xcvr/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:diagnostic-monitoring" {
@@ -675,6 +698,17 @@ module ciena-packet-xcvr-pluggable {
         description
           "Supply voltage thresholds.";
         uses xcvr:supply-voltage-threshold-group;
+      }
+    }
+    container power-consumption {
+      description
+        "XCVR power consumption.";
+      leaf actual {
+        type cntypes:decimal-2-dig;
+        units "Watt";
+        config false;
+        description
+          "Power consuption of plug, actual value in Watt (W).";
       }
     }
   }

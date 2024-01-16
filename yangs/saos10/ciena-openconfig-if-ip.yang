@@ -6,7 +6,7 @@ module ciena-openconfig-if-ip {
     prefix oc-if;
   }
   import ietf-yang-types { prefix yang; }
-  import ietf-inet-types { prefix inet; revision-date 2013-07-15; }
+  import ietf-inet-types { prefix inet; }
   import ciena-openconfig-interfaces { prefix cn-if; }
 
   organization
@@ -34,6 +34,24 @@ module ciena-openconfig-if-ip {
      forbidden unless prior written permission is obtained from
      Ciena Corporation.";
 
+  revision "2023-03-24" {
+   description
+     "Added GARP and Neighbor Discovery config support.";
+  }
+
+  revision "2023-01-06" {
+   description
+     "Added secondary IPv4/IPv6 addresses configuration and oper support.
+      Added if-feature for secondary IPv4/IPv6 addresses configuration.";
+   reference
+     "RFC 7277: A YANG data model for IP management.";
+  }
+
+  revision "2022-09-22" {
+   description
+      "Added check to restrict zero MAC address.";
+  }
+
   revision "2021-06-30" {
    description
       "Added IPv6 address configuration support for point-to-point interface.";
@@ -56,6 +74,16 @@ module ciena-openconfig-if-ip {
       "Initial version";
     reference
      "";
+  }
+
+  feature secondary-ipv4-address {
+    description
+      "Support for secondary IPv4 address configuration.";
+  }
+
+  feature secondary-ipv6-address {
+    description
+      "Support for secondary IPv6 address configuration.";
   }
 
   // typedef statements
@@ -128,190 +156,187 @@ module ciena-openconfig-if-ip {
        "The origin of a neighbor entry.";
   }
   augment /oc-if:interfaces/oc-if:interface {
-     container ipv4 {
-       description
-         "Parameters for the IPv4 address family.";
+    container ipv4 {
+      description
+        "Parameters for the IPv4 address family.";
 
-     container addresses {
-       when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='ip-tunnel' or .='point-to-point']";
-       description
-         "Enclosing container for address list";
+      container addresses {
+        when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='ip-tunnel' or .='point-to-point']";
+        description
+          "Enclosing container for address list";
 
-       list address {
-         key "ip";
-         max-elements 1;
-         description
-           "The list of configured IPv4 addresses on the interface.";
+        list address {
+          key "ip";
+          max-elements 1;
+          description
+            "The list of configured IPv4 addresses on the interface.";
 
-         leaf ip {
-           type leafref {
-             path "../config/ip";
-           }
-           description "References the configured IP address";
-         }
+          leaf ip {
+            type leafref {
+              path "../config/ip";
+            }
+            description "References the configured IP address";
+          }
 
-         container config {
-           description "Configuration data for each configured IPv4
-           address on the interface";
+          container config {
+            description "Configuration data for each configured IPv4
+            address on the interface";
+            uses ipv4-address-config;
+          }
 
-           uses ipv4-address-config;
+          container state {
+            config false;
+              description "Operational state data for each IPv4 address
+              configured on the interface";
+            uses ipv4-address-config;
+            uses ipv4-address-state;
+            uses secondary-ipv4-address-state;
+          }
+        }
+        uses secondary-ipv4-address-config;
+      }
 
-         }
-         container state {
-
-           config false;
-             description "Operational state data for each IPv4 address
-             configured on the interface";
-
-           uses ipv4-address-config;
-           uses ipv4-address-state;
-         }
-       }
-     }
-
-     container unnumbered {
+      container unnumbered {
         when "../../oc-if:config/cn-if:type = 'ip-unnumbered'";
         description
           "Parameters for the IPv4 unnumbered configuration";
 
         container config {
-           description 
+          description 
               "Configuration data for each configured 
               unnumbered interface";
-
-           uses ipv4-unnumbered;
+          uses ipv4-unnumbered;
         }
         container state {
-
-           config false;
+          config false;
               description 
-                 "Operational state data for each IPv4 address
-                 configured on the interface";
+                "Operational state data for each IPv4 address
+                configured on the interface";
+          uses ipv4-unnumbered;
 
-           uses ipv4-unnumbered;
-
-           leaf borrowed-ip {
+          leaf borrowed-ip {
               type inet:ipv4-address-no-zone;
               description
-                 "The borrowed IPv4 address on unnumbered interface.";
-           }
+                "The borrowed IPv4 address on unnumbered interface.";
+          }
 
-           leaf prefix-length {
+          leaf prefix-length {
               type uint8 {
-                 range "0..32";
+                range "0..32";
               }
               description
-                 "The length of the subnet prefix.";
-           }
-        }        
-     }
+                "The length of the subnet prefix.";
+          }
+        }
+      }
 
-     container neighbors {
-       when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='ip-unnumbered' or .='point-to-point']";
-       description
-         "Enclosing container for neighbor list";
+      container neighbors {
+        when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='ip-unnumbered' or .='point-to-point']";
+        description
+          "Enclosing container for neighbor list";
 
-       list neighbor {
-         key "ip";
-         max-elements 8;
-         description
-           "A list of mappings from IPv4 addresses to
-           link-layer addresses.
+        list neighbor {
+          key "ip";
+          max-elements 8;
+          description
+            "A list of mappings from IPv4 addresses to
+            link-layer addresses.
 
-           Entries in this list are used as static entries in the
-           ARP Cache.";
-         reference
-           "RFC 826: An Ethernet Address Resolution Protocol";
+            Entries in this list are used as static entries in the
+            ARP Cache.";
+          reference
+            "RFC 826: An Ethernet Address Resolution Protocol";
 
-         leaf ip {
-           type leafref  {
-             path "../config/ip";
-           }
-           description "References the configured IP address";
-         }
+          leaf ip {
+            type leafref  {
+              path "../config/ip";
+            }
+            description "References the configured IP address";
+          }
 
-         container config {
-           description "Configuration data for each configured IPv4
-           address on the interface";
+          container config {
+            description "Configuration data for each configured IPv4
+            address on the interface";
+            uses ipv4-neighbor-config;
+          }
+        }
+      }
+      uses arp-config;
+    }
 
-           uses ipv4-neighbor-config;
+    container ipv6 {
+      description
+        "Parameters for the IPv6 address family.";
 
-         }
-       }
-     }
-   }
-   container ipv6 {
-     description
-       "Parameters for the IPv6 address family.";
+      container addresses {
+        when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='point-to-point']";
+        description
+          "Enclosing container for address list";
 
-     container addresses {
-       when "../../oc-if:config/cn-if:type[.='loopback' or .='ip' or .='system' or .='point-to-point']";
-       description
-         "Enclosing container for address list";
+        list address {
+          key "ip";
+          max-elements 1;
+          description
+            "The list of configured IPv6 addresses on the interface.";
 
-       list address {
-         max-elements 1;
-         key "ip";
-         description
-           "The list of configured IPv6 addresses on the interface.";
+          leaf ip {
+            type leafref {
+              path "../config/ip";
+            }
+            description "References the configured IP address";
+          }
 
-         leaf ip {
-           type leafref {
-             path "../config/ip";
-           }
-           description "References the configured IP address";
-         }
+          container config {
+            description
+              "Configuration data for each IPv6 address on
+              the interface";
 
-         container config {
-           description
-             "Configuration data for each IPv6 address on
-             the interface";
+            uses ipv6-address-config;
 
-           uses ipv6-address-config;
+          }
+          container state {
 
-         }
-         container state {
+            config false;
+            description
+              "State data for each IPv6 address on the
+              interface";
 
-           config false;
-           description
-             "State data for each IPv6 address on the
-             interface";
+            uses ipv6-address-config;
+            uses ipv6-address-state;
+            uses secondary-ipv6-address-state;
+          }
+        }
+        uses secondary-ipv6-address-config;
+      }
 
-           uses ipv6-address-config;
-           uses ipv6-address-state;
-         }
-       }
-     }
+      container neighbors {
+        when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='point-to-point']";
+        description
+          "Enclosing container for list of IPv6 neighbors";
 
-     container neighbors {
-       when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='point-to-point']";
-       description
-         "Enclosing container for list of IPv6 neighbors";
+        list neighbor {
+          key "ip";
+          max-elements 8;
+          description
+            "List of IPv6 neighbors";
 
-       list neighbor {
-         key "ip";
-         max-elements 8;
-         description
-           "List of IPv6 neighbors";
+          leaf ip {
+            type leafref {
+              path "../config/ip";
+            }
+            description
+              "References the configured IPv6 neighbor address";
+          }
 
-         leaf ip {
-           type leafref {
-             path "../config/ip";
-           }
-           description
-             "References the configured IP neighbor address";
-         }
-
-         container config {
-           description "Configuration data for each IPv6 address on
-           the interface";
-
-           uses ipv6-neighbor-config;
-
-         }
-       }
-     }
-   }
+          container config {
+            description "Configuration data for each IPv6 address on
+            the interface";
+            uses ipv6-neighbor-config;
+          }
+        }
+      }
+      uses neighbor-discovery-config;
+    }
  }
 
   grouping ipv4-address-config {
@@ -383,6 +408,9 @@ module ciena-openconfig-if-ip {
 
     leaf link-layer-address {
       type yang:phys-address;
+      must "not(contains(.,'00:00:00:00:00:00'))" {
+        error-message "Invalid Mac-address, should not contain all zero.";
+      }
       mandatory true;
       description
        "The link-layer address of the neighbor node.";
@@ -439,11 +467,206 @@ module ciena-openconfig-if-ip {
 
     leaf link-layer-address {
       type yang:phys-address;
+      must "not(contains(.,'00:00:00:00:00:00'))" {
+        error-message "Invalid Mac-address, should not contain all zero.";
+      }
       mandatory true;
       description
         "[adapted from IETF IP model RFC 7277]
 
         The link-layer address of the neighbor node.";
+    }
+  }
+
+  grouping secondary-ipv4-address-config {
+    description
+      "Secondary IPv4 address configuration data for the interface.";
+
+    container secondary {
+      when "../../../oc-if:config/cn-if:type[.='ip' or .='point-to-point']";
+      description
+        "Enclosing container for secondary address list";
+
+      if-feature secondary-ipv4-address;
+
+      list address {
+        must "count(../../cn-ip:address)!=0" {
+           error-message "Secondary address(es) cannot exist without primary IPv4 address.";
+        }
+        key "ip";
+        max-elements 15;
+        description 
+          "The list of configured secondary IPv4 addresses on the interface."; 
+
+        leaf ip {
+          type inet:ipv4-address-no-zone;
+          description
+            "The IPv4 address on the interface.";
+         }
+
+         leaf prefix-length {
+           type uint8 {
+             range "0..32";
+           }
+           mandatory true;
+           description
+             "The length of the subnet prefix.";
+          }
+       }
+     }
+  }
+
+  grouping secondary-ipv6-address-config {
+    description 
+      "Secondary IPv6 adresss configuration data for the interface.";
+
+    container secondary {
+      when "../../../oc-if:config/cn-if:type[.='ip' or .='point-to-point']";
+      description
+        "Enclosing container for secondary address list";
+
+      if-feature secondary-ipv6-address;
+
+      list address {
+        must "count(../../cn-ip:address)!=0" {
+           error-message "Secondary address(es) cannot exist without primary IPv6 address.";
+        }
+        key "ip";
+        max-elements 15;
+        description
+          "The list of configured secondary IPv6 addresses on the interface.";
+
+        leaf ip {
+          type inet:ipv6-address-no-zone;
+          description
+            "The IPv6 address on the interface.";
+        }
+
+        leaf prefix-length {
+          type uint8 {
+            range "0..128";
+          }
+          mandatory true;
+          description
+            "The length of the subnet prefix.";
+        }
+      }
+    }
+  }
+
+  grouping secondary-ipv4-address-state {
+
+    description
+      "Secondary IPv4 adresss operational state data for the interface.";
+
+    list address {
+      key "ip";
+      description
+        "The list of configured secondary IPv4 addresses on the interface.";
+
+      leaf ip {
+        type inet:ipv4-address-no-zone;
+        description
+          "The IPv4 address on the interface.";
+      }
+
+      leaf prefix-length {
+        type uint8 {
+          range "0..32";
+        }
+        description
+          "The length of the subnet prefix.";
+      }
+
+      leaf secondary {
+        type boolean;
+        description
+          "Flag to identify secondary IP address.";
+      }
+      uses ipv4-address-state;
+    }
+  }
+
+  grouping secondary-ipv6-address-state {
+
+    description
+      "Secondary IPv6 adresss operational state data for the interface.";
+
+    list address {
+      key "ip";
+      description
+        "The list of configured secondary IPv6 addresses on the interface.";
+
+      leaf ip {
+        type inet:ipv6-address-no-zone;
+        description
+          "The IPv6 address on the interface.";
+      }
+
+      leaf prefix-length {
+        type uint8 {
+          range "0..128";
+        }
+        description
+          "The length of the subnet prefix.";
+      }
+
+      leaf secondary {
+        type boolean;
+        description
+          "Flag to identify secondary IPv6 address.";
+      }
+      uses ipv6-address-state;
+    }
+  }
+
+  grouping arp-config {
+    description
+      "ARP configuration for interface.";
+
+    container arp {
+      when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='point-to-point']";
+      description
+        "Address Resolution Protocol (ARP) related configuration.";
+
+      container gratuitous-arp {
+        when "../../../oc-if:config/cn-if:role[.='cn-if:data']";
+        description
+          "Configure gratuitous ARP. Supported only on interface with role data.";
+
+        leaf enable {
+          type boolean;
+          default "false";
+          description
+            "Enable or disable sending gratuitous ARP packet on the
+             interface. Default is false.";
+        }
+      }
+    }
+  }
+
+  grouping neighbor-discovery-config {
+    description
+      "Neighbor discovery configuration for interface.";
+
+    container neighbor-discovery {
+      when "../../oc-if:config/cn-if:type[.='ip' or .='system' or .='point-to-point']";
+      description
+        "Neighbor discovery related configuration.";
+
+      container unsolicited-neighbor-adv {
+        when "../../../oc-if:config/cn-if:role[.='cn-if:data']";
+        description
+          "Configure unsolicited neighbor advertisement (UNA).";
+
+        leaf enable {
+          type boolean;
+          default "false";
+          description
+            "Enable or disable sending UNA packet on the
+             interface.";
+        }
+      }
     }
   }
 }

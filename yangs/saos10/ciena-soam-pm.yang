@@ -18,6 +18,10 @@ module ciena-soam-pm {
        prefix "ciena-te";
     }
 
+    import ciena-cfm {
+      prefix "ciena-cfm";
+    }
+
     organization
         "Ciena Corporation";
 
@@ -33,6 +37,25 @@ module ciena-soam-pm {
     description
         "This YANG module defines Ciena's specific augmentations to the
         mef-soam-pm yang model.";
+
+    revision "2023-03-19" {
+      description
+         "Augment loss measurement and delay measurement operational data to newly
+          added container cfm-state.
+          Add parent container current-stats for current-availability-stats and current-measurement-stats.
+          Add parent container history-stats for history-availability-stats and history-measurement-stats.;
+          Added accelerated operational parameter in loss-measurement list.
+          Added accelerate config parameter in loss-measurement-config list.
+          Added loss-measurement-responder-config list in loss-measurements container.
+          Moved current-measurement-stats and current-availability-stats out from current-stats.
+          Added accelerated leaf in cfm-state loss-measurement list.
+          Updated session-id type from string to integer.
+          Removed mandatory tag from priority and default value for frame-size in loss-measurement-config list.
+          Updated the type of message period in loss-measurement-config list to float.
+          Updated the type of immediate in loss-measurement and delay-measurement to string type.";
+      reference
+        "None.";
+    }
 
     revision "2022-07-06" {
       description
@@ -73,7 +96,131 @@ module ciena-soam-pm {
         reference
             "Enter a reference here";
     }
-  
+
+    feature accelerate {
+      description
+        "Platform specific indicator which provides information whether the accelerated Loss Measurement session is supported on specific platform.";
+    }
+
+    typedef float-2dp {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      description
+        "Float type with 2 decimal place";
+    }
+
+    grouping cfm-measurement-timing-group {
+    description
+      "This grouping includes objects used for proactive and on-demand
+       scheduling of PM measurement sessions.";
+
+    container start-time {
+      description
+        "This container defines the session start time";
+
+      choice start-time {
+        mandatory true;
+        description
+          "Measurement session start time can be immediate, relative or
+           absolute.";
+
+        leaf immediate {
+          type string;
+
+          description
+            "This object specifies the start time to be immediately at the time
+             of session creation.";
+        }
+        leaf relative {
+          type yang:timeticks;
+
+          description
+            "This object specifies the relative start time, from the current
+             system time, to perform on-demand ETH-DM.  This attribute has no
+             meaning for proactive ETH-DM.";
+        }
+        leaf absolute {
+          type yang:date-and-time;
+
+          description
+            "This object specifies the scheduled start date/time to perform the
+             on-demand Performance Monitoring OAM operations. This attribute
+             has no meaning for proactive Performance Monitoring OAM
+             operations.";
+        }
+      }
+    }
+
+    container stop-time {
+      description
+        "This container defines the session stop time";
+
+      choice stop-time {
+        mandatory true;
+        description
+          "Measurement session stop time can be none, relative or
+           absolute.";
+
+        leaf none {
+          type string;
+
+          description
+            "This object specifies the measurement  session to never end.";
+        }
+
+        leaf relative {
+          type yang:timeticks;
+          mandatory true;
+
+          description
+            "This object specifies the duration of the Delay Measurement PM
+             Session.  The duration time can be specified as forever
+             (represented by a zero value) or as relative time (e.g., a
+             given number of hours, minutes, and seconds from the start
+             time).  If the duration time is relative time, then the
+             duration time should be equal to or greater than the frame
+             transmission period of the PM function(s) comprising the PM
+             Solution";
+
+        }
+
+        leaf absolute {
+          type yang:date-and-time;
+
+          description
+            "This object specifies the scheduled stop date and time to perform
+             on-demand Performance Monitoring OAM operations.  This
+             attribute has no meaning for proactive Performance
+             Monitoring OAM operations.  The stop date and time value should
+             be greater than or equal to the scheduled start date and time
+             value.";
+        }
+      }
+    }
+
+    leaf repetition-period {
+      type yang:timeticks;
+      default 0;
+
+      description
+        "This object specifies a configurable repetition time between
+         Measurement Intervals in a Measurement session in hundredths of a
+         second.
+
+         If the value is less than or equal to one Measurement Interval
+         there is no time gap between the end of one Measurement
+         Interval and the start of a new Measurement Interval. This is
+         the normal usage case.
+
+         If the value is greater than one Measurement Interval there is
+         time gap between the end of one Measurement Interval and the
+         start of the next Measurement Interval.";
+      reference
+        "[MEF SOAM PM IA] R18, D3, R19, R20";
+    }
+  }
+
     grouping remote-mep-group {
       description
         "This grouping includes objects which identify a remote MEP.";
@@ -753,6 +900,15 @@ module ciena-soam-pm {
            with this session.";
       }
 
+      leaf accelerated {
+        type boolean;
+
+        description
+          "This object indicates whether Loss Measurement PDUs are generated from
+          software or hardware. If value is false then Loss Measurement PDUs are
+          generated from software otherwise they are generated from hardware.";
+      }
+
     }
 
     augment "/mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-soam-pm:loss-measurements" {
@@ -834,7 +990,9 @@ module ciena-soam-pm {
         }
 
         leaf message-period {
-          type mef-soam-pm:performance-monitoring-interval-type;
+          type ciena-soam-pm:float-2dp {
+            range "3..3600000";
+          }
           units ms;
           default 1000;
 
@@ -845,13 +1003,10 @@ module ciena-soam-pm {
                      
              This object is not applicable if measurement-type is set to
              'ccm' and is ignored for that Loss Measurement Type.";
-          reference
-            "MEF-SOAM-PM-MIB.mefSoamLmCfgMessagePeriod";
         }
 
         leaf priority {
           type mef-cfm:priority-type;
-          mandatory true;
 
           description 
             "This object specifies the priority of frames with Performance
@@ -865,7 +1020,6 @@ module ciena-soam-pm {
           type uint32 {
             range "64 .. 2000";
           }
-          default 64;
           units bytes;
 
           description 
@@ -1242,6 +1396,66 @@ module ciena-soam-pm {
               "The TestID TLV value that associates Loss Measurement and Response PDUs
               with this session.";
         }
+
+        leaf accelerate {
+          if-feature accelerate;
+          type boolean;
+          default "false";
+
+          description
+            "This object indicates whether Loss Measurement PDUs will be generated from
+            software or hardware. If value is false then Loss Measurement PDUs will be
+            generated from software otherwise it will be generated from hardware.";
+        }
+      }
+
+      list loss-measurement-responder-config {
+        if-feature accelerate;
+        key test-id;
+        description
+          "A list of Loss Measurement Responder Sessions where each instance is uniquely
+          identified by an id attribute, that responds to the SLM/LMM PDUs received.";
+
+        leaf test-id {
+          type uint32;
+
+          description
+            "This object uniquely identifies the Loss Measurement Responder Sessions which responds
+            to the SLM/LMM PDUs received depending on the type of responder configured.";
+        }
+
+        uses ciena-soam-pm:remote-mep-group;
+
+        leaf measurement-type {
+          type enumeration {
+            enum slm {
+              description
+                "Response will be generated for SLM PDUs received.";
+            }
+            enum lmm-proprietary {
+              description
+                "Response will be generated for LMM PDUs received.";
+            }
+          }
+          default slm;
+
+          description
+            "This object specifies what type of Loss Measurement Responder session will be
+            created. If the value is slm then SLM Responder will be created and if the value is
+            lmm-proprietary then LMM Responder will be created.";
+          reference
+            "MEF-SOAM-PM-MIB.mefSoamLmCfgType";
+        }
+
+        leaf accelerate {
+          type boolean;
+          default "true";
+
+          description
+            "This object indicates whether Loss Measurement response PDUs will be generated from
+            software or hardware. If value is false then Loss Measurement response PDUs will be
+            generated from software otherwise it will be generated from hardware.";
+        }
       }
     }
 
@@ -1363,6 +1577,608 @@ module ciena-soam-pm {
         "The leaves here agument directly to the soam history-meaurement-stats container.";
 
       uses frame-loss-measurement-stats-group;
+  }
+
+  augment "/ciena-cfm:cfm-state" {
+     list delay-measurement {
+        key "session-id  mep-identifier ma-id md-id";
+        config false;
+        description
+           "A list of delay measurement PM sessions where each instance is
+           uniquely identified by an id attribute.";
+
+        leaf md-id {
+           type string;
+           description
+              "A unique identifier of a maintenance domain";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf ma-id {
+           type string;
+           description
+              "A unique identifier of a maintenance association";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf mep-identifier {
+           type mef-cfm:mep-id-type;
+
+           description
+              "Integer that is unique among all the MEPs in the same MA. Other
+              definition is: a small integer, unique over a given
+              Maintenance Association, identifying a specific Maintenance
+              association End Point.";
+           reference
+              "[802.1q] 12.14.6.3.2:b";
+        }
+
+        leaf session-id {
+           type uint32;
+
+           description
+              "This object uniquely identifies a scheduled measurement. It is
+              automatically generated by the server on creation of a new
+              measurement.";
+        }
+
+        leaf session-status {
+           type mef-soam-pm:session-status-type;
+           config false;
+
+           description
+              "This object indicates the current status of the DM session. A value
+              of 'active' indicates the current DM session is active,
+              i.e. the current time lies between the start time and the
+              stop time, and enabled is true. A value of 'not-active'
+              indicates the current DM session is not active, i.e. it has
+              not started yet, has stopped upon reaching the stop time,
+              or is disabled.";
+        }
+
+        uses mef-soam-pm:delay-measurement-configuration-group;
+        uses mef-soam-pm:remote-mep-group;
+        uses ciena-soam-pm:cfm-measurement-timing-group;
+
+        leaf source-mac-address {
+           type yang:mac-address;
+
+           description
+              "The Source MAC address field of the received SOAM DM session PDUs.
+              If measurement-type is dm1-received this object indicates
+              the source address of the dm1-transmitted DM session.
+              This object is only valid for measurement-type set to
+              dm1-received. It is ignored for measurement-type set to dmm
+              or dm1-transmitted.";
+        }
+
+        leaf frame-delay-two-way {
+           type yang:gauge32;
+           units microseconds;
+           description
+              "This object contains the two-way frame delay calculated by this MEP
+              from the last received SOAM PDU.This object is undefined is measurement-type is
+              This object is undefined is measurement-type is
+              dm1-transmitted or dm1-received.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmMeasuredStatsFrameDelayTwoWay";
+        }
+
+        leaf inter-frame-delay-variation-two-way {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object contains the last two-way inter-frame delay interval
+              calculated by this MEP.The value of this object is undefined when measurement-type
+              The value of this object is undefined when measurement-type
+              is dm1-transmitted or dm1-received.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmMeasuredStatsIfdvTwoWay";
+        }
+
+        leaf inter-frame-delay-variation-forward {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object contains the last one-way inter-frame delay interval in
+              the forward direction calculated by this MEP.
+
+              The value of this object is undefined when measurement-type
+              is dm1-transmitted.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmMeasuredStatsIfdvForward";
+        }
+
+        leaf inter-frame-delay-variation-backward {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object contains the last one-way inter-frame delay interval in
+              the backward direction calculated by this MEP.
+
+              The value of this object is undefined when measurement-type
+              is dm1-transmitted or dm1-received.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmMeasuredStatsIfdvBackward";
+        }
+
+        container current-stats {
+           description
+              "This container contains the results for the current measurement
+              interval in a SOAM delay measurement session gathered
+              during the interval indicated by measurement-interval.";
+
+           leaf id {
+              type uint32;
+
+              description
+                 "Index of current measurement interval for
+                 PM session. This value will become the value
+                 for id of the history-stats list once
+                 the measurement interval is completed.";
+              reference
+                 "MEF-SOAM-PM-MIB.mefSoamDmCurrentStatsIndex";
+           }
+
+           leaf start-time {
+              type yang:date-and-time;
+
+              description
+                 "The time that the current measurement interval started.";
+           }
+
+           leaf elapsed-time {
+              type uint32 {
+                 range "0..2147483647";
+              }
+
+              description
+                 "The time that the current measurement interval has been running,
+                 in 0.01 seconds.";
+           }
+
+           uses mef-soam-pm:delay-measurement-stats-group;
+           uses mef-soam-pm:delay-measurement-bins-group;
+        }
+
+        list history-stats {
+           key id;
+           description
+              "This list contains the results for history measurement intervals in
+              a SOAM delay measurement session.";
+
+           leaf id {
+              type uint32;
+
+              description
+                 "The identifier for the measurement interval within this
+                 PM session.";
+           }
+
+           leaf end-time {
+              type yang:date-and-time;
+
+              description
+                 "The time that the measurement interval ended.";
+           }
+
+           leaf elapsed-time {
+              type uint32 {
+                 range "0..2147483647";
+              }
+
+              description
+                 "The length of time that the measurement interval ran for, in 0.01
+                 seconds.";
+           }
+
+           uses mef-soam-pm:delay-measurement-stats-group;
+           uses mef-soam-pm:delay-measurement-bins-group;
+        }
+
+        leaf max-frame-delay-two-way-threshold {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object is used to set the maximum two-way delay threshold value
+              that will be used to determine if a threshold notification is
+              generated.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmThresholdCfgMaxFrameDelayTwoWayThreshold";
+        }
+
+        leaf average-frame-delay-two-way-threshold {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object is used to set the average two-way delay threshold value
+              that will be used to determine if a threshold notification is
+              generated.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmThresholdCfgAvgFrameDelayTwoWayThreshold";
+        }
+
+        leaf max-inter-frame-delay-variation-two-way-threshold {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object is used to set the maximum two-way IFDV threshold value
+              that will be used to determine if a threshold notification is
+              generated.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmThresholdCfgMaxIfdvTwoWayThreshold";
+        }
+
+        leaf average-inter-frame-delay-variation-two-way-threshold {
+           type yang:gauge32;
+           units microseconds;
+
+           description
+              "This object is used to set the average two-way IFDV threshold value
+              that will be used to determine if a threshold notification is
+              generated.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamDmThresholdCfgAvgIfdvTwoWayThreshold";
+        }
+
+        leaf test-id {
+           type uint32;
+
+           description
+              "The TestID TLV value that associates DMM and DMR PDUs
+              with this session.";
+        }
+
+        leaf performance-advertisement-profile {
+           type string {
+           }
+           description
+              "Traffic engineering performance advertisement profile attached to the delay session.
+              when performance advertisement profile is attached to a CFM delay session, CFM will
+              publish min-delay, max-delay, average-delay and ifdv-avg values of the session at the
+              end Burst interval and measurement interval";
+        }
+     }
+  }
+
+  augment "/ciena-cfm:cfm-state" {
+     list loss-measurement {
+        key "md-id ma-id mep-identifier session-id";
+        config false;
+        description
+           "A list of loss measurement PM Sessions where each instance is uniquely
+           identified by an id attribute.";
+
+        leaf md-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Domain";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf ma-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Association";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf mep-identifier {
+           type mef-cfm:mep-id-type;
+
+           description
+              "Integer that is unique among all the MEPs in the same MA. Other
+              definition is: a small integer, unique over a given
+              maintenance association, identifying a specific maintenance
+              association end point.";
+           reference
+              "[802.1q] 12.14.6.3.2:b";
+        }
+
+        leaf session-id {
+           type uint32;
+
+           description
+              "This object uniquely identifies a scheduled measurement. It is
+              automatically generated by the server on creation of a new
+              measurement.";
+        }
+
+        leaf session-status {
+           type mef-soam-pm:session-status-type;
+           config false;
+
+           description
+              "This object indicates the current status of the LM session. A value
+              of 'active' indicates the current LM session is active,
+              i.e. the current time lies between the start time and the
+              stop time, and enabled is true. A value of 'not-active'
+              indicates the current LM session is not active, i.e. it has
+              not started yet, has stopped upon reaching the stop time,
+              or is disabled.";
+        }
+
+        uses mef-soam-pm:loss-measurement-configuration-group;
+        uses mef-soam-pm:remote-mep-group;
+        uses ciena-soam-pm:cfm-measurement-timing-group;
+
+        leaf measured-forward-flr {
+           type yang:gauge32 {
+              range "0..100000";
+           }
+           units milli-percent;
+
+           description
+              "This object contains the frame loss ratio in the forward direction
+              calculated by this MEP from the last received SOAM PDU. The
+              FLR value is a ratio that is expressed as a percent with a
+              value of 0 (ratio 0.00) through 100000 (ratio 1.00).
+
+              Units are in milli-percent, where 1 indicates 0.001
+              per-cent.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamLmMeasuredStatsForwardFlr";
+        }
+
+        leaf measured-backward-flr {
+           type yang:gauge32 {
+              range "0..100000";
+           }
+           units milli-percent;
+
+           description
+              "This object contains the Frame Loss Ratio in the backward direction
+              calculated by this MEP from the last received SOAM PDU. The
+              FLR value is a ratio that is expressed as a percent with a
+              value of 0 (ratio 0.00) through 100000 (ratio 1.00).
+
+              Units are in milli-percent, where 1 indicates 0.001
+              percent.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamLmMeasuredStatsBackwardFlr";
+        }
+
+        leaf measured-availability-forward-status {
+           type mef-soam-pm:availability-type;
+
+           description
+              "This object indicates the availability status (the outcome of the
+              last availability indicator) in the forward direction based upon
+              the last received SOAM PDU.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamLmMeasuredStatsAvailForwardStatus";
+        }
+
+        leaf measured-availability-backward-status {
+           type mef-soam-pm:availability-type;
+
+           description
+              "This object indicates the availability status (the outcome of the
+              last availability indicator) in the backward direction based
+              upon the last received SOAM PDU.";
+           reference
+              "MEF-SOAM-PM-MIB.mefSoamLmMeasuredStatsAvailBackwardStatus";
+        }
+
+        leaf measured-forward-last-transition-time {
+           type yang:date-and-time;
+           description
+              "This object indicates the time of the last transition between
+              available and unavailable in the forward direction.
+
+              If there have been no transitions since the loss
+              measurement session was started, this is set to 0.";
+           reference
+              "MEF-SOAM-PM-MIB." +
+              "mefSoamLmMeasuredStatsAvailForwardLastTransitionTime";
+        }
+
+        leaf measured-backward-last-transition-time {
+           type yang:date-and-time;
+           description
+              "This object indicates the time of the last transition between
+              available and unavailable in the backward direction.
+
+              If there have been no transitions since the loss measurement
+              session was started, this is set to 0.";
+           reference
+              "MEF-SOAM-PM-MIB." +
+              "mefSoamLmMeasuredStatsAvailBackwardLastTransitionTime";
+        }
+
+        container current-availability-stats {
+           description
+              "This container contains the current results for a SOAM loss
+              measurement session for availability statistics gathered during the
+              interval indicated by availability-measurement-interval.";
+
+           leaf id {
+              type uint32;
+              description
+                 "The index for the current availability measurement interval for
+                 this PM session. This value will become the value for id of the
+                 history-availability-stats list once the measurement
+                 interval is completed.The duration of the measurement
+                 interval is specified by availability-measurement-interval.";
+           }
+
+           leaf start-time {
+              type yang:date-and-time;
+              description
+                 "The time when the current measurement interval started.";
+           }
+
+           leaf elapsed-time {
+              type uint32 {
+                 range "0..2147483647";
+              }
+
+              description
+                 "The time when the current measurement interval has been running,
+                 in 0.01 seconds.";
+           }
+
+           uses mef-soam-pm:loss-availability-stats-group;
+        }
+
+        container current-measurement-stats {
+           description
+              "This container contains the results for the current measurement
+              interval in a SOAM loss measurement session gathered during
+              the interval indicated by measurement-interval.";
+
+           leaf id {
+              type uint32;
+
+              description
+                 "The index for the current measurement interval for this PM
+                 session. This value will become the value for id of the
+                 history-measurement-stats list once the measurement
+                 interval is completed.";
+           }
+
+           leaf start-time {
+              type yang:date-and-time;
+
+              description
+                 "The time that the current measurement interval started.";
+           }
+
+           leaf elapsed-time {
+              type uint32 {
+                 range "0..2147483647";
+              }
+
+              description
+                 "The time that the current measurement interval has been running,
+                 in 0.01 seconds.";
+           }
+
+           uses mef-soam-pm:loss-measurement-stats-group;
+           uses frame-loss-measurement-stats-group;
+        }
+
+        container history-stats {
+           description
+              "Loss measurement history stats.";
+           list history-availability-stats {
+              key id;
+              description
+                 "This list contains the results for availability history measurement
+                 intervals in a SOAM loss measurement session.";
+
+              leaf id {
+                 type uint32;
+                 description
+                    "The index for the availability measurement interval within this
+                    PM session.";
+              }
+
+              leaf end-time {
+                 type yang:date-and-time;
+
+                 description
+                    "The time that the measurement interval ended.";
+              }
+
+              leaf elapsed-time {
+                 type uint32 {
+                    range "0..2147483647";
+                 }
+
+                 description
+                    "The length of time that the measurement interval ran for,
+                    in 0.01 seconds.";
+              }
+
+              uses mef-soam-pm:loss-availability-stats-group;
+           }
+
+           list history-measurement-stats {
+              key id;
+              description
+                 "This list contains the results for history measurement
+                 intervals in a SOAM loss measurement session.";
+
+              leaf id {
+                 type uint32;
+
+                 description
+                    "The index for the measurement interval within this
+                    PM session.";
+              }
+
+              leaf end-time {
+                 type yang:date-and-time;
+
+                 description
+                    "The time that the measurement interval ended.";
+              }
+
+              leaf elapsed-time {
+                 type uint32 {
+                    range "0..2147483647";
+                 }
+
+                 description
+                    "The length of time that the measurement interval ran for,
+                    in 0.01 seconds.";
+              }
+
+              uses mef-soam-pm:loss-measurement-stats-group;
+              uses frame-loss-measurement-stats-group;
+           }
+        }
+
+        leaf measured-fl-forward-threshold {
+           type uint32 {
+              range "0..2147483647";
+           }
+
+           description
+              "This object is used to set the measured forward frame loss
+              threshold value that will be used to determine if a threshold
+              notification is generated.";
+        }
+
+        leaf measured-fl-backward-threshold {
+           type uint32 {
+              range "0..2147483647";
+           }
+
+           description
+              "This object is used to set the measured backward frame loss
+              threshold value that will be used to determine if a threshold
+              notification is generated.";
+        }
+
+        leaf test-id {
+           type uint32;
+
+           description
+              "The TestID TLV value that associates loss measurement and response PDUs
+              with this session.";
+        }
+
+        leaf accelerated {
+           type boolean;
+
+           description
+             "This object indicates whether Loss Measurement PDUs are generated from
+             software or hardware. If value is false then Loss Measurement PDUs are
+             generated from software otherwise they are generated from hardware.";
+        }
+     }
   }
 
   augment "/mef-soam-pm:threshold-crossing-alarm" {

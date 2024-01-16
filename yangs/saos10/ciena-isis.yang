@@ -50,6 +50,17 @@ module ciena-isis {
      forbidden unless prior written permission is obtained
      from Ciena Corporation.";
 
+  revision "2023-10-11" {
+    description
+      "Added graceful-restart T1, T2, T3 timers configuration and operational state.
+       Added new notification for multi client of delay measurement on te interface.
+       Modified the type of multitopology-id leaf-list and leaf fields from uint16 to uint32.
+       Changed max string length of IS-IS instance area tag to 255 characters.
+       Added leaf-lists for IS-IS IPv4 and IPv6 Interface Address (TLV 132 and 232).
+       Deprecating support for IS-IS instance level GR container and leaves.
+       Added Srv6 locator oper state.";
+  }
+
   revision "2022-07-27" {
     description
       "Modified the max range of rib-update-delay timer to 60 seconds.
@@ -958,7 +969,6 @@ module ciena-isis {
     }
 
     leaf recovery-time {
-       if-feature graceful-restart;
        type uint16 {
           range "5..3600";
        }
@@ -1051,7 +1061,6 @@ module ciena-isis {
     }
 
     leaf recovery-time {
-       if-feature graceful-restart;
        type uint16 {
           range "5..3600";
        }
@@ -1574,6 +1583,17 @@ module ciena-isis {
           "Interval between hello messages";
       }
 
+
+      leaf gr-restart-hello-interval {
+        type uint16 {
+           range "1..65535";
+        }
+        default "3";
+        units seconds;
+        description
+          "IS-IS Graceful restart T1 timer interval";
+      }
+
       leaf hello-multiplier {
         type uint8 {
           range "2..100";
@@ -1674,6 +1694,16 @@ module ciena-isis {
         units seconds;
         description
           "Interval between hello messages";
+      }
+
+      leaf gr-restart-hello-interval {
+        type uint16 {
+           range "1..65535";
+        }
+        default "3";
+        units seconds;
+        description
+          "IS-IS Graceful restart T1 timer interval";
       }
 
       leaf hello-multiplier {
@@ -1901,7 +1931,7 @@ module ciena-isis {
           "IS-IS structure";
 
         leaf tag {
-          type cn-l3-types:string-max-256 {
+          type cn-l3-types:string-max-255 {
             pattern '[\S]*';
           }
           description
@@ -1993,20 +2023,27 @@ module ciena-isis {
        }
 
        container graceful-restart {
+         status "deprecated";
          description
-           "IS-IS graceful restart capabilities.";
+           "NOT SUPPORTED under IS-IS instance, moved to global routing command.
+            Obsolete next release.";
 
          leaf helper-enable {
+           status "deprecated";
            type boolean;
+           default "true";
            description
-             "Enable/disable graceful restart helper mode (disabled by default).";
+             "NOT SUPPORTED under IS-IS instance, moved to global routing command.
+              Obsolete next release.";
          }
 
          leaf restart-capable {
-           if-feature graceful-restart;
+           status "deprecated";
            type boolean;
+           default "false";
            description
-             "Enable/disable graceful restart capability (disabled by default).";
+             "NOT SUPPORTED under IS-IS instance, moved to global routing command.
+             Obsolete next release.";
          }
 
          leaf max-recovery-time {
@@ -2112,6 +2149,24 @@ module ciena-isis {
             description
               "IS-IS instance level authentication enabled: true/false.";
           }
+
+          leaf restart-timer {
+            type uint32;
+            description
+              "Configured graceful restart T2 timer (level DB sync recovery time)";
+          }
+
+          leaf gr-remaining-restart-time {
+            type uint32;
+            description
+              "Remaining graceful restart T2 timer"; 
+          }
+
+          leaf gr-level-restarting {
+            type boolean;
+            description
+              "IS-IS level undergoing restart.";
+          }
         }
 
         leaf topology-type {
@@ -2131,7 +2186,31 @@ module ciena-isis {
           description
             "IS-IS graceful restart helper mode enabled: true/false.";
         } 
-        
+       
+        leaf gr-enabled {
+          type boolean;
+          description
+            "IS-IS graceful restart enabled: true/false.";
+        }
+
+        leaf gr-grace-period {
+          type uint32;
+          description
+            "Configured graceful restart T3 timer interval (max time for recovery)";
+        }
+
+        leaf gr-remaining-grace-period {
+          type uint32;
+          description
+            "Remaining GR max time (T3 timer)";
+        }
+
+        leaf gr-node-restarting {
+          type boolean;
+          description
+            "IS-IS node undergoing graceful restart.";
+        }
+ 
         list interface {
           key "name";   
           description
@@ -2207,15 +2286,44 @@ module ciena-isis {
                type boolean;
                description
                   "IS-IS interface level authentication enabled: true/false.";
-            }   
-         }
-        }
+            }
 
+            leaf gr-restart-hello-interval {
+               type uint32;
+               description
+                  "Configured IS-IS interface Graceful restart T1 timer interval";
+            }
+   
+            leaf gr-restart-request-sent {
+               type uint32;
+               description
+                  "IS-IS interface GR (node) restart request sent count.";
+            }
+
+            leaf gr-restart-acknowledge-received {
+               type uint32;
+               description
+                  "IS-IS interface GR (node) restart acknowledgement received count.";
+            }
+
+            leaf gr-restart-request-received {
+               type uint32;
+               description
+                  "IS-IS interface GR (helper) restart request received count.";
+            }
+
+            leaf gr-restart-acknowledge-sent {
+               type uint32;
+               description
+                  "IS-IS interface GR (helper) restart acknowledgement sent count.";
+            }
+          }
+        }
+            
         container mpls-te {
           config "false";
           description
             "IS-IS configs for MPLS Traffic Engineering";
-
           leaf router-id {
             type inet:ip-address;
             description
@@ -2695,7 +2803,7 @@ module ciena-isis {
             }
 
             leaf-list multitopology-id {
-               type uint16;
+               type uint32;
                description
                   "List of MTIDs that node is advertising - IS-IS 
                    reference is TLV type 229";
@@ -2930,7 +3038,7 @@ module ciena-isis {
                }
 
                leaf multitopology-id {
-                  type uint16;
+                  type uint32;
                   description
                      "Multi Topology ID associated with the TLV.";
                }
@@ -3019,6 +3127,42 @@ module ciena-isis {
                       "Algorithm to be used for path computation.";
                   }
                 }
+              }
+            }
+
+            list srv6-locators {
+              key "locator-prefix";
+              description
+                "List of SRv6 locators.";
+
+              leaf locator-prefix {
+                type string;
+                description
+                  "SRv6 locator prefix value.";
+              }
+
+              leaf metric {
+                type uint32;
+                description
+                  "Metric value for SRv6 locator.";
+              }
+
+              leaf flags {
+                type string;
+                description
+                  "Flags set for SRv6 locator.";
+              }
+
+              leaf algorithm {
+                type uint8;
+                description
+                  "Algorithms for SRv6 locator.";
+              }
+
+              leaf locator-size {
+                type uint8;
+                description
+                  "Size of SRv6 locator.";
               }
             }
 
@@ -3288,10 +3432,16 @@ module ciena-isis {
                "Network layer protocol supported";
            } 
 
-           leaf interface-ip-address {
+           leaf-list interface-ip-address {
              type string;
              description
-               "Interface IP address";
+               "Interface IPv4 address (TLV 132)";
+           }
+
+           leaf-list interface-ipv6-address {
+             type string;
+             description
+               "Interface IPv6 address (TLV 232)";
            }
 
            leaf host-name {
@@ -4591,4 +4741,29 @@ module ciena-isis {
               "IS-IS n-flag is set (True) or unset (False) ";
        }
    }
+
+   notification isis-te-perf-advt-client-event {
+       description
+          "Notification sent when multiple clients are sending propagation-delay data 
+           for an IS-IS TE interface.";
+
+      leaf if-name {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS TE interface name";
+      }
+
+      leaf delay-profile {
+         type cn-l3-types:string-max-256;
+         description
+            "IS-IS TE interface profile name.";
+      }
+
+      leaf is-multi-client {
+         type boolean;
+         description
+            "Indicate if multiple delay measurement clients exist on an IS-IS TE interface.";
+      }
+   }
+
 }

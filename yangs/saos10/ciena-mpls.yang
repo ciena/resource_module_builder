@@ -48,10 +48,23 @@ module ciena-mpls {
         forbidden unless prior written permission is obtained
         from Ciena Corporation.";
 
+    revision "2023-08-21" {
+      description
+        "Added value and afi as key to ftn backup-entry.
+         Added color, tunnel-name, tunnel-id, lsp-id and fallback leafs to backup-entry";
+    }
+
+    revision "2023-05-17" {
+      description
+        "Added fallback field for ftn table entries.";
+    }
+
     revision "2022-07-05" {
         description
           "Adding support for additional fields for mpls fec for ilm table entries to match existing fec label.
-           Adding interface name field to tunnel statistics state.";
+           Adding interface name field to tunnel statistics state.
+           Adding new operational leaf for ipv6 installed route count.
+           Deprecating per-prefix label allocation mode.";
     }
 
     revision "2022-03-21" {
@@ -257,11 +270,17 @@ module ciena-mpls {
                 description
                   "LSP ID for RSVP-TE FTN entries.";
             }
+
+            leaf fallback {
+              type boolean;
+              description
+                "Fallback is enabled or disabled for FTN entry.";
+            }
         }
 
 
         list backup-entry {
-            key "fec-address";
+            key "fec-address afi value";
             description
               "List of ftn runtime backup entries.";
 
@@ -269,6 +288,18 @@ module ciena-mpls {
                 type inet:ip-prefix;
                 description
                   "Ftn Fec address.";
+            }
+
+            leaf afi  {
+                type  ciena-l3-types:mpls-afi;
+                description
+                  "MPLS FTN address family.";
+            }
+
+            leaf value  {
+                type string;
+                description
+                  "Value of the AFI type";
             }
 
             list entry-data {
@@ -282,6 +313,36 @@ module ciena-mpls {
                       "Ftn index.";
                 }
                 uses ftn-entry-runtime-info-grouping;
+            }
+
+            leaf color  {
+                type uint32;
+                description
+                  "Color for SR-TE FTN entries.";
+            }
+
+            leaf tunnel-name  {
+                type string;
+                description
+                  "Tunnel name for MPLS-TP FTN entries.";
+            }
+
+            leaf tunnel-id  {
+                type uint32;
+                description
+                  "Tunnel ID for RSVP-TE FTN entries.";
+            }
+
+            leaf lsp-id  {
+                type uint32;
+                description
+                  "LSP ID for RSVP-TE FTN entries.";
+            }
+
+            leaf fallback {
+              type boolean;
+              description
+                "Fallback is enabled or disabled for FTN entry.";
             }
         }
     }
@@ -889,6 +950,24 @@ module ciena-mpls {
                 description
                   "The number of secondary IPv6 FTN up.";
             }
+
+            leaf ipv6-ftn-install-count  {
+                type  uint32;
+                description 
+                  "The number of IPv6 FTN install.";
+            }
+
+            leaf ipv6-primary-ftn-install-count  {
+                type  uint32;
+                description 
+                  "The number of IPv6 Primary FTN install.";
+            }
+
+            leaf ipv6-secondary-ftn-install-count  { 
+                type  uint32;
+                description 
+                  "The number of IPv6 Secondary FTN install.";
+            }
         }
     }
 
@@ -1108,8 +1187,10 @@ module ciena-mpls {
     typedef label-mode-type {
         type enumeration {
             enum "per-prefix" {
+              status "deprecated";
               description
-                "Per prefix label. By default, it's per-prefix";
+                "Deprecated: Per prefix label. Obsolete next release.
+                 Configuring per-prefix defaults to per-vrf mode";
             }
 
             enum "per-vrf" {
@@ -1133,7 +1214,7 @@ module ciena-mpls {
 
             leaf mode {
                 type label-mode-type;
-                default per-prefix;
+                default per-vrf;
                 description
                     "MPLS Label allocation mode.";
             }

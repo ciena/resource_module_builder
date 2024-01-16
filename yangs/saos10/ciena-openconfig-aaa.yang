@@ -10,6 +10,7 @@ module ciena-openconfig-aaa {
   import ietf-yang-types { prefix yang; }
   import openconfig-inet-types { prefix oc-inet; }
   import ciena-tls-service-profile { prefix ciena-tsp; }
+  import openconfig-aaa {prefix oc-aaa;}
 
   organization
     "Ciena Corporation";
@@ -34,6 +35,23 @@ module ciena-openconfig-aaa {
       information or reproduction of this material is strictly 
       forbidden unless prior written permission is obtained from 
       Ciena Corporation.";
+
+  revision 2022-11-24 {
+    description
+      "Augmentation for server-group and server config containers
+       to support TACACS server resilience scenarios.
+       Added LOGOUT enum in login-event notification.
+       Added TACACS server yang notification.";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2022-08-01 {
+    description
+      "Added supported object for local account password history";
+    reference
+      "No specific reference or standard available.";
+  }
 
   revision 2020-10-20 {
     description
@@ -170,6 +188,14 @@ module ciena-openconfig-aaa {
           }
           description
             "Minimum number of upper case letters in the user account passwords.";
+        }
+        leaf past-password-history {
+          type uint16 {
+            range "0..10";
+          }
+          description
+            "The number of preceding passwords that are disallowed
+             when setting a new password for a user.";
         }
       }
     }
@@ -402,6 +428,7 @@ module ciena-openconfig-aaa {
       "Augmentation for openconfig-aaa to add search-mode leaf to server-group configuration";
     
     leaf search-method {
+      when "../search-method != 'load-balance' or ../type = 'oc-aaa:TACACS'";
       type enumeration {
         enum priority {
           description "Search in order of servers listed.";
@@ -409,10 +436,26 @@ module ciena-openconfig-aaa {
         enum cached {
           description "Search starting with last known good server in server group.";
         }
+        enum load-balance {
+          description "Search in order of server listed. But if server(s) are unavailable, they
+          will be reattempted after configured delay." ;
+        }
       }
       default cached;
       description
         "The search method for the server group to perform when trying servers in the server group.";
+    }
+
+    leaf hold-down-delay {
+      type uint16{
+        range "0 | 10..1200";
+      }
+      default 30;
+      units seconds;
+      description
+        "When all the TACACS servers configured within server-group have failed, this is the amount
+        of delay before this server-group may be reattempted.";
+
     }
   }
 
@@ -425,6 +468,16 @@ module ciena-openconfig-aaa {
       default enabled;
       description
         "The administrative state of the authentication server";
+    }
+
+    leaf retry-delay {
+      type uint16 {
+        range "0 | 10..3600";
+      }
+      default 30;
+      units seconds;
+      description
+        "Amount of delay before the failed TACACS server may be reattempted.";
     }
   }
 
@@ -566,7 +619,57 @@ module ciena-openconfig-aaa {
         enum ANY {
           description "Subscribe to any login notifications.";
         }
+        enum LOGOUT {
+          description "Subscribe to any logout notifications.";
+        }
       }
+    }
+  }
+
+  notification tacacs-server-status-event {
+    description
+      "TACACS server status event notification";
+
+    leaf server-group {
+      description
+        "Server group of the TACACS server";
+      type string;
+    }
+
+    leaf tacacs-server {
+      description
+        "The IP address of the LDAP server.";
+      type string;
+    }
+
+    leaf server-status {
+      description
+        "State of the TACACS server.";
+      type enumeration {
+        enum AVAILABLE {
+          description "TACACS server is available to connect.";
+        }
+        enum UNREACHABLE {
+          description "TACACS server is unreachable.";
+        }
+      }
+    }
+  }
+
+  notification all-tacacs-servers-down-event {
+    description
+      "All TACACS servers down event notification";
+
+    leaf server-group {
+      description
+        "Server group of the TACACS servers";
+      type string;
+    }
+
+    leaf all-server-down {
+      description
+        "All TACACS servers down";
+      type boolean;
     }
   }
 }

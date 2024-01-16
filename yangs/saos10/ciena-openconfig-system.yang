@@ -33,6 +33,24 @@ module ciena-openconfig-system {
       forbidden unless prior written permission is obtained from 
       Ciena Corporation.";
 
+  revision 2023-09-13 {
+    description
+      "Added length restriction for local user's password.
+       Added support to install Public Key via CLI string.
+       Added support for host key algorithms in ssh-server configuration.";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2022-12-06 {
+    description
+      "Added supported objects for local account password expiration.
+       Added password expiry warning and period as part of the user state.
+       Added password expiry status as part of the user state.";
+    reference
+      "No specific reference or standard available.";
+  }
+
   revision 2021-07-30 {
     description
       "Added leaf data node to display MD5 and SHA1 fingerprint of
@@ -65,14 +83,41 @@ module ciena-openconfig-system {
        No specific reference; standard not available.";
   }
 
+  grouping password-expiry {
+    leaf password-expiry-period {
+      type int32 {
+        range "0 | 14..365";
+      }
+      units "days";
+      default 0;
+      description
+        "This attribute represents the maximum number of days that can
+         elapse before a password must be changed. This is the password expiration period.
+         Default value is 0, meaning password will not expire.";
+    }
+    leaf password-expiry-warning {
+      type int32 {
+        range "0..90";
+      }
+      units "days";
+      default 0;
+      description
+        "This attribute represents the number of days prior to password expiration that a
+         warning about password expiration is displayed upon successful login.
+         Default value is 0, meaning no expiry warning will be displayed.";
+    }
+  }
   augment "/oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:config" {
     leaf password {
-      type string;
+      type string {
+        length "1..128";
+      }
       ncx:password;
       description
         "The user password in cleartext, only the hashed
         value will be stored";
     }
+    uses password-expiry;
   }
 
   augment "/oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:state" {
@@ -85,6 +130,18 @@ module ciena-openconfig-system {
        type yang:date-and-time;
        description
           "Last timestamp of user login failure";
+    }
+    uses password-expiry;
+    leaf last-password-change {
+       type cn-type:date;
+       description
+          "This attribute represents date of the last password change";
+    }
+    leaf password-expired {
+       type boolean;
+       description
+          "Indicates the password expiry status for the user.
+           Set to true if the password has expired.";
     }
   }
 
@@ -131,6 +188,14 @@ module ciena-openconfig-system {
          "Public key algorithm configuration on SSH server";
      }
 
+     leaf-list host-key-algorithm {
+        type identityref {
+          base sshtypes:pka-algo;
+        }
+       description
+         "Host key algorithm configuration on SSH server";
+     }
+
      leaf rekey-limit {
         type enumeration {
            enum 1G {
@@ -166,43 +231,6 @@ module ciena-openconfig-system {
      description
         "State of User generated keys either host key or client public key";
 
-     container user-generated-host-key {
-        description
-           "SSH server host key information.";
-
-        leaf host-key-status {
-          type enumeration {
-            enum generated {
-              description
-                "SSH server host key is generated.";
-            }
-            enum not-generated {
-              description
-                "SSH server host key is not generated.";
-            }
-          }
-          description
-            "This leaf specifies the status of the
-            SSH host key.";
-        }
-
-        leaf host-key-fingerprint {
-           type string;
-           description
-              "This leaf displays the SHA256 fingerprint 
-              of SSH host key if it has been generated";
-        }
-
-        leaf host-key-type {
-          type identityref {
-            base sshtypes:pka-algo;
-          }
-          description
-            "This leaf displays the public key algorithm
-            used to generate host key";
-        }
-     }
-
      container user-public-keys {
         description
            "SSH client public key information.";
@@ -231,43 +259,6 @@ module ciena-openconfig-system {
   }
 
   //RPCs
-  rpc ssh-server-host-key {
-    description
-      "SSH server host key generate or delete operation.";
-    input {
-      leaf operation {
-        type enumeration {
-          enum generate {
-            description
-              "Generate SSH server host key.";
-          }
-          enum delete {
-            description
-              "Delete SSH server host key.";
-          }
-        }
-        mandatory true;
-        description 
-          "Generate or delete user generated SSH server host key";
-      }
-      leaf algorithm {
-        type identityref {
-          base sshtypes:pka-algo;  
-        }
-        default sshtypes:ssh-rsa;
-        description 
-          "Public key authentication to generate SSH server host key";
-      } 
-    }
-    output {
-      leaf status {
-        type cn-type:status;
-        description
-          "Status indicating if the operation has succeeded or not.";
-      }
-    }
-  }
-
   rpc ssh-user-pubkey-install {
     description
       "Install SSH client's public key.";
@@ -279,7 +270,19 @@ module ciena-openconfig-system {
           "The user to which this public key belongs.";
       }
 
-      uses ciena-ftt:file-transfer-parameters;
+      uses ciena-ftt:file-transfer-parameters {
+        augment file-transfer-syntax {
+          case cli-string {
+            leaf key-string {
+               type string {
+                 length "1..3000";
+               }
+               description
+                 "String representing the public key.";
+            }
+          }
+        }
+      }
     }
     output {
       leaf status {

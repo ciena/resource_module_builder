@@ -15,6 +15,15 @@ module ciena-ext-lag {
   import ciena-openconfig-interfaces { 
     prefix cn-oc-if; 
   }
+  import ciena-bfd {
+    prefix "bfd";
+  }
+  import ietf-inet-types {
+    prefix "inet";
+  }
+  import ciena-icl {
+     prefix "icl";
+  }
 
   organization      
     "Ciena Corporation";
@@ -32,7 +41,28 @@ module ciena-ext-lag {
     "This yang module is an extension to the IEEE8023-LAG yang model.
      It defines the managed objects for the creation and
      deletion of Aggregators.";
-  
+
+  revision 2023-07-05 {
+    description
+      "Changes for MC-LAG,
+       Changes in mc-lag-parameters-group,
+       Added leaf multi-chassis-mode
+       Changes in mc-lag-operational-group
+       Added leafs multi-chassis, icl, multi-chassis-mode, icl-state.
+       Added base multi-chassis-agg-role to multi-chassis-agg-role-primary.
+       Added base base agg-redundancy-state to agg-redundancy-state.";
+  }
+
+  revision 2023-02-24 {
+    description
+      "Additions for Micro BFD.
+       Moved the if-feature restriction for Micro BFD on specific platforms
+       to ciena-ieee-lag module, and imported it here via prefix.
+       Reordered the enum values inside statistics-collection for Micro BFD.
+       Adds restriction on Micro BFD IPv6 support on specific platforms.
+       Adds restriction on Micro BFD IPv4 and IPv6 monitor.";
+  }
+
   revision 2022-06-13 {
     description
       "PPM based MCLAG changes";
@@ -67,7 +97,6 @@ module ciena-ext-lag {
      "IEEE Standard for Local and metropolitan area networks --
       Link Aggregation - 802.1AX";
   }
-   
 
 //
 // Type Definitions related to ciena proprietary extansion of LACP
@@ -81,6 +110,7 @@ module ciena-ext-lag {
   }
   
   identity agg-redundancy-state-down { 
+     base agg-redundancy-state;
      description
        "Indicates that the MC-LAG node is oper-down";
   }
@@ -189,6 +219,22 @@ module ciena-ext-lag {
       "Indicates user intends regular LACP operation";
   }
 
+  identity multi-chassis-lag-type {
+    description
+      "Specifies the LAG type";
+  }
+
+  identity active-active {
+    base multi-chassis-lag-type;
+    description
+      "Indicates user intends active-active MC-LAG operation";
+  }
+
+  identity active-standby {
+    base multi-chassis-lag-type;
+    description
+      "Indicates user intends active-standby MC-LAG operation";
+  }
   
   // MULTI CHASSIS CONNECT STATE
 
@@ -237,6 +283,7 @@ module ciena-ext-lag {
   }
   
   identity multi-chassis-agg-role-primary {
+    base multi-chassis-agg-role;
     description
       "In case of multi-chassis operation, this is the primary
        link to the dual-homing device";
@@ -403,6 +450,24 @@ module ciena-ext-lag {
       "Indicates PPM MCLAG is forced to sync-off";
   }
 
+  // BFD monitor state
+  identity monitor-state {
+    description
+      "Indicates whether the given aggregation is being monitored";
+  }
+
+  identity enable {
+    description
+      "Indicates that the given aggregation has monitoring enabled";
+    base monitor-state;
+  }
+
+  identity disable {
+    description
+      "Indicates that the given aggregation has monitoring disabled";
+    base monitor-state;
+  }
+
 //
 // Groupings related to ciena proprietary extension of LACP
 //
@@ -418,40 +483,85 @@ module ciena-ext-lag {
       }
       default multi-chassis-disable;
       description
-        "This object specifies if the LAG is an MC-LAG";
+        "This parameter specifies if the LAG is a multi-chassis LAG";
     }
 
     leaf icl {
-      type string;
+      when "../multi-chassis='multi-chassis-enable'";
+      type leafref  {
+           path "/icl:icl/icl:instance/icl:name";
+      }
       description
-        "This object specifies the inter-chassis link name that the
+        "This parameter specifies the inter-chassis link(ICL) instance that the
          multi-chassis LAG is using.";
     }
 
-  } 
+    leaf multi-chassis-mode {
+      when "../multi-chassis='multi-chassis-enable'";
+      type identityref {
+        base multi-chassis-lag-type;
+      }
+      default active-active;
+      description
+        "This parameter specifies if the MC-LAG is active-active/active-standby";
+    }
+  }
 
   grouping mc-lag-operational-group {
-   
-    description
-      "Operational states of various MC-LAG components";
+
+     description
+        "Operational states of various MC-LAG components";
+
+     leaf multi-chassis {
+        type identityref {
+           base multi-chassis-state;
+        }
+        description
+           "This parameter specifies if the LAG is a multi-chassis LAG";
+     }
+
+     leaf icl {
+        type string {
+           length "0..255";
+        }
+        description
+           "This parameter specifies the inter-chassis link(ICL) instance that the
+            multi-chassis LAG is using.";
+     }
+
+     leaf multi-chassis-mode {
+        type identityref {
+           base multi-chassis-lag-type;
+        }
+        description
+           "This parameter specifies if the MC-LAG is active-active/active-standby";
+     }
+
+     leaf icl-state {
+        type identityref {
+           base icl:icl-oper-status;
+        }
+        description
+           "This parameter specifies the state of the ICL associated with the MC-LAG";
+     }
 
     leaf rg-node-index {
       type uint32;
       description
-        "This object specifies the MC-LAG RG node ID.";
+        "This parameter specifies the MC-LAG RG node ID.";
     }
 
     leaf rg-dynamic-priority {
       type uint32;
       description
-        "This object specifies the MC-LAG RG node dynamically
+        "This parameter specifies the MC-LAG RG node dynamically
          assigned priority.";
     }
 
     leaf rg-oper-key {
       type uint32;
       description
-        "This object specifies the MC-LAG RG node operational key.";
+        "This parameter specifies the MC-LAG RG node operational key.";
     }
 
     leaf connect-state {
@@ -459,7 +569,7 @@ module ciena-ext-lag {
         base multi-chassis-connect-state;
       }
       description
-        "This object specifies the Connect State of the MC-LAG node.";
+        "This parameter specifies the Connect State of the MC-LAG node.";
     }    
 
     leaf redundancy-state {
@@ -467,33 +577,33 @@ module ciena-ext-lag {
         base agg-redundancy-state;
       }
       description
-        "This object specifies the oper state of the MC-LAG node";
+        "This parameter specifies the oper state of the MC-LAG node";
     }
 
     leaf peer-system-mac {
       type yang:mac-address;
       description
-        "This object specifies the MC-LAG peer node system MAC
+        "This parameter specifies the MC-LAG peer node system MAC
          address.";
     }
 
     leaf peer-rg-node-id {
       type uint32;
       description
-        "This object specifies the MC-LAG peer RG node ID.";
+        "This parameter specifies the MC-LAG peer RG node ID.";
     }
 
     leaf peer-rg-dynamic-priority {
       type uint32;
       description
-        "This object specifies the MC-LAG peer RG node dynamically
+        "This parameter specifies the MC-LAG peer RG node dynamically
          assigned priority.";
     }
 
     leaf peer-rg-oper-key {
       type uint32;
       description
-        "This object specifies the MC-LAG peer RG node operational
+        "This parameter specifies the MC-LAG peer RG node operational
          key.";
     }   
 
@@ -503,7 +613,7 @@ module ciena-ext-lag {
       }
       default agg-mode-lacp;
       description
-        "This object specifies the operation mode in which a given
+        "This parameter specifies the operation mode in which a given
          port is operating." ;
     }
 
@@ -512,8 +622,8 @@ module ciena-ext-lag {
         base multi-chassis-agg-role;
       }
       description
-        "This object specifies if the MC-LAG node is primary or backup";
-    }  
+        "This parameter specifies if the MC-LAG node is primary or backup";
+    }
 
   }
 
@@ -526,101 +636,112 @@ module ciena-ext-lag {
     leaf disconnect-rx {
       type yang:counter32;
       description
-        "This object specifies the number of Disconnect messages
+        "This parameter specifies the number of Disconnect messages
          received by the MC-LAG node.";
     }
 
     leaf disconnect-tx {
       type yang:counter32;
       description
-        "This object specifies the number of Disconnect messages
+        "This parameter specifies the number of Disconnect messages
          transmitted by the MC-LAG node.";
     }
 
     leaf config-mismatch-rx {
       type yang:counter32;
       description
-        "This object specifies the number of mismatch config messages
+        "This parameter specifies the number of mismatch config messages
          received by the MC-LAG node.";
     }
 
     leaf key-mismatch-count {
       type yang:counter32;
       description
-        "This object specifies the number of messages received 
+        "This parameter specifies the number of messages received 
          with mismatching key by the MC-LAG node.";
     }
 
     leaf out-of-sequence-rx {
       type yang:counter32;
       description
-        "This object specifies the number of out of sequence messages
+        "This parameter specifies the number of out of sequence messages
          received by the MC-LAG node.";
     }
 
     leaf peer-unreachable-count {
       type yang:counter32;
       description
-        "This object specifies the number of times peer was
+        "This parameter specifies the number of times peer was
          unreachable.";
     }
 
     leaf unknown-rx {
       type yang:counter32;
       description
-        "This object specifies the number unknown messages received
+        "This parameter specifies the number unknown messages received
          by the MC-LAG node.";
     }    
 
     leaf total-rx {
       type yang:counter32;
       description
-        "This object specifies the total number of messages received
+        "This parameter specifies the total number of messages received
          by the MC-LAG node.";
     }
 
     leaf total-tx {
       type yang:counter32;
       description
-        "This object specifies the total number of messages
+        "This parameter specifies the total number of messages
          transmitted by MC-LAG node.";
     } 
 
     leaf total-down-time {
       type uint32;
       description
-        "This object specifies total time for which the MC-LAG node
+        "This parameter specifies total time for which the MC-LAG node
          has been operationally down.";
     }     
 
     leaf up-time {
       type uint32;
       description
-        "This object specifies time for which the MC-LAG node has been
+        "This parameter specifies time for which the MC-LAG node has been
          operationally up.";
     }
 
     leaf time-in-protect-state {
       type uint32;
       description
-        "This object specifies time for which the MC-LAG node has been
+        "This parameter specifies time for which the MC-LAG node has been
          in protection state.";
     }
 
     leaf last-time-protected {
       type uint32;
       description
-        "This object specifies time of day of the last MC-LAG
+        "This parameter specifies time of day of the last MC-LAG
          protection switching.";
     }
 
     leaf number-of-switchovers {
       type yang:counter32;
       description
-        "This object specifies the number of MC-LAG protection
+        "This parameter specifies the number of MC-LAG protection
          switching.";
     }
 
+    leaf number-of-active-link-members {
+      type yang:counter32;
+      description
+        "This parameter specifies the current active member count of this MC-LAG.";
+    }
+
+    leaf number-of-inactive-link-members {
+      type yang:counter32;
+      description
+        "This parameter specifies the current inactive member count of this MC-LAG.";
+    }
   }
 
   grouping min-link-agg-parameters-group {
@@ -714,6 +835,138 @@ module ciena-ext-lag {
       description
         "This object specifies the operational state of the ppm mclag";
     }
+  }
+
+  grouping bfd-parameters-group {
+    description
+      "User configurable parameters related to BFD";
+    
+    container bfd {
+      if-feature ciena-ieee-lag:micro-bfd;
+      description
+        "List for BFD configuration parameters over the aggregation";
+      
+      leaf profile {
+        description
+          "This object allows the user to specify the BFD profile";
+        type leafref  {
+          path "/bfd:bfd/bfd:profiles/bfd:micro-bfd-profile/bfd:name";
+        }
+      }
+
+      container ipv4 {
+        description
+          "List for IPv4 BFD configuration parameters over the aggregation";
+
+        leaf monitor {
+          when "../local-address and ../remote-address" {
+            description
+              "BFD IPv4 monitoring is applicable only when IPv4
+               local and remote address are specified.";
+          }
+          description
+            "This object allows user to enable/disable BFD IPv4 monitoring on given aggregation link";
+          type identityref {
+            base monitor-state;
+          }
+          default disable;
+        }
+
+        leaf local-address {
+          description
+            "Local IPv4 address to be used for BFD session";
+          type inet:ipv4-address;
+        }
+
+        leaf remote-address {
+          description
+            "Remote IPv4 address to be used for BFD session";
+          type inet:ipv4-address;
+        }
+
+        leaf admin-state {
+          description
+            "Specifies the BFD IPv4 session administrative state.";
+          type boolean;
+          default false;
+        }
+
+        leaf statistics-collection {
+          description
+            "Determines whether statistics collection will be turned on or off for BFD IPv4 session.";
+          type enumeration {
+            enum off {
+              description
+                "Statistics-collection will be off for BFD IPv4 session";
+              value 0;
+            }
+            enum on {
+              description
+                "Statistics-collection will be on for BFD IPv4 session";
+              value 1;
+            }
+          }
+          default off;
+        }
+      }
+
+      container ipv6 {
+        if-feature ciena-ieee-lag:micro-bfd-ipv6;
+        description
+          "List for IPv6 BFD configuration parameters over the aggregation";
+
+        leaf monitor {
+          when "../local-address and ../remote-address" {
+            description
+              "BFD IPv6 monitoring is applicable only when IPv6
+               local and remote address are specified.";
+          }
+          description
+            "This object allows the user to enable or disable IPv6 BFD monitoring on given aggregation link";
+          type identityref {
+            base monitor-state;
+          }
+          default disable;
+        }
+
+        leaf local-address {
+          description
+            "Local IPv6 address to be used for BFD session";
+          type inet:ipv6-address;
+        }
+
+        leaf remote-address {
+          description
+            "Remote IPv6 address to be used for BFD session";
+          type inet:ipv6-address;
+        }
+
+        leaf admin-state {
+          description
+            "Specifies the BFD IPv6 session administrative state.";
+          type boolean;
+          default false;
+        }
+
+        leaf statistics-collection {
+          description
+            "Determines whether statistics collection will be turned on or off for BFD IPv6 session.";
+          type enumeration {
+            enum off {
+              description
+                "Statistics-collection will be off for BFD IPv6 session";
+              value 0;
+            }
+            enum on {
+              description
+                "Statistics-collection will be on for BFD IPv6 session";
+              value 1;
+            }
+          }
+          default off;
+        }
+      }
+    } 
   }
 
   augment "/ciena-ieee-lag:agg-global" {
@@ -916,6 +1169,7 @@ module ciena-ext-lag {
          to prevent ports overlap.";
     }
 
+    uses bfd-parameters-group;
   }
 
   augment "/oc-if:interfaces/"

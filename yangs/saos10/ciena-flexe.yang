@@ -64,6 +64,25 @@ module ciena-flexe {
       condition, or performance of the Specification. You agree
       that Ciena has no liability for your use of the Specification.";
 
+   revision "2023-07-19" {
+      description
+         "Add FlexE feature declarations.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   revision "2023-06-06" {
+      description
+         "Update FlexE Protection Profile to restrict the permissible reversion types
+          and protection modes.
+          Update FlexE channel status counters.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
 
    revision "2022-08-16" {
       description
@@ -103,6 +122,11 @@ module ciena-flexe {
          "Initial Version.";
       reference
          "OIF Implementation Agreement Flex Ethernet 2.1";
+   }
+
+   feature flexe {
+      description
+         "Ciena's data definition for the management of FlexE related parameters.";
    }
 
    /*
@@ -519,6 +543,7 @@ module ciena-flexe {
    }
 
    container flexe-ports {
+      if-feature flexe;
       description
          "FlexE port configurations";
 
@@ -583,6 +608,7 @@ module ciena-flexe {
    }
 
    container flexe-groups {
+      if-feature flexe;
       description
          "FlexE group configurations";
 
@@ -734,6 +760,7 @@ module ciena-flexe {
    }
 
    container flexe-channels {
+      if-feature flexe;
       description
          "FlexE channel configurations";
 
@@ -825,6 +852,7 @@ module ciena-flexe {
    }
 
    container flexe-cross-connects {
+      if-feature flexe;
       description
          "FlexE cross connect configurations";
 
@@ -918,6 +946,7 @@ module ciena-flexe {
     **************************************************************************/
 
    container flexe-protection-profiles {
+      if-feature flexe;
       description
          "FlexE Protection Profile configurations";
 
@@ -934,6 +963,9 @@ module ciena-flexe {
 
          leaf reversion-mode {
             type reversion-type;
+            must ". = 'non-revertive'" {
+               error-message "reversion-mode must be non-revertive.";
+            }
             default "non-revertive";
             description
                "Configuration of reversion capabilities of this FlexE Protection group.";
@@ -944,6 +976,9 @@ module ciena-flexe {
 
          leaf protection-mode {
             type protection-type;
+            must ". = '1-plus-1-unidirectional' or . = '1-plus-1-bidirectional'" {
+               error-message "protection-mode must be '1-plus-1-unidirectional' or '1-plus-1-bidirectional'";
+            }
             default "1-plus-1-unidirectional";
             description
                "Configuration of protection mode of this FlexE Protection group.";
@@ -980,6 +1015,7 @@ module ciena-flexe {
    }
 
    container flexe-bas-oams {
+      if-feature flexe;
       description
          "FlexE BAS (basic code block) OAM configurations";
 
@@ -1028,6 +1064,7 @@ module ciena-flexe {
    }
 
    container flexe-protection-groups {
+      if-feature flexe;
       description
          "FlexE protection groups configurations";
 
@@ -1265,6 +1302,7 @@ module ciena-flexe {
     */
 
    container flexe-operational-state {
+      if-feature flexe;
       config false;
 
       description
@@ -1404,9 +1442,21 @@ module ciena-flexe {
          }
 
          leaf active-bandwidth {
-           type uint32;
-           description
-            "Bandwidth used by FlexE channel.";
+            type uint32;
+            description
+               "Bandwidth used by FlexE channel.";
+         }
+
+         leaf in-pkts {
+            type yang:counter64;
+            description
+               "Number of inbound packets received on FlexE channel.";
+         }
+
+         leaf in-octets {
+            type yang:counter64;
+            description
+               "Number of inbound octets received on FlexE channel.";
          }
       }
 

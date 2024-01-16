@@ -9,8 +9,8 @@ module ciena-oam-ping {
     prefix "oc-if";
   }
 
-  import ciena-sr-policy {
-    prefix cnsr;
+  import ietf-sr-policy-types {
+     prefix "policy-types";
   }
 
   import ciena-oam-options {
@@ -42,16 +42,37 @@ module ciena-oam-ping {
      implementation for ping. It includes IP ping,
      LSP ping and Pseudowire ping.
 
-     Copyright (c) 2020  Ciena Corporation.  All rights
+     Copyright (c) 2020-2023  Ciena Corporation.  All rights
      reserved.
 
-     All information contained herein is, and remains the
-     property of Ciena Corporation. Dissemination of this
-     information or reproduction of this material is strictly
-     forbidden unless prior written permission is obtained
-     from Ciena Corporation.";
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
 
-  revision "2022-05-27" {
+     Ciena grants all interested parties that access the
+     specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-04-27" {
+    description
+      "Added Ping support for SRv6 FEC.
+       Added validation of color leaf for SRv6 Ping.
+       Removed leafref for sr-policy parameters to support ping on ANR SR-Policy.
+       Modified pattern match for ethernet-tag-id.";
+  }
+
+  revision "2022-12-05" {
     description
       "Added Ping support for RSVP-TE FEC.
        Added do-not-fragment parameter for IP Ping.";
@@ -200,7 +221,7 @@ module ciena-oam-ping {
     leaf ethernet-tag-id {
       when "../target-fec-type = 'evpn-fec'";
       type string {
-        pattern '[1-9][0-9]{0,7}([.][1-9][0-9]{0,3})?';
+        pattern '[1-9][0-9]{0,7}([.][0-9][0-9]{0,3})?';
       }
       description
         "Ethernet Tag Identifier.
@@ -285,26 +306,27 @@ module ciena-oam-ping {
     uses mspw-segment-config-params;
 
     leaf policy-name {
-      when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:name";
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type string {
+        length "0..255";
       }
       description
         "SR policy name.";
     }
     leaf color {
-      when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:color";
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type uint32 {
+        range "1..4294967295";
       }
       description
         "Color associated with the SR policy.";
     }
     leaf endpoint {
-      when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:endpoint";
-      }
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type inet:ip-address;
       description
         "SR policy end point IP address.";
     }
@@ -318,41 +340,36 @@ module ciena-oam-ping {
     }
     leaf path-name {
       when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:name";
+      type string {
+        length "0..255";
       }
       description
         "Candidate path name.";
     }
     leaf protocol-origin {
       when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:protocol-origin";
-      }
+      type policy-types:protocol-origin-type;
       description
         "Protocol-origin of candidate path.";
     }
     leaf originator {
       when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:originator";
-      }
+      type string;
       description
         "Originator of candidate path.";
     }
     leaf discriminator {
       when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:discriminator";
+      type uint32 {
+        range "1..65535";
       }
       description
         "Discriminator of candidate path.";
     }
     leaf segment-list {
-      when "../target-fec-type = 'sr-policy-fec'";
-      type leafref {
-        path "/cnsr:segment-routing-traffic-engineering/cnsr:attributes/cnsr:segment-lists/cnsr:segment-list/cnsr:name";
-      }
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type string;
       description
         "Segment list name.";
     }
@@ -477,7 +494,7 @@ module ciena-oam-ping {
         leaf ethernet-tag-id {
           when "../target-fec-type = 'evpn-fec'";
           type string {
-            pattern '[1-9][0-9]{0,7}([.][1-9][0-9]{0,3})?';
+            pattern '[1-9][0-9]{0,7}([.][0-9][0-9]{0,3})?';
           }
           mandatory true;
           description
@@ -510,28 +527,29 @@ module ciena-oam-ping {
       }
       case sr-policy-fec {
         leaf policy-name {
-          when "../target-fec-type = 'sr-policy-fec' and not(../color or ../endpoint)";
-          type leafref {
-          path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:name";
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                not(../color or ../endpoint)";
+          type string {
+            length "0..255";
           }
           description
             "SR policy name.
              Policy name is mutually exclusive with color and endpoint.";
         }
         leaf color {
-          when "../target-fec-type = 'sr-policy-fec' and not(../policy-name)";
-          type leafref {
-            path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:color";
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                (../endpoint) and not(../policy-name)";
+          type uint32 {
+            range "1..4294967295";
           }
           description
             "Color associated with the SR policy.
             Color and endpoint are mutually exclusive with policy name.";
         }
         leaf endpoint {
-          when "../target-fec-type = 'sr-policy-fec' and (../color) and not(../policy-name)";
-          type leafref {
-            path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:endpoint";
-          }
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                (../color) and not(../policy-name)";
+          type inet:ip-address;
           description
             "SR policy end point IP address.
             Endpoint and color are mutually exclusive with policy name.";
@@ -542,42 +560,37 @@ module ciena-oam-ping {
             "Candidate path in policy.";
           leaf path-name {
             when "not(../protocol-origin or ../originator or ../discriminator)";
-            type leafref {
-              path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:name";
+            type string {
+              length "0..255";
             }
             description
               "Candidate path name.";
           }
           leaf protocol-origin {
             when "not(../path-name)";
-            type leafref {
-              path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:protocol-origin";
-            }
+            type policy-types:protocol-origin-type;
             description
               "Protocol-origin of candidate path.";
           }
           leaf originator {
             when "not(../path-name)";
-            type leafref {
-              path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:originator";
-            }
+            type string;
             description
               "Originator of candidate path.";
           }
           leaf discriminator {
             when "not(../path-name)";
-            type leafref {
-              path "/cnsr:segment-routing-traffic-engineering/cnsr:policies/cnsr:policy/cnsr:candidate-paths/cnsr:candidate-path/cnsr:discriminator";
+            type uint32 {
+              range "1..65535";
             }
             description
               "Discriminator of candidate path.";
           }
         }
         leaf segment-list {
-          when "../target-fec-type = 'sr-policy-fec'";
-          type leafref {
-            path "/cnsr:segment-routing-traffic-engineering/cnsr:attributes/cnsr:segment-lists/cnsr:segment-list/cnsr:name";
-          }
+          when "../target-fec-type = 'sr-policy-fec' or
+                ../target-fec-type = 'srv6-policy-fec'";
+          type string;
           description
             "Segment list name.";
         }

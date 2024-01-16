@@ -9,7 +9,7 @@ module ciena-ietf-te {
   }
 
   import openconfig-interfaces {
-     prefix "oc-if";
+    prefix "oc-if";
   }
 
   import ciena-openconfig-interfaces {
@@ -18,6 +18,10 @@ module ciena-ietf-te {
 
   import ciena-l3-types {
     prefix cn-l3-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
   }
 
   organization
@@ -54,6 +58,15 @@ module ciena-ietf-te {
     warranty, either express or implied, as to the use, operation,
     condition, or performance of the Specification. You agree
     that Ciena has no liability for your use of the Specification";
+
+  revision "2023-09-11" {
+    description
+      "Added intent template functionality.
+       Added TE database oper data.
+       Added color template functionality.
+       Added color template oper data.
+       Added reserved bandwidth per priority oper.";
+  }
 
   revision "2022-06-24" {
     description
@@ -114,7 +127,7 @@ module ciena-ietf-te {
              direction in this link.";
         }
       }
-    }    
+    }
   }
 
   grouping te-delay-metric-config {
@@ -140,7 +153,7 @@ module ciena-ietf-te {
         "Maximum threshold exceeding which Unidirectional delay is considered anomalous.
          Value greater than zero.";
     }
-  }  
+  }
 
   /* TE interface metric */
 
@@ -328,6 +341,354 @@ module ciena-ietf-te {
         description
           "List of named TE admin-groups.";
         uses named-admin-groups-properties;
+      }
+    }
+  }
+  
+  grouping te-intent-templates-admin-group-config {
+      description
+         "Configuration data for intent templates";
+
+      leaf-list exclude-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which none must be specified for the links on the path.";
+      }
+      leaf-list include-all-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which all must be specified for the links on the path.";
+      }
+      leaf-list include-any-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which any must be specified for the links on the path.";
+      }
+   }
+  
+  grouping te-intent-templates-admin-group-top {
+      description
+         "Top-level grouping ";
+      container admin-groups {
+         description
+            "Admin groups constraints for the path.";
+         uses te-intent-templates-admin-group-config;
+      }
+   }
+
+  grouping intent-templates-properties {
+    description
+      "Global intent templates configuration
+       grouping.";
+    leaf name {
+      type string{
+        length "1..31";
+      }
+      default "default";
+      description
+        "A name that uniquely identifies an intent template.
+        The name 'default' identifies the default intent template.";
+    }
+    leaf path-metric-type {
+      type enumeration {
+        enum te {
+         description
+           "Traffic Engineering metric.";
+        }
+        enum igp {
+         description
+           "Interior Gateway Protocol metric.";
+        }
+        enum latency {
+         description
+           "Link latency metric.";
+        }
+      }
+      default "igp";
+      description
+        "Metric type for the path.";
+    }
+    uses "te-intent-templates-admin-group-top";
+  }
+
+  grouping dynamic-path-properties {
+    description
+      "Dynamic path properties of the candidate path.";
+
+    container dynamic {
+      presence "Dynamic path calculation.";
+      description
+        "Dynamic path properties.";
+
+      leaf pce-delegate {
+        type boolean;
+        default "false";
+        description
+          "Enable delegating of the candidate path to PCE.";
+      }
+
+      list intent-template {
+        key "name";
+        max-elements 1;
+        description
+          "Intent templates for dynamic path calculation.";
+
+        leaf name {
+          type leafref {
+            path "/ciena-te:traffic-engineering/ciena-te:intent-templates/ciena-te:intent-template/ciena-te:name";
+          }
+          description 
+            "Reference to intent template name."; 
+        }
+      }
+    }
+  }
+
+  grouping color-templates-properties {
+    description
+      "Global color templates configuration grouping.";
+
+    leaf color {
+      type uint32;
+      default 0;
+      description
+        "A color value that uniquely identifies a color template.
+        The value 0 identifies as the default color template.";
+    }
+
+    leaf description {
+      type string;
+      description
+        "Description of color template.";
+    }
+
+    leaf source {
+      type inet:ip-address;
+      description 
+        "Source ip address for SR policies.";
+    }
+
+    leaf admin-state {
+      type cn-l3-types:sr-policy-admin-cfg-type;
+      description
+        "Administrative state for SR policies.";
+    }
+
+    container candidate-paths {
+      description 
+        "SR policy candidate path(s).";
+
+      list candidate-path {
+        key "preference";
+        description
+          "SR policy Candidate path(s) list entry.";
+
+        leaf preference {
+          type uint32;
+          description
+            "Candidate path preference.";
+        }
+
+        leaf description {
+          type string {
+            length "0..255";
+          }
+          description 
+            "Candidate path description.";
+        }
+
+        leaf name {
+          type string {
+            length "0..255";
+          }
+          description 
+            "Candidate path name.";
+        }
+        uses dynamic-path-properties;
+      }
+    }
+  }
+
+  grouping color-templates-state-properties {
+    description
+      "Color template operational state grouping.";
+
+    leaf color {
+      type uint32;
+      description
+        "A color value that uniquely identifies a color template.";
+    }
+
+    leaf description {
+      type string;
+      description
+        "Description of color template.";
+    }
+
+    leaf admin-state {
+      type cn-l3-types:sr-policy-admin-cfg-type;
+      description
+        "Administrative state for SR policies.";
+    }
+
+    leaf configuration-completeness {
+      type enumeration {
+        enum Complete {
+          description
+            "Color template configuration is sufficient to request a dynamically computed segment list.";
+        }
+        enum Incomplete {
+          description
+            "Color template configuration is not sufficient to request a dynamically computed segment list."; 
+        }
+      }
+      description
+        "Indicates whether color template configuration is sufficiently complete to request a dynamically computed segment list.";
+    }
+
+    leaf source {
+      type inet:ip-address;
+      description
+        "Source IP address for SR policies.";
+    }
+
+    container number-of-sr-policies {
+      description
+        "Number of SR policies created.";
+
+      list policies-for-service-color {
+        key "service-color";
+
+        leaf service-color {
+          type uint32;
+          description
+            "Color requested by the service.";
+        }
+
+        leaf count {
+          type uint32;
+          description
+            "Number of SR policies created for service color.";
+        }
+      }
+    }
+
+    container candidate-paths {
+      description
+        "SR policy candidate path(s).";
+
+      list candidate-path {
+        key "preference";
+        description
+          "SR policy candidate path(s) list entry.";
+
+        leaf preference {
+          type uint32;
+          description
+            "Candidate path preference.";
+        }
+
+        leaf name {
+          type string;
+          description
+              "Candidate path name.";
+        }
+
+        leaf description {
+          type string {
+            length "0..255";
+          }
+          description
+            "Candidate path description.";
+        }
+
+        leaf dynamic-path-type {
+          type enumeration {
+            enum Headend-computed-path {
+              description
+                "Headend computed path.";
+            }
+            enum PCE-delegate {
+              description
+                "PCE delegated path.";
+            }
+          }
+          description
+            "Specifies path type as headend computed or PCE delegated.";
+        }
+
+        list intent-templates {
+          key "name";
+          max-elements 1;
+          description
+            "Intent templates for dynamic path calculation.";
+
+          leaf name {
+            type string;
+            description
+              "Intent template name.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping intent-templates {
+    description
+      "Intent templates.";
+    container intent-templates {
+      description
+        "Intent templates container.";
+      list intent-template {
+        key "name";
+        description
+          "List of intent templates.";
+        uses intent-templates-properties;
+      }
+    }
+  }
+
+  grouping color-templates {
+    description
+      "Color templates.";
+    container color-templates {
+      description
+        "Color templates container.";
+      list color-template {
+        key "color";
+        description
+          "List of color templates.";
+        uses color-templates-properties;
+      }
+    }
+  }
+
+  grouping color-templates-state {
+    description
+      "Color templates grouping.";
+    container color-templates {
+      description
+        "Color templates container.";
+      list color-template {
+        key "color";
+        description
+          "List of color templates.";
+        uses color-templates-state-properties;
       }
     }
   }
@@ -584,6 +945,19 @@ module ciena-ietf-te {
       uses performance-thresholds;
   }
 
+  container traffic-engineering {
+    description
+      "Traffic Engineering container.";
+      uses intent-templates;
+      uses color-templates;
+  }
+
+  container traffic-engineering-state {
+    config "false";
+    description
+      "Traffic Engineering operational state container.";
+      uses color-templates-state;
+  }
 
   container te-state {
     config false;
@@ -612,6 +986,313 @@ module ciena-ietf-te {
           description
             "The link identifier represents a unique value, which is
             locally defined in a router.";
+        }
+      }
+    }
+
+    /* TE database Oper data */
+    container database {
+      description
+        "TE database information.";
+
+      leaf maximum-sid-depth {
+        type uint32;
+        description
+          "Maximum SID Depth for Segment Routing";
+      }
+
+      list isis-instance {
+        key "tag";
+        description
+          "ISIS Instance";
+
+        leaf tag {
+          type string;
+          description
+            "Tag of ISIS instance";
+        }
+
+        list level-db {
+          key "level-type";
+          description
+            "ISIS level type";
+
+          leaf level-type {
+            type  cn-l3-types:isis-level-types;
+            description
+              "Level of an ISIS node - can be level-1, level-2 or level-1-2";
+          }
+
+          leaf local-lsp-id {
+            type  string;
+            description
+              "Local LSP identifier";
+          }
+
+          list lsp {
+            key "sys-id";
+            description
+              "LSP information";
+
+            leaf sys-id {
+              type string;
+              description
+                "System identifier";
+            }
+
+            leaf te-router-id {
+              type string;
+              description
+                "Router identifier";
+            }
+
+            list srgb {
+              key "start range";
+              description 
+                "SRGB information";
+
+              leaf start {
+                type uint32;
+                description
+                  "Start value";
+              }
+
+              leaf range {
+                type uint32;
+                description
+                  "Range value";
+              }
+            }
+
+            list algorithm {
+              key "value";
+              description 
+                "Algorithm information";
+
+              leaf value {
+                type uint32;
+                description
+                  "Algorithm count";
+              }
+            }
+
+            list prefix {
+              key "prefix-ip";
+              description 
+                "Prefix IP information";
+
+              leaf prefix-ip {
+                type string;
+                description
+                  "Prefix IP address";
+              }
+
+              leaf prefix-len {
+                type uint32;
+                description
+                  "Prefix IP address length";
+              }
+
+              list algorithms {
+                key "sr-algorithm";
+                description
+                  "Segment routing algorithms information";
+
+                leaf sr-algorithm {
+                  type uint8;
+                  description
+                    "SR algorithm, can be 0,1,128-255";
+                }
+
+                leaf db-sid-type {
+                  description
+                  "Type of SID can be index or absolute";
+                  type enumeration {
+                    enum index {
+                      description
+                        "Type as index";
+                      value 1;
+                    }
+                    enum absolute-value {
+                      description
+                        "Type as absolute";
+                      value 2;
+                    }
+                  }
+                }
+
+                leaf flags {
+                  type uint32;
+                  description
+                    "Flags set for a prefix";
+                }
+
+                leaf sid {
+                  type uint32;
+                  description
+                    "Value of SID";
+                }
+              }
+            }
+
+            list is-reachability {
+              key "index";
+              description
+                "ISIS reachability information container ";
+
+              leaf index {
+                type uint32;
+                description
+                  "Index of interface";
+              }
+
+              leaf ifindex {
+                type uint32;
+                description
+                  "Ifindex of interface";
+              }
+
+              leaf local-address {
+                type string;
+                description
+                  "Local IP address value";
+              }
+
+              leaf remote-address {
+                type string;
+                description
+                  "Remote IP address value";
+              }
+
+              leaf adjacency-sid {
+                type uint32;
+                description
+                  "Adjacency SID value";
+              }
+
+              leaf flags {
+                type uint8;
+                description
+                  "Flags value";
+              }
+
+              leaf affinity {
+                type uint32;
+                description
+                  "Affinity value";
+              }
+
+              leaf igp-metric {
+                type uint32;
+                description
+                  "IGP metric value";
+              }
+
+              leaf te-metric {
+                type uint32;
+                description
+                  "TE metric value";
+              }
+
+              leaf remote-te-router-id {
+                type string;
+                description
+                  "Router ID of remote router";
+              }
+
+              container latency {
+                description
+                  "Latency parameters information";
+
+                leaf delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of delay in seconds";
+                }
+
+                leaf minimum-delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of minimum delay in seconds";
+                }
+
+                leaf maximum-delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of maximum delay in seconds";
+                }
+
+                leaf delay-variation {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of delay variation in seconds";
+                }
+              }
+
+              leaf is-local-link {
+                type boolean;
+                default "false";
+                description
+                  "Flag to check if the link is local or not";
+              }
+
+              container bandwidths {
+                description
+                  "Bandwidth metrics information";
+
+                leaf maximum-link-bandwidth {
+                  type string;
+                  description
+                    "Maximum bandwidth of link in bytes per second";
+                }
+
+                leaf maximum-reserved-bandwidth {
+                  type string;
+                  description
+                    "Maximum reserved bandwidth in bytes per second";
+                }
+
+                list unreserved-bandwidth {
+                  key "priority";
+                  description
+                    "Unreserved bandwidth information";
+
+                  leaf priority {
+                    type uint8;
+                    description
+                      "Priority value";
+                  }
+
+                  leaf value {
+                    type string;
+                    description
+                      "Unreserved bandwidth value in bytes per second";
+                  }
+                }
+                list reserved-bandwidth {
+                  key "priority";
+                  description
+                    "Reserved bandwidth information";
+
+                  leaf priority {
+                    type uint8;
+                    description
+                      "Priority value";
+                  }
+
+                  leaf value {
+                    type string;
+                    description
+                      "Reserved bandwidth value in bytes per second";
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }

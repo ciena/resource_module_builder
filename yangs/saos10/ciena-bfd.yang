@@ -4,6 +4,10 @@ module ciena-bfd {
 
   prefix "bfd";
 
+  import ciena-openconfig-interfaces {
+     prefix "cn-if";
+  }
+
   import openconfig-interfaces {
      prefix "oc-if";
   }
@@ -32,6 +36,10 @@ module ciena-bfd {
      prefix "rt-types";
   }
 
+  import ietf-sr-policy-types {
+     prefix "sr-policy-types";
+  }
+
   organization
       "Ciena Corporation";
 
@@ -46,7 +54,7 @@ module ciena-bfd {
 
   description
       "This YANG module defines Ciena's specific BFD protocol.
-      Copyright (c) 2019-2022  Ciena Corporation.  All rights
+      Copyright (c) 2019-2023  Ciena Corporation.  All rights
       reserved.
 
       All information and intellectual property contained in this
@@ -67,6 +75,28 @@ module ciena-bfd {
       warranty, either express or implied, as to the use, operation,
       condition, or performance of the Specification. You agree
       that Ciena has no liability for your use of the Specification.";
+
+  revision 2023-05-05 {
+     description
+        "Seamless BFD changes for enabling monitoring 
+         on SR candidate-path and inheritance mechanism 
+         on SR-policy.
+         Changes in S-BFD initiator state to include configured
+         parameters.
+         Added micro-BFD profile.
+         Edited Notification fields for micro-BFD support.
+         Added global and operational data for micro-BFD sessions.
+         Added bfd-clear-statistics rpc to clear the BFD sesion statistics.
+         Edited sr-common-seamless-bfd-cfg-grouping to remove bfd-monitor-mode.
+         Moved candidate-path list in seamless-state parallel to sr-policy list 
+         hierarchy.
+         Added reverse path bsid to state data for SR-TE candidate path BFD.
+         Added SR-TE Candidate Path grouping to bfd-clear-statistics rpc.
+         Added new leaf in bfd-clear-statistics rpc for Micro BFD support.
+         Added accelerate leaf in Micro BFD profile state.
+         Added must condition in session config entry container for ip interface validation.
+         Added restriction on Micro BFD Profile to support it on platforms supporting Micro BFD feature.";
+  }
 
   revision 2022-02-04 {
      description
@@ -150,6 +180,30 @@ module ciena-bfd {
      }
   }
 
+  grouping sr-candidate-path-keys-grouping {
+     description
+        "SR-policy candidate-path sub-key for a Seamless-BFD initiator session.";
+
+     leaf protocol-origin {
+        type sr-policy-types:protocol-origin-type;
+        description
+           "Instantiation mechanism used to create the candidate path";
+     }
+
+     leaf originator {
+        type string;
+        description
+           "Identifier (concatenation of ASN and node-address) of the node
+           that signalled/instantiated the candidate path on headend";
+     }
+
+     leaf discriminator {
+        type uint32;
+        description 
+           "Candidate path distinguisher";
+     }
+  }
+
   grouping common-seamless-bfd-profile-params-grouping {
      description 
         "Seamless-BFD grouping for config parameters, which are
@@ -173,54 +227,115 @@ module ciena-bfd {
      }
   }
 
+  grouping sr-common-seamless-bfd-cfg-grouping {
+     description
+        "Seamless-BFD configuration common for SR-policies 
+        and candidate-paths.";
+     leaf profile {
+        description
+           "BFD profile to be used.";
+        type leafref  {
+           path "/bfd:bfd/bfd:profiles/bfd:mpls-seamless-bfd-profile/bfd:name";
+        }
+     }
+
+     leaf slow-start {
+        description
+           "Determines if initiator session uses configured or slow timer in
+           Desired Min TX Interval in transmitted packets
+           until a reply packet is received.";
+        type boolean;
+        default true;
+     }
+
+     leaf admin-state {
+        description
+           "Determines if initiator session is administratively up or down.";
+        type boolean;
+        default false;
+     }
+
+     leaf statistics-collection {
+        description
+           "Determines whether statistics collection will be 
+           turned on or off for accelerated Seamless-BFD session.";
+        if-feature bfd-types:accelerated-seamless-bfd;
+
+        type enumeration {
+           enum on {
+              value 0;
+              description
+                 "Statistics-collection will be on for accelerated Seamless-BFD session";
+           }
+           enum off {
+              value 1;
+              description
+                 "Statistics-collection will be off for accelerated Seamless-BFD session";
+           }
+        }
+        default off;
+     }
+  }
+
   grouping sr-policy-seamless-bfd-cfg-grouping {
      container seamless-bfd-cfg-params  {
         description
            "Seamless-BFD configuration on SR-policy.";
-        leaf profile {
-           description
-              "BFD profile to be used.";
-           type leafref  {
-              path "/bfd:bfd/bfd:profiles/bfd:mpls-seamless-bfd-profile/bfd:name";
+
+        uses sr-common-seamless-bfd-cfg-grouping;
+     }
+  }
+
+  grouping sr-candidate-path-seamless-bfd-cfg-grouping {
+     container seamless-bfd-cfg-params  {
+        description
+           "Seamless-BFD configuration on SR candidate-path.";
+
+        uses sr-common-seamless-bfd-cfg-grouping;
+
+        container reverse-path {
+           description 
+              "Path details for Seamless-BFD reply packet on reverse path.
+              Default reverse path is IP.";
+           leaf mpls-sid {
+              description 
+                 "Binding-SID value of reverse SR-policy or Candidate-Path.";
+              type uint32;
            }
         }
+     }
+  }
 
-        leaf slow-start {
-           description
-              "Determines if initiator session uses configured or slow timer in
-               Desired Min TX Interval in transmitted packets
-               until a reply packet is received.";
-           type boolean;
-           default true;
-        }   
-
-        leaf admin-state {
-           description
-              "Determines if initiator session is administratively up or down.";
-           type boolean;
-           default false;
-        }   
-
-        leaf statistics-collection {
-           description
-              "Determines whether statistics collection will be 
-              turned on or off for accelerated Seamless-BFD session.";
-           if-feature bfd-types:accelerated-seamless-bfd;
-
-           type enumeration {
-              enum on {
-                 value 0;
-                 description
-                    "Statistics-collection will be on for accelerated Seamless-BFD session";
-              }
-              enum off {
-                 value 1;
-                 description
-                    "Statistics-collection will be off for accelerated Seamless-BFD session";
-              }
+  grouping micro-bfd-keys-grouping {
+     description
+        "key for Micro BFD session.";
+     leaf agg {
+        type leafref  {
+           path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+           "Aggregation name on which the micro BFD session is enabled.";
+     }
+     leaf member-port {
+        type leafref  {
+           path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+           "Aggregation member port on which the micro BFD session is running.";
+     }
+     leaf addr-family {
+        type enumeration {
+           enum ipv4 {
+              description
+                 "Address family is IPv4.";
            }
-           default off;
-        }   
+           enum ipv6 {
+              description
+                 "Address family is IPv6.";
+           }
+        }
+        description
+           "IPv4 or IPv6 micro BFD session type.";
      }
   }
 
@@ -287,6 +402,20 @@ module ciena-bfd {
               uses bfd-types:seamless-initiator-statistics-summary;
            }
         }
+
+        container ipv4-micro-bfd-summary {
+           if-feature bfd-types:micro-bfd;
+           description
+              "IPv4 micro-BFD session summary.";
+           uses bfd-types:session-statistics-summary;
+        }   
+
+        container ipv6-micro-bfd-summary {
+           if-feature bfd-types:micro-bfd;
+           description
+              "IPv6 micro-BFD session summary.";
+           uses bfd-types:session-statistics-summary;
+        }   
      }
 
      container profiles {
@@ -340,6 +469,7 @@ module ciena-bfd {
               description 
                  "Path details for Seamless-BFD reply packet on reverse path.
                  Default reverse path is IP.";
+              status obsolete;
               leaf label {
                  description 
                     "Binding-SID value in case reverse path is SR-policy.
@@ -347,6 +477,34 @@ module ciena-bfd {
                  type rt-types:mpls-label;
               }
            }
+
+           leaf reply-mode {
+              description
+                 "Mode of Seamless BFD reply from remote node.";
+              type enumeration {
+                 enum remote-reflection {
+                    value 0;
+                    description
+                       "Reply sent by Seamless BFD reflector session at remote node.";
+                 }
+                 enum remote-loopback {
+                    value 1;
+                    description
+                       "Reply sent by SR-MPLS forwarding plane at remote node.
+                       This mode needs a reverse path identifier like B-SID,
+                       IP-SH BFD packets will be used to monitor the SR Candidate
+                       path.";
+                 }
+              }
+              default remote-reflection;
+           }
+        }
+        list micro-bfd-profile {
+            if-feature bfd-types:micro-bfd;
+            description
+               "List of MICRO-BFD profiles.";
+            key "name";
+            uses bfd-types:micro-bfd-profile-parms;
         }
      }
 
@@ -404,13 +562,30 @@ module ciena-bfd {
               description 
                  "Path details for Seamless-BFD reply packet on reverse path.
                  Default reverse path is IP.";
+              status obsolete;
               leaf label {
                  description 
                     "Binding-SID value of reverse SR-policy.";
                  type rt-types:mpls-label;
               }
-              /* In future, "sid-list" param can be present as per need.
-               * Also, VCCV Seamless-BFD may not need a path disjoint than the PW itself. */
+           }
+
+           leaf reply-mode {
+              description
+                 "Mode of Seamless BFD reply from remote node.";
+              type enumeration {
+                 enum remote-reflection {
+                    value 0;
+                    description
+                       "Reply sent by Seamless BFD reflector session at remote node.";
+                 }
+                 enum remote-loopback {
+                    value 1;
+                    description
+                       "Reply sent by SR-MPLS forwarding plane at remote node.";
+                 }
+              }
+              default remote-reflection;
            }
 
            leaf num-of-ref {
@@ -418,6 +593,24 @@ module ciena-bfd {
                  "Number of service entities referring the given profile.";
               type uint16;   /* Up to 65,535 sessions per profile */
            }
+        }
+
+        list micro-bfd-profile {
+            if-feature bfd-types:micro-bfd;
+            description
+               "List of micro-BFD profile.";
+            key "name";
+            uses bfd-types:micro-bfd-profile-parms;
+            leaf num-of-ref {
+               type uint16;
+               description
+                  "Number of Aggregation referring the given profile.";
+            }
+            leaf accelerate {
+               type boolean;
+                  description
+                     "If enabled, BFD will run in an accelerated mode (for example, in hardware).";
+            }
         }
      }
 
@@ -630,12 +823,38 @@ module ciena-bfd {
               key "sr-policy-color sr-policy-endpoint";
 
               uses sr-policy-keys-grouping; 
+              uses bfd-types:base-cfg-parms;
               uses bfd-types:all-session;
               leaf num-of-ref {
                  description
                     "Number of services monitored from given initiator session."; 
 
                  type uint16; /* Up to 65,535 services per initiator session. */
+              }
+           }
+
+           list candidate-path {
+              description
+                 "Associations of Seamless BFD with candidate-path";
+              key "sr-policy-color sr-policy-endpoint protocol-origin originator discriminator";
+
+              uses sr-policy-keys-grouping; 
+              uses sr-candidate-path-keys-grouping;
+              uses bfd-types:base-cfg-parms;
+              uses bfd-types:all-session;
+              leaf num-of-ref {
+                 description
+                    "Number of services monitored from given initiator session.";
+
+                 type uint16; /* Up to 65,535 services per initiator session. */
+              }
+              leaf reverse-path-sid {
+                 description 
+                    "Binding-SID value of reverse SR-policy or Candidate-Path.";
+
+                 type union {
+                    type uint32;
+                 }
               }
            }
         }
@@ -658,6 +877,10 @@ module ciena-bfd {
                     type leafref  {
                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
                     }
+                    must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]"
+                         + "/oc-if:config/cn-if:type[.='ip' or .='point-to-point' or .='ip-unnumbered']" {
+                       error-message "Referenced interface must be of type ip or point-to-point or ip-unnumbered";
+                    }
                     description
                        "L3 interface on which the BFD session is running.";
                  }
@@ -678,6 +901,10 @@ module ciena-bfd {
                  leaf interface { 
                     type leafref  {
                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]"
+                         + "/oc-if:config/cn-if:type[.='ip' or .='point-to-point' or .='ip-unnumbered']" {
+                       error-message "Referenced interface must be of type ip or point-to-point or ip-unnumbered";
                     }
                     description
                        "L3 interface on which the BFD session is running.";
@@ -931,6 +1158,17 @@ module ciena-bfd {
           "SR-policy monitored by Seamless-BFD initiator session."; 
     }
 
+    uses sr-candidate-path-keys-grouping {
+       if-feature bfd-types:seamless-bfd;
+       when "session-type = 'sr-candidate-path-seamless-initiator'" {
+          description
+             "SR candidate-path sub-key applicable when session is 
+             Seamless-BFD initiator.";
+       }
+       description
+          "SR candidate-path monitored by Seamless-BFD initiator session.";
+    }
+
     leaf local-state {
        type bfd-types:state;
        description
@@ -940,6 +1178,118 @@ module ciena-bfd {
        type bfd-types:state;
        description
           "Remote state of the BFD session.";
+    }
+    leaf lag-name {
+       if-feature bfd-types:micro-bfd;
+       type leafref  {
+          path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+       }
+       description
+          "Aggregation name on which the micro-BFD session is enabled.";
+    }
+    leaf member-link {
+       if-feature bfd-types:micro-bfd;
+       type leafref  {
+          path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+       }
+       description
+          "Aggregation member-link on which the micro-BFD session is running.";
+    }
+  }
+
+  rpc bfd-clear-statistics {
+    input {
+      leaf session-type {
+        type bfd-types:bfd-session-type;
+        description
+          "BFD session type, this indicates the path type that BFD is running on";
+      }
+      leaf interface {
+         when "../session-type = 'ip-single-hop' or
+               ../session-type = 'ip-multi-hop'" {
+            description
+               "Interface applicable when session-type is ip-single-hop or
+                ip-multi-hop.";
+         }
+         type leafref  {
+            path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+         }
+         description
+            "L3 interface on which the BFD session is running.";
+      }
+      leaf tunnel-name {
+         when "../session-type = 'tp-ingress-corout' or
+               ../session-type = 'tp-egress-corout'" {
+            description
+               "Tunnel name applicable when session-type is tp-ingress-corout
+                or tp-egress-corout.";
+         }
+         type leafref  {
+            path "/mpls-tp:tp-corouted-tunnels/mpls-tp:tunnel/mpls-tp:name";
+         }
+         description
+            "Tunnel on which the BFD session is running.";
+      }
+      leaf source-addr {
+         when "../session-type = 'tp-ingress-corout' or
+               ../session-type = 'tp-egress-corout'" {
+            description
+               "Source address applicable when session-type is tp-ingress-corout
+                or tp-egress-corout.";
+         }
+         type inet:ip-address;
+         description
+            "Local IP address.";
+      }
+      leaf dest-addr {
+         when "../session-type = 'tp-ingress-corout' or
+               ../session-type = 'tp-egress-corout' or
+               ../session-type = 'ip-single-hop' or
+               ../session-type = 'ip-multi-hop'" {
+            description
+               "Destination address applicable when session-type is tp-ingress-corout
+                or tp-egress-corout or ip-single-hop or ip-multi-hop.";
+         }
+         type inet:ip-address;
+         description
+            "IP address of the peer.";
+      }
+      uses micro-bfd-keys-grouping {
+         if-feature bfd-types:micro-bfd;
+         when "session-type = 'micro-bfd'" {
+            description
+               "Micro-BFD keys applicable when session-type is Micro BFD.";
+         }
+         description
+            "Micro BFD sessions created over an aggregation";
+      }
+      uses sr-policy-keys-grouping {
+         if-feature bfd-types:seamless-bfd;
+         when "session-type = 'sr-policy-seamless-initiator' or
+               session-type = 'sr-candidate-path-seamless-initiator'" {
+            description
+               "SR-policy key applicable when session-type is Seamless-BFD initiator.";
+         }
+         description
+            "SR-policy monitored by Seamless-BFD initiator session.";
+      }
+      uses sr-candidate-path-keys-grouping {
+         if-feature bfd-types:seamless-bfd;
+         when "session-type = 'sr-candidate-path-seamless-initiator'" {
+            description
+               "SR-policy candidate path key applicable when session-type is Seamless-BFD 
+                candidate path initiator.";
+         }
+         description
+            "SR-policy candidate path monitored by Seamless-BFD candidate path initiator session.";
+      }
+    }
+    output {
+      leaf response {
+         type string;
+         description
+            "The response could be 'success', or the reason for bfd-clear-statistics failure";
+      }
     }
   }
 }

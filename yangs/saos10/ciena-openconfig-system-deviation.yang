@@ -9,6 +9,7 @@ module ciena-openconfig-system-deviation {
   import ietf-inet-types { prefix inet; } 
   import ciena-openconfig-aaa-types { prefix cn-oc-aaa-types; } 
   import ciena-openconfig-system { prefix ciena-oc-sys; }
+  import yumaworks-extensions { prefix "ywx"; }
 
   organization
     "Ciena Corporation";
@@ -34,6 +35,21 @@ module ciena-openconfig-system-deviation {
       forbidden unless prior written permission is obtained from 
       Ciena Corporation.";
   
+  revision 2023-09-13 {
+    description
+      "Added deviation for username to modify type and description.
+      Adding MAX Users creation limit as 100";
+    reference
+      "";
+  }
+
+  revision 2023-03-22 {
+    description
+      "Removing deviation on login-banner";
+    reference
+      "";
+  }
+
   revision 2021-02-12 {
     description
       "Add deviation for RADIUS/TACACS config for source-address";
@@ -86,19 +102,11 @@ module ciena-openconfig-system-deviation {
     deviate not-supported;
   }
 
-  deviation /oc-sys:system/oc-sys:config/oc-sys:login-banner {
-    deviate not-supported;
-  }
-
   deviation /oc-sys:system/oc-sys:state/oc-sys:hostname {
     deviate not-supported;
   }
 
   deviation /oc-sys:system/oc-sys:state/oc-sys:domain-name {
-    deviate not-supported;
-  }
-
-  deviation /oc-sys:system/oc-sys:state/oc-sys:login-banner {
     deviate not-supported;
   }
 
@@ -182,6 +190,20 @@ module ciena-openconfig-system-deviation {
 
   deviation /oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:admin-user {
     deviate not-supported;
+  }
+
+  deviation /oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:config/oc-sys:username {
+    deviate replace {
+      type string {
+        length "1..32";
+        pattern '[a-zA-Z0-9_.@][a-zA-Z0-9_.@-]*';
+      }
+    }
+    deviate add {
+      ywx:help
+        "Assigned username for this user. Supported characters are a-z, A-Z, 0-9, '.', '-', '@' and  '_'
+         Username cannot begin with '-' character";
+    }
   }
 
   deviation /oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user/oc-sys:config/oc-sys:password {
@@ -320,5 +342,11 @@ module ciena-openconfig-system-deviation {
 
   deviation /ciena-oc-sys:ssh-user-pubkey-install/ciena-oc-sys:input/ciena-oc-sys:tls-service-profile {
     deviate not-supported;
+  }
+
+  deviation /oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:users/oc-sys:user {
+    deviate add {
+      max-elements 100;
+    }
   }
 }

@@ -39,6 +39,13 @@ module ciena-bfd-sr-policy {
       forbidden unless prior written permission is obtained
       from Ciena Corporation.";
 
+   revision 2022-07-29 {
+      description
+         "Seamless BFD changes for enabling monitoring 
+         on SR candidate-path and inheritance mechanism 
+         on SR-policy.";
+   }
+
    revision 2021-07-19 {
       description 
          "Initial revision of Seamless-BFD over SR-policy.
@@ -69,6 +76,37 @@ module ciena-bfd-sr-policy {
          config false;
 
          uses bfd:sr-policy-seamless-bfd-cfg-grouping;
+
+         leaf local-state {
+            description
+               "Local state of the Seamless-BFD session.";
+
+            type bfd-types:state;
+         }
+      }
+   }
+
+   /* Augmentation of SR-policy candidate-path configuration parameters */
+   augment "/sr-policy:segment-routing-traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path" {
+      description
+         "Seamless-BFD configuration on SR candidate-path";
+      if-feature bfd-types:seamless-bfd;
+
+      uses bfd:sr-candidate-path-seamless-bfd-cfg-grouping;
+   }
+
+   /* Augmentation of SR-policy candidate-path state information */
+   augment "/sr-policy:segment-routing-traffic-engineering-state/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path" {
+      description
+         "SR candidate-path Seamless-BFD information";
+      if-feature bfd-types:seamless-bfd;
+
+      container bfd-state {
+         description
+            "MPLS Seamless-BFD state information.";
+         config false;
+
+         uses bfd:sr-candidate-path-seamless-bfd-cfg-grouping;
 
          leaf local-state {
             description

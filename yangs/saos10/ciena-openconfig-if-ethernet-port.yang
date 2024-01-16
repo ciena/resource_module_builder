@@ -56,6 +56,30 @@ module ciena-openconfig-if-ethernet-port {
          forbidden unless prior written permission is obtained from
          Ciena Corporation.";
 
+    revision "2023-07-19" {
+       description
+          "Add FlexE feature declarations";
+    }
+
+    revision "2023-06-06" {
+       description
+          "Changed description for in-oversized-pkts and in-jabber-pkts.";
+    }
+
+    revision "2023-03-27" {
+       description
+          "Added enum 50Gb to the leaf port-speed.";
+    }
+
+    revision "2022-12-13" {
+       description
+          "Changed type of oper auto-negotiation leaf from boolean to enum
+          to include unknown option.
+          Added leaf in-9217-to-16383-octet-pkts.
+          Added leaf out-9217-to-16383-octet-pkts.
+          Add MAC-address as configurable attribute for ETTP interface yang model.";
+    }
+
     revision "2022-08-09" {
        description
           "Added 'control' as an ownership option.";
@@ -300,6 +324,10 @@ module ciena-openconfig-if-ethernet-port {
                     description
                         "Port Speed is 400Gb";
                 }
+                enum 50Gb {
+                    description
+                        "Port Speed is 50Gb";
+                }
             }
             description
                 "Set the port speed for ethernet ports. The value 'auto' enables
@@ -410,15 +438,14 @@ module ciena-openconfig-if-ethernet-port {
         }
 
         leaf ettp-mode {
-            description
-                "Determines the configured ettp-mode of this ettp (standard-ethernet/other).";
+            if-feature ciena-flexe:flexe;
             type enumeration {
                 enum standard-ethernet {
                     description
                         "This is the default ETTP mode whereby the mode of ETTP is standard ethernet.";
                 }
                 enum l1-cross-connect {
-                    description
+                   description
                         "ETTP as a L1 cross-connect interface.";
                 }
                 enum flexe-mac {
@@ -427,9 +454,12 @@ module ciena-openconfig-if-ethernet-port {
                 }
             }
             default standard-ethernet;
+            description
+                "Determines the configured ettp-mode of this ettp (standard-ethernet/other).";
         }
 
         leaf flexe-channel {
+            if-feature ciena-flexe:flexe;
             type leafref {
                 path "/ciena-flexe:flexe-channels/ciena-flexe:flexe-channel/ciena-flexe:name";
             }
@@ -442,6 +472,7 @@ module ciena-openconfig-if-ethernet-port {
         }
 
         leaf flexe-protection-group {
+            if-feature ciena-flexe:flexe;
             type leafref {
                 path "/ciena-flexe:flexe-protection-groups/ciena-flexe:flexe-protection-group/ciena-flexe:name";
             }
@@ -452,6 +483,13 @@ module ciena-openconfig-if-ethernet-port {
             description
                 "Identifier of the FlexE Protection Group bound to the ETTP.";
         }
+
+        leaf mac-address {
+            type ietf-yt:mac-address;
+            description
+                "MAC-address.";
+        }
+
     } // end augment "/oc-if:interfaces/oc-if:interface/oc-if:config"
 
     // operational state parameters for Ethernet interfaces
@@ -562,7 +600,11 @@ module ciena-openconfig-if-ethernet-port {
         }
 
         leaf auto-negotiation {
-            type boolean;
+            type enumeration {
+                enum unknown;
+                enum true;
+                enum false;
+            }
             description
                  "ETTP auto-negotiation operational state.";
         }
@@ -665,6 +707,12 @@ module ciena-openconfig-if-ethernet-port {
               "The number of inbound packets that were deemed to be from 4096 to 9216 octets in size";
         }
 
+        leaf in-9217-to-16383-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of inbound packets that were deemed to be from 9217 to 16383 octets in size";
+        }
+
         leaf out-1519-to-2047-octet-pkts {
            type ietf-yt:counter64;
            description
@@ -683,15 +731,22 @@ module ciena-openconfig-if-ethernet-port {
               "The number of outbound packets that were deemed to be from 4096 to 9216 octets in size";
         }
 
+        leaf out-9217-to-16383-octet-pkts {
+           type ietf-yt:counter64;
+           description
+              "The number of outbound packets that were deemed to be from 9217 to 16383 octets in size";
+        }
+
         leaf in-oversize-pkts {
            type ietf-yt:counter64;
            description
-              "The number of inbound packets that were deemed to be more than 9216 octets in size";
+              "The number of inbound packets that were deemed to be more than maximum frame size allowed";
         }
         leaf in-jabber-pkts {
            type ietf-yt:counter64;
            description
-              "The number of inbound packets that were deemed to be more than maximum frame size allowed";
+              "The number of inbound packets that were deemed to be more than maximum frame size allowed and 
+               contain an invalid CRC or IEEE length check error";
         }
 
         leaf in-crc-error-pkts {

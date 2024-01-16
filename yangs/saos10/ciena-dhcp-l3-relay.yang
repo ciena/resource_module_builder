@@ -19,6 +19,14 @@ module ciena-dhcp-l3-relay {
     prefix "vrf";
   }
 
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-openconfig-if-ip {
+    prefix "cn-ip";
+  }
+
   organization
     "Ciena Corporation";
   
@@ -42,6 +50,18 @@ module ciena-dhcp-l3-relay {
      information or reproduction of this material is strictly
      forbidden unless prior written permission is obtained from
      Ciena Corporation.";
+
+  revision "2023-09-12" {
+    description
+      "Adding support of gateway address as part of DHCPv4 L3 Relay config.
+       Adding support of primary and secondary giaddr config in DHCPv4 L3 relay config.
+       Updating the description of relay-name, admin-enabled and option-82 leaf.
+       Updating the description of relay-name with string length info.
+       Updating the default value of rid-string, cid-string, admin-enabled and option-82 leaf.
+       Removing the unsupported untrusted-fp-drops as part of state data of DHCPv4 L3 Relay config.";
+    reference
+      "";
+  }
 
   revision "2021-08-04" {
     description
@@ -139,12 +159,13 @@ module ciena-dhcp-l3-relay {
       type identityref {
         base remote-id-type;
       }
+      default remote-id-device-mac-address;
       description
         "Use to specify remote ID as device-hostname/device-mac-address/rid-string.";
     }
     leaf rid-string {
       type string {
-        length "0..64";
+        length "1..64";
       }
       description
         "The string value for rid-string.";
@@ -156,6 +177,7 @@ module ciena-dhcp-l3-relay {
       type identityref {
         base circuit-id-type;
       }
+      default circuit-id-interface-name;
       description
         "Use to specify circuit ID as cid-string/interface-name.";
     }
@@ -183,7 +205,7 @@ module ciena-dhcp-l3-relay {
         }
         leaf cid-string {
           type string {
-            length "0..64";
+            length "1..64";
           }
           description
             "The string value for cid-string.";
@@ -203,6 +225,36 @@ module ciena-dhcp-l3-relay {
               "Use to enable/disable trust for flow point.";
             }            
         }//flow-points        
+        container giaddr {
+          description
+            "IPv4 address of interface to be used as
+             gateway address for relay packets to request
+             DHCP response from a specific subnet.";
+          choice giaddr {
+            case primary {
+              leaf primary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../ip-interface]/cn-ip:ipv4/cn-ip:addresses/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Primary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+            case secondary {
+              leaf secondary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../ip-interface]/cn-ip:ipv4/cn-ip:addresses/cn-ip:secondary/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Secondary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+          }
+        }
         container state {
           config false;
           description
@@ -237,6 +289,13 @@ module ciena-dhcp-l3-relay {
             description
               "The number of packets dropped because the interface is not trusted.";
           }
+          leaf giaddr {
+            type inet:ipv4-address;
+            description
+              "IPv4 address of interface to be used as
+               gateway address for relay packets to request
+               DHCP response from a specific subnet.";
+          }
         }//l3-relay-agent-instance-if-oper-data
       }//ip-interfaces
   }
@@ -246,8 +305,9 @@ module ciena-dhcp-l3-relay {
       type identityref {
         base option-82-setting;
       }
+      default option-82-off;
       description
-        "Set option 82 to on/off/replace/remove/include.";
+        "Set option 82 to on/off/replace.";
     }
     leaf encapsulate-option-82 {
       type boolean;
@@ -272,21 +332,22 @@ module ciena-dhcp-l3-relay {
 
   container l3-relay-agent {
     description
-      "Top-level grouping for each dhcp l3 relay.";
+      "Top-level grouping for each DHCPv4 l3 relay.";
 
     list instance {
       key "relay-name";
       description 
-        "A list of dhcp-l3-relay instances.";
+        "A list of DHCPv4 L3 Relay instances.";
       leaf relay-name {
         type string;
         description
-          "The name of an individual dhcp-l3-relay instance.";
+          "The name of an individual DHCPv4 L3 Relay instance (length: 1..64)";
       }
       leaf admin-enabled {
         type boolean;
+           default false;
         description
-          "Use to enable/disable dhcp-l3-relay.";
+          "Use to enable/disable DHCPv4 L3 Relay instance.";
       }
       list dhcp-server-addresses {
         key "dhcp-server-address";
@@ -301,6 +362,7 @@ module ciena-dhcp-l3-relay {
           type leafref {
             path "/vrf:vrf/vrf:vrfName";
           }
+          default "default";
           description
             "Set a particular Virtual Routing and Forwarding(VRF) instance
              to be used for DHCP server";
@@ -374,11 +436,6 @@ module ciena-dhcp-l3-relay {
           type uint32;
           description
             "The number of packets spoofed by the server.";
-        }
-        leaf untrusted-fp-drops {
-          type uint32;
-          description
-            "The number of packets dropped because the flow point is not trusted.";
         }
       }//l3-relay-agent-instance-oper-data
     }//instance

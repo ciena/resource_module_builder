@@ -1,0 +1,196 @@
+module ciena-system-report {
+  namespace "http://www.ciena.com/ns/yang/ciena-system-report";
+  prefix "ciena-system-report";
+
+  import ciena-file-transfer-types {
+    prefix ciena-ftt;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's system report rpc.
+
+     Copyright (c) 2023 Ciena Corporation.  All rights
+     reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-06-13" {
+    description
+      "Added range and default value to system-report-generate timeout.";
+  }
+
+  revision 2023-01-11 {
+    description
+      "Initial version";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  typedef system-report-status-enum {
+    type enumeration {
+      enum idle {
+        description
+          "No system report snapshot being generated and no
+           sytem-report rpcs have been invoked.";
+      }
+      enum system-report-operation-in-progress {
+        description
+          "A system report operation is currently in progress.";
+      }
+      enum system-report-generate-rpc-complete {
+        description
+          "The most recent system-report-generate rpc completed successfully.";
+      }
+      enum system-report-generate-rpc-failed {
+        description
+          "The most recent system-report-generate rpc failed.";
+      }
+      enum system-report-upload-rpc-complete {
+        description
+          "The most recent system-report-upload rpc completed successfully.";
+      }
+      enum system-report-upload-rpc-failed {
+        description
+          "The most recent system-report-upload rpc failed.";
+      }
+    }
+    description
+      "Status value for the system report snapshot feature.";
+  }
+
+  container system-report-status {
+    config false;
+    leaf status {
+      type system-report-status-enum;
+      description
+         "Status of the system report snapshot feature.
+          A system-report-generate or system-report-upload rpc
+          may be invoked when the status is any value other than
+          system-report-operation-in-progress.";
+    }
+
+    list snapshot-file {
+      key "file-name";
+      leaf file-name {
+        type string;
+        description
+          "Snapshot file name";
+      }
+      leaf file-date {
+        type string;
+        description
+          "Snapshot file date";
+      }
+      leaf file-size {
+        type uint64;
+        units "bytes";
+        description
+          "Snapshot file size";
+      }
+      description
+        "Previously generated system report snapshot files available for
+         upload.";
+    }
+    description
+      "Operational state of the system report snapshot feature and list of
+       generated snapshot files that are available for upload.";
+  }
+
+  rpc system-report-generate {
+    description
+      "Generate a new system report snapshot and optionally upload the
+       resulting snapshot file.  If a filename-prefix is specified, it
+       is used as the prefix for the generated snapshot filename.  If
+       the file-transfer-parameters specify destination information, it
+       is used to send the generated snapshot file.  The status of the
+       system report snapshot file generation can be retrieved from
+       system-report-status.";
+
+    input {
+      uses ciena-ftt:file-transfer-parameters;
+
+      leaf filename-prefix {
+        type string;
+        description
+          "The filename prefix path, if specified, is used as the prefix
+           for the generated snapshot filename.";
+      }
+
+      leaf target-path {
+        type string;
+        description
+          "The destination path, if specified, is used along with the
+           file-transfer-parameters values for server-type and address
+           to form the url prefix to where the resulting snapshot file
+           will be sent.  If the file-transfer-parameters url value is
+           specified then the value of this leaf is not used.";
+      }
+
+      leaf timeout {
+        type uint64 {
+          range "60..3600";
+        }
+        default "900";
+        units "seconds";
+        description
+          "The number of seconds the system report snapshot generation is
+           allowed to run before before timing out.";
+      }
+    }
+  }
+
+  rpc system-report-upload {
+    description
+      "Upload an existing system report snapshot file to the specified
+       destination.  The file-transfer-parameters server-type, address,
+       and filename may be used along with target-path to specify where
+       the snapshot file is to be sent.  The file-transfer-parameters
+       url value may be used to specify the full destination url including
+       the snapshot filename.  The system-report-status can be queried to
+       retrieve the list of existing snapshot files that may be uploaded
+       using this rpc.";
+
+    input {
+      uses ciena-ftt:file-transfer-parameters;
+
+      leaf target-path {
+        type string;
+        description
+          "The destination path, if specified, is used along with the
+           file-transfer-parameters values for server-type and address
+           to form the url prefix to where the specified snapshot file
+           will be sent.  If the file-transfer-parameters url value is
+           specified then the value of this leaf is not used.";
+      }
+    }
+  }
+}

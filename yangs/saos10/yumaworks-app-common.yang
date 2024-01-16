@@ -18,12 +18,24 @@ module yumaworks-app-common {
     description
        "Common CLI parameters used in all yumapro applications.
 
-     Copyright (c) 2012 - 2021 YumaWorks, Inc. All rights reserved.
+     Copyright (c) 2012 - 2023 YumaWorks, Inc. All rights reserved.
 
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject
      to the license terms contained in, the BSD 3-Clause License
      http://opensource.org/licenses/BSD-3-Clause";
+
+    revision 2023-03-06 {
+       description
+         "Add --tcp-connect-timeout leaf to new
+          TcpConnectParms grouping.";
+    }
+
+    revision 2022-09-17 {
+       description
+         "Add log-highres-datetime leaf to LoggingCommonParms
+          grouping.";
+    }
 
     revision 2021-08-24 {
        description
@@ -274,6 +286,22 @@ module yumaworks-app-common {
             "Sets the syslog debug logging level filter for output to
              the syslog file for the program.";
           type yt:NcDebugType;
+        }
+
+        leaf log-highres-datetime {
+          description
+            "If set to 'true' then a log timestamp
+             string will contain a microseconds field.
+             If 'false' then this field will not contain a
+             microseconds field.
+
+             This field is always 6 digits long and represents
+             a fraction of one second as the number of microseconds.
+
+             The log-header parameter is affected by this setting.";
+
+          type boolean;
+          default false;
         }
 
     }
@@ -1001,5 +1029,39 @@ module yumaworks-app-common {
 
     }
 
+    grouping TcpConnectParms {
+      leaf tcp-connect-timeout {
+        type uint16;
+        units seconds;
+        default 10;
+        description
+          "The number of seconds to wait for a TCP connect
+           operation to complete before timing out.
 
+            -  The value zero indicates that blocking mode
+               should be used.
+
+            -  A non-zero value indicates the timeout value
+               for the 'connect' function in non-blocking mode.
+               The connect may timeout before this number of
+               seconds, but should not be longer.
+
+           This parameter introduced in 22.10-6.
+           For all prior releases, the 'connect' function
+           is invoked in blocking mode.
+
+           A typical TCP connect timeout is different
+           depending on the target address. If this parameter
+           is set to zero then the system configured timeout
+           will be used.
+
+            - local network, reached but connection refused:
+              takes about 10 milliseconds.
+            - local network, no answer: takes about 2 seconds
+            - non-local network, no answer: takes up to 135
+              seconds
+
+          ";
+      }
+    }
 }

@@ -28,6 +28,22 @@ module ciena-twamp-light {
   description 
     "Ciena Corporation TWAMP Light Data Model";
   
+  revision "2023-03-30" {
+    description
+      "Change the UDP port range";
+  }
+  revision "2023-01-24" {
+    description
+      "Change the minimum interval to 100ms.";
+
+    reference
+      "RFC 5357 Appendix I";
+  }
+  revision "2022-09-27" {
+    description
+      "Added RPCs for clearing statistics of 
+       TWAMP Light Sender and TWAMP Light Reflector.";
+  }
   revision "2022-09-08" {
     description
       "Initial version";
@@ -129,9 +145,8 @@ module ciena-twamp-light {
   }
   leaf sender-udp-port {
     type inet:port-number {
-      range "49152..65535";
+      range "1000..65535";
     }
-    mandatory true;
     description
       "Sender UDP port number";
   }
@@ -143,9 +158,9 @@ module ciena-twamp-light {
     }
   leaf reflector-udp-port {
     type inet:port-number{
-      range "862 | 49152..65535";
+      range "862 | 1000..65535";
     }
-    mandatory true;
+    default 862;
     description 
       "Reflector UDP port number";
     }
@@ -241,7 +256,7 @@ module ciena-twamp-light {
 
         leaf interval  {
           type uint32 {
-            range 5..4294967294;
+            range 100..4294967294;
           }
           units milliseconds;
           default 1000;
@@ -720,4 +735,44 @@ module ciena-twamp-light {
       }
     }
   }
+
+  rpc twamp-light-sender-clear-statistics {
+    description
+      "TWAMP light sender clear statistics";
+    input {
+      leaf name {
+        type twamp-name;
+        description
+          "A unique name used as a key to identify this individual
+           TWAMP test session on the light-session-sender device";
+      }
+    }
+    output{
+      leaf status {
+        type string;
+        description
+          "Status of the clear TWAMP sender statistics operation";
+      }
+    }
+  }
+
+  rpc twamp-light-reflector-clear-statistics {
+    description
+      "TWAMP light reflector clear statistics";
+      input {
+        leaf name {
+          type twamp-name;
+          description
+            "A unique name used as a key to identify this individual
+             TWAMP test session on the light-session-reflector device";
+        }
+      }
+      output{
+        leaf status {
+          type string;
+          description
+            "Status of the clear TWAMP reflector statistics operation";
+        }
+      }
+   }
 }

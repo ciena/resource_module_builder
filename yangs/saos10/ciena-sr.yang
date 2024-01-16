@@ -7,7 +7,7 @@ module ciena-sr {
   }
 
   import ietf-inet-types {
-      prefix inet;
+    prefix inet;
   }
 
   import openconfig-interfaces {
@@ -16,6 +16,14 @@ module ciena-sr {
   
   import ciena-l3-types {
     prefix cn-l3-types;
+  }
+
+  import ietf-srv6-types {
+    prefix srv6-types;
+  }
+
+  import ciena-vrf {
+    prefix "vrf";
   }
 
   organization
@@ -55,12 +63,29 @@ module ciena-sr {
     condition, or performance of the Specification. You agree
     that Ciena has no liability for your use of the Specification.";
 
+  revision "2023-08-17" {
+    description
+      "Removing leaf reduced-mode.
+       Updating description for locator.";
+  }
+
+  revision "2023-03-27" {
+    description
+      "Added srv6 locators' config parameters and oper data.
+       Added srv6 locators' remote and forwarding info.
+       Added srv6 global reduced mode option.
+       Changed SRv6 Locator state endpoint behavior type.
+       Corrected next hop IPv6 address type.
+       Added SRv6 local incoming forwarding tables.
+       Added enumaration for extended SRv6 dataplane SID type.";
+  }
+
   revision "2022-03-31" {
     description
       "Added Flex-Algo underneath connected prefix SID map.;
        Changed Flex-Algo list to leaf type.
        Added srv6 locators.
-       Removed locator block in srv6";
+       Removed locator block in srv6.";
 
     reference
       "IETF-DRAFT: YANG Model for IGP Flexible Algorithm.";
@@ -114,16 +139,31 @@ module ciena-sr {
                  Using IS-IS";
   }
 
+  typedef srv6-endpoint-type {
+    type enumeration {
+      enum End.PSP_USD {
+        value 29;
+        description
+          "End function (Variant: PSP and USD)";
+      }
+      enum End_NEXT_CSID_PSP_USD {
+        value 48;
+        description
+          "End function with next SID (Variant: PSP and USD)";
+      }
+    }
+  }
+
   grouping sid-label-local-block {
     description
-      "Grouping for SR Label Range configuration.";
+      "Grouping for SR Label Range configuration";
     leaf lower-bound {
       type uint32 {
         range "16000..23999";
       }
       status deprecated;
       description
-        "Lower value in the block.";
+        "Lower value in the block";
     }
     leaf upper-bound {
       type uint32 {
@@ -131,32 +171,32 @@ module ciena-sr {
       }
       status deprecated;
       description
-        "Upper value in the block.";
+        "Upper value in the block";
     }
   }
   grouping srgb-cfg {
     status obsolete;
     description
-      "Grouping for SR Label Range configuration.";
+      "Grouping for SR Label Range configuration";
     list srgb {
       key "lower-bound upper-bound";
       max-elements 1;
       status obsolete;
       description
-        "List of global blocks to be advertised.";
+        "List of global blocks to be advertised";
       uses sid-label-local-block;
     }
   }
 
   grouping max-sid-depth {
     description
-      "Maximum SID Depth (MSD) configuration grouping.";
+      "Maximum SID Depth (MSD) configuration grouping";
     leaf node-msd {
       type uint8 {
         range "2..12";
       }
       description
-        "Node MSD is the lowest MSD supported by the node.";
+        "Node MSD is the lowest MSD supported by the node";
     }
   }
 
@@ -169,12 +209,12 @@ module ciena-sr {
         enum "enable" {
           value 0;
           description
-            "To set the N-flag value as 1";
+            "Sets the N-flag value as 1";
         }
         enum "disable" {
           value 1;
           description
-            "To set the N-flag value as 0";
+            "Sets the N-flag value as 0";
         }
       }
       default "enable";
@@ -187,33 +227,260 @@ module ciena-sr {
     description 
       "SRv6 locator grouping";
 
-    container locators {
-      description 
-        "SRv6 locators";
-      list locator {
-        key "name";
+    container srv6 {
+      container locators {
         description 
-          "Configure a SRv6 locator";
+          "SRv6 locators";
+        list locator {
+          key "name";
+          description 
+            "Configure a SRv6 locator";
+
+          leaf name {
+            type string {
+              length "0..255";
+            }
+            description 
+              "Representation of the most significant
+               bits of the address";
+          }
+
+          leaf sid-type {
+            type cn-l3-types:sr-sidtype-grouping;
+            description
+              "SR SID type as u-sid or uncompressed-sid";
+          }
+
+          leaf prefix {
+            type inet:ipv6-prefix;
+            mandatory true;
+            description 
+              "Locator IPv6 prefix";
+          }
+
+          leaf algorithm {
+            type uint8 {
+              range "128..255";
+            }
+            description
+              "A numeric identifier in the range 128-255 that is
+               associated via configuration with the flexible algorithm 
+               (future)";
+          }
+
+          leaf block-length {
+            type uint8;
+            description
+              "Length of locator block (future)";
+          }
+
+          leaf node-length {
+            type uint8;
+            description
+              "Length of locator node (future)";
+          }
+
+          leaf function-length {
+            type uint8;
+            description
+              "Length of the function (future)";
+          }
+
+          leaf end-behavior-type {
+            type srv6-endpoint-type;
+            description
+              "Type of SRV6 end behavior";
+          }
+        }
+      }
+
+      leaf ti-lfa {
+        type boolean;
+        default "true";
+        description
+          "Enables/disables topology independent FRR";
+      }
+
+      leaf rib-update-delay {
+        type uint32 {
+          range "1..30000";
+        }
+        default "5000";
+        units milliseconds;
+        description
+          "Set route download delay for microloop prevention";
+      }
+    }
+  }
+
+  grouping backup-info-state {
+    description "SRv6 backup state information grouping";
+    container backup-info {
+      description
+        "Backup information for TiLFA";
+
+      leaf protection-type {
+        type string;
+        description
+          "TiLFA protection type";
+      }
+
+      leaf segment-type {
+        type string;
+        description
+          "TiLFA segment type";
+      }
+
+      leaf-list backup-sids {
+        type inet:ipv6-prefix;
+        description "List of SRv6 backup sids";
+      }
+
+      list next-hop-info {
+        key "next-hop-ipv6-address outgoing-interface-name";
+        description
+          "List of TiLFA next hop information";
+
+        leaf next-hop-ipv6-address {
+          type inet:ipv6-address;
+          description
+            "IPv6 Next hop address";
+        }
+
+        leaf outgoing-interface-name {
+          type string;
+          description
+            "Outgoing interface name";
+        }
+      }
+    }
+  }
+
+  grouping srv6-locators-state {
+    description "SRv6 locator state grouping";
+    container locators {
+      description "SRv6 locators state database";
+      leaf local-locator-num {
+        type uint32;
+        description
+          "Number of local locators";
+      }
+
+      leaf remote-locator-num {
+        type uint32;
+        description
+          "Number of remote locators";
+      }
+
+      list locator {
+        key "prefix";
+        description
+          "List of SRv6 locators";
+
+        leaf prefix {
+          type inet:ipv6-prefix;
+          description
+            "IPv6 Locator prefix";
+        }
 
         leaf name {
-          type string {
-            length "0..255";
-          }
-          description 
+          type string;
+          description
             "Locator name";
         }
 
         leaf sid-type {
           type cn-l3-types:sr-sidtype-grouping;
           description
-            "SR SID type as u-sid or classic-sid";
+            "SR SID type as u-sid or uncompressed-sid";
         }
 
-        leaf prefix {
-          type inet:ipv6-prefix;
-          mandatory true;
-          description 
-            "Locator IPv6 prefix";
+        leaf algorithm {
+          type uint8 {
+            range "128..255";
+          }
+          description
+            "A numeric identifier in the range 128-255 that is
+              associated via configuration with the flexible algorithm";
+        }
+
+        leaf is-remote {
+          type boolean;
+          description
+            "Specifies if the selected locator is local or remote";
+        }
+
+        list advertising-nodes {
+          key "node-id";
+          description
+            "List of SRv6 locator's advertising nodes";
+
+          leaf node-id {
+            type string;
+            description
+              "Node ID of advertising node";
+          }
+        }
+
+        leaf block-length {
+          type uint8;
+          description
+            "Length of locator block";
+        }
+
+        leaf node-length {
+          type uint8;
+          description
+            "Length of locator node";
+        }
+
+        leaf function-length {
+          type uint8;
+          description
+            "Length of the function";
+        }
+
+        leaf argument-length {
+          type uint8;
+          description
+            "Length of argument";
+        }
+
+        list end-behaviors {
+          key "end-behavior-type";
+          description
+            "List of end behaviors";
+
+          leaf end-behavior-type {
+            type string;
+            description
+              "Type of SRV6 end behavior";
+          }
+        }
+
+        container forwarding-info {
+          description
+            "Forwarding information of the locator";
+
+          list next-hop-info {
+            key "next-hop-ipv6-address outgoing-interface-name";
+            description
+              "List of next hop information";
+
+            leaf next-hop-ipv6-address {
+              type inet:ipv6-address;
+              description
+                "IPv6 Next hop address";
+            }
+
+            leaf outgoing-interface-name {
+              type string;
+              description
+                "Outgoing interface name";
+            }
+          }
+
+          uses backup-info-state;
         }
       }
     }
@@ -226,26 +493,26 @@ module ciena-sr {
     container msd {
       if-feature "max-sid-depth";
       description
-        "MSD configuration.";
+        "MSD configuration";
       uses max-sid-depth;
     }
 
     container bindings {
       description
-        "List of bindings.";
+        "List of bindings";
       container mapping-server {
         if-feature "mapping-server";
         description
-          "Configuration of mapping-server local entries.";
+          "Configuration of mapping-server local entries";
         list policy {
           key "name";
           max-elements 1;
           description
-            "List mapping-server policies.";
+            "List mapping-server policies";
           leaf name {
             type string;
             description
-              "Name of the mapping policy.";
+              "Name of the mapping policy";
           }
           leaf preference {
             type uint32 {
@@ -255,15 +522,15 @@ module ciena-sr {
             description
               "SRMS Preference sub-tlv is used in order to
               associate a preference with SRMS advertisements from a
-              particular source.";
+              particular source";
           }
           container entries {
             description
-              "IPv4/IPv6 mapping entries.";
+              "IPv4/IPv6 mapping entries";
             list mapping-entry {
               key "prefix algorithm";
               description
-                "Mapping entries.";
+                "Mapping entries";
               uses sr-cmn:prefix-sid;
               leaf attached {
                 type boolean;
@@ -271,7 +538,7 @@ module ciena-sr {
                 description
                   "Indicates that the prefixes and SID configured in the mapping entry
                   and as a result advertised in the SID/Label Binding TLV are directly
-                  connected to their originators.";
+                  connected to their originators";
               }
             }
           }
@@ -281,13 +548,13 @@ module ciena-sr {
     list connected-prefix-sid-map  {
       key "prefix";
       description
-        "List of prefix SID mapped to IPv4 local prefixes.";
+        "List of prefix SID mapped to IPv4 local prefixes";
       leaf interface {
         type leafref {
           path "/oc-if:interfaces/oc-if:interface/oc-if:name";
         }
         description
-          "Interface in which prefix-sid is configured ";
+          "Interface in which prefix-sid is configured";
       }
       uses sr-cmn:ipv4-sid-cfg;
       uses sr-cmn:last-hop-behavior;
@@ -336,14 +603,14 @@ module ciena-sr {
         }
         default "igp";
         description
-          "Types of metric to be used during the calculation, default is IGP.";
+          "Types of metric to be used during the calculation, default is IGP";
       }
       leaf-list srlg-exclude {
         type uint32;
         description
           "Shared Risk Link Groups that the operator 
            wants to exclude during the Flex-Algorithm
-           path computation.";
+           path computation";
       }
       container advertise-definition {
         description 
@@ -352,19 +619,19 @@ module ciena-sr {
           type uint8;
           description
             "Value between 0 and 255 inclusive that specifies 
-             the priority of the advertisement.";
+             the priority of the advertisement";
         }
       }
       container admin-group {
         description
-          "Colors to include or exclude during Flex-Algorithm path computation.";
+          "Colors to include or exclude during Flex-Algorithm path computation";
         leaf-list include-all {
           type string {
             length "1..31";
           }
           description
             "All colors must be set on the link, else the link
-             will be excluded from the path computation.";
+             will be excluded from the path computation";
         }
         leaf-list include-any {
           type string {
@@ -372,7 +639,7 @@ module ciena-sr {
           }
           description
             "At least one color must be set on the link, else
-             the link will be excluded from the path computation.";
+             the link will be excluded from the path computation";
         }
         leaf-list exclude-any {
           type string {
@@ -380,7 +647,7 @@ module ciena-sr {
           }
           description
             "None of the colors should be set on the link, else
-             the link will be excluded from the path computation.";
+             the link will be excluded from the path computation";
         }
       }
     }
@@ -389,63 +656,63 @@ module ciena-sr {
   container segment-routing-state {
     config false;
     description
-      "segment routing oper config.";
+      "segment routing oper config";
     list label-blocks {
       key "lower-bound upper-bound";
       status deprecated;
       description
-        "List of labels blocks currently in use.";
+        "List of labels blocks currently in use";
       leaf lower-bound {
         type uint32;
         status deprecated;
         description
-          "Lower bound of the label block.";
+          "Lower bound of the label block";
       }
       leaf upper-bound {
         type uint32;
         status deprecated;
         description
-          "Upper bound of the label block.";
+          "Upper bound of the label block";
       }
       leaf scope {
         type enumeration {
           enum "global" {
             value 0;
             description
-              "Global sid.";
+              "Global SID";
           }
           enum "local" {
             value 1;
             description
-              "Local sid.";
+              "Local SID";
           }
         }
         status deprecated;
         description
-          "Scope of this label block.";
+          "Scope of this label block";
       }
     }
     list connected-prefix-sid-map {
       key "prefix";
       description
-        "List of prefix SID mapped to IPv4 local prefixes.";
+        "List of prefix SID mapped to IPv4 local prefixes";
       uses sr-cmn:ipv4-sid-cfg;
       uses sr-cmn:last-hop-behavior;
       leaf interface {
         type string;
         description
-          "Interface in which prefix-sid is configured ";
+          "Interface in which prefix SID is configured";
       }
       uses prefix-sid-flags-cfg;
     }
     list mapping-server-policy {
       key "name";
       description
-        "List mapping-server policies.";
+        "List mapping-server policies";
       leaf name {
         type string;
         description
-          "Name of the mapping policy.";
+          "Name of the mapping policy";
       }
       leaf preference {
         type uint32;
@@ -455,11 +722,11 @@ module ciena-sr {
       list mapping-entry {
         key "prefix";
         description
-          "List of supported transport planes.";
+          "List of supported transport planes";
         leaf prefix {
           type inet:ip-prefix;
           description
-            "SRMS Start Prefix ";
+            "SRMS Start Prefix";
         }
         leaf start-sid-index {
           type uint32;
@@ -486,7 +753,129 @@ module ciena-sr {
           description
             "Indicates that the prefixes and SID configured in the mapping entry
             and as a result advertised in the SID/Label Binding TLV are directly
-            connected to their originators.";
+            connected to their originators";
+        }
+      }
+    }
+    
+    container srv6-state {
+      description "SRv6 operational state";
+      uses srv6-locators-state;
+
+      container incoming-forwarding-tables {
+        description "Incoming forwarding tables";
+
+        list local-incoming-forwarding-entries {
+          key "outgoing-interface-name";
+          description "List of local incoming forwarding entries";
+
+          leaf outgoing-interface-name {
+            type string;
+            description "Outgoing interface name";
+          }
+
+          list local-incoming-forwarding-entry {
+            key "dataplane-sid-type is-protected";
+            description "List of local incoming forwarding entries based on outgoing interface name";
+
+            leaf dataplane-sid-type {
+              type enumeration {
+                enum "unknown" {
+                  value 0;
+                  description "Unknown SID type";
+                }
+                enum "classic-96" {
+                  value 1;
+                  description "Classic SID 96";
+                }
+                enum "classic-64" {
+                  value 2;
+                  description "Classic SID 64";
+                }
+                enum "usid" {
+                  value 3;
+                  description "uSID";
+                }
+                enum "gsid" {
+                  value 4;
+                  description "gSID";
+                }
+              }
+              description "SR Dataplane SID type as u-sid or uncompressed-sid 96/64";
+            }
+
+            leaf is-protected {
+              type boolean;
+              description "Protection status of this ILM";
+            }
+
+            leaf sid {
+              type srv6-types:srv6-sid;
+              description "SRv6 SID value";
+            }
+
+            leaf locator-prefix {
+              type inet:ipv6-prefix;
+              description "IPv6 Locator prefix";
+            }
+
+            leaf behavior {
+              type string;
+              description "Local SRv6 endpoint bahavior type";
+            }
+
+            leaf next-hop-ipv6-address {
+              type inet:ipv6-address;
+              description "IPv6 Next hop address";
+            }
+
+            leaf source-ipv6-address {
+              type inet:ipv6-address;
+              description "Source IPv6 address";
+            }
+
+            uses backup-info-state;
+          }
+        }
+
+        container bgp-incoming-forwarding-info {
+          description "BGP incoming forwarding table";
+
+          list l3vpn {
+            key "vrf-name afi safi";
+
+            leaf vrf-name {
+              type leafref {
+                path "/vrf:vrf/vrf:vrfName";
+              }
+              description "VRF name";
+            }
+
+            leaf afi  {
+              type  cn-l3-types:vrf-afi-type;
+              description "Address family specific parameters such as ipv4, ipv6 or vpnv4";
+            }
+
+            leaf safi  {
+              type  cn-l3-types:vrf-safi-type;
+              description "Sub-address family such as unicast";
+            }
+
+            leaf dataplane-sid-type {
+              type cn-l3-types:sr-sidtype-grouping;
+              description "SR SID type as u-sid or uncompressed-sid";
+            }
+
+            leaf sid {
+              type srv6-types:srv6-sid;
+              description "SRv6 SID value";
+            }
+
+            leaf behavior {
+              type string;
+              description "BGP SRv6 endpoint bahavior type";
+            }
+          }
         }
       }
     }

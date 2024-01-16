@@ -8,7 +8,7 @@ module ciena-state-dump {
 
   organization
     "Ciena Corporation";
-  
+
   contact
     "Web URL: http://www.ciena.com/
      E-mail:  yang@ciena.com
@@ -17,26 +17,44 @@ module ciena-state-dump {
               U.S.A.
      Phone:   +1 800-921-1144
      Fax:     +1 410-694-5750";
-   
+
   description
     "This YANG module defines Ciena's state dump rpc.
 
-     Copyright (c) 2020 Ciena Corporation.  All rights 
+     Copyright (c) 2023 Ciena Corporation.  All rights
      reserved.
 
-     All information contained herein is, and remains
-     the property of Ciena Corporation. Dissemination of this 
-     information or reproduction of this material is strictly 
-     forbidden unless prior written permission is obtained from 
-     Ciena Corporation.";
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision 2023-04-12 {
+    description
+      "Adding support for creation, upload & delete of local statedump";
+  }
 
   revision 2021-10-20 {
-    description 
+    description
       "Adding operating mode (sequential or parallel) for statedump";
   }
 
   revision 2020-02-03 {
-    description 
+    description
       "Initial version";
   }
 
@@ -72,6 +90,32 @@ module ciena-state-dump {
       description
          "Status of state-dump operation";
     }
+
+    list statedump-file {
+      key "file-name";
+      leaf file-name {
+        type string;
+        description
+          "Statedump file name";
+      }
+      leaf file-date {
+        type string;
+        description
+          "Statedump file creation date";
+      }
+      leaf file-size {
+        type uint64;
+        units "bytes";
+        description
+          "Statedump file size";
+      }
+      description
+        "Previously generated system statedump files available for
+         upload.";
+    }
+    description
+      "Operational state of the system statedump feature and list of
+       generated statedump files that are available for upload.";
   }
 
   rpc state-dump {
@@ -80,7 +124,7 @@ module ciena-state-dump {
        can be checked in state-dump-status";
 
     input {
-      uses ciena-ftt:file-transfer-parameters; 
+      uses ciena-ftt:file-transfer-parameters;
 
       leaf target-path {
         type string;
@@ -89,7 +133,7 @@ module ciena-state-dump {
       }
 
       leaf timeout {
-        type uint64; 
+        type uint64;
         units "seconds";
         description
           "How long should statedump wait in seconds before timing out";
@@ -108,6 +152,73 @@ module ciena-state-dump {
         }
         description
           "Statedump operating in sequential mode or parallel mode";
+      }
+    }
+  }
+
+  rpc state-dump-local {
+    description
+      "Initiates a system state dump to save locally on device. The status of the state dump
+       can be checked in state-dump-status";
+
+    input {
+      leaf filename {
+        type string;
+        mandatory true;
+        description
+          "Statedump filename.";
+      }
+
+      leaf mode {
+        type enumeration {
+          enum sequential {
+            description
+              "Running statedump operation on each container one by one";
+          }
+          enum parallel {
+            description
+              "Running statedump operation on all containers at the same time";
+          }
+        }
+        description
+          "Statedump operating in sequential mode or parallel mode";
+      }
+    }
+  }
+
+  rpc state-dump-delete {
+    description
+      "Delete system statedump file from device.";
+
+    input {
+      leaf filename {
+        type string;
+        description
+          "Statedump filename.";
+      }
+      leaf all {
+        type empty;
+        description
+          "Remove all statedumps.";
+      }
+    }
+  }
+
+  rpc state-dump-upload {
+    description
+      "Upload local system state dump to remote server.";
+
+    input {
+      uses ciena-ftt:file-transfer-parameters;
+
+      leaf target-path {
+        type string;
+        description
+          "The destination path, if specified, is used along with the
+           file-transfer-parameters values for server-type and address
+           to form the url prefix to where the specified statedump
+           will be sent.If the file-transfer-parameters url value is
+           specified then the value of this leaf is not used.";
       }
     }
   }

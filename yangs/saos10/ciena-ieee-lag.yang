@@ -29,6 +29,20 @@ module ciena-ieee-lag {
     "This YANG module defines link aggregation for the NETCONF 
      protocol.";
 
+  revision 2023-07-31 {
+    description
+      "Added range of possible values of agg-actor-admin-key leaf.";
+  }
+
+  revision 2022-12-08 {
+    description
+        "Add MAC-address as configurable attribute for LAG interface yang model.
+         Additions for Micro BFD.
+         Adds restrictions on operational parameters of Micro BFD for specific platforms.
+         Adds if-feature to disable Micro BFD IPv6 support for specific platforms.
+         Replaces BFD session state (enumeration) with BFD fault state (boolean).";
+  }
+
   revision 2018-01-24 {
     description
       "Move lacp augmentations from ietf-interfaces to 
@@ -43,6 +57,16 @@ module ciena-ieee-lag {
     reference
       "IEEE Standard for Local and metropolitan area networks -- 
        Link Aggregation - 802.1AX";
+  }
+
+  feature micro-bfd {
+    description
+      "Platform specific indicator which provides information whether Micro BFD is supported on specific platform.";
+  }
+
+  feature micro-bfd-ipv6 {
+    description
+      "Platform specific indicator which provides information whether Micro BFD IPv6 is supported on specific platform.";
   }
 
   //
@@ -1076,12 +1100,16 @@ module ciena-ieee-lag {
 
       leaf agg-actor-admin-key {
         type lacp-key;
+        must '(. >= 2049 and . <= 8191)' {
+          error-message "Value must be within range of 2049 to 8191";
+        }
         description 
           "The current administrative value of the Key for the 
            Aggregator. The administrative Key value may differ from 
            the operational Key value for the reasons discussed in 
            5.6.2. This is a 16-bit, read-write value. The meaning of
-           particular Key values is of local significance.";
+           particular Key values is of local significance. Value must
+           be within range of 2049..8191";
         reference   
           "[802.1AX] 6.3.1.1.7";
       }
@@ -1098,6 +1126,13 @@ module ciena-ieee-lag {
         reference   
           "[802.1AX] 6.3.1.1.32";
       }
+
+      leaf mac-address {
+        type yang:mac-address;
+        description
+          "MAC-address.";
+      }
+
       list member-ports {
         key "member-port";
         description
@@ -1245,6 +1280,25 @@ module ciena-ieee-lag {
         uses agg-port-operational-group;
         uses agg-port-statistics-group;
         uses agg-port-debug-info-group;
+
+        leaf bfd-ipv4-fault-state {
+          if-feature micro-bfd;
+          config false;
+          type boolean;
+          description
+            "This object specifies whether there is a fault on BFD IPv4
+             session of member port and LACP has taken action on it.";
+          }
+
+        leaf bfd-ipv6-fault-state {
+          if-feature micro-bfd;
+          if-feature micro-bfd-ipv6;
+          config false;
+          type boolean;
+          description
+            "This object specifies whether there is a fault on BFD IPv6
+             session of member port and LACP has taken action on it.";
+          }
       }
     }
   }

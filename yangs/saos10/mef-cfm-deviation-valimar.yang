@@ -5,6 +5,28 @@ module mef-cfm-deviation-valimar {
 
     import mef-cfm { prefix mef-cfm; }
 
+    import ciena-soam-pm {
+       prefix ciena-soam-pm;
+    }
+
+    import ciena-cfm {
+       prefix ciena-cfm;
+    }
+
+    import ietf-yang-types {
+       prefix yang;
+    }
+
+    revision "2023-10-01" {
+        description
+            "Added deviation for ccm-interval";
+    }
+
+    revision "2023-03-03" {
+        description
+            "Added deviation for cfm-state, fng-alarm-time and fng-reset-time.";
+    }
+
     revision 2022-03-20 {
         description
             "Removed MEP interface leafref deviation.";
@@ -138,4 +160,62 @@ module mef-cfm-deviation-valimar {
    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:remote-mep-database/mef-cfm:remote-mep/mef-cfm:management-address {
       deviate not-supported;
     }
+
+   deviation /ciena-cfm:cfm-state/ciena-cfm:remote-mep/ciena-cfm:management-address {
+      deviate not-supported;
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:continuity-check/mef-cfm:fng-alarm-time {
+      deviate replace {
+         type yang:timeticks {
+            range "0..3000";
+         }
+         default 250;
+      }
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:continuity-check/mef-cfm:fng-reset-time {
+      deviate replace {
+         type yang:timeticks {
+            range "10..3000";
+         }
+         default 1000;
+      }
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:ccm-interval {
+      deviate replace {
+         type enumeration {
+          enum invalid {
+              description "No CCMs are sent (disabled).";
+          }
+          enum 3.3ms {
+              status deprecated;
+              description "CCMs are sent every 3 1/3 milliseconds (300Hz).";
+          }
+          enum 10ms {
+              description "CCMs are sent every 10 milliseconds.";
+          }
+          enum 100ms {
+              description "CCMs are sent every 100 milliseconds.";
+          }
+          enum 1s {
+              description "CCMs are sent every 1 second.";
+          }
+          enum 10s {
+              description "CCMs are sent every 10 seconds.";
+          }
+          enum 1min {
+              description "CCMs are sent every minute.";
+          }
+          enum 10min {
+              description "CCMs are sent every 10 minutes.";
+          }
+          enum 3.33ms {
+              description "CCMs are sent every 3 1/3 milliseconds (300Hz).";
+          }
+        }
+        mandatory true;
+     }
+   }
 }

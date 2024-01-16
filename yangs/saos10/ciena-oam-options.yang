@@ -46,9 +46,18 @@ module ciena-oam-options {
        condition, or performance of the Specification. You agree
        that Ciena has no liability for your use of the Specification.";
 
+    revision "2022-12-05" {
+        description
+            "Added when statement for timeout and ttl leaf for
+             oam-trace-base-config-params.
+             Updated oam-result-type for traceroute errors.
+             Added new fec type for SRv6.";
+    }
+
     revision "2022-06-14" {
         description
             "Added new fec type for RSVP-TE.
+             Added common parameters for IP/MPLS traceroute.
              Updated oam-result-type for Dont Fragment errors.";
     }
 
@@ -74,6 +83,23 @@ module ciena-oam-options {
     revision "2018-08-30" {
         description
             "Initial version of ciena oam options.";
+    }
+
+    typedef oam-numeric {
+        type enumeration {
+            enum off {
+                value 0;
+                description
+                    "Resolve IP addresses to host names";
+            }
+            enum on {
+                value 1;
+                description
+                    "Do not resolve IP addresses to host names";
+            }
+        }
+        description
+            "Is hostname resolution required";
     }
 
     typedef oam-response-type {
@@ -149,6 +175,11 @@ module ciena-oam-options {
                value 10;
                description
                    "FEC type RSVP TE";
+            }
+            enum srv6-policy-fec {
+               value 11;
+               description
+                   "FEC type for SRv6 tunnels";
             }
         }
         description
@@ -611,6 +642,21 @@ module ciena-oam-options {
                  description
                      "Error, Fragmentation is required and do not fragment bit is set.";
             }
+            enum invalid-host {
+                value 18;
+                description
+                    "Error, Invalid IP address or domain name.";
+            }
+            enum multicast-source-interface {
+                value 19;
+                description
+                    "Error, can't set multicast source interface.";
+            }
+            enum address-bind-error {
+                value 20;
+                description
+                    "Error, Cannot assign requested address.";
+            }
         }
         description
             "Probe Result type";
@@ -708,6 +754,41 @@ module ciena-oam-options {
             type inet:ip-address;
             description
                 "Source IP to start ping.";
+        }
+    }
+    grouping oam-trace-base-config-params {
+        description
+            "Configurable parameters for the Trace test.";
+
+        leaf timeout {
+            when "../target-fec-type != 'ip-fec' and
+                  ../target-fec-type != 'vrf-fec'";
+            type uint8 {
+                range "1..60";
+            }
+            units seconds;
+            default 1;
+            description
+                "Specifies the timeout value in seconds for
+                 an echo request.";
+        }
+        leaf ttl {
+            when "../target-fec-type != 'ip-fec' and
+                  ../target-fec-type != 'vrf-fec' and
+                  ../target-fec-type != 'pseudowire-fec'";
+            type uint8 {
+                range "1..255";
+            }
+            default 30;
+            description
+                "Time to live.";
+        }
+        leaf source-ip {
+            when "../target-fec-type != 'scrt-fec' and
+                  ../target-fec-type != 'rsvp-te-fec'";
+            type inet:ip-address;
+            description
+                "Source IP to start traceroute";
         }
     }
 

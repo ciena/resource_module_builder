@@ -1,0 +1,106 @@
+module ciena-cli-features {
+    namespace "http://www.ciena.com/ns/ciena-cli-features";
+    prefix ciena-cli-features;
+
+    import yumaworks-types { prefix ywt; }
+
+    description
+      "Support added to display the CLI diff between datastores";
+
+    revision 2023-09-22 {
+       description
+         "Added support for XML config to be displayed in CLI format.
+          Added support for config diff between two XML backup config.";
+    }
+
+    revision 2022-11-16 {
+       description
+         "Initial version";
+    }
+
+    typedef diff-datastore-type {
+      type enumeration {
+        enum candidate {
+          description
+            "Use the candidate datastore. Only available if
+             the :candidate capability is in use.";
+         }
+         enum running {
+           description
+             "Use the running datastore.";
+         }
+      }
+      description
+        "The datastore to use in the diff-config operation.";
+    }
+
+    grouping backup-config-input {
+      leaf backup {
+        type ywt:NcxFileName;
+        description
+          "Backup file name in XML format.";
+      }
+    }
+
+    grouping config-parms-input {
+      choice config-type {
+        mandatory true;
+          case datastore {
+            leaf datastore {
+              type diff-datastore-type;
+              description
+                "Use the specified datastore contents for the
+                 configuration comparison.";
+             }
+          }
+          case backup {
+            uses backup-config-input;
+            description
+              "Backup config file.";
+          }
+       }
+    }
+
+    rpc cli-config-diff {
+      description
+        "This operation can be used to compare two configuration.
+         This compares two datastores or two XML backup files
+         and show the output in CLI format.
+
+         The 'config1' input parameter will be compared to the
+         'config2' input parameter.";
+
+      input {
+         container config1 {
+           uses config-parms-input;
+         }
+         container config2 {
+           uses config-parms-input;
+         }
+         leaf file {
+           description
+             "Name of the file to capture the diff between config1 and config2";
+             type string;
+         }
+       }
+    }
+
+   rpc config-xml-to-flat {
+      description
+        "Converts XML backup config to Flat-CLI format";
+         input {
+            leaf filename {
+               type ywt:NcxFileName;
+               description
+                  "File name for the backup that is to be displayed in
+                  Flat-CLI format.";
+               mandatory true;
+            }
+             leaf cli-file {
+                type string;
+                description
+                   "Name of the file to capture CLI format from XML config";
+             }
+         }
+     }
+}

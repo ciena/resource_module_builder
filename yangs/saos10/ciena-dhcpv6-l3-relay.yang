@@ -19,6 +19,10 @@ module ciena-dhcpv6-l3-relay {
     prefix "vrf";
   }
 
+  import ciena-openconfig-if-ip {
+    prefix "cn-ip";
+  }
+
   organization
     "Ciena Corporation";
   
@@ -55,6 +59,16 @@ module ciena-dhcpv6-l3-relay {
      warranty, either express or implied, as to the use, operation,
      condition, or performance of the Specification. You agree
      that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-08-08" {
+    description
+      "Adding support of gateway address as part of DHCPv6 L3 Relay config.
+       Adding support of primary and secondary giaddr config in DHCPv6 L3 relay config.
+       Adding support of giaddr support in DHCPv6 L3 interface state.
+       Updating the default value of interface-id-string, remote-id-string, and relay-name leaf.";
+    reference
+      "";
+  }
 
   revision "2022-05-19" {
     description
@@ -115,7 +129,7 @@ module ciena-dhcpv6-l3-relay {
     }
     leaf remote-id-string {
       type string {
-        length "0..64";
+        length "1..64";
       }
       description
         "The string value for remote ID configured by user.";
@@ -305,12 +319,53 @@ module ciena-dhcpv6-l3-relay {
         }
         leaf interface-id-string {
           type string {
-            length "0..64";
+            length "1..64";
           }
           description
             "User configured string value for interface description.";
         }
-
+        container giaddr {
+          description
+            "IPv6 address of interface to be used as
+             gateway address for relay packets to request
+             DHCP response from a specific subnet.";
+          choice giaddr {
+            case primary {
+              leaf primary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../interface-name]/cn-ip:ipv6/cn-ip:addresses/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Primary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+            case secondary {
+              leaf secondary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../interface-name]/cn-ip:ipv6/cn-ip:addresses/cn-ip:secondary/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Secondary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+          }
+        }
+        container state {
+          config false;
+          description
+            "Operational data for DHCPv6 L3 Relay Agent instance.";
+          leaf giaddr {
+            type inet:ipv6-address;
+            description
+              "IPv6 address of interface to be used as
+               gateway address for relay packets to request
+               DHCP response from a specific subnet.";
+          }
+        }
     }//ip-interfaces
   }
 
@@ -385,7 +440,7 @@ module ciena-dhcpv6-l3-relay {
         "A list of DHCPv6 L3 relay instances.";
       leaf relay-name {
         type string {
-          length "0..128";
+          length "1..128";
         }
         description
           "The name of an individual DHCPv6 L3 relay instance.";

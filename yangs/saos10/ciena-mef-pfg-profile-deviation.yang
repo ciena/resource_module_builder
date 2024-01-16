@@ -1,0 +1,74 @@
+module ciena-mef-pfg-profile-deviation {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-pfg-profile-deviation";
+    prefix "mef-pfg-deviation";
+   
+    import  ciena-mef-pfg-profile {
+    prefix mef-pfg;
+  } 
+  
+  revision 2023-05-15 {
+        description 
+            "1) Updated pfg-type to include dynamic-hub-and-spoke.";
+  }
+  
+  deviation  /mef-pfg:pfg-profiles/mef-pfg:pfg-profile/mef-pfg:pfg-type{
+    deviate replace {
+      type enumeration {
+        enum pfg-groups {
+          description
+            "This pfg-type allows for up to 4 PFG groups with configurable forwarding policies.
+             Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+             PFG-group A,B,C or D that they belong to. This is the only PfgType which allows
+             configuration of forwarding group policies";
+        }
+        enum spoke-and-mesh {
+          description
+            "This pfg-type supports spoke and mesh with strict forwarding policy rules
+            spoke => can forward to mesh and can forward to spoke.
+            mesh => can forward to spoke but cannot forward to mesh.
+            Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+            PFG-group Spoke or Mesh that they belong to";
+         }
+         enum leaf-and-root {
+           description
+             "This pfg-type supports leaf and root with strict forwarding policy rules
+             leaf => can forward to root but cannot forward to leaf.
+             root => can forward to leaf and can forward to root.
+             Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+             PFG-group Leaf or Root that they belong to";
+         }
+         enum spokemesh-and-leafroot {
+           description
+             "This pfg-type supports leaf, root, spoke and mesh with strict forwarding policy rules
+             leaf => can forward to root, can forward to mesh, can forward to spoke, but cannot forward to leaf.
+             root => can forward to root, can forward to mesh, can forward to spoke, can forward to leaf.
+             spoke => can forward to root, can forward to mesh, can forward to mesh, can forward to leaf.
+             Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+             PFG-group Spoke, Mesh, Leaf or Root that they belong to";
+         }
+         enum dynamic-leaf-and-root {
+           description
+             "This pfg-type supports leaf, root, and dynamic (leaf or root) with strict forwarding policy rules
+             leaf => can forward to root but cannot forward to leaf.
+             root => can forward to leaf and can forward to root.
+             dynamic => takes the role of leaf, when the underlying logical-port of the configured root interface 
+             is operationally down, or root, when the underlying logical-port of the configured root interface is
+             operationally up.
+             Interfaces (e.g., flow points) in the domain (e.g., forwarding domain) will specify which PFG-group Leaf,
+             Root, or Dynamic that they belong to via static configuration. In this mode, only one interface in the 
+             domain can be statically configured to be a root";
+         }
+         enum dynamic-hub-and-spoke {
+           description
+             "This pfg-type supports hub, spoke, and dynamic (hub or spoke) with strict forwarding policy rules
+              hub => can forward to spoke but cannot forward to hub.
+              spoke => can forward to hub but cannot forward to spoke.
+              dynamic => takes the role of hub/spoke/none (in case of none all traffic will be dropped) based on local interface faults.
+              Interfaces (e.g., flow points) in the domain (e.g., forwarding domain) will specify which PFG-group Hub,
+              Spoke or Dynamic that they belong to via static configuration. In this mode, only one interface in the
+              domain can be statically configured to be a hub and dynamic";  
+         }
+       }
+     }
+   }
+ }

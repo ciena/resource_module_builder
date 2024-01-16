@@ -24,6 +24,11 @@ module ciena-packet-ptp {
      Specific characteristics of PTPs can augment this model to provide more
      detail. PTPs are automatically provisioned by the system.";
 
+  revision 2023-04-28 {
+    description
+      "Added ptp-event-type for ptp-oper";
+  }
+
   revision 2020-04-22 {
     description
       "Removing max-elements from list lane";
@@ -64,6 +69,21 @@ module ciena-packet-ptp {
     }
     description
       "PTP operational state.";
+  }
+
+  typedef ptp-event-type {
+    type enumeration {
+      enum "operational-state" {
+        description
+          "PTP operational state change (link state, error state).";
+      }
+      enum "any" {
+        description
+          "PTP event any.";
+      }
+    }
+    description
+      "A generic event type describing the type of events/notifications triggered by PTP.";
   }
 
   container ptps {
@@ -344,8 +364,44 @@ module ciena-packet-ptp {
             }//end tx
           }//end lane list
         }//end lanes
+        leaf ptp-event-type {
+          config false;
+          type ptp-event-type;
+          description
+            "Event type triggered by PTP";
+          }
       }//end properties
 
     }//end ptps list
+
+  }
+  notification ptp-events {
+    list ptp-event {
+      description
+        "Defines PTP related events and associated data used to publish change in the state of the PTP instance.";
+      leaf name {
+        type leafref {
+          path "/ciena-ptp:ptps/ciena-ptp:ptp/ciena-ptp:id/ciena-ptp:name";
+        }
+        description
+          "PTP name for the notification";
+      }
+      list event-list {
+        leaf ptp-event-type {
+          type leafref {
+            path "/ciena-ptp:ptps/ptp/properties/ptp-event-type";
+          }
+          description
+            "The ptp-event-type for the notification. 'any' means any ptp-event-type";
+        }
+      }
+      leaf operational-state {
+        type leafref {
+          path "/ciena-ptp:ptps/ciena-ptp:ptp/ciena-ptp:state/ciena-ptp:operational-state";
+        }
+        description
+          "Transceiver operational state change (link state, error state)";
+      }
+    }
   }
 }

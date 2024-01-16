@@ -3,6 +3,12 @@ module ciena-packet-configuration {
 
    prefix "cn-packet-config";
 
+   import ietf-yang-types {
+      prefix yang;
+   }
+   import ciena-types {
+      prefix ciena;
+   }
    import yuma-ncx {
       prefix ncx;
    }
@@ -18,6 +24,10 @@ module ciena-packet-configuration {
    import ciena-tls-service-profile {
       prefix ciena-tls-service-profile;
    }
+   import openconfig-extensions {
+      prefix oc-ext;
+   }
+
    organization
       "Ciena Corporation";
 
@@ -41,6 +51,10 @@ module ciena-packet-configuration {
        forbidden unless prior written permission is obtained
        from Ciena Corporation.";
 
+   revision "2023-02-17" {
+      description
+         "Added support for auto backup feature";
+   }
    revision "2020-03-10" {
       description
          "Change leaf filename and remote-filename to use NcxFileName type.
@@ -53,6 +67,73 @@ module ciena-packet-configuration {
    revision "2019-07-17" {
       description
          "1.0";
+   }
+
+   typedef feature-type {
+      type enumeration {
+         enum show-software {
+            description
+               "Show software XML file";
+         }
+         enum show-component {
+            description
+               "Show component XML file";
+         }
+         enum show-running-config {
+            description
+               "Running config XML file";
+         }
+      }
+   }
+
+   typedef auto-backup-transfer-status {
+      type enumeration {
+	     enum idle {
+            description
+               "Feature is in idle state";
+         }
+         enum upload-inprogress {
+            description
+               "File transfer is in progress";
+         }
+         enum upload-success {
+            description
+               "File transfer succeeded";
+         }
+         enum upload-fail {
+            description
+               "File transfer failed";
+         }
+      }
+   }
+
+   typedef auto-backup-feature-state {
+      type enumeration {
+         enum idle {
+            description
+               "Auto-Backup is in idle state";
+         }
+         enum in-wait-time {
+            description
+               "Auto-Backup is in wait time";
+         }
+         enum producing-backup {
+            description
+               "Auto-Backup is in progress";
+         }
+         enum backed-up {
+            description
+               "Auto-Backup succeeded";
+         }
+         enum backup-failed {
+            description
+               "Auto-Backup failed";
+         }
+		 enum backup-deleted {
+            description
+               "Auto-Backup deleted";
+         }
+      }
    }
 
    rpc transfer-config {
@@ -176,6 +257,222 @@ module ciena-packet-configuration {
                "String describing transfer status of upload or 
                download of configuration file";
          }
+      }
+   }
+   container auto-backup {
+      description
+         "Top-level node for automatic upload of xml file";
+      container config {
+         description
+            "Configuration for auto backup";
+         list feature {
+            key "feature-name";
+            description
+               "Feature";
+            leaf feature-name {
+               type feature-type;
+               description
+                  "Feature name";
+            }
+            leaf admin-state {
+               type ciena:admin-state;
+               default "disabled";
+               description
+                  "Admin state of auto backup";
+            }
+            leaf prefix {
+               type string {
+                  length "1..21";
+                  pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+               }
+               description
+                  "Add prefix string to remote-filename";
+            }
+            leaf idle-time-interval {
+               type uint32 {
+                  range "600..1200";
+               }
+               units "seconds";
+               default 900;
+               description
+                  "The idle time interval after which system will upload the file to remote-server.";
+            }
+            leaf local-copy-count {
+               type uint8 {
+                  range "0..4";
+               }
+               default 0;
+               when "../feature-name='show-running-config'";
+               description
+                  "Number of local copies of auto-backup files";
+            }
+            list remote-server {
+               max-elements 1;
+               key "server-name";
+               description
+                  "Remote Server";
+               leaf server-name {
+                  type string {
+                     length "1..128";
+                     pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+                  }
+                  description
+                     "Remote server name";
+               }
+               leaf admin-state {
+                  type ciena:admin-state;
+                  default "enabled";
+                  description
+                     "Admin state of auto backup remote server";
+               }
+               leaf url {
+                  type inet:uri;
+                  mandatory true;
+                  description
+                     "Destination URL for upload";
+               }
+               leaf username {
+                  type string {
+                     length "1..255";
+                  }
+                  description
+                     "Username for remote server";
+               }
+               leaf password {
+                  type string;
+                  description
+                     "Password for remote server length: 1..32";
+               }
+               leaf tls-service-profile {
+                  type leafref {
+                     path "/ciena-tls-service-profile:tls-service-profiles/ciena-tls-service-profile:tls-service-profile-name";
+                  }
+                  description
+                     "The TLS Service Profile to be used when accepting TLS connections.";
+               }
+            }
+         }
+      }
+      container state {
+         config false;
+         description
+            "Statistics for auto backup";
+         list feature {
+            key "feature-name";
+            description
+               "Feature";
+            leaf feature-name {
+               type feature-type;
+               description
+                  "Feature name";
+            }
+            leaf feature-state {
+               type auto-backup-feature-state;
+               description
+                  "Feature state";
+            }
+            leaf last-update-time {
+               type string;
+               description
+                  "Timestamp for last change";
+            }
+            list remote-server {
+               key "server-name";
+               description
+                  "Remote Server";
+               leaf server-name {
+                  type string {
+                     length "1..128";
+                     pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+                  }
+                  description
+                     "Remote server name";
+               }
+               leaf status {
+                  type auto-backup-transfer-status;
+                  description
+                     "File transfer status";
+               }
+               leaf transfer-status-message {
+                  type string {
+                     length "1..255";
+                  }
+                  description
+                     "String describing transfer status of file";
+               }
+               leaf last-successful-transfer-time {
+                  type string;
+                  description
+                     "Timestamp for last successful transfer";
+               }
+               leaf successful-transfer-count {
+                  type yang:counter64;
+                  description
+                     "Total successful transfers";
+               }
+               leaf unsuccessful-transfer-count {
+                  type yang:counter64;
+                  description
+                     "Total unsuccessful transfers";
+               }
+            }
+         }
+      }
+   }
+   notification auto-backup-file-transfer-event {
+      description
+         "Event notifications for file transfer status of auto backup";
+      leaf server-name {
+         type string {
+            length "1..128";
+            pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+         }
+         description
+            "Remote server name";
+      }
+      leaf file-name {
+         type string {
+            length "1..128";
+            pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+         }
+         description
+            "File name";
+      }
+      leaf url {
+         type inet:uri;
+         description
+            "Destination URL for upload.";
+      }
+      leaf status {
+         type auto-backup-transfer-status;
+         description
+            "File transfer status";
+      }
+      leaf transfer-status-message {
+         type string {
+            length "1..255";
+         }
+         description
+            "String describing transfer status of file";
+      }
+   }
+   notification auto-backup-feature-state-event {
+      description
+         "Event notification for autobackup feature state";
+      leaf feature-name {
+         type feature-type;
+         description
+            "Feature name";
+      }
+      leaf feature-state {
+         type auto-backup-feature-state;
+         description
+            "Feature state";
+      }
+	  leaf last-update-time {
+         type string;
+         description
+            "Timestamp for last change";
       }
    }
 }

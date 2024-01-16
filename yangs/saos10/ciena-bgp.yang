@@ -11,6 +11,10 @@ module ciena-bgp {
         prefix cn-l3-types;
     }
 
+    import ietf-yang-types {
+        prefix yang;
+    }
+
     import ietf-inet-types {
         prefix inet;
     }
@@ -39,6 +43,10 @@ module ciena-bgp {
         prefix ciena-sys-tmet;
     }
 
+    import ciena-sr {
+        prefix sr;
+    }
+
     organization
         "Ciena Corporation";
 
@@ -52,7 +60,7 @@ module ciena-bgp {
          Fax:     +1 410-694-5750";
 
     description
-         "This YANG module defines Ciena's Border Gateway Protocol (BGP)
+        "This YANG module defines Ciena's Border Gateway Protocol (BGP)
 
          Copyright (c) 2018-2022  Ciena Corporation.  All rights
          reserved.
@@ -76,59 +84,102 @@ module ciena-bgp {
          condition, or performance of the Specification. You agree
          that Ciena has no liability for your use of the Specification.";
 
-    revision "2022-09-06" {
-       description
-              "Adding operational data for BGP dynamic update group in Vrf.
-               Adding local-as, site-origin-id, single-peer-member and remote-as-override 
-               leaves in operational data for BGP dynamic update.
-               Added operational data for BGP large community.
-               Added Segment Routing SRv6.
-               Added new leaf clear-redistribute-protocol in bgp-clear rpc
-               Added knob to turn off implicit-null for IPv4 Labeled Unicast
-               Added route-distinguisher key to BGP adjacency-out table under peer.
-               Updated the description of extended-asn knob as now modification is allowed.
-               Added RTFilter Unicast neighbor capability leaf to operational data.";
+    revision "2023-09-06" {
+        description
+            "Added leaf for EVPN-RT5 AFI VPNv4/VPNv6 in peer and update-group state.
+             Changing local-as-options leaf to leaf-list to support replace-as.
+             Added BFD configuration for peer-group.
+             Added BGP lockout configuration/state attributes.
+             Added Default RT filter sent and received attributes.
+             Modified the error message for Route Target and Route Distinguisher leaf.
+             Removed the when check for rtfilter in graceful-restart-helper.
+             Added BGP lockout state for update groups.";
+    }
+
+    revision "2023-03-08" {
+        description
+            "Added aggregation support under VRF Address Family.
+             Added BGP Graceful Restart Node config and state support.
+             Added L2VPN EVPN neighbor capability leaf to operational data.
+             Modified L2VPN EVPN neighbor capability leaf to operational data.
+             Added capability to advertise ip prefixes (EVPN route type 5) under peer address family.
+             Added support for BGP attributes aigp-metric.
+             Added Default Originate support for VPNv4/VPNv6 address family under peers.
+             Added Route-Target support under VRF Address Family.
+             Added peer-address key for filtering peer specific prefixes.
+             Added BGP Update Read/Write Time with previous notify reset.
+             Added BGP Previous Error Messages and holdtimer information.
+             Added BGP next hop runtime attributes SRv6 Service TLV.
+             Added BGP Segment Routing v6 State attributes.
+             Added condition to only allow to configure SRv6 locator with VPNv4 and VPNv6.
+             Modified the Description of Holdtime and keepalive timer leaf.
+             Added new leaf in bgp-clear to clear all non-default vrfs at once.
+             Added shutdown support for non-default vrf peer.
+             Added SR-Policy container to VRF network nexthop operational state.
+             Added condition for configuring Route Target Type 2.
+             Added new leaf in bgp-clear to clear all vrfs at once.";
+        reference
+            "RFC 9136 - IP Prefix Advertisement in Ethernet VPN (EVPN).";
+    }
+    
+    revision "2022-07-12" {
+        description
+            "Adding segment routing srv6 config for address family and vrf.";
+    }
+
+    revision "2022-06-30" {
+        description
+            "Adding operational data for BGP dynamic update group in Vrf.
+             Adding local-as, site-origin-id, single-peer-member and remote-as-override
+             leaves in operational data for BGP dynamic update.
+             Added operational data for BGP large community.
+             Added Segment Routing SRv6.
+             Added new leaf clear-redistribute-protocol in bgp-clear rpc
+             Added knob to turn off implicit-null for IPv4 Labeled Unicast
+             Added route-distinguisher key to BGP adjacency-out table under peer.
+             Updated the description of extended-asn knob as now modification is allowed.
+             Added RTFilter Unicast neighbor capability leaf to operational data.";
     }
 
     revision "2022-04-20" {
-       description
-              "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.
-               Removing default value for keepalive-interval and hold-time from BGP peer configuration.
-               Adding operational data for BGP LS.
-               Adding support for BGP peer prefix limit
-               Removed afi safi attribute from SR state.
-               Added segment-routing-ipv4 and  segment-routing-ipv6 in summary
-               Removed the default value for prefix limit warning-only
-               Adding support for BGP peer prefix limit idle timeout remaining feature
-               Adding a support to enable bgp 4 byte ASN capability with 2 byte ASN.
-               Adding delay metrics for BGP-LS link NLRIs.
-               Changing the SRLG leaf to leaf-list as NLRI contains a series of uint32s.
-               Changing bandwidth metrics to string.
-               Changed the range and type of prefix-limit-idle-timeout-remaining.
-               Added range for BGP prefix-limit drop-excess teardown-threshold";
-    } 
+        description
+            "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.
+             Removing default value for keepalive-interval and hold-time from BGP peer configuration.
+             Adding operational data for BGP LS.
+             Adding support for BGP peer prefix limit
+             Removed afi safi attribute from SR state.
+             Added segment-routing-ipv4 and  segment-routing-ipv6 in summary
+             Removed the default value for prefix limit warning-only
+             Adding support for BGP peer prefix limit idle timeout remaining feature
+             Adding a support to enable bgp 4 byte ASN capability with 2 byte ASN.
+             Adding delay metrics for BGP-LS link NLRIs.
+             Changing the SRLG leaf to leaf-list as NLRI contains a series of uint32s.
+             Changing bandwidth metrics to string.
+             Changed the range and type of prefix-limit-idle-timeout-remaining.
+             Added range for BGP prefix-limit drop-excess teardown-threshold";
+    }
 
     revision "2021-11-19" {
         description
-              "Adding support for ISIS route redistribution for multi-instance.
-               Added BGP GR helper attributes under graceful restart container in config.        
-               Added new BGP GR helper attributes in state :last-graceful-restart-time, end-of-rib-received,
-               flushed-stalepath-count,flushed-stalepath-reason.
-               Added BGP GR helper attributes in config and state.
-               Enabled additional path attributes to VPNv6 address family.
-               Added label management container under VRF state to provide label modes based on AFI.
-               Changed descriptions for bgp vrf route-distinguisher/target to be more helpful.";
+            "Adding support for ISIS route redistribution for multi-instance.
+             Added BGP GR helper attributes under graceful restart container in config.
+             Added new BGP GR helper attributes in state :last-graceful-restart-time, end-of-rib-received,
+             flushed-stalepath-count,flushed-stalepath-reason.
+             Added BGP GR helper attributes in config and state.
+             Enabled additional path attributes to VPNv6 address family.
+             Added label management container under VRF state to provide label modes based on AFI.
+             Changed descriptions for bgp vrf route-distinguisher/target to be more helpful.";
     }
-    
+
     revision "2021-09-20" {
-       description
-              "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.";
-    } 
+        description
+            "Adding support for BGP Auto-Discovery for L2VPN VPLS address family.";
+    }
 
     revision "2021-07-09" {
         description
-             "Added BGP GR helper attributes in config and state.        
-              Added BGP SR attributes in config and state.";
+            "Added BGP GR helper attributes in config and state.
+             Added BGP SR attributes in config and state.";
     }
 
     revision "2021-06-25" {
@@ -138,11 +189,11 @@ module ciena-bgp {
 
     revision "2021-02-08" {
         description
-             "Enable additional paths for ipv4 labeled-unicast.
-              Added BGP update group list attributes.
-              Added color and fallback for SR policy under VRF state.
-              Changed default keepalive and holdtimer to industry standard 60/180 seconds.
-              Adding support for clear BGP all soft counters.";
+            "Enable additional paths for ipv4 labeled-unicast.
+             Added BGP update group list attributes.
+             Added color and fallback for SR policy under VRF state.
+             Changed default keepalive and holdtimer to industry standard 60/180 seconds.
+             Adding support for clear BGP all soft counters.";
     }
 
     revision "2020-10-12" {
@@ -152,7 +203,7 @@ module ciena-bgp {
              Added scan timer,next-hop list attributes.
              Added peer-flap-counter.";
     }
-                      
+
     revision "2020-02-10" {
         description
             "Enable RT Constraint Address Family for BGP.
@@ -197,7 +248,12 @@ module ciena-bgp {
            "RFC 5880 - Bidirectional Forwarding Detection
             RFC 5881 - Bidirectional Forwarding Detection for IPv4 and IPv6 (Single Hop)";
     }
- 
+
+    feature lockout {
+        description
+            "Support for BGP lockout feature.";
+    }
+
     typedef prefix-sid-state {
         type enumeration {
             enum not-applicable {
@@ -254,6 +310,15 @@ module ciena-bgp {
                     description
                         "Attribute for MPLS-based segment routing for a BGP process.";
                     uses srgb-cfg;
+                    container srv6 {
+                      leaf locator {
+                        type leafref {
+                          path "/sr:segment-routing/sr:srv6/sr:locators/sr:locator/sr:name";
+                        }
+                        description
+                          "locator name";
+                      }
+                    }
                 }
                 leaf extended-asn-cap {
                     when "../as <= 65535";
@@ -288,6 +353,8 @@ module ciena-bgp {
                 }
                 uses bgp-state-attrs;
                 uses bgp-segment-routing-state-attrs;
+                uses bgp-segment-routing-srv6-state-attrs;
+                uses bgp-graceful-restarting-node-state-attrs;
             }
         }
         container bgp-test {
@@ -430,6 +497,13 @@ module ciena-bgp {
                 default "false";
                 description
                     "Prefer old routes when compare-router-id is not set.";
+            }
+
+            leaf aigp-ignore {
+                type boolean;
+                default "false";
+                description
+                    "Ignore AIGP value for best path selection.";
             }
         }
     }
@@ -624,6 +698,17 @@ module ciena-bgp {
                 }
             }
 
+            container segment-routing-srv6 {
+              when "../afi='vpnv4' or ../afi='vpnv6'";
+              leaf locator {
+                type leafref {
+                  path "/sr:segment-routing/sr:srv6/sr:locators/sr:locator/sr:name";
+                }
+                description
+                  "locator name";
+              }
+            } 
+
             leaf route-reflector  {
                 when "../afi!='rtfilter'";
                 type  boolean;
@@ -752,7 +837,7 @@ module ciena-bgp {
                          redistribution of connected routes";
                 }
             }
-       
+
             leaf segment-routing {
                 type enumeration {
                     enum "enable" {
@@ -769,7 +854,7 @@ module ciena-bgp {
                 default "disable";
                 description
                     "BGP SR enable/disable";
-            }          
+            }
         }
 
         list vrf {
@@ -788,6 +873,14 @@ module ciena-bgp {
             leaf route-distinguisher  {
                 type  cn-l3-types:bgp-rd;
                 mandatory true;
+                must "starts-with(.,'0:') or
+                      starts-with(.,'1:') or
+                      starts-with(. ,'2:') and
+                      ((/bgp:bgp/instance/as<=65535 and
+                        /bgp:bgp/instance/extended-asn-cap='true') or
+                       (/bgp:bgp/instance/as>65535))" {
+                    error-message "Invalid input: Route Distinguisher Type 2 is supported only for AS 4Byte or AS 2Byte with extended-asn-cap enabled.";
+                }
                 description
                     "A route distinguisher is an 8-octet value used to distinguish
                      routes from different BGP VPNs (RFC 4364). A route
@@ -820,6 +913,14 @@ module ciena-bgp {
 
                 leaf id  {
                     type  cn-l3-types:bgp-rt;
+                    must "starts-with(.,'0:') or
+                          starts-with(.,'1:') or
+                          starts-with(. ,'2:') and
+                          ((/bgp:bgp/instance/as<=65535 and
+                            /bgp:bgp/instance/extended-asn-cap='true') or
+                           (/bgp:bgp/instance/as>65535))" {
+                        error-message "Invalid input: Route Target Type 2 is supported only for AS 4Byte or AS 2Byte with extended-asn-cap enabled.";
+                    }
                     description
                         "A route target is an 8-octet BGP extended community
                          initially identifying a set of sites in a BGP
@@ -837,23 +938,6 @@ module ciena-bgp {
                          Some valid examples are: 0:100:100, 1:1.1.1.1:100, and
                          2:1234567890:203.";
                 }
-            }
-
-            container segment-routing-srv6 {
-              description
-                "Segment Routing SRv6";
-
-              leaf prefix {
-                type inet:ipv6-prefix;
-                description
-                  "IPv6 prefix";
-              }
-
-              leaf sid-type {
-                type cn-l3-types:sr-sidtype-grouping;
-                description
-                  "SR SID type as u-sid or classic-sid";
-              }
             }
 
             list vrf-address-family {
@@ -900,6 +984,16 @@ module ciena-bgp {
                          routes first, then corresponding non-summarized routes are withdrawn.";
                 }
 
+                container segment-routing-srv6 {
+                  leaf locator {
+                    type leafref {
+                      path "/sr:segment-routing/sr:srv6/sr:locators/sr:locator/sr:name";
+                    }
+                    description
+                      "locator name";
+                  }
+                }
+
                 list peer {
                     key "address";
                     description
@@ -937,12 +1031,13 @@ module ciena-bgp {
                              in addition to its real AS. This feature can only be used for true eBGP peers.";
                     }
 
-                    leaf local-as-options {
+                    leaf-list local-as-options {
                         when ../local-as;
                         type  cn-l3-types:bgp-local-as-types;
                         description
-                            "Local-as options: 
-                             no-prepend - not prepend local-as to updates from eBGP peers.";
+                            "Local-as options:
+                             no-prepend - not prepend local-as to incoming updates from eBGP peers.
+                             replace-as - not prepend true-as to outgoing updates to eBGP peers.";
                     }
 
                     leaf keepalive-interval  {
@@ -1137,6 +1232,32 @@ module ciena-bgp {
                              to the internet. This command is used with eBgp peers only.";
                     }
                     uses graceful-restart ;
+                    uses aigp-grouping;
+
+                    leaf shutdown {
+                        type boolean;
+                        default false;
+                        description
+                            "Enabling will terminate any active sessions and removes all
+                             associated routing information for the peer while maintaining
+                             all the configuration associated with the peer. In addition,
+                             the specified peer transitions administratively to idle state.";
+                    }
+
+                    leaf lockout {
+                        if-feature lockout;
+                        type boolean;
+                        default false;
+                        description
+                            "BGP lockout feature is useful to inform/force its peer
+                             to avoid itself for any traffic for prefixes it has advertised
+                             to its neighbors.
+                             When a BGP neighbor (or through peer group) is locked out
+                             1  iBGP routes are refreshed to the iBGP peer(s) with the path attribute
+                                changed to the lowest possible local preference (0)
+                             2  eBGP routes advertised to the eBGP peer(s) are refreshed with the path
+                                attribute changed to highest possible MED (4294967295).";
+                    }
                 }
 
                 list redistribute {
@@ -1200,6 +1321,70 @@ module ciena-bgp {
                             "Routing Policy to apply to network";
                     }
                 }
+
+                list aggregate-address {
+                    key "address";
+                    description
+                        "Configure BGP aggregate entries to
+                         to minimize the size of routing tables";
+
+                    leaf address  {
+                        type inet:ip-prefix;
+                        description
+                            "Aggregate-prefix in prefix/length format";
+                    }
+
+                    leaf as-set  {
+                        type  boolean;
+                        default false;
+                        description
+                            "As-set path parameter includes AS PATH information in summaries or aggregate
+                             routes. Creates an aggregate address with a mathematical set of
+                             autonomous systems (ASs). It summarizes the AS_PATH attributes of all the
+                             individual routes";
+                    }
+
+                    leaf summary-only  {
+                        type  boolean;
+                        default false;
+                        description
+                            "Summary-only path parameter advertises the prefix only,
+                             suppressing the more-specific routes to all peers.";
+                    }
+                }
+
+                list route-target {
+                    key "id";
+                    description
+                       "Route Target list that takes route target id and direction";
+
+                    leaf id  {
+                       type  cn-l3-types:bgp-rt;
+                       must "starts-with(.,'0:') or
+                             starts-with(.,'1:') or
+                             starts-with(. ,'2:') and
+                             ((/bgp:bgp/instance/as<=65535 and
+                               /bgp:bgp/instance/extended-asn-cap='true') or
+                              (/bgp:bgp/instance/as>65535))" {
+                           error-message "Invalid input: Route Target Type 2 is supported only for AS 4Byte or AS 2Byte with extended-asn-cap enabled.";
+                       }
+                       description
+                           "A route target is an 8-octet BGP extended community
+                            initially identifying a set of sites in a BGP
+                            VPN (RFC 4364). However, it has since taken on a more
+                            general role in BGP route filtering.
+                            A route target consists of three fields:
+                            a 2-octet type field, an administrator field,
+                            and an assigned number field.";
+                    }
+
+                    leaf direction  {
+                       type  cn-l3-types:rt-direction;
+                       mandatory true;
+                       description
+                          "Route-target direction, that can be imported/exported for that particular route target id.";
+                    }
+                }
             }
         }
 
@@ -1238,7 +1423,7 @@ module ciena-bgp {
                     type  cn-l3-types:bgp-rt;
                     description
                         "Route-target ID. Creates lists of import and export route-target
-                         extended communities for the L2VPN instance. It specifies a target VPN 
+                         extended communities for the L2VPN instance. It specifies a target VPN
                          extended community. Execute the once for each community. All routes with
                          the specific route-target extended community are imported into all L2VPN
                          instances with the same extended community as an import route-target.";
@@ -1248,8 +1433,8 @@ module ciena-bgp {
             leaf vpls-id  {
                 type  cn-l3-types:bgp-vpls-id;
                 description
-                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain. 
-                     Manual configuration of this ID is optional because a default VPLS ID is generated 
+                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain.
+                     Manual configuration of this ID is optional because a default VPLS ID is generated
                      using the BGP autonomous system number and the configured VPN ID.
                      A VPLS ID can be composed in one of three ways: with an autonomous system number and
                      an arbitrary number or with an IP address and an arbitrary number.
@@ -1276,12 +1461,13 @@ module ciena-bgp {
                      in addition to its real AS. This feature can only be used for true eBGP peers.";
             }
 
-            leaf local-as-options {
+            leaf-list local-as-options {
                 when ../local-as;
                 type  cn-l3-types:bgp-local-as-types;
                 description
                    "Local-as options:
-                    no-prepend - not prepend local-as to updates from eBGP peers.";
+                    no-prepend - not prepend local-as to incoming updates from eBGP peers.
+                    replace-as - not prepend true-as to outgoing updates to eBGP peers.";
             }
 
             leaf connect-retry-interval  {
@@ -1350,7 +1536,7 @@ module ciena-bgp {
                 }
                 units seconds;
                 description
-                    "BGP keepalive time 0|<3-65535>
+                    "BGP keepalive time 0|<1-21845>
                      Time interval in seconds between transmission of keepalive
                      messages to the peer.  Typically set to 1/3 the
                      hold-time.";
@@ -1362,7 +1548,7 @@ module ciena-bgp {
                 }
                 units seconds;
                 description
-                    "Holdtime BGP holdtime 0|<1-21845>
+                    "Holdtime BGP holdtime 0|<3-65535>
                      Time interval in seconds that a BGP session will be
                      considered active in the absence of keepalive or other
                      messages from the peer.  The hold-time is typically
@@ -1395,7 +1581,22 @@ module ciena-bgp {
                      routing information. For peer groups large number of peering sessions will
                      be terminated.";
             }
+
             uses graceful-restart ;
+            leaf lockout {
+                if-feature lockout;
+                type boolean;
+                default false;
+                description
+                    "BGP lockout feature is useful to inform/force its peer
+                     to avoid itself for any traffic for prefixes it has advertised
+                     to its neighbors.
+                     When a BGP neighbor (or through peer group) is locked out
+                     1  iBGP routes are refreshed to the iBGP peer(s) with the path attribute
+                        changed to the lowest possible local preference (0)
+                     2  eBGP routes advertised to the eBGP peer(s) are refreshed with the path
+                        attribute changed to highest possible MED (4294967295).";
+            }
         }
 
         grouping peer-address-family-grouping {
@@ -1469,7 +1670,6 @@ module ciena-bgp {
                 }
 
                 leaf graceful-restart-helper {
-                    when "../afi!='rtfilter'";
                     type cn-l3-types:bgp-gr-mode;
                     description
                         "Configure the router to advertise the Graceful Restart Capability to the neighbors.
@@ -1530,7 +1730,7 @@ module ciena-bgp {
                     type boolean;
                     default false;
                     description
-                        "The default originate is used to indicate that all routes be sent regardless of the Route 
+                        "The default originate is used to indicate that all routes be sent regardless of the Route
                          Target filter values.";
                 }
 
@@ -1542,7 +1742,7 @@ module ciena-bgp {
                         "Remove private AS numbers from the outbound updates and do not advertise these
                          to the internet. This command is used with eBgp peers only.";
                 }
-               
+
                 leaf allow-ebgp-sr {
                     type enumeration {
                         enum "enable" {
@@ -1560,7 +1760,48 @@ module ciena-bgp {
                     description
                         "EBGP Peers only. Allow/Forbid prefix SID attribute";
                 }
-  
+
+                list advertise-ip-prefix {
+                    key "afi";
+                    must "../afi='l2vpn' and ../safi='evpn'" {
+                        error-message
+                           "This feature is only supported for L2VPN EVPN address family.";
+                    }
+                    description
+                        "Advertise VPNv4/VPNv6 prefixes (route type 5) under L2VPN EVPN address family.
+                         BGP neighbors need to be cleared to take effect.";
+
+                    leaf afi  {
+                        type cn-l3-types:evpn-rt5-types;
+                        description
+                            "VPNv4/VPNv6 address family";
+                    }
+                }
+                uses aigp-grouping;
+
+                container default-originate-vpn {
+                    description
+                        "Container to configure default-originate options for VPN address families.";
+
+                    list vrf {
+                        must "../../afi='vpnv4' or ../../afi='vpnv6'" {
+                            error-message "Only VPN address family supported";
+                        }
+                        key "name";
+                        max-elements 1;
+
+                        description
+                            "VRF list containing VRF related configuration for default-originate";
+
+                        leaf name  {
+                            type leafref {
+                                path "/vrf:vrf/vrf:vrfName";
+                            }
+                            description
+                                "VRF binding to which the default route needs to be originated.";
+                        }
+                    }
+                }
             }
         }
 
@@ -1636,11 +1877,18 @@ module ciena-bgp {
                 description
                     "Allows internal BGP sessions to use any operational interface for TCP connections";
             }
-
+ 
             uses peer-common-attributes-grouping;
             uses peer-address-family-grouping;
+
+            container bfd {
+                if-feature bfd;
+                description
+                    "Configure bidirectional forwarding detection for BGP peer group";
+                uses bfd-types:bgp-client-cfg-parms;
+            }
         }
-        
+
         container graceful-restart {
             description
                 "Container to enable graceful restart.";
@@ -1667,6 +1915,36 @@ module ciena-bgp {
                 description
                     "Maximum time to retain stale paths from restarting neighbors.";
             }
+
+            leaf enable {
+                type boolean;
+                default false;
+                description
+                    "Enable graceful-restart capabilities.";
+            }
+
+            leaf deferral-time {
+                type uint16 {
+                   range "1..3600";
+                }
+                units seconds;
+                default "120";
+                description
+                    "The maximum time a router which is restarting,
+                     will defer route-selection and advertisements to
+                     all its graceful-restart capable neighbors.";
+            }
+        }
+        leaf aigp-threshold {
+            type uint16 {
+               range "0..100";
+            }
+            default "0";
+            description
+                "Readvertise AIGP value when IGP metric has increased/decreased beyond configured
+                 threshold percentage. Any IGP metric change within threshold percentage should not
+                 lead to AIGP re-advertisement. Value 0 indicates threshold is disabled and any
+                 IGP metric change should lead to readvertisement of AIGP value.";
         }
     }
 
@@ -1675,19 +1953,19 @@ module ciena-bgp {
         "BGP grouping for update group AF state attributes";
 
       leaf number-of-peer-count  {
-        type uint32; 
+        type uint32;
         description
           "Number of peers in update group";
       }
 
       leaf table-version  {
-        type uint32; 
+        type uint32;
         description
           "Update group table version";
       }
 
       leaf bgp-table-version  {
-        type uint32; 
+        type uint32;
         description
           "BGP table version";
       }
@@ -1745,7 +2023,7 @@ module ciena-bgp {
         description
           "Out routing policy name";
       }
-        
+
       leaf out-unsupressed-route-map-name  {
         type string;
         description
@@ -1838,7 +2116,48 @@ module ciena-bgp {
         description
           "True if update group is created for single peer member only.";
       }
+      leaf aigp-enable {
+        type boolean;
+        description
+          "True if AIGP is set for update group.";
+      }
 
+      leaf aigp-send-med {
+        type boolean;
+        description
+          "True if translation of AIGP value to MED value for update group is enabled.";
+      }
+
+      leaf aigp-send-cost-community {
+        type uint16;
+        description
+          "AIGP value to cost-community value for update group.";
+      }
+
+      leaf aigp-send-point-of-insertion  {
+        type  cn-l3-types:aigp-metric-cost;
+        description
+          "Specifies the point of insertion, which can be either igp-cost or
+          pre-bestpath when selecting BGP best path";
+      }
+
+      leaf aigp-send-transitive  {
+        type  boolean;
+        description
+          "True if transitive cost community is enabled for update group.";
+      }
+
+      leaf evpn-rt5-afi  {
+        type cn-l3-types:evpn-rt5-types;
+        description
+          "VPNv4/VPNv6 RT5 AFI for L2VPN EVPN address family for the update group";
+      }
+
+      leaf lockout {
+          type boolean;
+          description
+              "True if lockout is enabled for update group.";
+      }
     }    
 
     grouping update-group-peer-attrs {
@@ -1941,7 +2260,7 @@ module ciena-bgp {
 
           }
         }
-      }     
+      }
     }
 
     grouping nexthop-tracking-state {
@@ -2019,11 +2338,11 @@ module ciena-bgp {
                 description
                    "IGP metric for nexthop";
             }
-           
+
             leaf next-hop-valid {
                 type boolean;
                 description
-                   "Next-hop is valid or not";     
+                   "Next-hop is valid or not";
             }
         }
     }
@@ -2121,32 +2440,6 @@ module ciena-bgp {
             description
                 "Status to Not advertised to any peer";
         }
-
-        list next-hop {
-            key "address";
-            description
-                "List of next hops and its related information for this particular network address";
-
-            leaf address  {
-                type string;
-                description "
-                    Next-hop address for this network";
-            }
-            uses next-hop-run-time-attr;
-        }
-
-        leaf route-distinguisher {
-            type string;
-            description
-                "Bgp Route Distinguisher 8 octet value";
-        }
-
-        leaf route-target  {
-            type string;
-            description
-                "Bgp Route Target";
-        }
-        
     }
 
     grouping next-hop-run-time-attr {
@@ -2381,7 +2674,7 @@ module ciena-bgp {
         }
 
         leaf bgp-aigp-metric  {
-            type  uint32;
+            type  uint64;
             description
                 "Bgp aigp metric";
         }
@@ -2440,13 +2733,174 @@ module ciena-bgp {
                 "Different states of prefix SID attribute.";
         }
 
+        container srv6-service-tlv {
+            description
+                "BGP SRv6 service SID TLV information";
+
+            leaf srv6-tlv-type {
+                type enumeration {
+                    enum srv6-l3-service {
+                        value 5;
+                        description
+                            "SRv6 L3 Service TLV";
+                    }
+
+                    enum srv6-l2-service {
+                        value 6;
+                        description
+                            "SRv6 L2 Service TLV";
+                    }
+                }
+
+                description
+                    "Type of SRv6 Service TLV";
+            }
+
+            leaf srv6-tlv-length {
+                type uint8;
+                description
+                    "SRv6 Service TLV total length in octets";
+            }
+
+            leaf srv6-tlv-reserved {
+                type uint8;
+                description
+                    "SRv6 Service TLV Reserved";
+            }
+
+            container srv6-service-sub-tlv {
+                description
+                    "SRv6 service-related information";
+
+                container srv6-sid-info {
+                    description
+                        "SRv6 SID Infomation Sub-TLV";
+
+                    leaf srv6-sub-tlv-type {
+                        type enumeration {
+                            enum srv6-sid-information {
+                                value 1;
+                                description
+                                    "SRv6 SID Information";
+                            }
+                        }
+
+                        description
+                            "Type of SRv6 SID Information Sub-TLV";
+                    }
+
+                    leaf srv6-sub-tlv-length {
+                        type uint8;
+                        description
+                            "The total length, in octets, of the Value field of the Sub-TLV";
+                    }
+
+                    leaf srv6-sub-tlv-reserved1 {
+                        type uint8;
+                        description
+                            "First Sub TLV reserved";
+                    }
+
+                    leaf srv6-sid-value {
+                        type string;
+                        description
+                            "SRv6 SID Value";
+                    }
+
+                    leaf srv6-sid-flag {
+                        type string;
+                        description
+                            "Encoded SRv6 Service SID Flags";
+                    }
+
+                    leaf srv6-endpoint-behavior {
+                        type string;
+                        description
+                            "SRv6 Endpoint Behavior codepoint value associated with the SRv6 SID";
+                    }
+
+                    leaf srv6-sub-tlv-reserved2 {
+                        type uint8;
+                        description
+                            "Second Sub TLV reserved";
+                    }
+
+                    container srv6-service-sub-sub-tlv {
+                        description
+                            "SRv6 Service Data Sub-Sub-TLV";
+
+                        container srv6-sid-structure {
+                            description
+                                "SRv6 SID Structure Sub-Sub-TLV";
+
+                            leaf srv6-sub-sub-tlv-type {
+                                type enumeration {
+                                    enum srv6-sid-struct {
+                                        value 1;
+                                        description
+                                            "SRv6 SID Structure";
+                                    }
+                                }
+
+                                description
+                                    "Type of SRv6 SID Structure Sub-Sub-TLV";
+                            }
+
+                            leaf srv6-sub-sub-tlv-length {
+                                type uint8;
+                                description
+                                    "SRv6 Service Data Sub-Sub-TLV Length";
+                            }
+
+                            leaf locator-block-length {
+                                type uint8;
+                                description
+                                    "The length of the SRv6 SID Locator Block in bits";
+                            }
+
+                            leaf locator-node-length {
+                                type uint8;
+                                description
+                                    "The length of the SRv6 SID Locator Node in bits";
+                            }
+
+                            leaf locator-function-length {
+                                type uint8;
+                                description
+                                    "The length of the SRv6 SID Locator Function in bits";
+                            }
+
+                            leaf locator-argument-length {
+                                type uint8;
+                                description
+                                    "The length of the SRv6 SID Locator Argument in bits";
+                            }
+
+                            leaf transposition-length {
+                                type uint8;
+                                description
+                                    "The size in bits for the part of the SID that has been transposed (or shifted) into an MPLS Label field";
+                            }
+
+                            leaf transposition-offset {
+                                type uint8;
+                                description
+                                    "The offset position in bits for the part of the SID that has been transposed (or shifted) into an MPLS Label field";
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+
         leaf vpls-id {
             type cn-l3-types:bgp-vpls-id;
             description
             "A VPLS ID is a BGP extended community value that identifies the VPLS domain.
              Only applicable for L2VPN VPLS address family.";
-        } 
-        
+        }
+
         leaf route-distinguisher {
             type cn-l3-types:bgp-rd;
             description
@@ -2464,7 +2918,66 @@ module ciena-bgp {
             description
                 "Name of large community attribute";
         }
-              
+    }
+
+    grouping aigp-grouping {
+      description
+        "Grouping for AIGP.";
+
+      container aigp {
+        description
+          "AIGP behavior for the specified BGP neighbor or peer group of
+          the specified BGP instance (identified by AS number) and address family.";
+
+        leaf enable {
+          type boolean;
+          description
+            "To enable AIGP for a specific peer or peer-group.";
+        }
+
+        container send {
+          description
+            "Container for AIGP send. The send attribute is used to
+            interop with neighbor that does not support BGP AIGP metric
+            attribute, by translating the AIGP metric of a routes to either
+            MED or cost-community when such route is to be advertised
+            towards the neighbor.";
+
+          leaf med {
+            type boolean;
+            default false;
+            description
+              "To enable translation of AIGP value to MED(Multi Exit Discriminator) value for the neighbor.";
+          }
+
+          container community {
+            description
+              "To enable translation of AIGP value to cost-community value for the neighbor.";
+
+            leaf cost {
+              type uint16 {
+                range "0..255";
+              }
+              description
+                "AIGP value to cost-community value for the neighbor.";
+            }
+
+            leaf point-of-insertion  {
+              type  cn-l3-types:aigp-metric-cost;
+              description
+                "Specifies the point of insertion, which can be either igp-cost or
+                pre-bestpath when selecting BGP best path.";
+            }
+
+            leaf transitive  {
+              type  boolean;
+              default false;
+              description
+                "Enable transitive cost community.";
+            }
+          }
+        }
+      }
     }
 
     grouping vrf-label-grouping {
@@ -2489,7 +3002,7 @@ module ciena-bgp {
                     type cn-l3-types:label-mode-type;
                     description
                       "MPLS label allocation mode.";
-                }  
+                }
            }
        }
     }
@@ -3001,11 +3514,89 @@ module ciena-bgp {
             description
                 "VPNv6 Unicast neighbour Capability";
         }
-        
+
         leaf peer-flap-counter {
             type uint32;
             description
                 "Count for number of times a session goes down";
+        }
+
+        leaf previous-notify-code  {
+            type string;
+            description
+                "Previous Notification Error Message";
+        }
+
+        leaf previous-notify-direct  {
+            type string;
+            description
+                "Previous BGP capability send/received information";
+        }
+
+        leaf previous-notify-last-reset  {
+            type string;
+            description
+                "Previous Last Reset time";
+        }
+
+        leaf last-update-read {
+            type uint32;
+            description
+                "Time in seconds for last update read";
+        }
+
+        leaf last-update-read-before-reset {
+            type uint32;
+            description
+                "Time in seconds for last update read before reset";
+        }
+
+        leaf last-written-time {
+            type uint32;
+            description
+                "Time in seconds for last write";
+        }
+
+        leaf last-written-bytes {
+            type uint32;
+            description
+                "Bytes written for the last write";
+        }
+
+        leaf penultimate-written-time {
+            type uint32;
+            description
+                "Time in seconds for second last write";
+        }
+
+        leaf penultimate-written-bytes {
+            type uint32;
+            description
+                "Bytes written for the second last write";
+        }
+
+        leaf last-write-before-reset {
+            type uint32;
+            description
+                "Time in seconds for last write before reset";
+        }
+
+        leaf penultimate-write-before-reset {
+            type uint32;
+            description
+                "Time in seconds for second last write before reset";
+        }
+
+        leaf current-holdtimer-reset {
+            type uint32;
+            description
+                "Time in seconds for current hold timer reset";
+        }
+
+        leaf last-holdtimer-reset {
+            type uint32;
+            description
+                "Time in seconds for last hold timer reset";
         }
     }
 
@@ -3025,6 +3616,17 @@ module ciena-bgp {
                 "RT filter route targets received";
         }
 
+        leaf default-rtfilter-sent {
+            type boolean;
+            description
+                "Indicates whether the default RT filter is sent to the peer or not";
+        }
+
+        leaf default-rtfilter-received {
+            type boolean;
+            description
+                "Indicates whether the default RT filter is received from the peer or not";
+        }
     }
 
     grouping bgp-af-attrs {
@@ -3240,10 +3842,15 @@ module ciena-bgp {
                 type  string {
                     length "0..255";
                 }
-                description 
+                description
                     "Nexthop address";
             }
             uses next-hop-run-time-attr;
+            leaf evpn-route-type-5  {
+                type  boolean;
+                description
+                    "EVPN route type 5";
+            }
         }
     }
 
@@ -3259,10 +3866,10 @@ module ciena-bgp {
                 type  string {
                     length "0..255";
                 }
-                description 
+                description
                     "Network address";
             }
-            
+
             list next-hop {
                 key "address";
                 description
@@ -3271,7 +3878,7 @@ module ciena-bgp {
                     type  string {
                         length "0..255";
                     }
-                    description 
+                    description
                         "Nexthop address";
                 }
                 uses next-hop-run-time-attr;
@@ -3605,7 +4212,7 @@ module ciena-bgp {
             leaf neighbor-id {
                 type string;
                 description
-                    "Neighbor ID information where 6 octets for ISIS for system ID and 
+                    "Neighbor ID information where 6 octets for ISIS for system ID and
                      4 octets for OSPF for router ID of the neighbor.";
             }
 
@@ -3676,7 +4283,7 @@ module ciena-bgp {
         leaf opaque-prefix-attr {
             type string;
             description
-                "Opaque prefix attribute TLV is an envelope that transparently carries prefix 
+                "Opaque prefix attribute TLV is an envelope that transparently carries prefix
                  Attribute advertised by a router.";
         }
 
@@ -3802,7 +4409,7 @@ module ciena-bgp {
             }
 
             list network {
-                key "address rd";
+                key "address rd peer-address";
                 description
                    "Specify the network to be advertised by the BGP routing process";
 
@@ -3817,9 +4424,47 @@ module ciena-bgp {
                     description
                         "Bgp Route Distinguisher 8 octet value";
                 }
+
+                leaf peer-address  {
+                    type string;
+                    description
+                         "BGP peer address to filter peer specific routes";
+                }
+
                 uses nw-run-time-attr;
+
+                list next-hop {
+                    key "address";
+                    description
+                        "List of next hops and its related information for this particular network address";
+
+                    leaf address  {
+                        type string;
+                        description "
+                            Next-hop address for this network";
+                    }
+                    uses next-hop-run-time-attr;
+
+                    leaf evpn-route-type-5  {
+                        type  boolean;
+                        description
+                            "EVPN route type 5";
+                    }
+                }
+
+                leaf route-distinguisher {
+                    type string;
+                    description
+                        "Bgp Route Distinguisher 8 octet value";
+                }
+
+                leaf route-target  {
+                    type string;
+                    description
+                        "Bgp Route Target";
+                }
             }
-         
+
             list link-state {
                 when "../afi='link-state' and ../safi='link-state'";
                 key "nlri-type";
@@ -4155,7 +4800,7 @@ module ciena-bgp {
                         description
                             "AS number of the peer.";
                     }
-                                       
+
                     uses peer-runtime-attr;
                     uses bgp-orf-state-attrs;
                     uses bgp-peer-adjacency-in-state-attrs;
@@ -4172,7 +4817,20 @@ module ciena-bgp {
                             description
                                 "Prefix address";
                         }
-                        uses bgp-peer-adjacency-out-state-attrs;
+
+                        list next-hop {
+                            key "address";
+                            description
+                                "Prefix nexthop";
+                            leaf address  {
+                                type  string {
+                                    length "0..255";
+                                }
+                                description
+                                    "Nexthop address";
+                            }
+                            uses next-hop-run-time-attr;
+                        }
                     }
 
                     uses bgp-peer-graceful-restart-state-attrs;
@@ -4183,10 +4841,31 @@ module ciena-bgp {
                         description
                             "Update group ID assigned to peer.";
                     }
+                    leaf aigp-enable {
+                      type boolean;
+                      description
+                        "AIGP value for a specific peer.";
+                    }
+                    leaf vpnv4-rt5-update-group-id  {
+                      type string;
+                      description
+                        "Update group ID assigned to VPNv4 RT5 update group.";
+                    }
+                    leaf vpnv6-rt5-update-group-id  {
+                      type string;
+                      description
+                        "Update group ID assigned to VPNv6 RT5 update group.";
+                    }
+                    leaf lockout-last-changed {
+                        if-feature lockout;
+                        type yang:date-and-time;
+                        description
+                           "Timestamp the lockout flag was last changed.";
+                    }
                 }
 
                 list network {
-                    key "address";
+                    key "address peer-address";
                     description
                         "Specify the network to be advertised by the BGP routing process";
 
@@ -4195,7 +4874,58 @@ module ciena-bgp {
                         description
                             "The network advertised by the BGP routing process";
                     }
+
+                    leaf peer-address  {
+                        type string;
+                        description
+                            "BGP peer address to filter peer specific routes";
+                    }
+
                     uses nw-run-time-attr;
+                    list next-hop {
+                        key "address";
+                        description
+                            "List of next hops and its related information for this particular network address";
+
+                        leaf address  {
+                            type string;
+                            description "
+                                Next-hop address for this network";
+                        }
+                        uses next-hop-run-time-attr;
+                        uses cn-l3-types:sr-policy-oper-grouping;
+                    }
+
+                    leaf route-distinguisher {
+                        type string;
+                        description
+                            "Bgp Route Distinguisher 8 octet value";
+                    }
+
+                    leaf route-target  {
+                        type string;
+                        description
+                            "Bgp Route Target";
+                    }
+                }
+
+                list route-target {
+                    key "id";
+                    description
+                        "Route Target list state information";
+
+                    leaf id  {
+                        type cn-l3-types:bgp-rt;
+                        description
+                            "Route target id information.";
+                    }
+
+                    leaf direction  {
+                        type  cn-l3-types:rt-direction;
+                        mandatory true;
+                        description
+                            "Route-target direction information.";
+                    }
                 }
             }
 
@@ -4218,7 +4948,7 @@ module ciena-bgp {
                   "BGP update group state container";
 
                uses update-group-state;
-            } 
+            }
         }
 
         list l2vpn-vpls {
@@ -4256,7 +4986,7 @@ module ciena-bgp {
                     type  cn-l3-types:bgp-rt;
                     description
                         "Route-target id. Creates lists of import and export route-target
-                         extended communities for the L2VPN instance. It specifies a target VPN 
+                         extended communities for the L2VPN instance. It specifies a target VPN
                          extended community.Execute the once for each community. All routes with
                          the specific route-target extended community are imported into all L2VPN
                          instances with the same extended community as an import route-target.";
@@ -4266,8 +4996,8 @@ module ciena-bgp {
             leaf vpls-id  {
                 type  cn-l3-types:bgp-vpls-id;
                 description
-                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain. 
-                     Manual configuration of this ID is optional because a default VPLS ID is generated 
+                    "A VPLS ID is a BGP extended community value that identifies the VPLS domain.
+                     Manual configuration of this ID is optional because a default VPLS ID is generated
                      using the BGP autonomous system number and the configured VPN ID.
                      A VPLS ID can be composed in one of three ways: with an autonomous system number and
                      an arbitrary number or with an IP address and an arbitrary number.
@@ -4279,7 +5009,7 @@ module ciena-bgp {
                      •Enter type 2 , a colon, a 32-bit autonomous system number, a colon, and a 16-bit number.
                      2:65536:3 .";
             }
-            
+
             list peer {
                 key "address";
                 description
@@ -4337,7 +5067,7 @@ module ciena-bgp {
                     description
                        "Set adjacency-table-type as in/out/all or none";
                 }
-              
+
                 uses peer-runtime-attr;
                 leaf advertised-capability-rtfilter-unicast  {
                     type string;
@@ -4346,6 +5076,12 @@ module ciena-bgp {
                 }
                 uses bgp-orf-state-attrs;
                 uses bgp-peer-adjacency-in-state-attrs;
+
+                leaf advertised-capability-l2vpn-evpn  {
+                    type string;
+                    description
+                       "L2VPN EVPN neighbor capability";
+                }
 
                 list peer-adjacency-out {
                     key "address rd";
@@ -4365,11 +5101,29 @@ module ciena-bgp {
                         description
                             "Bgp Route Distinguisher 8 octet value";
                     }
-                    uses bgp-peer-adjacency-out-state-attrs;
+
+                    list next-hop {
+                        key "address";
+                        description
+                            "Prefix nexthop";
+                        leaf address  {
+                            type  string {
+                                length "0..255";
+                            }
+                            description
+                                "Nexthop address";
+                        }
+                        uses next-hop-run-time-attr;
+                        leaf evpn-route-type-5  {
+                            type  boolean;
+                            description
+                                "EVPN route type 5";
+                        }
+                    }
                 }
 
                 uses peer-af-rtfilter-attrs;
-                uses bgp-peer-af-graceful-restart-state-attrs; 
+                uses bgp-peer-af-graceful-restart-state-attrs;
 
                 leaf allow-ebgp-sr {
                     type enumeration {
@@ -4393,8 +5147,30 @@ module ciena-bgp {
                     description
                         "Update group ID assigned to peer.";
                 }
+                leaf aigp-enable {
+                  type boolean;
+                  description
+                    "AIGP value for a specific peer.";
+                }
+                leaf vpnv4-rt5-update-group-id  {
+                  type string;
+                  description
+                    "Update group ID assigned to VPNv4 RT5 update group.";
+                }
+                leaf vpnv6-rt5-update-group-id  {
+                  type string;
+                  description
+                    "Update group ID assigned to VPNv6 RT5 update group.";
+                }
             }
             uses bgp-peer-graceful-restart-state-attrs;
+
+            leaf lockout-last-changed {
+                if-feature lockout;
+                type yang:date-and-time;
+                description
+                   "Timestamp the lockout flag was last changed.";
+            }
         }
 
         container update-group-state {
@@ -4405,7 +5181,7 @@ module ciena-bgp {
         }
 
     }
-   
+
     typedef gr-flushed-stalepath-reason {
         type enumeration {
             enum no-fault {
@@ -4448,20 +5224,20 @@ module ciena-bgp {
                 description
                     "Graceful restart is not negotiated with peer for this AFI-SAFI";
             }
-        }   
-    }   
-        
+        }
+    }
+
     grouping bgp-peer-graceful-restart-state-attrs {
         description
             "Grouping for peer graceful restart state attributes";
-  
+
         leaf peer-restart-time {
             type uint16;
             description
                 "The period of time (advertised by the peer) that the
                  peer expects a restart of a BGP session to take.";
         }
-  
+
         leaf peer-restarting {
             type boolean;
             description
@@ -4475,8 +5251,8 @@ module ciena-bgp {
             description
                 "The field indicates the timestamp of last GR started.";
         }
-    } 
-  
+    }
+
     grouping bgp-peer-af-graceful-restart-state-attrs {
         description
             "Grouping for peer AF level graceful restart state attributes.";
@@ -4498,17 +5274,17 @@ module ciena-bgp {
         leaf forwarding-state-preserved-received {
             type boolean;
             description
-                "If forwarding state preserved value is true, then this will denote that 
+                "If forwarding state preserved value is true, then this will denote that
                  the peer is able to preseve it's forwarding state on restart for this AFI-SAFI.";
         }
-      
+
         leaf end-of-rib-received {
             type boolean;
             description
-                "This field indicates weather End-of-RIB(EOR) marker has been received by 
-                 peer for this AFI-SAFI."; 
+                "This field indicates weather End-of-RIB(EOR) marker has been received by
+                 peer for this AFI-SAFI.";
         }
-        
+
         leaf flushed-stalepath-count {
             type uint32;
             description
@@ -4518,7 +5294,7 @@ module ciena-bgp {
         leaf flushed-stalepath-reason {
             type gr-flushed-stalepath-reason;
             description
-                "Reason of flushing stalepath in last graceful restart."; 
+                "Reason of flushing stalepath in last graceful restart.";
         }
     }
 
@@ -4561,7 +5337,7 @@ module ciena-bgp {
         container bgp-segment-routing-state {
            description
                "BGP segment routing oper state.";
- 
+
             container summary {
                 description
                     "BGP segment routing summary";
@@ -4645,13 +5421,13 @@ module ciena-bgp {
                     description
                         "BGP prefix SID index.";
                 }
-              
+
                 leaf state {
                     type prefix-sid-state;
                     description
                         "Different states of prefix SID attribute";
                 }
-                               
+
                 list network {
                     key "address";
                     description
@@ -4662,12 +5438,12 @@ module ciena-bgp {
                         description
                             "Network address to be announced in prefix/length format";
                     }
-                   
+
                     leaf-list next-hop {
                         type string;
                         description
                             "List of Next-hop";
-                    }                    
+                    }
                 }
 
             }
@@ -4692,10 +5468,169 @@ module ciena-bgp {
                             "List of Next-hop";
                     }
                 }
-           
-            }            
-        }     
+
+            }
+        }
     }
+
+    grouping bgp-segment-routing-srv6-state-attrs {
+        description
+            "Grouping to show BGP SRv6 oper attributes.";
+
+        container bgp-segment-routing-srv6-state {
+
+            description
+               "BGP SRv6 oper state";
+            
+            list bgp-segment-routing-srv6 {
+                key "vrf-name";
+                description
+                "BGP SRv6 oper state";
+
+                leaf "vrf-name" {
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    description
+                        "Provide BGP SRv6 oper state to parent VRF binding";
+                }
+
+                leaf "route-distinguisher" {
+                    type string;
+                    description
+                        "Bgp route distinguisher 8 octet value";
+                }
+
+                list "address-family" {
+                    key "afi safi";
+                    description
+                        "List for BGP address families and its related update group state information";
+
+                    leaf afi  {
+                        type leafref {
+                            path "/bgp:bgp/instance/address-family/afi";
+                        }
+                        description
+                            "Address family specific parameters such as ipv4, ipv6 or vpnv4";
+                    }
+
+                    leaf safi  {
+                        type leafref {
+                            path "/bgp:bgp/instance/address-family/safi";
+                        }
+                        description
+                            "Sub-address family such as unicast";
+                    }
+
+                    container srv6-locator {
+                        description
+                            "SRv6 Locator information";
+
+                        leaf name {
+                            type string;
+                            description
+                                "SRv6 Locator's name";
+                        }
+
+                        leaf srv6-sid-value {
+                            type string;
+                            description
+                                "SRv6 SID Value";
+                        }
+
+                        leaf srv6-sid-type {
+                            type cn-l3-types:sr-sidtype-grouping;
+                            description
+                                "SR SID type as u-sid or uncompressed-sid";
+                        }
+
+                        leaf config-mode {
+                            type enumeration {
+                                enum unknown {
+                                    value 1;
+                                    description
+                                        "Config mode is unknown";
+                                }
+                                enum global-config {
+                                    value 2;
+                                    description
+                                        "Config mode is BGP global SRv6";
+                                }
+                                enum global-af-config {
+                                    value 3;
+                                    description
+                                        "Config mode is BGP global AF SRv6";
+                                }
+                                enum vrf-af-config {
+                                    value 4;
+                                    description
+                                        "Config mode is VRF AF SRv6";
+                                }
+                            }
+
+                            description
+                                "BGP SRv6 Config mode";
+                        }
+                    }
+
+                    list srv6-service {
+                        key "srv6-service-sid";
+                        description
+                            "SRv6 service infomation list";
+
+                        leaf srv6-service-sid {
+                            type string;
+                            description
+                                "BGP SRv6 service SID value";
+                        }
+
+                        leaf endpoint-behavior {
+                            type string;
+                            description
+                                "BGP SRv6 endpoint bahavior type";
+                        }
+
+                        leaf block-length {
+                            type uint8;
+                            description
+                                "Service SID block length";
+                        }
+
+                        leaf node-length {
+                            type uint8;
+                            description
+                                "Service SID node length";
+                        }
+
+                        leaf function-length {
+                            type uint8;
+                            description
+                                "Service SID function length";
+                        }
+
+                        leaf argument-length {
+                            type uint8;
+                            description
+                                "Service SID argument length";
+                        }
+
+                        leaf transposition-length {
+                            type uint8;
+                            description
+                                "Service SID transposition length";
+                        }
+
+                        leaf transposition-offset {
+                            type uint8;
+                            description
+                                "Service SID transposition offset";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     grouping graceful-restart {
         description
             "Grouping for graceful restart config attributes.";
@@ -4716,8 +5651,56 @@ module ciena-bgp {
             }
         }
     }
+    grouping bgp-graceful-restarting-node-state-attrs {
+        description
+            "Grouping for graceful restart node state attributes";
+        container bgp-graceful-restarting-node-state {
+             description
+                 "Graceful restart node state attributes";
 
-       
+              leaf gr-start-time {
+                 type string;
+                 description
+                     "Timestamp of graceful-restart start time.";
+              }
+
+              leaf gr-in-progress{
+                 type boolean;
+                 description
+                     "Status of graceful-restart, in progress or complete.";
+             }
+
+              leaf gr-end-time {
+                  type string;
+                  description
+                      "Timestamp of graceful-restart end time.";
+              }
+
+              leaf gr-end-reason {
+                 type enumeration {
+                     enum not-applicable {
+                          value 0;
+                          description
+                              "Indicates graceful-restart is still in progress and has not ended.";
+                     }
+                     enum eor-received {
+                          value 1;
+                          description
+                              "EOR received from all the peers for all address family with whom GR is negotiated.";
+                     }
+                      enum deferral-time-expire {
+                          value 2;
+                          description
+                              "Deferral timer expired.";
+                     }
+                  }
+
+                  description
+                     "Indicates the reason for completion of graceful-restart.";
+              }
+         }
+    }
+
     uses bgp-grouping;
 
     rpc  bgp-clear {
@@ -4787,6 +5770,20 @@ module ciena-bgp {
                 description
                     "Set the name of BGP update group";
 
+            }
+
+            leaf all-non-default-vrfs {
+                type boolean;
+                default false;
+                description
+                    "Set flag to clear all non-default vrfs";
+            }
+
+            leaf all-vrfs {
+                type boolean;
+                default false;
+                description
+                    "Set flag to clear all vrfs";
             }
         }
 

@@ -51,7 +51,7 @@ module ciena-pon-ctrl {
      Optical Network (PON) devices. This includes Optical Line Terminals (OLTs) and
      subtended Optical Network Units (ONUs).
 
-     Copyright (c) 2021-2022 Ciena Corporation. All rights reserved.
+     Copyright (c) 2021-2023 Ciena Corporation. All rights reserved.
 
      All information and intellectual property contained in this
      YANG module (Specification) is, and remains the property
@@ -72,7 +72,18 @@ module ciena-pon-ctrl {
      condition, or performance of the Specification. You agree
      that Ciena has no liability for your use of the Specification.";
 
-  revision "2022-09-15" {
+  revision "2023-11-02" {
+    description
+       "Add support for external database.";
+    reference
+      "- ITU-T G.987    : 10-Gigabit-capable passive optical networks (XG-PON)
+       - ITU-T G.9807.1 : 10-Gigabit-capable symmetric passive optical network (XGS-PON)
+       - ITU-T G.988    : ONU management and control interface (OMCI) specification
+       - IEEE 802.3av   : 10Gbit/s Ethernet PON (10G EPON) standard
+       - RFC 2865       : Remote Authentication Dial In User Service (RADIUS)";
+  }
+
+  revision "2023-10-04" {
     description
       "Add DHCPv6 for Residential PON.
        Add receive power threshold profile and error threshold profile.
@@ -99,7 +110,51 @@ module ciena-pon-ctrl {
        recommended values.
        Add 2 new DHCPv6 oper states:released, declined.
        Prefix ONU statistics with rx to be consistent with other statistics.
-       Adding new datalink misconfigured alarm.";
+       Add new datalink misconfigured alarm.
+       Add high/low receive power readings to OLT diagnostics.
+       Add error threshold checking for rogue ONU.
+       Add mass ONU deregistration event handling for rogue ONU.
+       Add support for caching of OLT diagnostic data.
+       Add support for global automatic ONU upgrade configuration.
+       Add two states to capture the current operational state for PPPoE and authentication.
+       Add auto-onu-upgrade and priority queue mapping.
+       Add degraded ONU threshold configuration.
+       Add last-clear-time timestamps for all PON statistics.
+       Add RADIUS server attributes and update descriptions and defaults.
+       Add priority attribute to RADIUS server.
+       Add new statistics provided from hardware.
+       Add new OLT misconfigured alarm.
+       Deprecating auto-boot mode for the OLT.
+       Add held/quiet start time and held/quiet operational state.
+       Add config restriction for serial-number change on ONU.
+       Add failure count for datalink authentication state.
+       Rename auto-onu prefixed fields to onu-auto.
+       Add vendor ID to ONU state.
+       Deprecated unused parameters for rogue ONU.
+       Add global event when statistics retrieval threshold is exceeded.
+       Allow specific CPE entry to be cleared.
+       Add dying gasp ONU alarm.
+       Moving Datalink/XGEM/OLT/UNI Port Stats to RPC.
+       Allow XGEM Stats to be cleared.
+       Moving Datalink and OLT Stats to RPC.
+       Add previous oper-state and reason code for OLT, ONU and UNI-Port oper-state-change notification.
+       Migrating rogue ONU to Universal PON controller.
+       Add service config name to ONU.
+       Add ONU alarms: loss-ploam, loss-key-synchronization, tx-signal-drift, differential-reach, omci-comm-failure, LOS.
+       Updated ONU power threshold description to indicate thresholds are temporarily not supported starting in release 10.8.1.
+       Add config for database external access over ipv4/ipv6.
+       Adding hardware-triggered to oper-state-change-reason for ONU.
+       Add UNI port alarm to UNI port state.
+       Add OLT disabled reason to ONU oper-state-change-reason.
+       Rogue ONU attributes missing from rogue ONU command.
+       Add ONU service config failure alarm.
+       Add reset status for ONU.
+       Deprecate onu-performance-monitoring-mode on OLT.
+       Deprecate performance-monitoring-collection on ONU.
+       Deprecate stats-collection on UNI Port.
+       Add clear command to Rogue ONU to allow the initial power variance reading to be cleared.
+       Add offline state to authentication states.
+       Add reset status for OLT.";
     reference
       "- ITU-T G.987    : 10-Gigabit-capable passive optical networks (XG-PON)
        - ITU-T G.9807.1 : 10-Gigabit-capable symmetric passive optical network (XGS-PON)
@@ -129,7 +184,7 @@ module ciena-pon-ctrl {
       "Add admin state to ONU configuration.
        Add support for ONU-ID configuration.
        Add support for residential PON configuration.
-       Add radius, authentication and dhcp relay state for residential PON.
+       Add RADIUS, authentication and dhcp relay state for residential PON.
        Add RPC to get/set in-band management TPID and VID on an OLT.
        Add support for automatic ONU upgrades.
        Add option to control the creation of a flooding link on NNI Networks.
@@ -141,7 +196,7 @@ module ciena-pon-ctrl {
        Add firmware-upgrade-attempts to ONU state.
        Add range restriction to ALLOC-ID and ONU-ID configuration.
        Add support for clear command of expired/failed CPE state entries for authentication and l2-relay.
-       Simplify statistics for Radius Server.
+       Simplify statistics for RADIUS Server.
        Clean-up of Residential PON state attributes.
        Remove dhcp-sub-option.
        Add new states for Authentication and DHCP. Change cpe-mac to type of yang:mac-address.";
@@ -241,7 +296,7 @@ module ciena-pon-ctrl {
       length "1..255";
     }
     description
-      "PON Relay string for radius, authentication, DHCP, DHCPv6 and PPPoE identifier attributes.";
+      "PON Relay string for RADIUS, authentication, DHCP, DHCPv6 and PPPoE identifier attributes.";
   }
 
   typedef interface-ref {
@@ -258,7 +313,7 @@ module ciena-pon-ctrl {
            "/pon-ctrl:name";
     }
     description
-      "Radius Server reference leafref type.";
+      "RADIUS Server reference leafref type.";
   }
 
   typedef olt-ref {
@@ -355,6 +410,17 @@ module ciena-pon-ctrl {
       "Error threshold profile reference leafref type.";
   }
 
+  typedef cos-queue-map-ref {
+    type leafref {
+      path "/pon-ctrl:pon-ctrl" +
+           "/pon-ctrl:cos-queue-maps" +
+           "/pon-ctrl:cos-queue-map" +
+           "/pon-ctrl:name";
+    }
+    description
+      "CoS queue map reference leafref type.";
+  }
+
   typedef inband-management-action {
     type enumeration {
       enum get {
@@ -433,7 +499,7 @@ module ciena-pon-ctrl {
       }
       enum running {
         description
-          "Statistics binning returns current running count.";
+          "Statistics binning returns 15-min historical bin.";
       }
     }
     description
@@ -513,19 +579,19 @@ module ciena-pon-ctrl {
     type enumeration {
       enum up {
         description
-          "Radius server state is up.";
+          "RADIUS server state is up.";
       }
       enum down {
         description
-          "Radius server state is down.";
+          "RADIUS server state is down.";
       }
       enum unknown {
         description
-          "Radius server state is unknown.";
+          "RADIUS server state is unknown.";
       }
     }
     description
-      "Radius server operational state type.";
+      "RADIUS server operational state type.";
   }
 
   typedef dhcp-relay-oper-state {
@@ -692,6 +758,18 @@ module ciena-pon-ctrl {
         description
           "Authentication state is unknown.";
       }
+      enum held {
+        description
+          "Authentication state is held.";
+      }
+      enum quiet {
+        description
+          "Authentication state is quiet.";
+      }
+      enum offline {
+        description
+          "Authentication state is offline due to device inactive.";
+      }
     }
     description
       "Authentication operational state type.";
@@ -768,6 +846,56 @@ module ciena-pon-ctrl {
     }
     description
       "ONU rogue state.";
+  }
+
+  typedef rogue-onu-defect {
+    type enumeration {
+      enum idle-optical-power {
+        description
+          "OLT idle receive power defect detection.";
+      }
+      enum disallowed-error {
+        description
+          "OLT disallowed defect detection.";
+      }
+      enum power-variation {
+        description
+          "ONU power variation defect detection.";
+      }
+      enum disallowed-onu {
+        description
+          "ONU disallowed defect detection.";
+      }
+    }
+    description
+      "Rogue ONU defect detection types.";
+  }
+
+  typedef rogue-onu-command {
+    type enumeration {
+      enum fast-recovery {
+        description
+          "Start ONU Fast recovery procedure.";
+      }
+      enum isolation {
+        description
+          "Start ONU isolation procedure.";
+      }
+      enum remediation {
+        description
+          "Start ONU remediation procedure.";
+      }
+      enum cancel {
+        description
+          "Cancel the procedure (if it is running).";
+      }
+      enum clear {
+        description
+          "Clear (reset) the initial ONU power variance reading.";
+      }
+    }
+    description
+      "Rogue ONU commands.";
   }
 
   typedef uni-port-speed {
@@ -995,6 +1123,11 @@ module ciena-pon-ctrl {
         description
           "Transmit power is past maximum threshold.";
       }
+      bit misconfigured {
+        position 8;
+        description
+          "This OLT is misconfigured.";
+      }
     }
     description
       "Bit map of alarms currently active on this OLT.";
@@ -1087,10 +1220,50 @@ module ciena-pon-ctrl {
         description
           "The laser bias threshold has been exceeded.";
       }
-      bit misconfigured{
+      bit misconfigured {
         position 17;
         description
           "This ONU is misconfigured.";
+      }
+      bit dying-gasp {
+        position 18;
+        description
+          "This ONU is deregistered due to dying gasp.";
+      }
+      bit loss-ploam {
+        position 19;
+        description
+          "This ONU is deregistered due to loss of PLOAM.";
+      }
+      bit loss-of-key-synchronization {
+        position 20;
+        description
+          "This ONU is deregistered due to loss of key synchronization.";
+      }
+      bit tx-signal-drift {
+        position 21;
+        description
+          "This ONU is deregistered due to loss of transmission signal drift.";
+      }
+      bit differential-reach {
+        position 22;
+        description
+          "This ONU is deregistered due to differential reach.";
+      }
+      bit omci-communication-failure {
+        position 23;
+        description
+          "This ONU is deregistered due to OMCI communication failure.";
+      }
+      bit loss-of-signal {
+        position 24;
+        description
+          "This ONU has detected LOS.";
+      }
+      bit service-config-failure {
+        position 25;
+        description
+          "This ONU's service config has failed.";
       }
     }
     description
@@ -1154,6 +1327,195 @@ module ciena-pon-ctrl {
       "Bit map of alarms currently active on this Datalink.";
   }
 
+  typedef uni-port-alarm-bit-map {
+    type bits {
+      bit loss-of-signal {
+        position 0;
+        description
+          "This UNI Port has detected LOS.";
+      }
+    }
+    description
+      "Bit map of alarms currently active on this UNI port.";
+  }
+
+  typedef onu-auto-upgrade-trigger {
+    type enumeration {
+      enum discovery {
+        description
+          "Automatic ONU firmware upgrade is performed, if required, on initial ONU discovery.";
+      }
+      enum restart {
+        description
+          "Automatic ONU firmware upgrade is performed, if required, following ONU restart.";
+      }
+      enum now {
+        description
+          "Automatic ONU firmware upgrade is performed, if required, immediately.";
+      }
+    }
+    description
+      "Automatic ONU firmware upgrade trigger.";
+  }
+
+  typedef olt-oper-state-change-reason {
+    type enumeration {
+      enum discovery {
+        description
+          "The OLT oper-state changed due to the OLT being discovered.";
+      }
+      enum reset {
+        description
+          "The OLT oper-state changed due to the OLT being reset.";
+      }
+      enum config {
+        description
+          "The OLT oper-state changed due to configuration change.";
+      }
+      enum absent {
+        description
+          "The OLT oper-state changed due to the OLT being detected as absent.";
+      }
+      enum out-of-sync {
+        description
+          "The OLT oper-state changed due to the OLT being detected out of sync.";
+      }
+    }
+    description
+      "OLT oper-state change reason.";
+  }
+
+  typedef onu-oper-state-change-reason {
+    type enumeration {
+      enum discovery {
+        description
+          "The ONU oper-state changed due to the ONU being discovered.";
+      }
+      enum reset {
+        description
+          "The ONU oper-state changed due to the ONU being reset.";
+      }
+      enum config {
+        description
+          "The ONU oper-state changed due to configuration change.";
+      }
+      enum absent {
+        description
+          "The ONU oper-state changed due to the OLT being detected as absent.";
+      }
+      enum serial-number-not-available {
+        description
+          "The ONU oper-state changed due to the ONU serial number not being available.";
+      }
+      enum onu-unprovisioned {
+        description
+          "The ONU oper-state changed due to the ONU being unprovisioned.";
+      }
+      enum olt-discovery {
+        description
+          "The ONU oper-state changed due to the OLT being discovered.";
+      }
+      enum firmware-activation {
+        description
+          "The ONU oper-state changed due to ONU firmware activation.";
+      }
+      enum firmware-invalid {
+        description
+          "The ONU oper-state changed due to detection of invalid firmware.";
+      }
+      enum olt-absent {
+        description
+          "The ONU oper-state changed due to the OLT going absent.";
+      }
+      enum unresponsive {
+        description
+          "The ONU oper-state changed due to the ONU being unresponsive.";
+      }
+      enum deregister-mismatch {
+        description
+          "The ONU oper-state changed due to a deregister mismatch.";
+      }
+      enum hardware-triggered {
+        description
+          "The ONU oper-state changed due to the hardware detecting some error or change in status.";
+      }
+      enum admission-control {
+        description
+          "The ONU oper-state changed due to admission-control.";
+      }
+      enum olt-disabled {
+        description
+          "The ONU oper-state changed due to the OLT going disabled.";
+      }
+    }
+    description
+      "ONU oper-state change reason.";
+  }
+
+  typedef uni-port-oper-state-change-reason {
+    type enumeration {
+      enum config {
+        description
+          "The UNI port oper-state changed due to configuration change.";
+      }
+      enum onu-discovery {
+        description
+          "The UNI port oper-state changed due to discovery of the ONU.";
+      }
+      enum reset {
+        description
+          "The UNI port oper-state changed due to reset of hardware.";
+      }
+      enum alarm-notification {
+        description
+          "The UNI port oper-state changed due to alarm notification from hardware.";
+      }
+    }
+    description
+      "UNI port oper-state change reason.";
+  }
+
+  typedef database-access-protocol {
+    type enumeration {
+      enum ipv4 {
+        description
+          "Database access over ipv4.";
+      }
+      enum ipv6 {
+        description
+          "Database access over ipv6.";
+      }
+      enum both {
+        description
+          "Database access over ipv4 and ipv6 both.";
+      }
+    }
+    description
+      "Database access protocol types.";
+  }
+
+  typedef database-mode {
+    type enumeration {
+      enum internal {
+        description
+          "Internal database mode.";
+      }
+      enum external {
+        description
+          "External database mode.";
+      }
+    }
+    description
+      "Database modes.";
+  }
+
+  typedef database-name {
+    type string {
+      length 1..63;
+    }
+    description
+      "A text string of up to 63 characters, representing the name of a database.";
+  }
   grouping tag-match-grouping {
     description
       "Tag match grouping";
@@ -1665,6 +2027,36 @@ module ciena-pon-ctrl {
       description
         "Total number of EAPoL packets transmitted.";
     }
+    leaf relay-last-clear-time {
+      type string;
+      description
+        "Time when the statistics were last cleared.";
+    }
+    leaf rx-pon-drops-frames-dhcp {
+      type yang:counter64;
+      description
+        "Total number of DHCP packets dropped frames on DHCP.";
+    }
+    leaf rx-nni-drops-frames-dhcp {
+      type yang:counter64;
+      description
+        "Total number of DHCP packets dropped frames on DHCP.";
+    }
+    leaf rx-pon-drops-frames-eapol {
+      type yang:counter64;
+      description
+        "Total number of EAPoL packets dropped frames on EAPoL.";
+    }
+    leaf rx-nni-drops-frames-eapol {
+      type yang:counter64;
+      description
+        "Total number of EAPoL packets dropped frames on EAPoL.";
+    }
+    leaf relay-time {
+      type string;
+      description
+        "Time when the statistics were last collected.";
+    }
   }
 
   grouping dhcpv6-counters-grouping {
@@ -1680,6 +2072,26 @@ module ciena-pon-ctrl {
       description
         "Total number of DHCPv6 packets transmitted.";
     }
+    leaf dhcpv6-last-clear-time {
+      type string;
+      description
+        "Time when the statistics were last cleared.";
+    }
+    leaf rx-pon-drops-frames-dhcpv6 {
+      type yang:counter64;
+      description
+        "Total number of DHCPv6 packets dropped frames on PON.";
+    }
+    leaf rx-nni-drops-frames-dhcpv6 {
+      type yang:counter64;
+      description
+        "Total number of DHCPv6 packets dropped frames on NNI.";
+    }
+    leaf dhcpv6-time {
+      type string;
+      description
+        "Time when the statistics were last collected.";
+    }
   }
 
   grouping auth-counters-grouping {
@@ -1688,22 +2100,32 @@ module ciena-pon-ctrl {
     leaf rx-frames-auth-radius {
       type yang:counter64;
       description
-        "Total number of packets received for radius authentication.";
+        "Total number of packets received for RADIUS authentication.";
     }
     leaf tx-frames-auth-radius {
       type yang:counter64;
       description
-        "Total number of packets transmitted for radius authentication.";
+        "Total number of packets transmitted for RADIUS authentication.";
     }
     leaf rx-frames-auth-eapol {
       type yang:counter64;
       description
-        "Total number of EAPoL packets received for radius authentication.";
+        "Total number of EAPoL packets received for RADIUS authentication.";
     }
     leaf tx-frames-auth-eapol {
       type yang:counter64;
       description
-        "Total number of EAPoL packets transmitted for radius authentication.";
+        "Total number of EAPoL packets transmitted for RADIUS authentication.";
+    }
+    leaf auth-last-clear-time {
+      type string;
+      description
+        "Time when the statistics were last cleared.";
+    }
+    leaf auth-time {
+      type string;
+      description
+        "Time when the statistics were last collected.";
     }
   }
 
@@ -1719,6 +2141,26 @@ module ciena-pon-ctrl {
       type yang:counter64;
       description
         "Total number of PPPoE packets transmitted.";
+    }
+    leaf pppoe-last-clear-time {
+      type string;
+      description
+        "Time when the statistics were last cleared.";
+    }
+    leaf rx-pon-drops-frames-pppoe {
+      type yang:counter64;
+      description
+        "Total number of PPPoE packets dropped frames on PON.";
+    }
+    leaf rx-nni-drops-frames-pppoe {
+      type yang:counter64;
+      description
+        "Total number of PPPoE packets dropped frames on NNI.";
+    }
+    leaf pppoe-time {
+      type string;
+      description
+        "Time when the statistics were last collected.";
     }
   }
 
@@ -1745,7 +2187,7 @@ module ciena-pon-ctrl {
 
   grouping radius-grouping {
     description
-      "Radius grouping.";
+      "RADIUS grouping.";
     leaf NAS-identifier {
       type pon-ctrl:pon-relay-attribute-string;
       description
@@ -1787,22 +2229,45 @@ module ciena-pon-ctrl {
     }
   }
 
+  grouping control-plane-processing-state {
+    description
+      "Control plane processing state.";
+    leaf auth-enable-state {
+      type ciena:admin-state;
+      description
+        "State of RADIUS authenticator processing.";
+    }
+    leaf pppoe-enable-state {
+      type ciena:admin-state;
+      description
+        "State of PPPoE intermediate agent processing.";
+    }
+  }
+
   grouping pon-ctrl-radius-server-grouping {
     description
-      "Radius Server.";
+      "RADIUS Server.";
     list radius-server-address {
       key "host port";
        description
-        "Radius server host and port.";
+        "RADIUS server host and port.";
       leaf host {
         type inet:host;
         description
-          "Radius server host address.";
+          "RADIUS server host address.";
       }
       leaf port {
         type inet:port-number;
         description
-          "Radius server port.";
+          "RADIUS server port.";
+      }
+      leaf priority {
+        type uint8{
+          range "1..3";
+        }
+        default 3;
+        description
+          "The priority of the RADIUS server IP address.";
       }
     }
   }
@@ -1856,7 +2321,8 @@ module ciena-pon-ctrl {
       description
         "If true, when the rogue ONU isolation steps complete, action is taken to
          immediately begin to perform the ONU remediation sequences for the
-         condition in order to determine which, if any, ONUs are the cause.";
+         condition in order to determine which, if any, ONUs are the cause.
+         Remediate does not apply to rogue ONU disallowed.";
     }
   }
 
@@ -1868,6 +2334,7 @@ module ciena-pon-ctrl {
     leaf rogue-onu-olt-action-reset-all-onus {
       type boolean;
       default false;
+      status deprecated;
       description
         "If true, the fast recovery procedures will issue a reset request to
          all ONUs in an attempt to resolve the issue.";
@@ -1875,6 +2342,7 @@ module ciena-pon-ctrl {
     leaf rogue-onu-olt-action-reset-olt {
       type boolean;
       default false;
+      status deprecated;
       description
         "If true, the fast recovery procedures will issue a reset request to
          the OLT in an attempt to resolve the issue.";
@@ -1882,12 +2350,50 @@ module ciena-pon-ctrl {
     leaf rogue-onu-olt-action-disable-all-serial-numbers {
       type boolean;
       default false;
+      status deprecated;
       description
         "If true, the isolation procedures will issue a disable all ONU
          serial numbers and begin to enable ONUs selectively in an
          attempt to isolate the condition to one or more ONUs.";
     }
     leaf rogue-onu-olt-action-disable-serial-number {
+      type boolean;
+      default false;
+      status deprecated;
+      description
+        "If true, the remediation procedures will issue disable serial
+         number request to all identified rogue ONUs.";
+    }
+  }
+
+  grouping rogue-onu-olt-disallowed-action-grouping {
+    description
+      "Rogue ONU OLT action grouping defines the actions take by the OLT to
+       correct/isolate an ONU that has been detected as a rogue ONU.";
+
+    leaf rogue-onu-action-reset-all-onus {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedures will issue a reset request to
+         all ONUs in an attempt to resolve the issue.";
+    }
+    leaf rogue-onu-action-reset-olt {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedures will issue a reset request to
+         the OLT in an attempt to resolve the issue.";
+    }
+    leaf rogue-onu-action-disable-all-serial-numbers {
+      type boolean;
+      default false;
+      description
+        "If true, the isolation procedures will issue a disable all ONU
+         serial numbers and begin to enable ONUs selectively in an
+         attempt to isolate the condition to one or more ONUs.";
+    }
+    leaf rogue-onu-action-disable-serial-number {
       type boolean;
       default false;
       description
@@ -1904,21 +2410,26 @@ module ciena-pon-ctrl {
     leaf rogue-onu-action-reset-onu {
       type boolean;
       default false;
+      status deprecated;
       description
         "If true, the fast recovery procedure will issue a reset request to
-         the ONU in an attempt to resolve the issue.";
+         the ONU in an attempt to resolve the issue.
+         This attribute was never used.";
     }
     leaf rogue-onu-action-reset-olt {
       type boolean;
       default false;
+      status deprecated;
       description
         "If true, the fast recovery procedures will issue a reset request to
-         the OLT in an attempt to resolve the issue.";
+         the OLT in an attempt to resolve the issue.
+         This attribute was never used.";
     }
     leaf rogue-onu-positive-rx-threshold {
       type cntypes:decimal-2-dig-small;
       units dBm;
       default 3;
+      status deprecated;
       description
         "Threshold above the initial optical value at which a rogue ONU
          condition is raised.";
@@ -1927,6 +2438,7 @@ module ciena-pon-ctrl {
       type cntypes:decimal-2-dig-small;
       units dBm;
       default -30;
+      status deprecated;
       description
         "Lower optical threshold at which a rogue ONU condition is
          raised.";
@@ -1936,6 +2448,7 @@ module ciena-pon-ctrl {
          range "3..10";
       }
       default 5;
+      status deprecated;
       description
         "Number of samples to use during calculation of whether the
          repeated occurrence threshold has been reached.";
@@ -1945,9 +2458,145 @@ module ciena-pon-ctrl {
          range "2..9";
       }
       default 3;
+      status deprecated;
       description
         "Number of samples allowed above threhsold before ONU rogue state
          is advanced to alarm condition.";
+    }
+  }
+
+  grouping rogue-onu-olt-idle-power-action-grouping {
+    description
+      "ONU Rogue action grouping defines the actions taken by the ONU
+       to correct/isolate itself when detected to be a rogue ONU.";
+
+    leaf rogue-onu-action-reset-all-onus {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedure will issue a reset request to
+         the ONU(s) in an attempt to resolve the issue.";
+    }
+    leaf rogue-onu-action-reset-olt {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedures will issue a reset request to
+         the OLT in an attempt to resolve the issue.
+         This attribute was never used.";
+    }
+    leaf rogue-onu-action-disable-all-serial-numbers {
+      type boolean;
+      default false;
+      description
+        "If true, the isolation procedures will issue a disable all ONU
+         serial numbers and begin to enable ONUs selectively in an
+         attempt to isolate the condition to one or more ONUs.";
+    }
+    leaf rogue-onu-action-disable-serial-number {
+      type boolean;
+      default false;
+      description
+        "If true, the remediation procedures will issue disable serial
+         number request to all identified rogue ONUs.";
+    }
+    leaf rogue-onu-action-min-idle-receive-power-threshold {
+      type cntypes:decimal-2-dig-small {
+        range "-40..-30";
+      }
+      units dBm;
+      default -35.0;
+      description
+        "Threshold for minimum receive idle power.";
+    }
+  }
+
+  grouping rogue-onu-power-variation-action-grouping {
+    description
+      "ONU Rogue action grouping defines the actions taken by the ONU
+       to correct/isolate itself when detected to be a rogue ONU.";
+
+    leaf rogue-onu-action-reset-onu {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedure will issue a reset request to
+         the ONU in an attempt to resolve the issue.";
+    }
+    leaf rogue-onu-action-disable-serial-number {
+      type boolean;
+      default false;
+      description
+        "If true, the remediation procedures will issue disable serial
+         number request to all identified rogue ONUs.";
+    }
+    leaf rogue-onu-positive-gain-threshold {
+      type cntypes:decimal-2-dig-small {
+        range "0..10";
+      }
+      units dBm;
+      default 3;
+      description
+        "Threshold above the initial optical value at which a rogue ONU
+         condition is raised.";
+    }
+    leaf rogue-onu-negative-threshold {
+      type cntypes:decimal-2-dig-small {
+        range "-40..0";
+      }
+      units dBm;
+      default -30;
+      description
+        "Lower optical threshold at which a rogue ONU condition is
+         raised.";
+    }
+  }
+
+  grouping rogue-onu-disallowed-action-grouping {
+    description
+      "ONU Rogue action grouping defines the actions taken by the ONU
+       to correct/isolate itself when detected to be a rogue ONU.";
+
+    leaf rogue-onu-action-reset-onu {
+      type boolean;
+      default false;
+      description
+        "If true, the fast recovery procedure will issue a reset request to
+         the ONU in an attempt to resolve the issue.";
+    }
+    leaf rogue-onu-action-disable-serial-number {
+      type boolean;
+      default false;
+      description
+        "If true, the remediation procedures will issue disable serial
+         number request to all identified rogue ONUs.";
+    }
+    leaf rogue-onu-action-history-size {
+      type uint8 {
+         range "2..10";
+      }
+      default 10;
+      description
+        "Number of samples used for analysis.";
+    }
+    leaf rogue-onu-action-sample-size {
+      type uint8 {
+         range "2..10";
+      }
+      default 3;
+      description
+        "Number of samples to use during calculation of whether the
+         repeated occurrence threshold has been reached.";
+    }
+    leaf rogue-onu-action-repeat-threshold {
+      type uint16 {
+         range "0 | 30..65535";
+      }
+      default 300;
+      description
+       "Average delta threshold (seconds) between occurrences
+        If the average delta is less than or equal to this threshold,
+        the Disallowed ONU condition will be escalated to the OLT.";
     }
   }
 
@@ -1957,27 +2606,32 @@ module ciena-pon-ctrl {
 
     leaf state {
       type pon-ctrl:rogue-onu-state;
+      status deprecated;
       description
         "Rogue state of this ONU.";
     }
     leaf alarms {
       type onu-alarm-bit-map;
+      status deprecated;
       description
         "Bit map of rogue alarm conditions currently active on this ONU.";
     }
     leaf occurrences {
       type uint32;
+      status deprecated;
       description
         "Number of times rogue ONU condition has been detected and a transition to
          active-alarm occurred.";
     }
     leaf last-occurrence {
       type string;
+      status deprecated;
       description
         "The last time a new ONU became a suspect or identified as a rogue.";
     }
     leaf escalated {
       type boolean;
+      status deprecated;
       description
         "True if the last disallowed ONU condition is escalated to the
          OLT level for further processing.";
@@ -1985,14 +2639,182 @@ module ciena-pon-ctrl {
     leaf last-idle-rx-power-sample {
       type cntypes:decimal-2-dig-small;
       units dBm;
+      status deprecated;
       description
         "Value of the last sampled idle rx power.";
     }
     leaf initial-rx-power {
       type cntypes:decimal-2-dig-small;
       units dBm;
+      status deprecated;
       description
         "Initial power threshold value (dBm) measured for this ONU.";
+    }
+    leaf deregistered-event {
+      type boolean;
+      status deprecated;
+      description
+        "True if the ONU was deregistered due to excessive errors.";
+    }
+    leaf rx-errored-bip-blocks {
+      type yang:counter64;
+      status deprecated;
+      description
+        "Count of BIP blocks received with error.";
+    }
+    leaf rx-hec-errors {
+      type yang:counter64;
+      status deprecated;
+      description
+        "Number of errored Header Error Checksums in the XGEM header and GPON
+         Framing.";
+    }
+    leaf rx-crc32-drops {
+      type yang:counter64;
+      status deprecated;
+      description
+        "Count of segments dropped due to CRC-32 error.";
+    }
+  }
+
+  grouping rogue-onu-state-grouping2 {
+    description
+      "Common state data related to a Rogue ONU defect.";
+
+    leaf state {
+      type pon-ctrl:rogue-onu-state;
+      description
+        "Rogue ONU state for the associated Rogue ONU defect.";
+    }
+    leaf occurrences {
+      type uint32;
+      description
+        "Number of times rogue ONU defect has been detected and a transition to
+         active-alarm occurred.";
+    }
+    leaf last-occurrence {
+      type string;
+      description
+        "The last time the rogue ONU defect was detected and a transition to
+         active-alarm occurred.";
+    }
+    leaf last-results {
+      type string;
+      description
+         "TBD";
+    }
+    leaf-list suspects {
+      type pon-ctrl:name-string;
+      description
+        "Serial numbers of ONUs currently suspected of causing the rogue ONU defect.";
+    }
+    leaf-list rogues {
+      type pon-ctrl:name-string;
+      description
+        "Serial numbers of ONUs identedfied as a cause for the rogue ONU defect.";
+    }
+  }
+
+  grouping rogue-onu-olt-idle-power-state-grouping {
+    description
+      "State data related to an OLT Rogue ONU Idle Power defect.";
+
+    uses rogue-onu-state-grouping2;
+
+    leaf idle-rx-power-sample {
+      type cntypes:decimal-2-dig-small;
+      units dBm;
+      description
+        "Value of the sampled idle RX power that resulted in the defect.";
+    }
+  }
+
+  grouping rogue-onu-olt-disallowed-error-state-grouping {
+    description
+      "State data related to an OLT Rogue ONU Disallowed Error.";
+
+    uses rogue-onu-state-grouping2;
+  }
+
+  grouping rogue-onu-disallowed-onu-state-grouping {
+    description
+      "State data related to an ONU Disallowed ONU defect.";
+
+    uses rogue-onu-state-grouping2;
+
+    leaf escalated {
+      type boolean;
+      description
+        "True if the last disallowed ONU condition is escalated to the
+         OLT level for further processing.";
+    }
+    leaf-list samples {
+      type uint64;
+      description
+        "Epoch times of when the Disallowed ONU defect was detected";
+    }
+  }
+
+  grouping rogue-onu-power-variation-state-grouping {
+    description
+      "State data related to an ONU Power Variation defect.";
+
+    uses rogue-onu-state-grouping2;
+
+    leaf initial-rx-power {
+      type cntypes:decimal-2-dig-small;
+      units dBm;
+      description
+        "Initial power threshold value (dBm) measured for this ONU.";
+    }
+  }
+
+  grouping onu-upgrade-grouping {
+    description
+      "ONU firmware upgrade grouping.";
+    list onu-firmware-upgrade-mapping  {
+      key "model";
+      description
+        "An ONU model number.";
+      leaf model {
+        type pon-ctrl:name-string;
+        description
+          "Name of the ONU model number. ONUs that match this model will be
+           auto-upgraded to the expected firmware version, if enabled.";
+      }
+      leaf expected-firmware-version {
+        type string;
+        mandatory true;
+        description
+          "Expected firmware version of this ONU model. This will be used for
+           auto-upgrades for this ONU model. Note, this will only take effect when
+           the 'onu-auto-upgrade' option is enabled on the OLT as well as globally.";
+      }
+      leaf firmware-file-name {
+        type pon-ctrl:name-string;
+        must "../expected-firmware-version"
+        {
+          error-message
+            "Expected firmware version for this firmware file must be configured.";
+        }
+        description
+          "Name of the firmware file to use when auto-upgrading this ONU model.
+           Note, this will only take effect when the 'onu-auto-upgrade' option
+           is enabled on the OLT.";
+      }
+    }
+    leaf onu-allow-downgrade {
+      type ciena:admin-state;
+      default disabled;
+      description
+        "Enable or disable to allow/disallow ONUs to be auto-downgraded from
+         their active firmware version.";
+    }
+    leaf onu-auto-upgrade {
+      type ciena:admin-state;
+      default disabled;
+      description
+        "Enable or disable automatic ONU upgrades on the system.";
     }
   }
 
@@ -2006,18 +2828,215 @@ module ciena-pon-ctrl {
       uses rogue-onu-enable-grouping;
       uses rogue-onu-olt-action-grouping;
       uses rogue-onu-action-grouping;
+      uses onu-upgrade-grouping;
+
+      leaf rogue-onu-mass-onu-deregistration-event {
+        type boolean;
+        default false;
+        status deprecated;
+        description
+          "Trigger rogue ONU process immediately on detection of
+           mass ONU deregistration event.";
+      }
+      leaf rogue-onu-hec-error-threshold {
+        type yang:counter64;
+        default 0;
+        status deprecated;
+        description
+          "When set to non-zero value, HEC errors are used
+           as part of rogue ONU analysis. This is now determined
+           internally.";
+      }
+      leaf rogue-onu-crc32-error-threshold {
+        type yang:counter64;
+        default 0;
+        status deprecated;
+        description
+          "When set to non-zero value, CRC32 errors are used
+           as part of rogue ONU analysis. This is now determinded
+           internally.";
+      }
+      leaf rogue-onu-bip-error-threshold {
+        type yang:counter64;
+        default 0;
+        status deprecated;
+        description
+          "When set to non-zero value, BIP errors are used
+           as part of rogue ONU analysis. This is now determined
+           internally.";
+      }
+      leaf onu-serial-number-config-change-enable {
+        type boolean;
+        default true;
+        description
+          "Indicates if the ONU serial number is allowed to
+           be modified.";
+      }
+      leaf rogue-onu-action-min-idle-receive-power-threshold {
+        type cntypes:decimal-2-dig-small {
+          range "-40..0";
+        }
+        units dBm;
+        default -35.0;
+        description
+          "Threshold for minimum receive idle power.";
+      }
+      leaf rogue-onu-action-disable-serial-number {
+        type boolean;
+        default false;
+        description
+          "If true, the remediation procedures will issue disable serial
+           number to identified rogue ONUs.";
+      }
+      leaf rogue-onu-action-history-size {
+        type uint8 {
+           range "2..10";
+        }
+        default 10;
+        description
+          "Number of samples used for analysis.";
+      }
+      container rogue-olt-disallowed-error {
+        description
+          "Global rogue ONU configuration for OLT disallowed error detection.";
+        uses rogue-onu-enable-grouping;
+        uses rogue-onu-olt-disallowed-action-grouping;
+      }
+      container rogue-olt-idle-power {
+        description
+          "Global rogue ONU configuration for OLT idle receive power detection.";
+        uses rogue-onu-enable-grouping;
+        uses rogue-onu-olt-idle-power-action-grouping;
+      }
+      container rogue-onu-power-variation {
+        description
+          "Global rogue ONU configuration for ONU power variation detection.";
+        uses rogue-onu-enable-grouping;
+        uses rogue-onu-power-variation-action-grouping;
+      }
+      container rogue-onu-disallowed {
+        description
+          "Global rogue ONU configuration for ONU disallowed detection.";
+        uses rogue-onu-enable-grouping;
+        uses rogue-onu-disallowed-action-grouping;
+      }
+      container database {
+        description
+          "Database configuration for external access.";
+        leaf access-control {
+          type database-access-protocol;
+          description
+            "Protocol type used to access the database.";
+        }
+        leaf database-mode {
+          when "../../olt-management-interface";
+          type database-mode;
+          default internal;
+          description
+            "Specified whether an internal or external database is used.
+             Setting to 'external' requires the olt-management-interface to be configured.";
+        }
+        leaf auth-enable {
+          when "../auth-username and ../auth-password";
+          type boolean;
+          default false;
+          description
+            "Enable authentication for the connection to the external database.
+             Setting to 'true' requires the auth-username and auth-password to be configured.";
+        }
+        leaf auth-db-name {
+          type database-name;
+          default "tibit_users";
+          description
+            "External database name for the authentication database. Only applies when ‘auth-enable’ is true.";
+        }
+        leaf auth-username {
+          type name-string;
+          description
+            "External database username for the authentication database. Only applies when ‘auth-enable’ is true.";
+        }
+        leaf auth-password {
+          ncx:password;
+          type name-string;
+          description
+            "External database password for the authentication database. Only applies when ‘auth-enable’ is true.";
+        }
+        leaf compression {
+          type boolean;
+          default false;
+          description
+            "Enable compression on the connection to the external database server.";
+        }
+        leaf db-name {
+          type database-name;
+          default "tibit_pon_controller";
+          description
+            "Name of the PON Controller database that contains the Controller, OLT, and ONU device configuration and state.";
+        }
+        leaf encryption-enable {
+          when "../ca-cert-name";
+          type boolean;
+          default false;
+          description
+            "Enable TLS encryption for the connection to the external database.
+             Setting to 'true' requires the ca-cert-name to be configured.";
+        }
+        leaf ca-cert-name {
+          type string;
+          description
+            "Name of the CA certificate used to encrypt the connection to the external database.";
+        }
+        leaf replica-set-enable {
+          when "../replica-set-name";
+          type boolean;
+          default false;
+          description
+            "Enables connecting to an external database replica set for purposes of redundancy.
+             Setting to 'true' requires the replica-set-name to be configured.";
+        }
+        leaf replica-set-name {
+          type name-string;
+          description
+            "External database replica set name. This field is required when replica-set-enable is set to ‘true’.";
+        }
+        list database-server-address {
+          key "host port";
+          description
+            "Database server host and port.";
+          leaf host {
+            type inet:host;
+            description
+              "IP address or hostname of the external database server.";
+          }
+          leaf port {
+            type inet:port-number;
+            description
+              "TCP port number the external database server is listening on.";
+          }
+        }
+      }
+      leaf olt-management-interface {
+        type pon-ctrl:interface-ref;
+        must "/oc-if:interfaces/oc-if:interface[name = current()]" +
+             "/oc-if:config/cn-if:type = 'ip'" {
+          error-message
+            "Referenced interface must be of type 'ip'.";
+        }
+        description
+          "Reference to the L3 interface on which OLTs are to be managed when using an external database.";
+      }
     }
     container radius-servers {
       description
-        "The configuration data for all radius servers.";
+        "The configuration data for all RADIUS servers.";
       list radius-server {
         key "name";
         description
-          "An radius server on the system.";
+          "An RADIUS server on the system.";
         leaf name {
           type pon-ctrl:name-string;
           description
-            "Name of the Radius Server.";
+            "Name of the RADIUS Server.";
         }
         leaf management-interface {
           type pon-ctrl:interface-ref;
@@ -2038,41 +3057,105 @@ module ciena-pon-ctrl {
             "Shared secret string.";
         }
         leaf revive-interval {
-          type uint32;
+          type uint32{
+            range "0 | 5..65535";
+          }
+          units "seconds";
+          default 120;
           description
-            "Revive interval.";
+            "The period (in seconds) before changing operational
+             state of a RADIUS server in the 'Down' state to 'Up'.
+             Setting revive-interval to a value of 0 diables the
+             feature. The revive-interval is only used when
+             User Access Monitoring is disabled.";
         }
         leaf failure-threshold {
-          type uint32;
+          type uint32{
+            range "2..65535";
+          }
+          default 4;
           description
-            "Failure Threshold.";
+            "The maximum number of failed authentications
+             before changing the RADIUS server operational
+             state to 'Down' and switching to an alternate
+             RADIUS server if configured.";
         }
         leaf uam-username {
           type pon-ctrl:pon-relay-attribute-string;
           default "username";
           description
-            "Universal access method username.";
+            "The 802.1x username to be used in the test
+             authentication messages.";
         }
         leaf uam-enable {
           type boolean;
           default false;
           description
-            "Universal access method enable.";
+            "Used to enable and disable user access monitoring
+             if set to 'true', test authentication messages will
+             be sent to RADIUS servers in the 'Down' operational
+             state to check the server's current status.";
         }
         leaf uam-recover-threshold {
-          type uint32;
+          type uint32{
+            range "2..65535";
+          }
           default 2;
           description
-            "Universal access method recover threshold.";
+            "The number of authentication responses that
+             must be received before changing the RADIUS
+             server operational state to 'Up'.";
         }
         leaf uam-check-interval {
-          type uint32;
+          type uint32{
+            range "5..65535";
+          }
           units "seconds";
           default 60;
           description
-            "Universal access method check internval (seconds).";
+            "The period (in seconds) between test authentication
+             methods sent to RADIUS servers in the 'Down' operational
+             state.";
         }
         uses pon-ctrl-radius-server-grouping;
+        leaf failure-period {
+          type uint32{
+            range "0..65535";
+          }
+          units "seconds";
+          default 0;
+          description
+            "The period (in seconds) where authentication failures are recorded.
+             Once the time period ends, authentication failure counts will be cleared.";
+        }
+        leaf held-period {
+          type uint32{
+            range "0..65535";
+          }
+          units "seconds";
+          default 0;
+          description
+            "The number of seconds to wait before retrying after
+             a failed authentication attempt.";
+        }
+        leaf max-retry {
+          type uint32{
+            range "0..65535";
+          }
+          default 0;
+          description
+            "The number of authentication attempts to make before held period is entered.";
+        }
+        leaf quiet-period {
+          type uint32{
+            range "0..65535";
+          }
+          units "seconds";
+          default 0;
+          description
+            "The number of seconds in which a user cannot
+             attempt authentication.";
+        }
       }
     }
 
@@ -2141,14 +3224,27 @@ module ciena-pon-ctrl {
         leaf auto-onu-upgrade {
           type ciena:admin-state;
           default disabled;
+          status deprecated;
           description
-            "Enable or disable automatic ONU upgrades on the OLT.
+            "Enable or disable automatic ONU upgrades on the OLT. Timing of when the automatic upgrade
+             occurs is controlled by the onu-auto-upgrade-trigger attribute.
+             Note, this only applies to ONUs where the expected firmware version is known and where
+             the firmware status is set to 'Upgrade Required'. This field has been deprecated, use
+             the onu-auto-upgrade field instead.";
+        }
+        leaf onu-auto-upgrade {
+          type ciena:admin-state;
+          default disabled;
+          description
+            "Enable or disable automatic ONU upgrades on the OLT. Timing of when the automatic upgrade
+             occurs is controlled by the onu-auto-upgrade-trigger attribute.
              Note, this only applies to ONUs where the expected firmware version is known and where
              the firmware status is set to 'Upgrade Required'.";
         }
         leaf auto-boot-mode {
           type ciena:admin-state;
           default disabled;
+          status deprecated;
           description
             "Enable or disable autonomous boot mode on the OLT.";
         }
@@ -2224,8 +3320,32 @@ module ciena-pon-ctrl {
         leaf onu-performance-monitoring-mode {
           type statistics-binning-mode;
           default disabled;
+          status deprecated;
           description
-            "The performance monitoring mode to be applied to all ONUs.";
+            "The performance monitoring mode to be applied to all ONUs.
+             Statistics are always enabled now.";
+        }
+        leaf onu-auto-upgrade-trigger {
+          type pon-ctrl:onu-auto-upgrade-trigger;
+          default discovery;
+          description
+            "Control when an automatic ONU firmware upgrade will start.";
+        }
+        leaf degraded-onu-error-ratio {
+          type uint16 {
+            range "1..100";
+          }
+          default 20;
+          description
+            "Set the OLT error ratio threshold used for degraded ONU detection.";
+        }
+        leaf degraded-onu-min-samples {
+          type uint16 {
+            range "1..1000";
+          }
+          default 100;
+          description
+            "Set the OLT's minimum number of sample(s) used for degraded ONU detection.";
         }
         container nni-networks {
           description
@@ -2323,27 +3443,51 @@ module ciena-pon-ctrl {
           type pon-ctrl:name-string;
           description
             "Name of the firmware file to use when auto-upgrading this ONU.
-             Note, this will only take effect when the 'auto-onu-upgrade' option 
-             is enabled on the OLT.";
+             Note, this will only take effect when the 'onu-auto-upgrade' option
+             is enabled on the OLT and Global configuration. This configuration
+             will take priority over the global firmware-file-name for this ONU's
+             model in the onu-auto-firmware-upgrade-mapping.";
         }
         leaf auto-upgrade-defer-activation {
           type boolean;
           description
-            "When set to true, ONU firmware activation after auto-upgrading 
+            "When set to true, ONU firmware activation after auto-upgrading
              this ONU is deferred until explicitly invoked.
-             Note, this will only take effect when the 'auto-onu-upgrade' option
-             is enabled on the OLT.";
+             Note, this will only take effect when the 'onu-auto-upgrade' option
+             is enabled on the OLT and Global configuration.";
         }
         leaf power-threshold-profile {
           type pon-ctrl:power-threshold-profile-ref;
           description
-            "Name of the power threshold profile this ONU implements.";
+            "Name of the power threshold profile this ONU implements.
+             This is currently no longer supported.
+             Power threshold profiles will be re-enbled at a later point in time.";
         }
         leaf performance-monitoring-collection {
           type ciena:admin-state;
           default disabled;
+          status deprecated;
           description
-            "When set to enabled, ONU will collect performance monitoring statistics.";
+            "When set to enabled, ONU will collect performance monitoring statistics.
+             Statistics are always enabled now.";
+        }
+        leaf expected-firmware-version {
+          type string;
+          description
+            "Specifies the expected firmware version for this ONU. This firmware version
+             will be used for the firmware auto-upgrade feature.
+             Note, this will only take effect when the 'onu-auto-upgrade' option
+             is enabled on the OLT. This configuration will take priority over the
+             global 'expected-firmware-version' for this ONU's model in the global
+             'onu-firmware-mapping'. Updating this will overwrite the expected
+             firmware version set by the 'update-expected-firmware-version' parameter
+             on a manual ONU firmware install/activate.";
+        }
+        leaf service-config-name {
+          type string;
+          description
+            "Name of the service configuration to use for this ONU. If not specified,
+             the default service configuration is used.";
         }
         container datalinks {
           description
@@ -2413,16 +3557,17 @@ module ciena-pon-ctrl {
             uses pon-ctrl:radius-grouping;
             leaf alloc-id {
               type uint16 {
-                range "1154..1535";
+                range "1154..1534";
               }
-              must ". != 1278" {
+              must ". != 1279" {
                 error-message
-                  "Illegal value for ALLOC-ID. ALLOC-ID 1278 is reserved.";
+                  "Illegal value for ALLOC-ID. ALLOC-ID 1279 is reserved.";
               }
               description
                 "The configured ALLOC-ID of this Datalink.
+                 An XGEM port-id is also created with the same value.
                  Only valid in XGS-PON mode.
-                 ALLOC-ID 1278 is reserved.";
+                 ALLOC-ID 1279 is reserved.";
             }
             uses pon-ctrl:pppoe-grouping;
             leaf loopback {
@@ -2435,6 +3580,32 @@ module ciena-pon-ctrl {
               type pon-ctrl:error-threshold-profile-ref;
               description
                 "Name of the error threshold this Datalink implements.";
+            }
+            leaf xgem-ports {
+              when "/pon-ctrl:pon-ctrl" +
+                   "/pon-ctrl:olts" +
+                   "/pon-ctrl:olt[name=current()/../../../olt]" +
+                   "/pon-ctrl:pon-mode = 'xgs-pon'";
+              type uint16 {
+                range "1..8";
+              }
+              default 1;
+              description
+                "The configured number of XGEM ports of this Datalink.
+                 The starting XGEM port-id will be the same as the configured datalink alloc-id.
+                 If xgem-ports is greater than 1, the allocated XGEM port-ids will be sequential
+                 starting from the configured alloc-id value.
+                 Only valid in XGS-PON mode.";
+            }
+            leaf upstream-cos-queue-map {
+              type cos-queue-map-ref;
+              description
+                "The configured upstream CoS queue map to be used on this Datalink.";
+            }
+            leaf downstream-cos-queue-map {
+              type cos-queue-map-ref;
+              description
+                "The configured downstream CoS map to be used on this Datalink.";
             }
           }
         }
@@ -2547,8 +3718,10 @@ module ciena-pon-ctrl {
             leaf stats-collection {
               type ciena:admin-state;
               default disabled;
+              status deprecated;
               description
-                "Determines whether stats collection will be enabled or disabled for the UNI Port.";
+                "Determines whether stats collection will be enabled or disabled for the UNI Port.
+                 Statistics are always enabled now.";
             }
           }
         }
@@ -2699,11 +3872,7 @@ module ciena-pon-ctrl {
       list power-threshold-profile {
         key "name";
         description
-          "A power threshold profile used by an ONU.
-           This container contains the minimum, maximum and warning thresholds for
-           receive and transmit power. Once a threshold is reached, an alarm is generated.
-           Thresholds are checked at 0 min, 15 min, 30 min and 45 min clock time
-           intervals. If not set, threshold checking is disabled.";
+          "A power threshold profile used by an ONU.";
         leaf name {
           type pon-ctrl:name-string;
           description
@@ -2823,6 +3992,51 @@ module ciena-pon-ctrl {
         }
       }
     }
+
+    container cos-queue-maps {
+      description
+        "Configuration for egress traffic quality of service.";
+      list cos-queue-map {
+        key "name";
+        description
+          "List of cos-to-queue-map templates. COS to queue maps can be referenced by datalinks
+           to determine mapping to a given queue/XGEM port in both upstream and downstream
+           directions.";
+        leaf name {
+          type string;
+          description
+            "Name for the CoS queue map.";
+        }
+        leaf queue-count {
+         type uint32 {
+          range "1..8";
+         }
+          mandatory true;
+          description
+            "Number of queues (or XGEM ports) supported.";
+        }
+        list map-entry {
+          key "cos";
+          description
+            "List of map-entries. Each map-entry for a given cos-to-queue map gives the mapping of cos to a queue.";
+          leaf cos {
+            type uint32 {
+              range "0..7";
+            }
+            description
+              "CoS to use for mapping to a queue.";
+          }
+          leaf queue {
+            type uint32 {
+              range "0..7";
+            }
+              mandatory true;
+              description
+              "Queue mapped to by CoS.";
+          }
+        }
+      }
+    }
   }
 
   container pon-ctrl-state {
@@ -2832,35 +4046,55 @@ module ciena-pon-ctrl {
 
     container radius-servers {
       description
-        "The state data for all radius servers.";
+        "The state data for all RADIUS servers.";
 
       list radius-server {
         key "name";
         description
-          "List of radius servers.";
+          "List of RADIUS servers.";
         leaf name {
           type pon-ctrl:name-string;
           description
-            "Name of the radius server.";
+            "Name of the RADIUS server.";
+        }
+        leaf radius-max-retry-state {
+          type uint32;
+          description
+            "The max retries set on RADIUS server before held state is entered.";
+        }
+        leaf radius-held-period-state {
+          type ciena:admin-state;
+          description
+            "The state of RADIUS server set for held period.";
+        }
+        leaf radius-quiet-period-state {
+          type ciena:admin-state;
+          description
+            "The state of RADIUS server set for quiet period.";
         }
         list radius-server-address {
           key "host port";
           description
-            "Radius server host and port.";
+            "RADIUS server host and port.";
           leaf host {
             type inet:host;
             description
-              "Radius server host address.";
+              "RADIUS server host address.";
           }
           leaf port {
             type inet:port-number;
             description
-              "Radius server port.";
+              "RADIUS server port.";
           }
           leaf oper-state {
             type pon-ctrl:radius-server-oper-state;
             description
-              "Operational state of the radius server.";
+              "Operational state of the RADIUS server.";
+          }
+          leaf last-state-change {
+              type string;
+              description
+                "Time when the state last changed.";
           }
           container statistics {
             description
@@ -2868,12 +4102,22 @@ module ciena-pon-ctrl {
             leaf total-auth-complete {
               type yang:counter64;
               description
-                "Total authentication attempts completed successfully for this radius server.";
+                "Total authentication attempts completed successfully for this RADIUS server.";
             }
             leaf total-auth-timeout {
               type yang:counter64;
               description
-                "Total authentication attempts that timed-out for this radius server.";
+                "Total authentication attempts that timed-out for this RADIUS server.";
+            }
+            leaf last-clear-time {
+              type string;
+              description
+                "Time when the statistics were last cleared.";
+            }
+            leaf time {
+              type string;
+              description
+                "Time when the statistics were last collected.";
             }
           }
         }
@@ -3011,6 +4255,30 @@ module ciena-pon-ctrl {
           description
             "Bit map of alarm conditions currently active on this OLT.";
         }
+        leaf-list cos-queue-maps {
+          type pon-ctrl:cos-queue-map-ref;
+          max-elements 3;
+          description
+            "List of OLT egress/downstream datalink cos-queue-maps
+             configured on this OLT.
+             A maximum of 3 OLT egress/downstream datalink cos-queue-maps
+             are supported on the OLT";
+        }
+        leaf previous-oper-state {
+          type pon-ctrl:olt-oper-state;
+          description
+            "Previous operational state of the OLT.";
+        }
+        leaf oper-state-change-reason {
+          type olt-oper-state-change-reason;
+          description
+            "Reason for the oper-state change.";
+        }
+        leaf reset-status {
+          type string;
+          description
+            "Status of resetting the OLT.";
+        }
         container statistics {
           description
             "OLT statistics.";
@@ -3122,6 +4390,61 @@ module ciena-pon-ctrl {
               type string;
               description
                 "Time when the statistics were last cleared.";
+            }
+            leaf tx-non-control-octets {
+              type yang:counter64;
+              description
+                "Count of non control octets transmitted.";
+            }
+            leaf tx-oam-octets {
+              type yang:counter64;
+              description
+                "Count of oam octets transmitted.";
+            }
+            leaf tx-cascading-packets {
+              type yang:counter64;
+              description
+                "Count of cascading packets transmitted.";
+            }
+            leaf tx-cascading-bytes {
+              type yang:counter64;
+              description
+                "Count of cascading bytes transmitted.";
+            }
+            leaf rx-overflow-octets {
+              type yang:counter64;
+              description
+                "Count of overflow octets received.";
+            }
+            leaf rx-oam-octets {
+              type yang:counter64;
+              description
+                "Count of oam octets received.";
+            }
+            leaf rx-mine-cascading-bytes {
+              type yang:counter64;
+              description
+                "Count of mine cascading bytes received.";
+            }
+            leaf rx-other-cascading-bytes {
+              type yang:counter64;
+              description
+                "Count of other cascading bytes received.";
+            }
+            leaf rx-mine-cascading-packets {
+              type yang:counter64;
+              description
+                "Count of mine cascading packets received.";
+            }
+            leaf rx-other-cascading-packets {
+              type yang:counter64;
+              description
+                "Count of other cascading packets received.";
+            }
+            leaf time {
+              type string;
+              description
+                "Time when the statistics were last collected.";
             }
           }
           container pon {
@@ -3295,10 +4618,100 @@ module ciena-pon-ctrl {
               description
                 "Time when the statistics were last cleared.";
             }
+            leaf tx-control-octets {
+              type yang:counter64;
+              description
+                "Count of control octets transmitted.";
+            }
+            leaf tx-plain-octets {
+              type yang:counter64;
+              description
+                "Count of plain octets transmitted.";
+            }
+            leaf tx-encrypted-octets {
+              type yang:counter64;
+              description
+                "Count of encrypted octets transmitted.";
+            }
+            leaf tx-mpcp-octets {
+              type yang:counter64;
+              description
+                "Count of mpcp octets transmitted.";
+            }
+            leaf tx-oam-frames {
+              type yang:counter64;
+              description
+                "Count of OAM frames transmitted on the interface.";
+            }
+            leaf tx-grant-ups-tq {
+              type yang:counter64;
+              description
+                "Count of tq or upstreams slots granted to the ONUs.";
+            }
+            leaf rx-control-octets {
+              type yang:counter64;
+              description
+                "Count of control octets received.";
+            }
+            leaf rx-security-drop-octets {
+              type yang:counter64;
+              description
+                "Count of security drop octets received.";
+            }
+            leaf rx-plain-octets {
+              type yang:counter64;
+              description
+                "Count of plain octets received.";
+            }
+            leaf rx-mpcp-octets {
+              type yang:counter64;
+              description
+                "Count of mpcp octets received.";
+            }
+            leaf rx-encrypted-octets {
+              type yang:counter64;
+              description
+                "Count of encrypted octets received.";
+            }
+            leaf rx-overflow-octets {
+              type yang:counter64;
+              description
+                "Count of overflow octets received.";
+            }
+            leaf rx-key-mismatch-octets {
+              type yang:counter64;
+              description
+                "Count of key mismatch octets received.";
+            }
+            leaf rx-unmatched-drops {
+              type yang:counter64;
+              description
+                "Count of frames received on the interface and dropped due to no match.";
+            }
+            leaf rx-bad-icv-drops {
+              type yang:counter64;
+              description
+                "Count of frames received on the interface and dropped due to bad icv.";
+            }
+            leaf rx-oam-frames {
+              type yang:counter64;
+              description
+                "Count of OAM frames received on the interface.";
+            }
+            leaf rx-all-bw-reqs {
+              type yang:counter64;
+              description
+                "Count of all bandwidth requests received.";
+            }
+            leaf time {
+              type string;
+              description
+                "Time when the statistics were last collected.";
+            }
           }
           container radius {
             description
-              "OLT Radius statistics";
+              "OLT RADIUS statistics";
             uses auth-counters-grouping;
             uses relay-counters-grouping;
             uses pppoe-counters-grouping;
@@ -3373,6 +4786,23 @@ module ciena-pon-ctrl {
             description
               "The OLT's uptime in seconds.";
           }
+          leaf time-stamp {
+            type string;
+            description
+              "The time the data was cached.";
+          }
+          leaf low-receive-power {
+            type cntypes:decimal-2-dig;
+            units "dBm";
+            description
+              "The OLT's low receive optical power in dBm for the current 15 minute interval.";
+          }
+          leaf high-receive-power {
+            type cntypes:decimal-2-dig;
+            units "dBm";
+            description
+              "The OLT's high receive optical power in dBm for the current 15 minute interval.";
+          }
         }
         container nni-networks {
           description
@@ -3395,8 +4825,28 @@ module ciena-pon-ctrl {
               description
                 "Flooding link statistics on this NNI Network as viewed by the OLT.";
               uses pon-ctrl:flooding-counters-grouping;
+              leaf last-clear-time {
+                type string;
+                description
+                  "Time when the statistics were last cleared.";
+              }
+              leaf time {
+                type string;
+                description
+                  "Time when the statistics were last collected.";
+              }
             }
           }
+        }
+        container rogue-onu-idle-power-state {
+          description
+            "The idle power rogue ONU state data for this OLT.";
+          uses rogue-onu-olt-idle-power-state-grouping;
+        }
+        container rogue-onu-disallowed-state {
+          description
+            "The disallowed error rogue ONU state data for this OLT.";
+          uses rogue-onu-olt-disallowed-error-state-grouping;
         }
       }
     }
@@ -3496,6 +4946,11 @@ module ciena-pon-ctrl {
           description
             "Revision model of this ONU.";
         }
+        leaf vendor-id {
+          type string;
+          description
+            "Vendor ID of this ONU.";
+        }
         leaf mode {
           type string;
           description
@@ -3516,10 +4971,41 @@ module ciena-pon-ctrl {
           description
             "Bit map of alarm conditions currently active on this ONU.";
         }
+        leaf previous-oper-state {
+          type pon-ctrl:onu-oper-state;
+          description
+            "Previous operational state of the ONU.";
+        }
+        leaf oper-state-change-reason {
+          type onu-oper-state-change-reason;
+          description
+            "Reason for the oper-state change.";
+        }
+        leaf service-config-name {
+          type string;
+          description
+            "Name of the service configuration applied to this ONU. If not specified,
+             the default service configuration is used.";
+        }
+        leaf reset-status {
+          type string;
+          description
+            "Status of resetting the ONU.";
+        }
         container rogue-state {
           description
             "The rogue state data for this ONU.";
            uses rogue-onu-state-grouping;
+        }
+        container rogue-onu-disallowed-state {
+          description
+            "The disallowed ONU rogue state data for this ONU.";
+           uses rogue-onu-disallowed-onu-state-grouping;
+        }
+        container rogue-onu-power-variation-state {
+          description
+            "The power variation rogue state data for this ONU.";
+           uses rogue-onu-power-variation-state-grouping;
         }
         container datalinks {
           description
@@ -3539,6 +5025,171 @@ module ciena-pon-ctrl {
                 "The ALLOC-ID of this Datalink as assigned by the OLT/ONU.
                  Only valid in XGS-PON mode.";
             }
+            container xgem-ports {
+              description
+                "The state data for all XGEM ports on the Datalink";
+              list xgem-port {
+                key "xgem-port-id";
+                description
+                  "List of XGEM ports";
+                leaf xgem-port-id {
+                  type uint16;
+                  description
+                    "The ID of the XGEM port.";
+                }
+                container statistics {
+                  description
+                    "Datalink XGEM port statistics as viewed by the OLT.";
+                  uses pon-ctrl:packet-counters-grouping;
+                  uses pon-ctrl:phy-counters-grouping;
+                  leaf rx-fec-good-blocks {
+                    type yang:counter64;
+                    description
+                      "Count of FEC blocks received without errors.";
+                  }
+                  leaf rx-fec-corrected-blocks {
+                    type yang:counter64;
+                    description
+                      "Count of FEC blocks received with errors that were correctable.";
+                  }
+                  leaf rx-fec-uncorrectable-blocks {
+                    type yang:counter64;
+                    description
+                      "Count of FEC blocks received with errors that were not correctable.";
+                  }
+                  leaf rx-fec-corrections {
+                    type yang:counter64;
+                    description
+                      "Count of FEC blocks received with correctable errors that were corrected.";
+                  }
+                  leaf tx-octets-multi-broadcast {
+                    type yang:counter64;
+                    description
+                      "Count of multicast and broadcast octets transmitted.";
+                  }
+                  leaf tx-control-octets {
+                    type yang:counter64;
+                    description
+                      "Count of control octets transmitted.";
+                  }
+                  leaf tx-plain-octets {
+                    type yang:counter64;
+                    description
+                      "Count of plain octets transmitted.";
+                  }
+                  leaf tx-encrypted-octets {
+                    type yang:counter64;
+                    description
+                      "Count of encrypted octets transmitted.";
+                  }
+                  leaf tx-oam-frames {
+                    type yang:counter64;
+                    description
+                      "Count of OAM frames transmitted on the interface.";
+                  }
+                  leaf tx-grant-ups-tq {
+                    type yang:counter64;
+                    description
+                      "Count of tq or upstreams slots granted to the ONUs.";
+                  }
+                  leaf tx-octets-unicast {
+                    type yang:counter64;
+                    description
+                      "Total number of unicast octets transmitted.";
+                  }
+                  leaf tx-frames-unicast {
+                    type yang:counter64;
+                    description
+                      "Count of unicast frames transmitted.";
+                  }
+                  leaf tx-frames-multicast {
+                    type yang:counter64;
+                    description
+                      "Count of multicast frames transmitted.";
+                  }
+                  leaf tx-frames-broadcast {
+                    type yang:counter64;
+                    description
+                      "Count of broadcast frames transmitted.";
+                  }
+                  leaf rx-control-octets {
+                    type yang:counter64;
+                    description
+                      "Count of control octets received.";
+                  }
+                  leaf rx-security-drop-octets {
+                    type yang:counter64;
+                    description
+                      "Count of security drop octets received.";
+                  }
+                  leaf rx-octets-unicast {
+                    type yang:counter64;
+                    description
+                      "Count of unicast octets received.";
+                  }
+                  leaf rx-octets-multi-broadcast {
+                    type yang:counter64;
+                    description
+                      "Count of multicast and broadcast octets received.";
+                  }
+                  leaf rx-plain-octets {
+                    type yang:counter64;
+                    description
+                      "Count of plain octets received.";
+                  }
+                  leaf rx-encrypted-octets {
+                    type yang:counter64;
+                    description
+                      "Count of encrypted octets received.";
+                  }
+                  leaf rx-overflow-octets {
+                    type yang:counter64;
+                    description
+                      "Count of overflow octets received.";
+                  }
+                  leaf rx-idle-octets {
+                    type yang:counter64;
+                    description
+                      "Count of idle octets received.";
+                  }
+                  leaf rx-key-mismatch-octets {
+                    type yang:counter64;
+                    description
+                      "Count of key mismatch octets received.";
+                  }
+                  leaf rx-bad-icv-drops {
+                    type yang:counter64;
+                    description
+                      "Count of frames received on the interface and dropped due to bad icv.";
+                  }
+                  leaf rx-oam-frames {
+                    type yang:counter64;
+                    description
+                      "Count of OAM frames received on the interface.";
+                  }
+                  leaf rx-all-bw-reqs {
+                    type yang:counter64;
+                    description
+                      "Count of all bandwidth requests received.";
+                  }
+                  leaf last-clear-time {
+                    type string;
+                    description
+                      "Time when the statistics were last cleared.";
+                  }
+                  leaf rx-mpcp-octets {
+                    type yang:counter64;
+                    description
+                      "Count of mpcp octets received.";
+                  }
+                  leaf time {
+                    type string;
+                    description
+                      "Time when the statistics were last collected.";
+                  }
+                }
+              }
+            }
             leaf llid {
               type uint16;
               description
@@ -3550,6 +5201,7 @@ module ciena-pon-ctrl {
               description
                 "Bit map of alarm conditions currently active on this Datalink.";
             }
+            uses pon-ctrl:control-plane-processing-state;
             container statistics {
               description
                 "Datalink statistics as viewed by the OLT.";
@@ -3575,6 +5227,131 @@ module ciena-pon-ctrl {
                 description
                   "Count of FEC blocks received with correctable errors that were corrected.";
               }
+              leaf tx-octets-multi-broadcast {
+                type yang:counter64;
+                description
+                  "Count of multicast and broadcast octets transmitted.";
+              }
+              leaf tx-control-octets {
+                type yang:counter64;
+                description
+                  "Count of control octets transmitted.";
+              }
+              leaf tx-plain-octets {
+                type yang:counter64;
+                description
+                  "Count of plain octets transmitted.";
+              }
+              leaf tx-encrypted-octets {
+                type yang:counter64;
+                description
+                  "Count of encrypted octets transmitted.";
+              }
+              leaf tx-oam-frames {
+                type yang:counter64;
+                description
+                  "Count of OAM frames transmitted on the interface.";
+              }
+              leaf tx-grant-ups-tq {
+                type yang:counter64;
+                description
+                  "Count of tq or upstreams slots granted to the ONUs.";
+              }
+              leaf tx-octets-unicast {
+                type yang:counter64;
+                description
+                  "Total number of unicast octets transmitted.";
+              }
+              leaf tx-frames-unicast {
+                type yang:counter64;
+                description
+                  "Count of unicast frames transmitted.";
+              }
+              leaf tx-frames-multicast {
+                type yang:counter64;
+                description
+                  "Count of multicast frames transmitted.";
+              }
+              leaf tx-frames-broadcast {
+                type yang:counter64;
+                description
+                  "Count of broadcast frames transmitted.";
+              }
+              leaf rx-control-octets {
+                type yang:counter64;
+                description
+                  "Count of control octets received.";
+              }
+              leaf rx-security-drop-octets {
+                type yang:counter64;
+                description
+                  "Count of security drop octets received.";
+              }
+              leaf rx-octets-unicast {
+                type yang:counter64;
+                description
+                  "Count of unicast octets received.";
+              }
+              leaf rx-octets-multi-broadcast {
+                type yang:counter64;
+                description
+                  "Count of multicast and broadcast octets received.";
+              }
+              leaf rx-plain-octets {
+                type yang:counter64;
+                description
+                  "Count of plain octets received.";
+              }
+              leaf rx-encrypted-octets {
+                type yang:counter64;
+                description
+                  "Count of encrypted octets received.";
+              }
+              leaf rx-overflow-octets {
+                type yang:counter64;
+                description
+                  "Count of overflow octets received.";
+              }
+              leaf rx-idle-octets {
+                type yang:counter64;
+                description
+                  "Count of idle octets received.";
+              }
+              leaf rx-key-mismatch-octets {
+                type yang:counter64;
+                description
+                  "Count of key mismatch octets received.";
+              }
+              leaf rx-bad-icv-drops {
+                type yang:counter64;
+                description
+                  "Count of frames received on the interface and dropped due to bad icv.";
+              }
+              leaf rx-oam-frames {
+                type yang:counter64;
+                description
+                  "Count of OAM frames received on the interface.";
+              }
+              leaf rx-all-bw-reqs {
+                type yang:counter64;
+                description
+                  "Count of all bandwidth requests received.";
+              }
+              leaf last-clear-time {
+                type string;
+                description
+                  "Time when the statistics were last cleared.";
+              }
+              leaf rx-mpcp-octets {
+                type yang:counter64;
+                description
+                  "Count of mpcp octets received.";
+              }
+              leaf time {
+                type string;
+                description
+                  "Time when the statistics were last collected.";
+              }
             }
           }
           list datalink-relay {
@@ -3593,7 +5370,7 @@ module ciena-pon-ctrl {
               leaf cpe-mac {
                 type yang:mac-address;
                 description
-                  "Customer premise equipment MAC address.";
+                  "Customer premises equipment MAC address.";
               }
               leaf oper-state {
                 type pon-ctrl:dhcp-relay-oper-state;
@@ -3683,7 +5460,7 @@ module ciena-pon-ctrl {
               leaf cpe-mac {
                 type yang:mac-address;
                 description
-                  "Customer premise equipment MAC address.";
+                  "Customer premises equipment MAC address.";
               }
               leaf oper-state {
                 type pon-ctrl:authentication-oper-state;
@@ -3700,6 +5477,21 @@ module ciena-pon-ctrl {
                 description
                   "Authentication last success time.";
               }
+              leaf last-failure-time {
+                type pon-ctrl:pon-relay-attribute-string;
+                description
+                  "Authentication last failure time.";
+              }
+              leaf held-period-start-time {
+                type pon-ctrl:pon-relay-attribute-string;
+                description
+                  "Held period start time.";
+              }
+              leaf quiet-period-start-time {
+                type pon-ctrl:pon-relay-attribute-string;
+                description
+                  "Quiet period start time.";
+              }
               leaf unicast-identifier {
                 type uint32;
                 description
@@ -3709,6 +5501,11 @@ module ciena-pon-ctrl {
                 type uint32;
                 description
                   "Authentication reset count.";
+              }
+              leaf failure-count {
+                type uint32;
+                description
+                  "Authentication failure count.";
               }
               container statistics {
                 description
@@ -3738,7 +5535,7 @@ module ciena-pon-ctrl {
               leaf cpe-mac {
                 type yang:mac-address;
                 description
-                  "Customer premise equipment MAC address.";
+                  "Customer premises equipment MAC address.";
               }
               leaf oper-state {
                 type pon-ctrl:pppoe-oper-state;
@@ -3808,7 +5605,7 @@ module ciena-pon-ctrl {
               leaf cpe-mac {
                 type yang:mac-address;
                 description
-                  "Customer premise equipment MAC address.";
+                  "Customer premises equipment MAC address.";
               }
               leaf oper-state {
                 type pon-ctrl:dhcpv6-oper-state;
@@ -3910,6 +5707,16 @@ module ciena-pon-ctrl {
               description
                 "Operational duplex of the UNI Port.";
             }
+            leaf previous-oper-state {
+              type pon-ctrl:uni-port-oper-state;
+              description
+                "Previous operational state of the UNI Port.";
+            }
+            leaf oper-state-change-reason {
+              type uni-port-oper-state-change-reason;
+              description
+                "Reason for the oper-state change.";
+            }
             container xcvr-data {
               description
                 "The Small Form-factor (SFP) Pluggable transceiver data
@@ -3991,6 +5798,21 @@ module ciena-pon-ctrl {
                    due to a lack of resources. This is not necessarily the number of upstream packets
                    dropped.";
               }
+              leaf last-clear-time {
+                type string;
+                description
+                  "Time when the statistics were last cleared.";
+              }
+              leaf time {
+                type string;
+                description
+                  "Time when the statistics were last collected.";
+              }
+            }
+            leaf alarms {
+              type uni-port-alarm-bit-map;
+              description
+                "Bit map of alarm conditions currently active on this UNI port.";
             }
           }
         }
@@ -4073,7 +5895,7 @@ module ciena-pon-ctrl {
         }
         container statistics {
           description
-            "ONU statistics.";
+            "ONU performance monitoring history bin statistics.";
           leaf last-clear-time {
             type string;
             description
@@ -4109,6 +5931,16 @@ module ciena-pon-ctrl {
             units "seconds";
             description
               "Counts number of seconds during which there was an FEC anomaly.";
+          }
+          leaf suspect {
+            type boolean;
+            description
+              "Indicates if this is a partial bin sample.";
+          }
+          leaf time {
+            type string;
+            description
+              "Time when the statistics were last collected.";
           }
         }
       }
@@ -4163,23 +5995,23 @@ module ciena-pon-ctrl {
 
   rpc pon-ctrl-radius-server-statistics-clear {
     description
-      "Clear the statistics of a Radius Server or Radius Server hostname.";
+      "Clear the statistics of a RADIUS Server or RADIUS Server hostname.";
     input {
       leaf radius-server {
         type pon-ctrl:radius-server-ref;
         mandatory true;
         description
-          "Name of the Radius Server.";
+          "Name of the RADIUS Server.";
       }
       leaf host {
         type inet:host;
         description
-          "Radius server host address.";
+          "RADIUS server host address.";
       }
       leaf port {
         type inet:port-number;
         description
-          "Radius server port.";
+          "RADIUS server port.";
       }
     }
     output {
@@ -4200,6 +6032,12 @@ module ciena-pon-ctrl {
         mandatory true;
         description
           "Name of the OLT.";
+      }
+      leaf clear-pon-statistics{
+        type boolean;
+        description
+          "Indicates whether to clear OLT PON statistics (if true) or OLT NNI statistics (if false).
+           If not present, both PON and NNI statistics are cleared.";
       }
     }
     output {
@@ -4232,6 +6070,11 @@ module ciena-pon-ctrl {
         type pon-ctrl:datalink-ref;
         description
           "Name of the Datalink on the ONU.";
+      }
+      leaf xgem-port-id {
+        type uint16;
+        description
+          "The ID of the XGEM port.";
       }
     }
     output {
@@ -4276,7 +6119,7 @@ module ciena-pon-ctrl {
       leaf cpe-mac {
         type yang:mac-address;
         description
-          "Customer premise equipment MAC address.";
+          "Customer premises equipment MAC address.";
       }
       leaf clear-pppoe {
         type boolean;
@@ -4376,6 +6219,12 @@ module ciena-pon-ctrl {
         description
           "When true, ONU firmware activation is deferred until explicitly invoked.";
       }
+      leaf update-expected-firmware-version {
+        type boolean;
+        description
+          "When true, ONU firmware activation will set the expected
+           firmware version to the firmware version being activated.";
+      }
     }
     output {
       leaf status {
@@ -4408,6 +6257,12 @@ module ciena-pon-ctrl {
         description
           "Version of firmware to activate on this ONU.
            Firmware must already be installed.";
+      }
+      leaf update-expected-firmware-version {
+        type boolean;
+        description
+          "When true, ONU firmware activation will set the expected
+           firmware version to the firmware version being activated.";
       }
     }
     output {
@@ -4512,7 +6367,7 @@ module ciena-pon-ctrl {
       leaf cpe-mac {
         type yang:mac-address;
         description
-          "Customer premise equipment MAC address.";
+          "Customer premises equipment MAC address.";
       }
     }
     output {
@@ -4546,7 +6401,7 @@ module ciena-pon-ctrl {
       leaf cpe-mac {
         type yang:mac-address;
         description
-          "Customer premise equipment MAC address.";
+          "Customer premises equipment MAC address.";
       }
     }
     output {
@@ -4580,7 +6435,7 @@ module ciena-pon-ctrl {
       leaf cpe-mac {
         type yang:mac-address;
         description
-          "Customer premise equipment MAC address.";
+          "Customer premises equipment MAC address.";
       }
     }
     output {
@@ -4595,9 +6450,10 @@ module ciena-pon-ctrl {
   rpc pon-ctrl-relay-state-clear {
     description
       "Clear the CPE state for authentication and/or DHCP and/or DHCPv6 and/or PPPoE.
-       Authentication state is cleared if it is failure or logoff or unknown.
-       DHCP or DHCPv6 state is cleared if it is expired or unknown.
-       PPPoE state is cleared if it is terminated or unknown.";
+       Authentication state is cleared if it is not success.
+       DHCP state is cleared if it is not acknowledged.
+       DHCPv6 state is cleared if it is not bound.
+       PPPoE state is cleared if it is not session.";
     input {
       leaf olt {
         type pon-ctrl:olt-ref;
@@ -4637,6 +6493,11 @@ module ciena-pon-ctrl {
         description
           "When true, clear is for DHCPv6.";
       }
+      leaf cpe-mac {
+        type yang:mac-address;
+        description
+          "Customer premises equipment MAC address.";
+      }
     }
     output {
       leaf status {
@@ -4672,7 +6533,7 @@ module ciena-pon-ctrl {
       leaf cpe-mac {
         type yang:mac-address;
         description
-          "Customer premise equipment MAC address.";
+          "Customer premises equipment MAC address.";
       }
     }
     output {
@@ -4766,6 +6627,98 @@ module ciena-pon-ctrl {
         type string;
         description
           "Status of the statistics clear operation.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-olt-diagnostic-data-get {
+    description
+      "Retrieves current diagnostic data for the OLT.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+    }
+    output {
+      leaf asic-temperature {
+        type int16;
+        units "C";
+        description
+          "The OLT's ASIC temperature in degrees C.";
+      }
+      leaf xcvr-temperature {
+        type int16;
+        units "C";
+        description
+          "The OLT's transceiver temperature in degrees C.";
+      }
+      leaf laser-temperature {
+        type int16;
+        units "C";
+        description
+          "The OLT's laser temperature in degrees C.";
+      }
+      leaf vcc {
+        type cntypes:decimal-2-dig;
+        units "mV";
+        description
+          "The OLT's VCC in mV.";
+      }
+      leaf tec-current {
+        type cntypes:decimal-2-dig;
+        units "uA";
+        description
+          "The OLT's TEC current in uA.";
+      }
+      leaf transmit-bias {
+      type cntypes:decimal-2-dig;
+      units "uA";
+      description
+        "The OLT's transmit bias current in uA.";
+      }
+      leaf idle-receive-power {
+        type cntypes:decimal-2-dig;
+        units "dBm";
+        description
+          "The OLT's idle receive power in dBm.";
+      }
+      leaf transmit-power {
+        type cntypes:decimal-2-dig;
+        units "dBm";
+        description
+          "The OLT's transmit power in dBm.";
+      }
+      leaf last-shutdown-reason {
+        type string;
+        description
+          "The reason for the latest shutdown of the OLT's laser.";
+      }
+      leaf is-laser-shutdown {
+        type boolean;
+        description
+          "When true, indicates that the OLT's laser is currently shutdown.
+           When false, indicates that the OLT's laser is currently active.";
+      }
+      leaf uptime {
+        type uint64;
+        units "seconds";
+        description
+          "The OLT's uptime in seconds.";
+      }
+      leaf low-receive-power {
+        type cntypes:decimal-2-dig;
+        units "dBm";
+        description
+          "The OLT's low receive optical power in dBm for the current 15 minute interval.";
+      }
+      leaf high-receive-power {
+        type cntypes:decimal-2-dig;
+        units "dBm";
+        description
+          "The OLT's high receive optical power in dBm for the current 15 minute interval.";
       }
     }
   }
@@ -4868,6 +6821,1042 @@ module ciena-pon-ctrl {
     }
   }
 
+  rpc pon-ctrl-onu-statistics-get {
+    description
+      "Retrieves ONU performance monitoring statistics for the current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        mandatory true;
+        description
+          "Name of the ONU.";
+      }
+    }
+    output {
+      leaf rx-corrected-bytes {
+        type uint64;
+        description
+          "Counts the number of received bytes that were corrected by the FEC function.";
+      }
+      leaf rx-corrected-code-words {
+        type uint64;
+        description
+          "Counts the number of received code words that were corrected by the FEC function.";
+      }
+      leaf rx-uncorrectable-code-words {
+        type uint64;
+        description
+          "Counts received errored code words that could not be corrected by the FEC function";
+      }
+      leaf rx-total-code-words {
+        type uint64;
+        description
+          "Counts the total received code words.";
+      }
+      leaf rx-fec-seconds {
+        type uint64;
+        units "seconds";
+        description
+          "Counts number of seconds during which there was an FEC anomaly.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+      leaf bin-interval {
+        type uint8;
+        description
+          "Current bin interval. Only applies if statistics mode is binning.";
+      }
+      leaf suspect {
+        type boolean;
+        description
+          "Indicates if this is a partial bin sample.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-datalink-statistics-get {
+    description
+      "Retrieves Datalink statistics for the current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        mandatory true;
+        description
+          "Name of the ONU.";
+      }
+      leaf datalink {
+        type pon-ctrl:datalink-ref;
+        mandatory true;
+        description
+          "Name of the Datalink.";
+      }
+    }
+    output {
+      uses pon-ctrl:packet-counters-grouping;
+      uses pon-ctrl:phy-counters-grouping;
+      leaf rx-fec-good-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received without errors.";
+      }
+      leaf rx-fec-corrected-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were correctable.";
+      }
+      leaf rx-fec-uncorrectable-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were not correctable.";
+      }
+      leaf rx-fec-corrections {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with correctable errors that were corrected.";
+      }
+      leaf tx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets transmitted.";
+      }
+      leaf tx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets transmitted.";
+      }
+      leaf tx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets transmitted.";
+      }
+      leaf tx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets transmitted.";
+      }
+      leaf tx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames transmitted on the interface.";
+      }
+      leaf tx-grant-ups-tq {
+        type yang:counter64;
+        description
+          "Count of tq or upstreams slots granted to the ONUs.";
+      }
+      leaf tx-octets-unicast {
+        type yang:counter64;
+        description
+          "Total number of unicast octets transmitted.";
+      }
+      leaf tx-frames-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast frames transmitted.";
+      }
+      leaf tx-frames-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast frames transmitted.";
+      }
+      leaf tx-frames-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast frames transmitted.";
+      }
+      leaf rx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets received.";
+      }
+      leaf rx-security-drop-octets {
+        type yang:counter64;
+        description
+          "Count of security drop octets received.";
+      }
+      leaf rx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets received.";
+      }
+      leaf rx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets received.";
+      }
+      leaf rx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets received.";
+      }
+      leaf rx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets received.";
+      }
+      leaf rx-overflow-octets {
+        type yang:counter64;
+        description
+          "Count of overflow octets received.";
+      }
+      leaf rx-idle-octets {
+        type yang:counter64;
+        description
+          "Count of idle octets received.";
+      }
+      leaf rx-key-mismatch-octets {
+        type yang:counter64;
+        description
+          "Count of key mismatch octets received.";
+      }
+      leaf rx-bad-icv-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to bad icv.";
+      }
+      leaf rx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames received on the interface.";
+      }
+      leaf rx-all-bw-reqs {
+        type yang:counter64;
+        description
+          "Count of all bandwidth requests received.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+      leaf rx-mpcp-octets {
+        type yang:counter64;
+        description
+          "Count of mpcp octets received.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-olt-pon-statistics-get {
+    description
+      "Retrieves OLT PON statistics for the current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+    }
+    output {
+      uses pon-ctrl:packet-counters-grouping;
+      uses pon-ctrl:phy-counters-grouping;
+      leaf rx-fec-good-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received without errors.";
+      }
+      leaf rx-fec-corrected-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were correctable.";
+      }
+      leaf rx-fec-uncorrectable-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were not correctable.";
+      }
+      leaf rx-fec-corrections {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with correctable errors that were corrected.";
+      }
+      leaf rx-octets-idle {
+        type yang:counter64;
+        description
+          "Count of idle octets received. Idle octets are used to fill data
+            gaps during transmission. Idle octets are dropped by the receiver.";
+      }
+      leaf tx-octets-idle {
+        type yang:counter64;
+        description
+          "Count of idle octets transmitted. Idle octets are used to fill data
+            gaps during transmission. Idle octets are dropped by the receiver.";
+      }
+      leaf rx-bw-ethernet-rate {
+        type yang:counter64;
+        units bps;
+        description
+          "Received Ethernet bandwidth.";
+      }
+      leaf tx-bw-ethernet-rate {
+        type yang:counter64;
+        units bps;
+        description
+          "Transmitted Ethernet bandwidth.";
+      }
+      leaf rx-bw-data-rate {
+        type yang:counter64;
+        units bps;
+        description
+          "Received data bandwidth.";
+      }
+      leaf tx-bw-data-rate {
+        type yang:counter64;
+        units bps;
+        description
+          "Transmitted data bandwidth.";
+      }
+      leaf rx-bw-overhead-burst {
+        type yang:counter64;
+        units bps;
+        description
+          "Received burst overhead bandwidth.";
+      }
+      leaf tx-bw-overhead-framing {
+        type yang:counter64;
+        units bps;
+        description
+          "Transmitted framing overhead bandwidth.";
+      }
+      leaf rx-bw-overhead-fec {
+        type yang:counter64;
+        units bps;
+        description
+          "Received FEC overhead bandwidth.";
+      }
+      leaf tx-bw-overhead-fec {
+        type yang:counter64;
+        units bps;
+        description
+          "Transmitted FEC overhead bandwidth.";
+      }
+      leaf rx-bw-overhead-total {
+        type yang:counter64;
+        units bps;
+        description
+          "Total received overhead bandwidth.";
+      }
+      leaf tx-bw-overhead-total {
+        type yang:counter64;
+        units bps;
+        description
+          "Total transmitted overhead bandwidth.";
+      }
+      leaf rx-bw-total-used {
+        type yang:counter64;
+        units bps;
+        description
+          "Total receive bandwidth used, includes both data and overhead.";
+      }
+      leaf tx-bw-total-used {
+        type yang:counter64;
+        units bps;
+        description
+          "Total transmit bandwidth used, includes both data and overhead.";
+      }
+      leaf rx-bw-total-utilization-percent {
+        type yang:counter64;
+        description
+          "Percentage of the total receive bandwidth used.";
+      }
+      leaf tx-bw-total-utilization-percent {
+        type yang:counter64;
+        description
+          "Percentage of the total transmit bandwidth used.";
+      }
+      leaf rx-bw-total-free {
+        type yang:counter64;
+        units bps;
+        description
+          "Total receive bandwidth free.";
+      }
+      leaf tx-bw-total-free {
+        type yang:counter64;
+        units bps;
+        description
+          "Total transmit bandwidth free.";
+      }
+      leaf tx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets transmitted.";
+      }
+      leaf rx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets received.";
+      }
+      leaf tx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets transmitted.";
+      }
+      leaf rx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets received.";
+      }
+      leaf tx-frames-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast frames transmitted.";
+      }
+      leaf tx-frames-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast frames transmitted.";
+      }
+      leaf tx-frames-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast frames transmitted.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+      leaf tx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets transmitted.";
+      }
+      leaf tx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets transmitted.";
+      }
+      leaf tx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets transmitted.";
+      }
+      leaf tx-mpcp-octets {
+        type yang:counter64;
+        description
+          "Count of mpcp octets transmitted.";
+      }
+      leaf tx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames transmitted on the interface.";
+      }
+      leaf tx-grant-ups-tq {
+        type yang:counter64;
+        description
+          "Count of tq or upstreams slots granted to the ONUs.";
+      }
+      leaf rx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets received.";
+      }
+      leaf rx-security-drop-octets {
+        type yang:counter64;
+        description
+          "Count of security drop octets received.";
+      }
+      leaf rx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets received.";
+      }
+      leaf rx-mpcp-octets {
+        type yang:counter64;
+        description
+          "Count of mpcp octets received.";
+      }
+      leaf rx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets received.";
+      }
+      leaf rx-overflow-octets {
+        type yang:counter64;
+        description
+          "Count of overflow octets received.";
+      }
+      leaf rx-key-mismatch-octets {
+        type yang:counter64;
+        description
+          "Count of key mismatch octets received.";
+      }
+      leaf rx-unmatched-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to no match.";
+      }
+      leaf rx-bad-icv-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to bad icv.";
+      }
+      leaf rx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames received on the interface.";
+      }
+      leaf rx-all-bw-reqs {
+        type yang:counter64;
+        description
+          "Count of all bandwidth requests received.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-olt-nni-statistics-get {
+    description
+      "Retrieves OLT NNI statistics for the current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+    }
+    output {
+      uses pon-ctrl:packet-counters-grouping;
+      leaf rx-oam {
+        type yang:counter64;
+        description
+          "Count of OAM frames received on the interface.";
+      }
+      leaf tx-oam {
+        type yang:counter64;
+        description
+          "Count of OAM frames transmitted on the interface.";
+      }
+      leaf rx-mac-control-frames {
+        type yang:counter64;
+        description
+          "Count of MAC Control frames received on the interface.";
+      }
+      leaf rx-filtered-frames {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface but filtered (not forwarded).";
+      }
+      leaf rx-crc32-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to invalid CRC32.";
+      }
+      leaf rx-overflow-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to input queues being full.";
+      }
+      leaf rx-too-short-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to the frame being too short.";
+      }
+      leaf rx-too-long-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to the frame being too long.";
+      }
+      leaf tx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets transmitted.";
+      }
+      leaf rx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets received.";
+      }
+      leaf tx-octets-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast octets transmitted.";
+      }
+      leaf rx-octets-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast octets received.";
+      }
+      leaf tx-octets-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast octets transmitted.";
+      }
+      leaf rx-octets-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast octets received.";
+      }
+      leaf tx-frames-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast frames transmitted.";
+      }
+      leaf rx-frames-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast frames received.";
+      }
+      leaf tx-frames-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast frames transmitted.";
+      }
+      leaf rx-frames-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast frames received.";
+      }
+      leaf tx-frames-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast frames transmitted.";
+      }
+      leaf rx-frames-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast frames received.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+      leaf tx-non-control-octets {
+        type yang:counter64;
+        description
+          "Count of non control octets transmitted.";
+      }
+      leaf tx-oam-octets {
+        type yang:counter64;
+        description
+          "Count of oam octets transmitted.";
+      }
+      leaf tx-cascading-packets {
+        type yang:counter64;
+        description
+          "Count of cascading packets transmitted.";
+      }
+      leaf tx-cascading-bytes {
+        type yang:counter64;
+        description
+          "Count of cascading bytes transmitted.";
+      }
+      leaf rx-overflow-octets {
+        type yang:counter64;
+        description
+          "Count of overflow octets received.";
+      }
+      leaf rx-oam-octets {
+        type yang:counter64;
+        description
+          "Count of oam octets received.";
+      }
+      leaf rx-mine-cascading-bytes {
+        type yang:counter64;
+        description
+          "Count of mine cascading bytes received.";
+      }
+      leaf rx-other-cascading-bytes {
+        type yang:counter64;
+        description
+          "Count of other cascading bytes received.";
+      }
+      leaf rx-mine-cascading-packets {
+        type yang:counter64;
+        description
+          "Count of mine cascading packets received.";
+      }
+      leaf rx-other-cascading-packets {
+        type yang:counter64;
+        description
+          "Count of other cascading packets received.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-uni-port-statistics-get {
+    description
+      "Get the statistics of a UNI Port.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        mandatory true;
+        description
+          "Name of the ONU.";
+      }
+      leaf uni-port {
+        type pon-ctrl:uni-port-ref;
+        mandatory true;
+        description
+          "ID of the UNI Port on the ONU.";
+      }
+    }
+    output {
+      uses pon-ctrl:uni-port-packet-counters-grouping;
+      leaf ds-frames-broadcast {
+        type yang:counter64;
+        description
+          "Total number of downstream broadcast packets transmitted by the UNI Port.";
+      }
+      leaf us-frames-broadcast {
+        type yang:counter64;
+        description
+          "Total number of upstream broadcast packets transmitted by the UNI Port.";
+      }
+      leaf ds-frames-multicast {
+        type yang:counter64;
+        description
+          "Total number of downstream multicast packets transmitted by the UNI Port.";
+      }
+      leaf us-frames-multicast {
+        type yang:counter64;
+        description
+          "Total number of upstream multicast packets transmitted by the UNI Port.";
+      }
+      leaf ds-frames-crc-error {
+        type yang:counter64;
+        description
+          "Total number of downstream packets received by the UNI Port that had a bad
+            frame check sequence.";
+      }
+      leaf us-frames-crc-error {
+        type yang:counter64;
+        description
+          "Total number of upstream packets received by the UNI Port that had a bad
+            frame check sequence.";
+      }
+      leaf ds-drop-events {
+        type yang:counter64;
+        description
+          "Total number of events in which downstream packets were dropped on the UNI Port
+            due to a lack of resources. This is not necessarily the number of downstream packets
+            dropped.";
+      }
+      leaf us-drop-events {
+        type yang:counter64;
+        description
+          "Total number of events in which upstream packets were dropped on the UNI Port
+            due to a lack of resources. This is not necessarily the number of upstream packets
+            dropped.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-datalink-xgem-statistics-get {
+    description
+      "Retrieves XGEM Port statistics for the current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        mandatory true;
+        description
+          "Name of the ONU.";
+      }
+      leaf datalink {
+        type pon-ctrl:datalink-ref;
+        mandatory true;
+        description
+          "Name of the Datalink.";
+      }
+      leaf xgem-port-id {
+        type uint16;
+        mandatory true;
+        description
+          "The ID of the XGEM port.";
+      }
+    }
+    output {
+      uses pon-ctrl:packet-counters-grouping;
+      uses pon-ctrl:phy-counters-grouping;
+      leaf rx-fec-good-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received without errors.";
+      }
+      leaf rx-fec-corrected-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were correctable.";
+      }
+      leaf rx-fec-uncorrectable-blocks {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with errors that were not correctable.";
+      }
+      leaf rx-fec-corrections {
+        type yang:counter64;
+        description
+          "Count of FEC blocks received with correctable errors that were corrected.";
+      }
+      leaf tx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets transmitted.";
+      }
+      leaf tx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets transmitted.";
+      }
+      leaf tx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets transmitted.";
+      }
+      leaf tx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets transmitted.";
+      }
+      leaf tx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames transmitted on the interface.";
+      }
+      leaf tx-grant-ups-tq {
+        type yang:counter64;
+        description
+          "Count of tq or upstreams slots granted to the ONUs.";
+      }
+      leaf tx-octets-unicast {
+        type yang:counter64;
+        description
+          "Total number of unicast octets transmitted.";
+      }
+      leaf tx-frames-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast frames transmitted.";
+      }
+      leaf tx-frames-multicast {
+        type yang:counter64;
+        description
+          "Count of multicast frames transmitted.";
+      }
+      leaf tx-frames-broadcast {
+        type yang:counter64;
+        description
+          "Count of broadcast frames transmitted.";
+      }
+      leaf rx-control-octets {
+        type yang:counter64;
+        description
+          "Count of control octets received.";
+      }
+      leaf rx-security-drop-octets {
+        type yang:counter64;
+        description
+          "Count of security drop octets received.";
+      }
+      leaf rx-octets-unicast {
+        type yang:counter64;
+        description
+          "Count of unicast octets received.";
+      }
+      leaf rx-octets-multi-broadcast {
+        type yang:counter64;
+        description
+          "Count of multicast and broadcast octets received.";
+      }
+      leaf rx-plain-octets {
+        type yang:counter64;
+        description
+          "Count of plain octets received.";
+      }
+      leaf rx-encrypted-octets {
+        type yang:counter64;
+        description
+          "Count of encrypted octets received.";
+      }
+      leaf rx-overflow-octets {
+        type yang:counter64;
+        description
+          "Count of overflow octets received.";
+      }
+      leaf rx-idle-octets {
+        type yang:counter64;
+        description
+          "Count of idle octets received.";
+      }
+      leaf rx-key-mismatch-octets {
+        type yang:counter64;
+        description
+          "Count of key mismatch octets received.";
+      }
+      leaf rx-bad-icv-drops {
+        type yang:counter64;
+        description
+          "Count of frames received on the interface and dropped due to bad icv.";
+      }
+      leaf rx-oam-frames {
+        type yang:counter64;
+        description
+          "Count of OAM frames received on the interface.";
+      }
+      leaf rx-all-bw-reqs {
+        type yang:counter64;
+        description
+          "Count of all bandwidth requests received.";
+      }
+      leaf last-clear-time {
+        type string;
+        description
+          "Time when the statistics were last cleared.";
+      }
+      leaf rx-mpcp-octets {
+        type yang:counter64;
+        description
+          "Count of mpcp octets received.";
+      }
+    }
+  }
+
+  rpc pon-ctrl-residential-statistics-get {
+    description
+      "Retrieve residential statistics current bin.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        description
+          "Name of the ONU.";
+      }
+      leaf datalink {
+        type pon-ctrl:datalink-ref;
+        description
+          "Name of the Datalink.";
+      }
+      leaf cpe-mac {
+        type yang:mac-address;
+        description
+          "Customer premises equipment MAC address.";
+      }
+    }
+    output {
+      uses auth-counters-grouping;
+      uses relay-counters-grouping;
+      uses pppoe-counters-grouping;
+      uses dhcpv6-counters-grouping;
+    }
+  }
+
+  rpc pon-ctrl-radius-server-statistics-get {
+    description
+      "Retrieve RADIUS server statistics current bin.";
+    input {
+      leaf radius-server {
+        type pon-ctrl:radius-server-ref;
+        mandatory true;
+        description
+          "Name of the RADIUS Server.";
+      }
+    }
+    output {
+      list radius-server-address {
+          key "host port";
+          description
+            "RADIUS server host and port.";
+          leaf host {
+            type inet:host;
+            description
+              "RADIUS server host address.";
+          }
+          leaf port {
+            type inet:port-number;
+            description
+              "RADIUS server port.";
+          }
+          leaf total-auth-complete {
+            type yang:counter64;
+            description
+              "Total authentication attempts completed successfully for this RADIUS server.";
+          }
+          leaf total-auth-timeout {
+            type yang:counter64;
+            description
+              "Total authentication attempts that timed-out for this RADIUS server.";
+          }
+      }
+    }
+  }
+
+
+  rpc pon-ctrl-rogue-onu-control {
+    description
+      "Allows specific rogue ONU procedures to be started (or cancelled) on an OLT or ONU.";
+    input {
+      leaf olt {
+        type pon-ctrl:olt-ref;
+        mandatory true;
+        description
+          "Name of the OLT.";
+      }
+      leaf onu {
+        type pon-ctrl:onu-ref;
+        description
+          "Name of the ONU.";
+      }
+      leaf defect {
+        type rogue-onu-defect;
+        mandatory true;
+        description
+          "Type of rogue ONU defect.";
+       }
+      leaf command {
+        type rogue-onu-command;
+        mandatory true;
+        description
+          "Rogue ONU command to execute.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of the requested rogue ONU procedure.";
+      }
+    }
+  }
+
   notification olt-discovered {
     description
       "Generated when a new OLT is discovered on an interface and has not yet been configured.";
@@ -4908,6 +7897,11 @@ module ciena-pon-ctrl {
       description
         "The registration ID of the discovered ONU.";
     }
+    leaf oper-state {
+      type pon-ctrl:onu-oper-state;
+      description
+        "Operational state of the ONU.";
+    }
   }
 
   notification olt-oper-state-change {
@@ -4926,8 +7920,17 @@ module ciena-pon-ctrl {
     leaf alarms {
       type olt-alarm-bit-map;
       description
-        "Bit map of alarm conditions currently active on this OLT.
-         Only set on OLT delete to indicate which alarms to clear.";
+        "Bit map of alarm conditions currently active on this OLT.";
+    }
+    leaf previous-oper-state {
+      type pon-ctrl:olt-oper-state;
+      description
+        "Previous operational state of the OLT.";
+    }
+    leaf oper-state-change-reason {
+      type olt-oper-state-change-reason;
+      description
+        "Reason for the oper-state change.";
     }
   }
 
@@ -4958,8 +7961,17 @@ module ciena-pon-ctrl {
     leaf alarms {
       type onu-alarm-bit-map;
       description
-        "Bit map of alarm conditions currently active on this ONU.
-         Only set on ONU delete to indicate which alarms to clear.";
+        "Bit map of alarm conditions currently active on this ONU.";
+    }
+    leaf previous-oper-state {
+      type pon-ctrl:onu-oper-state;
+      description
+        "Previous operational state of the ONU.";
+    }
+    leaf oper-state-change-reason {
+      type onu-oper-state-change-reason;
+      description
+        "Reason for the oper-state change.";
     }
   }
 
@@ -4998,30 +8010,45 @@ module ciena-pon-ctrl {
         "Operational duplex of the UNI Port.
          Set when the oper-state of the ONU is 'up'.";
     }
+    leaf previous-oper-state {
+      type pon-ctrl:uni-port-oper-state;
+      description
+        "Previous operational state of the UNI port.";
+    }
+    leaf oper-state-change-reason {
+      type uni-port-oper-state-change-reason;
+      description
+        "Reason for the oper-state change.";
+    }
+    leaf alarms {
+      type uni-port-alarm-bit-map;
+      description
+        "Bit map of alarm conditions currently active on this UNI port.";
+    }
   }
 
   notification radius-server-oper-state-change {
     description
-      "Generated when the operational state of a radius server changes.";
+      "Generated when the operational state of a RADIUS server changes.";
     leaf radius-server {
       type pon-ctrl:radius-server-ref;
       description
-        "Name of the radius server.";
+        "Name of the RADIUS server.";
     }
     leaf host {
       type inet:host;
       description
-        "Radius server host address.";
+        "RADIUS server host address.";
     }
     leaf port {
       type inet:port-number;
       description
-        "Radius server port.";
+        "RADIUS server port.";
     }
     leaf oper-state {
       type pon-ctrl:radius-server-oper-state;
       description
-        "Operational state of the radius server.";
+        "Operational state of the RADIUS server.";
     }
   }
 
@@ -5046,7 +8073,7 @@ module ciena-pon-ctrl {
     leaf cpe-mac {
       type yang:mac-address;
       description
-        "Customer premise equipment MAC address.";
+        "Customer premises equipment MAC address.";
     }
     leaf oper-state {
       type pon-ctrl:dhcp-relay-oper-state;
@@ -5076,7 +8103,7 @@ module ciena-pon-ctrl {
     leaf cpe-mac {
       type yang:mac-address;
       description
-        "Customer premise equipment MAC address.";
+        "Customer premises equipment MAC address.";
     }
     leaf oper-state {
       type pon-ctrl:dhcpv6-oper-state;
@@ -5106,7 +8133,7 @@ module ciena-pon-ctrl {
     leaf cpe-mac {
       type yang:mac-address;
       description
-        "Customer premise equipment MAC address.";
+        "Customer premises equipment MAC address.";
     }
     leaf oper-state {
       type pon-ctrl:authentication-oper-state;
@@ -5136,7 +8163,7 @@ module ciena-pon-ctrl {
     leaf cpe-mac {
       type yang:mac-address;
       description
-        "Customer premise equipment MAC address.";
+        "Customer premises equipment MAC address.";
     }
     leaf oper-state {
       type pon-ctrl:pppoe-oper-state;
@@ -5218,6 +8245,90 @@ module ciena-pon-ctrl {
       description
         "Bit map of alarm conditions currently active on this ONU.
          Only set on ONU delete to indicate which alarms to clear.";
+    }
+  }
+
+  notification rogue-olt-idle-power-state-change {
+    description
+      "Generated when the rogue OLT idle receive power state changes.";
+    leaf olt {
+      type pon-ctrl:olt-ref;
+      description
+        "Name of the OLT.";
+    }
+    leaf state {
+      type pon-ctrl:rogue-onu-state;
+      description
+        "Rogue idle power state of the OLT.";
+    }
+  }
+
+  notification rogue-olt-disallowed-state-change {
+    description
+      "Generated when the rogue OLT disallowed state changes.";
+    leaf olt {
+      type pon-ctrl:olt-ref;
+      description
+        "Name of the OLT.";
+    }
+    leaf state {
+      type pon-ctrl:rogue-onu-state;
+      description
+        "Rogue disallowed state of the OLT.";
+    }
+  }
+
+  notification rogue-onu-power-variation-state-change {
+    description
+      "Generated when the rogue ONU power variation state changes.";
+    leaf olt {
+      type pon-ctrl:olt-ref;
+      description
+        "Name of the OLT.";
+    }
+    leaf onu {
+      type pon-ctrl:onu-ref;
+      description
+        "Name of the ONU.";
+    }
+    leaf state {
+      type pon-ctrl:rogue-onu-state;
+      description
+        "Rogue power variation state of the ONU.";
+    }
+  }
+
+  notification rogue-onu-disallowed-state-change {
+    description
+      "Generated when the rogue ONU disallowed state changes.";
+    leaf olt {
+      type pon-ctrl:olt-ref;
+      description
+        "Name of the OLT.";
+    }
+    leaf onu {
+      type pon-ctrl:onu-ref;
+      description
+        "Name of the ONU.";
+    }
+    leaf state {
+      type pon-ctrl:rogue-onu-state;
+      description
+        "Rogue disallowed state of the ONU.";
+    }
+  }
+
+  notification pon-ctrl-global-state-change {
+    description
+      "Generated when the global PON state changes.";
+    leaf statistics-retrieval-threshold {
+      type boolean;
+      description
+        "When set to true indicates statistics retrieval has exceeded internal threshold.
+         Action has been taken to drop new statistics get requests when the total
+         requests exceeds internal thresold over a 15 minute period. Statistics will resume after
+         the 15 minute period expires. The user should reduce the frequency of either
+         sensor subscriptions or gNMI subscriptions to recover from this condition.";
     }
   }
 }

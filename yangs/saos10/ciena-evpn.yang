@@ -30,6 +30,10 @@ module ciena-evpn {
     prefix "cn-l3-types";
   }
 
+  import ciena-bgp {
+    prefix "bgp";
+  }
+
   organization
       "Ciena Corporation";
 
@@ -51,6 +55,11 @@ module ciena-evpn {
       information or reproduction of this material is strictly
       forbidden unless prior written permission is obtained from
       Ciena Corporation.";
+
+  revision "2023-08-14" {
+    description
+      "Added validation for EVPN vpn-target type 2 with BGP extended AS.";
+  }
 
   revision "2021-08-30" {
     description
@@ -333,6 +342,35 @@ module ciena-evpn {
   }
 
   /* Groupings */
+  grouping vpn-route-targets {
+    description
+      "A grouping that specifies Route Target import-export rules
+       used in the BGP enabled Virtual Private Networks (VPNs).";
+    reference
+      "RFC4364: BGP/MPLS IP Virtual Private Networks (VPNs).
+       RFC4664: Framework for Layer 2 Virtual Private Networks (L2VPNs)";
+    list vpn-target {
+      key route-target;
+      description
+        "List of Route Targets.";
+      leaf route-target {
+        type rt-types:route-target;
+             must "starts-with(.,'0:') or starts-with(.,'1:') or starts-with(. ,'2:') and
+                   ((/bgp:bgp/instance/as<=65535 and /bgp:bgp/instance/extended-asn-cap='true') or (/bgp:bgp/instance/as>65535))" {
+                 error-message "Invalid input: Setting EVPN vpn-target type 2 requires either BGP 4 byte AS or BGP 2 byte AS and extended-asn-cap enabled.";
+             }
+        description
+          "Route Target value";
+      }
+      leaf route-target-type {
+        type rt-types:route-target-type;
+        mandatory true;
+        description
+          "Import/export type of the Route Target.";
+      }
+    }
+  }
+
   grouping cross-connect-cfg {
     description
       "Grouping for cross connect configuration.";
@@ -785,7 +823,7 @@ module ciena-evpn {
             }
           }
         }
-        uses rt-types:vpn-route-targets;
+        uses vpn-route-targets;
         container sr-policy {
           leaf color {
             type uint32;

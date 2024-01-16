@@ -40,9 +40,14 @@ module ciena-bfd-types {
       forbidden unless prior written permission is obtained
       from Ciena Corporation.";
 
-  revision 2022-07-18 {
+  revision 2023-01-03 {
      description
-        "Added new IGP client OSPFv3 for BFD.";
+        "Added new initiator session type for Seamless BFD 
+         support on SR candidate-path.
+         Added new IGP client OSPFv3 for BFD.
+         Added group parameters for micro-BFD profile support.
+         Added feature for micro-bfd platform specific support.
+         Added new micro-bfd session type.";
   }
 
   revision 2021-07-19 {
@@ -93,6 +98,11 @@ module ciena-bfd-types {
      description
         "Support for Seamless-BFD as HW sessions.";
      if-feature seamless-bfd;
+  }
+  
+  feature micro-bfd {
+    description
+      "Support for micro-bfd as general feature";
   }
 
   /*
@@ -299,6 +309,17 @@ module ciena-bfd-types {
            description
               "Seamless-BFD over SR-policy Initiator session.";
            value 5;
+        }
+        enum sr-candidate-path-seamless-initiator {
+           description
+              "Seamless-BFD over SR candidate-path Initiator 
+              session.";
+           value 6;
+        }
+        enum micro-bfd {
+           description
+              "Micro BFD Session.";
+           value 7;
         }
      }
     description
@@ -740,6 +761,41 @@ module ciena-bfd-types {
         default true;
         description
            "If enabled, BFD will run in an accelerated mode (for example, in hardware).";
+     }
+  }
+
+  grouping micro-bfd-profile-parms {
+     description
+        "Grouping of micro-bfd profile parameters.";
+     leaf name {
+        type string {
+           length "1..64";
+        }
+        description
+           "Micro BFD profile name.";
+     }
+
+     leaf local-multiplier {
+        type multiplier;
+        default 3;
+        description
+           "Multiplier transmitted by local system.";
+     }
+
+     leaf desired-min-tx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Desired minimum transmit interval of control packets in microseconds.";
+     }
+
+     leaf required-min-rx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Required minimum receive interval of control packets in microseconds.";
      }
   }
 

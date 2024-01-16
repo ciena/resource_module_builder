@@ -78,6 +78,28 @@ module ciena-ospf {
       condition, or performance of the Specification. You agree
       that Ciena has no liability for your use of the Specification.";
 
+   revision "2023-06-27" {
+      description
+         "Added support for graceful restart state attributes.";
+   }
+
+   revision "2023-06-01" {
+      description
+         "Added support for OSPF GR Restart/Helper mode feature.
+          Added support for default-information-originate for OSPF normal areas.
+          Added support to show link lsdb summary and detail at interface level.
+          Added duplicate OSPF router-id indication in the network to notification.
+          Added support for Secondary IP related params in interface state.
+          Added support to clear ospf neighbor.
+          Changed the default value of Restart mode in GR.";
+   }
+
+
+   revision "2023-04-12" {
+      description
+         "Added support for syslog of Area mismatch between Primary and secondary network addresses.";
+   }
+
    revision "2022-07-12" {
       description
          "Added support for OSPF stub and NSSA area.
@@ -203,6 +225,58 @@ module ciena-ospf {
             "OSPF administrative distance";
       }
 
+      container default-information-originate {
+         description
+            "Create a default route into an OSPF routing domain.";
+
+         leaf enable {
+             description
+                "Enable/Disable advertise default route";
+             type boolean;
+             default "false";
+         }
+
+         container always {
+            description
+               "Always advertise default route";
+
+            leaf enable {
+             description
+                "Enable/Disable advertise default route";
+             type boolean;
+             default "false";
+            }
+            leaf metric {
+               type uint32 {
+                  range "0..16777214";
+               }
+               default "10";
+               description
+                  "Sets the OSPF metric used in creating the default route";
+            }
+            leaf metric-type {
+               type cn-l3-types:ospf-metric-type;
+               default "type-2";
+               description
+                  "External link type associated with the default route advertised into the OSPF routing domain";
+            }
+         }
+         leaf metric {
+            type uint32 {
+               range "0..16777214";
+            }
+            default "10";
+            description
+               "Sets the OSPF metric used in creating the default route";
+        }
+        leaf metric-type {
+            type cn-l3-types:ospf-metric-type;
+            default "type-2";
+            description
+               "External link type associated with the default route advertised into the OSPF routing domain";
+         }
+      }
+
       list redistribute {
          key "protocol";
          description
@@ -298,18 +372,33 @@ module ciena-ospf {
 
          leaf helper-enable {
             type boolean;
-            default "false";
+            default "true";
             description
-               "Enable/disable graceful restart helper mode (disabled by default).";
+               "Enable/disable graceful restart helper mode (enabled by default).";
          }
-         leaf max-grace-period {
-            type uint32 {
+         leaf helper-grace-period {
+            type uint16 {
                range "1..1800";
             }
-            default "60";
             units seconds;
+            default "200";
             description
-               "OSPF GR Max Grace Period in seconds (1-1800)";
+               "OSPF GR Helper Grace Period in seconds (1-1800) should be greater than Restart grace period";
+        }
+        leaf restart-capable {
+            type boolean;
+            default "false";
+            description
+               "Enable/disable graceful restart capability (disable by default).";
+         }
+         leaf restart-grace-period {
+            type uint16 {
+               range "1..1800";
+            }
+            units seconds;
+            default "120";
+            description
+               "OSPF GR Restart Grace Period in seconds (1-1800)";
         }
       }
    }
@@ -545,7 +634,6 @@ module ciena-ospf {
          description
             "Configurations for OSPF remote LFA fast reroute";
          container remote-lfa {
-            when "/ospf:ospf/ospf:instance/ospf:fast-reroute/ospf:lfa/ospf:per-prefix-enable='true'";
             description
                "OSPF remote LFA fast reroute";
             leaf enable {
@@ -583,7 +671,6 @@ module ciena-ospf {
             }
          }
          container ti-lfa {
-            when "/ospf:ospf/ospf:instance/ospf:fast-reroute/ospf:lfa/ospf:per-prefix-enable='true'";
             description
                "OSPF TI LFA fast reroute";
             leaf enable {
@@ -1178,6 +1265,24 @@ module ciena-ospf {
             description
                "The Backup Designated Router (BDR) IP Address.";
          }
+ 
+         leaf interface-ip-addr {
+            type inet:ip-address;
+            description
+               "The IP Address configured on this OSPF interface.";
+         }
+
+         list secondary-ip-address {
+            key "secondary-ip";
+            description 
+               "The list of configured secondary IP addresses on the OSPF interface."; 
+
+            leaf secondary-ip {
+               type inet:ip-address;
+               description
+                  "The secondary IP address on the interface.";
+            }
+         }
 
          leaf operational-metric {
             type cn-l3-types:ospf-link-metric;
@@ -1211,6 +1316,22 @@ module ciena-ospf {
             type uint16;
             description
                "Neighbors count on the interface";
+         }
+
+         leaf secondary-addr-count {
+            type uint16;
+            description
+               "Number of Secondary IP addresses associated with this OSPF interface";
+         }
+
+         container lsdb-summary-state
+         {
+            uses lsdb-interface-summary-grouping;
+         }
+
+         container lsdb-detail-state
+         {
+            uses lsdb-interface-detail-grouping;
          }
       }
    }
@@ -1320,6 +1441,28 @@ module ciena-ospf {
             type uint32;
             description
                "The number of attached links";
+         }
+      }
+   }
+
+   grouping lsdb-interface-summary-grouping {
+      list lsdb-interface-entry-summary {
+         key "lsa-type lsa-id adv-router";
+         config false;
+         description
+            "Summary of LSAs at Interface Level LSDB";
+
+         uses lsa-header;
+
+         leaf opaque-id  {
+            type uint32;
+            description
+               "Opaque ID";
+         }
+         leaf opaque-type  {
+            type uint8;
+            description
+               "Opaque Type";
          }
       }
    }
@@ -1891,6 +2034,49 @@ module ciena-ospf {
       }
    }
 
+   grouping lsdb-interface-detail-grouping {
+
+      list lsdb-interface-entry-detail {
+         key "lsa-type lsa-id adv-router";
+         config false;
+         description
+            "List OSPF link-scope LSAs.";
+
+         uses lsa-header;
+         uses lsa-header-detail;
+
+         container link-local-opaque-lsa{
+            description
+               "Link-Local Opaque-LSA are the Type 9 LSAs.";
+            leaf opaque-id  {
+            type uint32;
+            description
+               "Opaque ID";
+            }
+            leaf opaque-type  {
+            type uint8;
+            description
+               "Opaque Type";
+            }
+            leaf grace-period {
+               type uint16;
+               description
+                  "Restart grace period";
+            }
+            leaf graceful-restart-reason {
+               type cn-l3-types:ospf-gr-reason;
+               description
+                  "Restart reason for GR";
+            }
+            leaf source-address {
+               type inet:ipv4-address;
+               description
+                  "Source Address for GR initiation";
+            }
+         }
+      }
+   }
+
    grouping segment-routing-state-grouping {
       description 
          "Grouping of OSPF SR state elements.";
@@ -2116,10 +2302,20 @@ module ciena-ospf {
          description
             "OSPF graceful restart helper mode enabled: true/false.";
       }
-      leaf max-grace-period {
+      leaf helper-grace-period {
          type uint16;
          description
-            "This is to get the configured OSPF GR Max Grace Period (in seconds)";
+            "This is to get the configured OSPF GR Helper Grace Period (in seconds)";
+       }
+       leaf gr-restartmode-enabled {
+         type boolean;
+         description
+            "OSPF graceful restart restarting mode enabled: true/false.";
+      }
+      leaf restart-grace-period {
+         type uint16;
+         description
+            "This is to get the configured OSPF GR Restart Grace Period (in seconds)";
        }
    }
 
@@ -2199,6 +2395,79 @@ module ciena-ospf {
            "This is to get the vlink retransmit timer (in seconds)";
        }
      }
+   }
+   grouping ospf-gr-restart-state-grouping {
+      description
+         "Graceful restart node state attributes.";
+
+      leaf gr-restart-mode {
+         type boolean;
+         description
+            "GR Restart mode of operation.";
+      }
+      leaf restart-grace-period {
+         type uint16;
+         units seconds;
+         description
+            "Configured OSPF GR Restart Grace Period (in seconds).";
+      }
+      leaf gr-restart-status{
+         type  cn-l3-types:ospf-gr-status;
+         description
+            "Status of graceful-restart Restarting node, in progress or complete.";
+      }
+      leaf gr-start-timestamp {
+         type string;
+         description
+            "Timestamp of graceful-restart start time.";
+      }
+      leaf gr-end-timestamp {
+          type string;
+          description
+             "Timestamp of graceful-restart end time.";
+      }
+      leaf gr-remaining-time {
+         type uint16;
+         units seconds;
+         description
+            "Time(seconds) remaining for Restarting node to come out of GR as per restart-grace-period configured";
+      }
+      leaf gr-end-send {
+         type boolean;
+         description
+            "GR end send to other protocols.";
+      }
+   }
+   grouping ospf-gr-helper-state-grouping {
+      description
+         "Graceful helper node state attributes.";
+
+      leaf gr-helper-mode {
+         type boolean;
+         description
+            "GR Helper mode of operation.";
+      }
+      leaf gr-helper-status{
+         type  cn-l3-types:ospf-gr-status;
+         description
+            "Status of graceful-restart Helper node, in progress or complete.";
+      }
+      leaf helper-start-timestamp {
+         type string;
+         description
+            "Timestamp of GR Helper node start time.";
+      }
+      leaf helper-end-timestamp {
+          type string;
+          description
+             "Timestamp of GR Helper node end time.";
+      }
+      leaf helper-remaining-time {
+         type uint16;
+         units seconds;
+         description
+            "Time(seconds) remaining for Helper node to come out of GR as per grace-period receivied from peer";
+      }
    }
    container ospf-state
    {
@@ -2585,6 +2854,14 @@ module ciena-ospf {
          {
             uses virtual-link-state-grouping; 
          } 
+         container ospf-gr-restart-state
+         {
+            uses ospf-gr-restart-state-grouping;
+         }
+         container ospf-gr-helper-state
+         {
+            uses ospf-gr-helper-state-grouping;
+         }
       }
    }
 
@@ -2597,6 +2874,12 @@ module ciena-ospf {
 
             description
                "OSPF instance ID";
+         }
+
+         leaf neighbor-router-id {
+            type yang:dotted-quad;
+            description
+               "Neighbor router ID";
          }
       }
 
@@ -2707,7 +2990,81 @@ module ciena-ospf {
             description
                "OSPF instance state.";
          }
+         leaf duplicate-router-id-intra-area {
+            type boolean;
+            description
+               "OSPF duplicate router-id detected in same area.";
+         }
+         leaf duplicate-router-id-asbr {
+            type boolean;
+            description
+               "OSPF duplicate router-id detected with ASBR.";
+         }
       }
    }
 
+   notification ospf-gr-status-event {
+      description
+         "Defines status of OSPF graceful restart/helper mode";
+
+      leaf gr-mode {
+         type enumeration {
+            enum restart {
+               description
+                  "Indicates OSPF GR restarting mode";
+            }
+            enum helper {
+               description
+                  "Indicates OSPF GR helper mode";
+            }
+         }
+         description
+            "OSPF GR mode of operation.";
+      }
+      leaf gr-status {
+         type enumeration {
+            enum enter {
+               description
+                  "Entering into OSPF GR restart/helper mode";
+            }
+            enum exit {
+               description
+                  "Exiting from OSPF GR restart/helper mode";
+            }
+         }
+         description
+            "Describe OSPF GR enter/exit status.";
+      }
+   }
+
+   notification ospf-sec-network-event {
+      description
+         "Defines events in case of area mismatch between primary and secondary networks in OSPF";
+
+      leaf interface {
+         type string {
+            length "0..255";
+         }
+         description
+            "OSPF interface name";
+      }
+
+      leaf secondary-network-addr {
+         type inet:ipv4-prefix;
+         description
+            "The secondary network address configured in OSPF";
+      }
+
+      leaf primary-network-addr {
+         type inet:ipv4-prefix;
+         description
+            "The primary network address configured in OSPF";
+      }
+
+      leaf area-id  {
+         type yang:dotted-quad;
+         description
+            "Area Id in quad-dotted notation";
+      }
+   }
 }

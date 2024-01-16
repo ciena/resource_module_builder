@@ -8,6 +8,9 @@ module ciena-pkix-transfer {
   import ciena-tls-service-profile {
     prefix ciena-tls-service-profile;
   }
+  import ietf-inet-types {
+    prefix inet;
+  }
 organization "Ciena Corporation";
   contact
     "Web URL: http://www.ciena.com/
@@ -43,6 +46,14 @@ organization "Ciena Corporation";
      condition, or performance of the Specification. You agree
      that Ciena has no liability for your use of the Specification.";
 
+  revision 2023-04-28 {
+    description
+      "Added pem-string to pass the certificate as a string
+       and validate-trust-store boolean to validate device cert install against trusted rootCA, if set to true";
+    reference
+      "No specific reference; standard not available.";
+  }
+
   revision 2022-01-20 {
     description
       "Added separate-key boolean to separate the certificate and private key, if set to true";
@@ -69,6 +80,7 @@ organization "Ciena Corporation";
     description
       "Install a CA certificate.";
     input {
+      
       leaf ca-cert-name {
         type string {
              length "1..255";
@@ -84,8 +96,20 @@ organization "Ciena Corporation";
         description
            "The TLS Service Profile to be used when accepting
             TLS connections.";
-      }   
-        uses pkix-types:pkix-file-transfer-parameters;
+      } 
+      leaf remote-file-uri {
+        type inet:uri;
+        description
+          "URI (Universal Resource Identifier) of the remote file.";
+      }  
+      uses pkix-types:pkix-file-transfer-parameters;
+      leaf pem-string {
+        type string {
+          length 0..16384;
+        }
+        description
+          "Use to pass certificate as a string.";
+      }
     }
   }
   rpc pkix-ca-uninstall {
@@ -130,6 +154,12 @@ organization "Ciena Corporation";
            "The TLS Service Profile to be used when accepting
             TLS connections.";
       }
+      leaf remote-file-uri {
+        type inet:uri;
+        mandatory true;
+        description
+          "URI (Universal Resource Identifier) of the remote file.";
+      }
       uses pkix-types:pkix-file-transfer-parameters;
     }
   }
@@ -162,11 +192,28 @@ organization "Ciena Corporation";
            "The TLS Service Profile to be used when accepting
             TLS connections.";
       }
+      leaf remote-file-uri {
+        type inet:uri;
+        description
+          "URI (Universal Resource Identifier) of the remote file.";
+      }
       uses pkix-types:pkix-file-transfer-parameters;
       leaf separate-key {
         type boolean;
         description
           "Separate certificate and private key from .p12 file";
+      }
+      leaf pem-string {
+        type string {
+          length 0..16384;
+        }
+        description
+          "Use to pass certificate as a string.";
+      }
+      leaf validate-trust-store {
+        type boolean;
+        description
+          "Validate device certificate against locally installed root CA";
       }
     }
   }
@@ -200,6 +247,12 @@ organization "Ciena Corporation";
         description
            "The TLS Service Profile to be used when accepting
             TLS connections.";
+      }
+      leaf remote-file-uri {
+        type inet:uri;
+        mandatory true;
+        description
+          "URI (Universal Resource Identifier) of the remote file.";
       }
       uses pkix-types:pkix-file-transfer-parameters;
     }

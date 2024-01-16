@@ -37,6 +37,20 @@ module ciena-sync-gnss {
      material is strictly forbidden unless prior written permission is obtained
      from Ciena Corporation.";
 
+ revision "2023-06-08" {
+    description
+      "Added reason field in GNSS Input Ref state data and GNSS Input Ref Oper State change notification.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
+
+ revision "2022-11-25" {
+    description
+      "Increase satellite-visibility-threshold to 32.
+      Add support for new parameters -firmware-upgrade-status,pps-offset,clock-offset,self-survey-status in show sync gnss.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
 
   revision "2021-04-16" {
     description
@@ -233,6 +247,33 @@ module ciena-sync-gnss {
       "Almanac status.";
   }
 
+  typedef firmware-upgrade-status-type {
+    type enumeration {
+      enum not-enabled {
+        description 
+          "GNSS firmware upgrade not enabled.";
+      }
+      enum not-supported {
+        description
+          "GNSS Firmware upgrade not supported.";
+      }
+      enum latest {
+        description
+          "GNSS firmware already on latest.";
+      }
+      enum in-progress {
+        description
+          "GNSS firmware upgrade in progress.";
+      }
+      enum completed {
+        description
+          "GNSS Firmware upgrade completed.";
+      }
+    }
+    description 
+      "Firmware upgrade status.";
+  }
+
   typedef sv-type {
     type enumeration {
       enum gps {
@@ -277,6 +318,45 @@ module ciena-sync-gnss {
     }
     description
       "Satellite acquisition status.";
+  }
+
+  typedef reason-type {
+    type enumeration {
+      enum GNSS_NO_FAULT {
+        description
+          "GNSS not at fault.";
+      }
+      enum GNSS_INTERNAL_ERR {
+        description
+          "GNSS module failure.";
+      }
+      enum GNSS_NO_USABLE_SAT {
+        description
+          "GNSS no usable satellites are yet available.";
+      }
+      enum GNSS_EXTERNAL_ERR {
+        description
+          "GNSS error due to environmental reasons.";
+      }
+      enum GNSS_SAT_COUNT_LOW {
+        description
+          "GNSS satellite count below threshold.";
+      }
+      enum GNSS_SURVEY_IN_PROG {
+        description
+          "GNSS survey in progress.";
+      }
+      enum GNSS_POWERING_UP {
+        description
+          "GNSS power up.";
+      }
+      enum GNSS_TIME_ERROR {
+        description
+          "GNSS time error.";
+      }
+    }
+    description
+      "GNSS loss of lock reasons type.";
   }
 
   typedef float {
@@ -394,7 +474,7 @@ module ciena-sync-gnss {
       }
       leaf satellite-visibility-threshold {
         type uint32 {
-          range "1..12";
+          range "1..32";
         }
         default 2;
         description
@@ -496,6 +576,26 @@ module ciena-sync-gnss {
         type gnss:almanac-status-type;
         description
           "Almanac status.";
+      }
+      leaf firmware-upgrade-status {
+        type gnss:firmware-upgrade-status-type;
+        description
+          "Fimrware upgrade status.";
+      }
+      leaf self-survey-status {
+        type uint8; 
+        description
+          "Gnss self survey progress.";
+      }
+      leaf pps-offset {
+        type float;
+        description
+          "GNSS pps offset.";
+      }
+      leaf clock-offset {
+        type float;
+        description
+          "GNSS clock offset.";
       }
     }
   }
@@ -773,6 +873,11 @@ module ciena-sync-gnss {
             "Antenna altitude in meters.";
         }
       }
+      leaf reason {
+        type gnss:reason-type;
+        description
+          "GNSS loss of lock reasons.";
+      }
     }
   }
 
@@ -874,6 +979,11 @@ module ciena-sync-gnss {
       type gnss:gnss-input-oper-state-leafref-type;
       description
         "Operational state of GNSS input reference.";
+    }
+    leaf reason {
+      type gnss:reason-type;
+      description
+        "GNSS loss of lock reasons.";
     }
   }
 

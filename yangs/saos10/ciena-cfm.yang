@@ -13,6 +13,15 @@ module ciena-cfm {
   import ietf-yang-types {
      prefix yang;
   }
+
+  import mef-soam-pm {
+     prefix "mef-soam-pm";
+  }
+
+  import ciena-cfm-types {
+     prefix "ciena-cfm-types";
+  }
+
   organization
      "Ciena Corporation";
 
@@ -37,6 +46,30 @@ module ciena-cfm {
       information or reproduction of this material is strictly
       forbidden unless prior written permission is obtained 
       from Ciena Corporation.";
+
+  revision "2023-10-01" {
+     description
+        "Added Instability support for CFM MEP.";
+     reference
+        "None.";
+  }
+
+  revision "2023-02-20" {
+     description
+        "Added cfm-state container for cfm operational data.
+         Moved remote-meps out of maintenance-association-end-point.
+         Moved delay-measurement out of maintenance-association-end-point.
+         Moved loss-measurement out of maintenance-association-end-point.
+         Add parent container current-stats for current-availability-stats and current-measurement-stats.
+         Add parent container history-stats for history-availability-stats and history-measurement-stats.
+         Added accelerated-ccm feature option.
+         Added leaves interface, direction, administrative-state, ccm-ltm-priority, accelerate in container
+         maintenance-association-end-point.
+         Added leaves lowest-fault-priority-defect, fng-alarm-time, fng-reset-time in container continuity-check.
+         Added statistics-on-accelerated-ccm feature option.";
+     reference
+        "None.";
+  }
 
   revision "2022-06-13" {
     description
@@ -249,6 +282,17 @@ module ciena-cfm {
           "Indicates DEI bit is set to 0 in the transmitted frame";
       }
     }
+  }
+
+  feature statistics-on-accelerated-ccm{
+    description
+      "Platform specific indicator which provides information whether the
+       statistics-collection on hardware Mep is supported on specific platform.";
+  }
+  feature accelerated-ccm {
+    description
+      "Platform specific indicator which provides information whether the accelerated
+       & statistics-collection hardware Mep is supported on specific platform.";
   }
 
   feature l2-loop {
@@ -812,8 +856,8 @@ module ciena-cfm {
       leaf ccm-timeout {
         type yang:date-and-time;
         description
-          "Time when, timer counter for declaring mismatch defects based
-           on the received traffic field, timeouts";
+          "Timeout timestamp for declaring mismatch defects based on the 
+           received traffic field";
       }
 
       leaf rx-timeout-stamp {
@@ -1408,18 +1452,1101 @@ module ciena-cfm {
 
     leaf accelerate {
       type boolean;
+      if-feature accelerated-ccm;
       default "false";
       description
         "An indicator of whether the MEP inside this MA is H/W accelerated or not.";
     }
 
     leaf statistics-collection {
+       if-feature statistics-on-accelerated-ccm;
+       if-feature accelerated-ccm;
        when "../accelerate = 'true'";
        type boolean;
        default "false";
        description
          "Indicates whether statistics are required on this MEP when it is accelerated in H/W.";
     }
+  }
+
+  container cfm-state {
+     config false;
+
+     description
+        "CFM operational data";
+
+     list maintenance-association-end-point {
+        key "md-id ma-id mep-identifier";
+        config false;
+
+        description
+           "The list of Maintenance association End Points.";
+
+        leaf md-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Domain";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf ma-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Association";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf mep-identifier {
+           type mef-cfm:mep-id-type;
+
+           description
+              "Integer that is unique among all the MEPs in the same MA. Other
+              definition is: a small integer, unique over a given
+              Maintenance Association, identifying a specific Maintenance
+              association End Point.";
+           reference
+              "[802.1q] 12.14.6.3.2:b";
+        }
+
+        leaf interface {
+          type string;
+          config false;
+
+          description
+            "An interface, either a bridge port or an aggregated IEEE 802.3 port
+             within a bridge port, to which the MEP is attached. Each interface in
+             the system is uniquely identified by an interface name. The structure
+             and content of the name is outside the scope of this specification.";
+          reference
+            "[802.1q] 12.14.7.1.3:b";
+        }
+
+        leaf direction {
+          type enumeration {
+             enum up {
+                description 
+                   "Indicates when CFM frames are transmitted towards and
+                    received from the bridging function.";
+             }
+             enum down {
+                description 
+                   "Indicates when CFM frames are transmitted towards and
+                    received from the wire.";
+             }
+          }
+          config false;
+
+          description
+            "A value indicating the direction in which the MEP faces on the
+             interface.";
+
+          reference
+            "[802.1q] 12.14.7.1.3:c";
+        }
+
+        leaf administrative-state {
+          type boolean;
+          config false;
+
+          description
+            "The administrative state of the MEP";
+          reference
+            "[802.1q] 12.14.7.1.3:e";
+        }
+
+        leaf mac-address {
+           type yang:mac-address;
+
+           description
+              "The MAC address of the MEP";
+           reference
+              "[802.1q] 12.14.7.1.3:i";
+        }
+
+        leaf ccm-ltm-priority {
+           type mef-cfm:priority-type;
+           config false;
+
+           description
+              "The priority parameter for CCMs and LTMs transmitted by the MEP.";
+           reference
+              "[802.1q] 12.14.7.1.3:h";
+        }
+
+        container continuity-check {
+           description
+              "Data definitions related to the continuity check function.";
+
+           leaf fng-state {
+              type enumeration {
+                 enum reset {
+                    description
+                       "No defect has been present since the
+                       fng-reset-time timer expired, or since
+                       the state machine was last reset.";
+                 }
+                 enum defect {
+                    description
+                       "A defect is present, but not for a long enough
+                       time to be reported (fng-alarm-time).";
+                 }
+                 enum report-defect {
+                    description
+                       "A momentary state during which the defect is
+                       reported by sending a fault-alarm notification
+                       if that action is enabled.";
+                 }
+                 enum defect-reported {
+                    description
+                       "A defect is present, and some defect has been
+                       reported.";
+                 }
+                 enum defect-clearing {
+                    description
+                       "No defect is present, but the fng-reset-time timer
+                       has not yet expired.";
+                 }
+              }
+              config false;
+
+              description
+                 "A value indicating the current state of the MEP fault notification
+                 generator state machine";
+              reference
+                 "[802.1q] 12.14.7.1.3:f, 20.35
+                 IEEE8021-CFM-MIB.Dot1agCfmFngState";
+           }
+
+           leaf lowest-fault-priority-defect {
+              type mef-cfm:fault-alarm-defect-type;
+              config false;
+
+              description
+                 "The lowest priority defect that is allowed to generate a fault
+                  alarm. The non-existence of this leaf means that no
+                  defects are to be reported";
+              reference
+                 "[802.1q] 12.14.7.1.3:k";
+           }
+
+           leaf highest-priority-defect-found {
+              type mef-cfm:fault-alarm-defect-type;
+              config false;
+
+              description
+                 "Value indicating the highest-priority defect that has been
+                 present since the MEP fault notification generator state machine
+                 was last in the FNG_RESET state The non-existence of this
+                 leaf represents that no defect has been present since the
+                 last FNG_RESET state";
+              reference
+                 "[802.1q] 12.14.7.1.3:n";
+           }
+
+           leaf fng-alarm-time {
+              type yang:timeticks;
+              config false;
+
+              description
+                 "The time that defects must be present before a fault alarm is issued";
+              reference
+                 "[802.1q] 12.14.7.1.3:l, 20.33.3";
+           }
+
+           leaf fng-reset-time {
+              type yang:timeticks;
+              config false;
+
+              description
+                 "The time that defects must be absent before resetting a fault alarm";
+              reference
+                 "[802.1q] 12.14.7.1.3:m, 20.33.4";
+           }
+
+           leaf active-defects {
+              type ciena-cfm-types:active-defects-bits-type;
+              config false;
+
+              description
+                 "A bit field of potential active defects. The values are the same as the
+                 content of the fault-alarm-defect-type.";
+              reference
+                 "[802.1q] 12.14.7.1.3:o, p, q, r, s";
+           }
+
+           leaf last-error-ccm {
+              type binary {
+                 length "1..1522";
+              }
+              config false;
+
+              description
+                 "The last-received CCM that triggered an invalid-ccm fault";
+              reference
+                 "[802.1q] 12.14.7.1.3:t";
+           }
+
+           leaf last-cross-connect-ccm {
+              type binary {
+                 length "1..1522";
+              }
+              config false;
+
+              description
+                 "The last-received CCM that triggered a cross-connect-ccm fault";
+              reference
+                 "[802.1q] 12.14.7.1.3:u";
+           }
+
+           leaf ccm-sequence-error-count {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of out-of-sequence CCMs received from all remote
+                 MEPs.";
+              reference
+                 "[802.1q] 12.14.7.1.3:v";
+           }
+
+           leaf sent-ccms {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of CCMs transmitted.";
+              reference
+                 "[802.1q] 12.14.7.1.3:w";
+           }
+        }
+
+        leaf accelerate {
+           type boolean;
+           config false;
+           description
+              "An indicator of whether the MEP inside this MA is H/W accelerated or not.";
+        }
+
+
+        container loopback {
+           description
+              "Data definitions related to the loopback function.";
+
+           config false;
+
+           leaf replies-received {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of valid, in-order LBRs received.";
+              reference
+                 "[802.1q] 12.14.7.1.3:y";
+           }
+
+           leaf replies-transmitted {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of LBRs transmitted.";
+              reference
+                 "[802.1q] 12.14.7.1.3:ad";
+           }
+
+           leaf out-of-order-replies-received {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of valid, out-of-order LBRs received.";
+              reference
+                 "[802.1q] 12.14.7.1.3:z";
+           }
+
+           leaf bad-msdu {
+              type yang:counter32;
+              config false;
+
+              description
+                 "The total number of LBRs received whose mac_service_data_unit did not
+                 match (except for the OpCode) that of the corresponding LBM";
+              reference
+                 "[802.1q] 12.14.7.1.3:aa";
+           }
+
+           leaf loopback-session-active {
+              type boolean;
+              description
+                 "A Boolean flag set to true to indicate that a loopback session
+                 is active. Reset to false by the MEP loopback initiator state
+                 machine.";
+           }
+
+           leaf lbm-transmitted {
+              type yang:counter32;
+              description
+                 "Total number of LBM frames transmitted by the MEP";
+           }
+
+           leaf lbm-received {
+              type yang:counter32;
+              description
+                 "Total number of LBM frames received by the MEP";
+           }
+        }
+        container linktrace {
+           description
+              "Data definitions related to the linktrace function.";
+           config false;
+
+           leaf unexpected-replies-received {
+              type yang:counter32;
+
+              description
+                 "The total number of unexpected LTRs received.";
+              reference
+                 "[802.1q] 12.14.7.1.3:ac";
+           }
+
+           container linktrace-database {
+              description
+                 "Data definitions related to the linktrace database for a specific MEP";
+
+              list linktrace {
+                 key "transaction-id";
+                 config false;
+
+                 description
+                    "The list of entries in a linktrace database.";
+
+                 leaf transaction-id {
+                    type mef-cfm:ltm-transaction-id-type;
+
+                    description
+                       "The LTM transaction identifier to which the LTR entries will be
+                       attached";
+                    reference
+                       "[802.1q] 12.14.7.5.2:b";
+                 }
+
+                 uses mef-cfm:linktrace-parameters-group;
+
+                 list reply {
+                    key reply-order;
+
+                    description
+                       "The list of LTRs associated with a specific linktrace
+                       transaction.";
+                    leaf reply-order {
+                       type uint32;
+
+                       description
+                          "An index to distinguish among multiple LTRs with the same LTR
+                          transaction-id field value. reply-order are
+                          assigned sequentially from 1, in the order that the
+                          linktrace initiator received the LTR";
+                       reference "[802.1q] 12.14.7.5.2:c";
+                    }
+
+                    leaf reply-ttl {
+                       type uint32;
+
+                       description
+                          "The integer Reply TTL field value returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:b";
+                    }
+
+                    leaf forwarded {
+                       type boolean;
+
+                       description
+                          "A Boolean value stating whether an LTM was forwarded by
+                          the responding MP.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:c";
+                    }
+
+                    leaf terminal-mep {
+                       type boolean;
+
+                       description
+                          "A Boolean value stating whether the forwarded LTM reached
+                          a MEP for its MA.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:d";
+                    }
+
+                    leaf last-egress-identifier {
+                       type binary {
+                          length 8;
+                       }
+
+                       description
+                          "An octet string holding the last egress identifier field
+                          returned in the LTR Egress Identifier TLV of the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:e";
+                    }
+
+                    leaf next-egress-identifier {
+                       type binary {
+                          length 8;
+                       }
+
+                       description
+                          "An octet string holding the next egress identifier field
+                          returned in the LTR Egress Identifier TLV of the LTR";
+                       reference
+                          "[802.1q] 12.14.7.5.3:f";
+                    }
+
+                    leaf ltr-relay {
+                       type enumeration {
+                          enum hit {
+                             description
+                                "Indicates the LTM reached an MP whose MAC
+                                address matches the target MAC address.";
+                          }
+                          enum filtering-database {
+                             description
+                                "Indicates the egress port was determined by
+                                consulting the filtering database.";
+                          }
+                          enum mip-ccm-database {
+                             description
+                                "Indicates the egress port was determined by
+                                consulting the MIP CCM database.";
+                          }
+                       }
+
+                       description
+                          "An enumerated value indicating the value returned in the
+                          relay action field.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:g, Table 21-27
+                          IEEE8021-CFM-MIB.Dot1agCfmRelayActionFieldValue";
+                    }
+
+                    uses mef-cfm:sender-id-tlv-group;
+
+                    leaf ingress-action {
+                       type enumeration {
+                          enum ok {
+                             description
+                                "Indicates the target data frame would be
+                                passed through to the MAC relay entity.";
+                          }
+                          enum down {
+                             description
+                                "Indicates the bridge ports MAC operational
+                                parameter is false.";
+                          }
+                          enum blocked {
+                             description
+                                "Indicates the target data frame would not
+                                be forwarded if received on this port due
+                                to active topology enforement.";
+                          }
+                          enum vid {
+                             description
+                                "Indicates the ingress port is not in the
+                                member set of the LTMs VID, and ingress
+                                filtering is enabled, so the target data
+                                frame would be filtered by ingress filtering.";
+                          }
+                       }
+
+                       description
+                          "An enumerated value indicating the value returned in the
+                          ingress action field. This leaf is not present if no value
+                          is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:k, Table 21-30
+                          IEEE8021-CFM-MIB.Dot1agCfmIngressActionFieldValue";
+                    }
+
+                    leaf ingress-mac {
+                       type yang:mac-address;
+
+                       description
+                          "The MAC address returned in the ingress MAC address field.
+                          This leaf is not present if no value is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:l";
+                    }
+
+                    container ingress-port-id {
+                       uses mef-cfm:port-id-tlv-group;
+
+                       description
+                          "The ingress port ID field and the corresponding port ID value.
+                          This leaf is not present if no value is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:m";
+                    }
+
+                    leaf egress-action {
+                       type enumeration {
+                          enum ok {
+                             description
+                                "Indicates the targeted data frame would be
+                                forwarded.";
+                          }
+                          enum down {
+                             description
+                                "Indicates the egress port can be identified,
+                                but that bridge ports MAC operational
+                                parameter is false.";
+                          }
+                          enum blocked {
+                             description
+                                "Indicates the egress port can be identified,
+                                but the data frame would not pass through the
+                                the egress port due to active topology
+                                management, i.e., the bridge port is not in the
+                                forwarding state.";
+                          }
+                          enum vid {
+                             description
+                                "Indicates the egress port can be identified,
+                                but the bridge port is not in the LTMs VIDs
+                                member set, so would be filtered by egress
+                                filtering.";
+                          }
+                       }
+
+                       description
+                          "An enumerated value indicating the value returned in the
+                          egress action field. This leaf is not present if no value
+                          is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:o, Table 21-32
+                          IEEE8021-CFM-MIB.Dot1agCfmIngressActionFieldValue";
+                    }
+
+                    leaf egress-mac {
+                       type yang:mac-address;
+
+                       description
+                          "The MAC address returned in the egress MAC address field.
+                          This leaf is not present if no value is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:p";
+                    }
+
+                    container egress-port-id {
+                       uses mef-cfm:port-id-tlv-group;
+
+                       description
+                          "The egress port ID field and the corresponding port ID value.
+                          This leaf is not present if no value is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:p, 12.14.7.5.3:q";
+                    }
+
+                    leaf organization-specific-tlv {
+                       type binary {
+                          length "0|4 .. 1500";
+                       }
+                       description
+                          "The OUI and contents of any Organization-Specific TLVs. This
+                          leaf is not present if no value is returned in the LTR.";
+                       reference
+                          "[802.1q] 12.14.7.5.3:s";
+                    }
+                 }
+              }
+           }
+        }
+
+        container maintenance-association-end-point-oper-data {
+           config false;
+           description
+              "The MEP Operational data";
+
+           leaf error-ccm-defect-timeout {
+              type yang:date-and-time;
+              description
+                 "Time when invalid CCMs timeouts.";
+           }
+
+           leaf cross-connect-ccm-defect-timeout {
+              type yang:date-and-time;
+              description
+                 "Time when cross connect CCMs timouts.";
+           }
+
+           leaf next-ccm-transaction-id {
+              type uint32;
+              description
+                 "A MEP either transmits a 0 in this
+                 field or copies to it the contents
+                 of the CCIsentCCMs variable.";
+           }
+
+           leaf instability-defect {
+              type boolean;
+              description
+                 "The MEP has never established a stable
+                 CCM connection with any remote MEP";
+           }
+
+           leaf rdi-present {
+              type boolean;
+              description
+                 "A Boolean value indicating the state of
+                 the RDI bit in CCMs transmitted by this
+                 MEP. rdi-present is true if and only if
+                 one or more of the variables RMEPCCMdefect,
+                 MACstatusDefect, errorCCMdefect, or
+                 xconCCMdefect is true, and if the corresponding
+                 priority of that variable, from
+                 IEEE Std 802.1Q 2011 Table 20-1, is
+                 greater than or equal to the value of the
+                 variable lowestAlarmPri.";
+           }
+
+           leaf ppm-forced-ccm-off {
+              type boolean;
+              description
+                 "The status of CCM after PPM action on it.";
+           }
+
+           container l2-loop-oper-data {
+              if-feature l2-loop;
+              config "false";
+              description
+                 "Specifies the leafs for l2-loopback operational data per MEP service.";
+
+              leaf loop-present {
+                 if-feature l2-loop;
+                 type boolean;
+                 config "false";
+                 description
+                    "An boolean flag indicating the current state of the l2-loop in the service.";
+              }
+
+              leaf loop-blocked {
+                 if-feature l2-loop;
+                 type boolean;
+                 config "false";
+                 description
+                    "An boolean flag indicating if the flow point on which the MEP resides,is blocked.";
+              }
+
+              leaf rx-drop-loop-count {
+                 if-feature l2-loop;
+                 type yang:counter32;
+                 config "false";
+                 description
+                    "Total number of loopback CCM pdus rxed.";
+              }
+
+              leaf wtr-timer-running {
+                 if-feature l2-loop;
+                 type boolean;
+                 config "false";
+                 description
+                    "Boolean flag indicating if WTR timer is running for l2 loop flow point unblock.";
+              }
+           }
+        }
+
+        container maintenance-association-end-point-frame-stats {
+           config false;
+           description
+              "Frame stats on each MEP";
+
+           leaf tx-ccm {
+              type yang:counter32;
+              description
+                 "Total number of CCM frames transmitted on the MEP";
+           }
+
+           leaf rx-ccm {
+              type yang:counter32;
+              description
+                 "Total number of CCM frames received on the MEP";
+           }
+
+           leaf tx-dmm {
+              type yang:counter32;
+              description
+                 "Total number of DMM frames transmitted on the MEP";
+           }
+
+           leaf rx-dmm {
+              type yang:counter32;
+              description
+                 "Total number of DMM frames received on the MEP";
+           }
+
+           leaf tx-dmr {
+              type yang:counter32;
+              description
+                 "Total number of DMR frames transmitted on the MEP";
+           }
+
+           leaf rx-dmr {
+              type yang:counter32;
+              description
+                 "Total number of DMR frames received on the MEP";
+           }
+
+           leaf tx-slm {
+              type yang:counter32;
+              description
+                 "Total number of SLM frames transmitted on the MEP";
+           }
+
+           leaf rx-slm {
+              type yang:counter32;
+              description
+                 "Total number of SLM frames received on the MEP";
+           }
+
+           leaf tx-slr {
+              type yang:counter32;
+              description
+                 "Total number of SLR frames transmitted on the MEP";
+           }
+
+           leaf rx-slr {
+              type yang:counter32;
+              description
+                 "Total number of SLR frames received on the MEP";
+           }
+
+           leaf tx-lmm {
+              type yang:counter32;
+              description
+                 "Total number of LMM frames transmitted on the MEP";
+           }
+
+           leaf rx-lmm {
+              type yang:counter32;
+              description
+                 "Total number of LMM frames received on the MEP";
+           }
+
+           leaf tx-lmr {
+              type yang:counter32;
+              description
+                 "Total number of LMR frames transmitted on the MEP";
+           }
+
+           leaf rx-lmr {
+              type yang:counter32;
+              description
+                 "Total number of LMR frames received on the MEP";
+           }
+
+           leaf tx-lbm {
+              type yang:counter32;
+              description
+                 "Total number of LBM frames transmitted on the MEP";
+           }
+
+           leaf rx-lbm {
+              type yang:counter32;
+              description
+                 "Total number of LBM frames received on the MEP";
+           }
+
+           leaf tx-lbr {
+              type yang:counter32;
+              description
+                 "Total number of LBR frames transmitted on the MEP";
+           }
+
+           leaf rx-lbr {
+              type yang:counter32;
+              description
+                 "Total number of LBR frames received on the MEP";
+           }
+
+           leaf tx-ltm {
+              type yang:counter32;
+              description
+                 "Total number of LTM frames transmitted";
+           }
+
+           leaf rx-ltm {
+              type yang:counter32;
+              description
+                 "Total number of LTM frames received";
+           }
+
+           leaf tx-ltr {
+              type yang:counter32;
+              description
+                 "Total number of LTR frames transmitted";
+           }
+
+           leaf rx-ltr {
+              type yang:counter32;
+              description
+                 "Total number of LTR frames received";
+           }
+
+           leaf rx-ltm-invalid {
+              type yang:counter32;
+              description
+                 "Total number of invalid LTM frames received";
+           }
+
+           leaf rx-ltr-invalid {
+              type yang:counter32;
+              description
+                 "Total number of invalid LTR frames received";
+           }
+
+           leaf rx-ltr-unexpected {
+              type yang:counter32;
+              description
+                 "Total number of received LTR frames that does not match
+                 expected transaction ID";
+           }
+
+           leaf rx-ltr-invalid-relay-action {
+              type yang:counter32;
+              description
+                 "Total number of LTR frames received with invalid relay
+                 action rules";
+           }
+        }
+     }
+
+     list remote-mep {
+        description
+           "The list of remote MEPs in the MEP CCM database";
+        reference
+           "[802.1q] 12.14.7.6";
+        key "md-id ma-id mep-identifier remote-mep-id";
+        config false;
+
+        leaf md-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Domain";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf ma-id {
+           type string;
+           description
+              "A unique identifier of a Maintenance Association";
+           reference
+              "[802.1q] 12.14.6";
+        }
+
+        leaf mep-identifier {
+           type mef-cfm:mep-id-type;
+
+           description
+              "Integer that is unique among all the MEPs in the same MA. Other
+              definition is: a small integer, unique over a given
+              maintenance association, identifying a specific maintenance
+              association End Point.";
+           reference
+              "[802.1q] 12.14.6.3.2:b";
+        }
+
+        leaf remote-mep-id {
+           type mef-cfm:mep-id-type;
+
+           description
+              "The MEPID of a remote MEP";
+           reference
+              "[802.1q] 12.14.7.6.2";
+        }
+
+        leaf remote-mep-state {
+           type mef-cfm:remote-mep-state-type;
+
+           description
+              "An enumerated value indicating the operational state of the
+              Remote MEP state machine for this remote MEP.";
+           reference
+              "[802.1q] 12.14.7.6.3:b
+              IEEE8021-CFM-MIB.Dot1agCfmRemoteMepState";
+        }
+
+        leaf failed-ok-time {
+           type yang:timeticks;
+
+           description
+              "The time (SysUpTime, IETF RFC 3418) at which the remote MEP state
+              machine last entered either the RMEP_FAILED or RMEP_OK
+              state, or 0 if it has not yet entered either of those
+              states";
+           reference
+              "[802.1q] 12.14.7.6.3:c";
+        }
+
+        leaf mac-address {
+           type yang:mac-address;
+
+           description
+              "The MAC address of the remote MEP.";
+           reference
+              "[802.1q] 12.14.7.6.3:d";
+        }
+
+        leaf rdi {
+           type boolean;
+
+           description
+              "An indication of the state of the RDI bit in the last received CCM,
+              true for RDI = 1, or false for RDI = 0 or if none has been
+              received.";
+           reference
+              "[802.1q] 12.14.7.6.3:e";
+        }
+
+        leaf port-status-tlv {
+           type mef-cfm:port-status-type;
+
+           description
+              "The enumerated value from the port status TLV from the last
+              CCM received from the remote MEP.";
+           reference
+              "[802.1q] 12.14.7.6.3:f";
+        }
+
+        leaf interface-status-tlv {
+           type mef-cfm:interface-status-type;
+
+           description
+              "The enumerated value from the interface status TLV from the
+              last CCM received from the remote MEP";
+           reference
+              "[802.1q] 12.14.7.6.3:g";
+        }
+
+        uses mef-cfm:sender-id-tlv-group;
+
+        container remote-mep-oper-data{
+           config false;
+           description
+              "Remote mep operational data";
+
+           leaf operational-state {
+              type enumeration {
+                 enum disabled {
+                    description
+                       "Remote MEP is admin disabled";
+                 }
+                 enum enabled {
+                    description
+                       "Remote MEP is admin enabled and the remote MEP must be
+                       free of a CCM fault for rmep-hold-time before it
+                       transitions to oper enabled";
+                 }
+                 enum holding {
+                    description
+                       "Holding is an intermediate state between oper disabled
+                       and enabled";
+                 }
+              }
+              description
+                 "An enumeration indicating if defects associated
+                 with a remote MEP fault the service. Detected service
+                 defects can only trigger a fault when the remote MEP is
+                 oper enabled";
+           }
+
+           leaf last-state-change-time {
+              type yang:date-and-time;
+              description
+                 "Time that a remote MEP CCM defect was last detected or
+                 cleared";
+           }
+
+           leaf hold-state-timeout {
+              type yang:date-and-time;
+              description
+                 "Time until a remote MEP in hold state transitions to oper
+                 enabled";
+           }
+
+           leaf last-ccm-rx-time {
+              type yang:date-and-time;
+              description
+                 "Time that the last CCM was received from the remote MEP";
+           }
+
+           leaf total-rx-ccm {
+              type yang:counter32;
+              description
+                 "Total number of CCMs received from the remote MEP";
+           }
+
+           leaf rmep-ccm-defect {
+              type boolean;
+              description
+                 "Reports the state of the remote MEP. When true, no CCM has
+                 been received from the remote MEP for at least
+                 (3.25  CCMtime(CCMinterval)) seconds.";
+           }
+
+           leaf mac-status-defect {
+              type boolean;
+              description
+                 "A boolean indicating that remote MEP is reporting a failure
+                 in its port status TLV or interface status TLV";
+           }
+
+           leaf ccm-timeout {
+              type yang:date-and-time;
+              description
+                 "Timeout timestamp for declaring mismatch defects based on the
+                  received traffic field";
+           }
+
+           leaf rx-timeout-stamp {
+              type yang:date-and-time;
+              description
+                 "Time that the last CCM received from the remote MEP expires,
+                 triggering an RMEP CCM defect";
+           }
+
+           leaf discovery-type {
+              type enumeration {
+                 enum static {
+                    description
+                       "RMEP is statically configured";
+                 }
+                 enum dynamic {
+                    description
+                       "RMEP is dynamically configured via CCMs learning";
+                 }
+              }
+              description
+                 "Indicate that remote MEP is created statically by user manually or
+                 is created dynamically via CCMs learning";
+           }
+        }
+
+        leaf accelerated {
+           type boolean;
+           config "false";
+           description
+              "An indicator of whether the remote MEP inside this MA is H/W accelerated or not.";
+        }
+
+        leaf statistics-collection {
+           type boolean;
+           config "false";
+           description
+              "Indicates whether statistics are being collected on this remote MEP when it is accelerated in H/W.";
+        }
+     }
   }
 
   rpc l2-loop-block-revert {

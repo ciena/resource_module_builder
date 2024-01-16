@@ -115,6 +115,24 @@ module ciena-routing-policy {
          evaluate the remaining conditions (using a modified route if the
          subroutine performed any changes to the route).";
 
+
+    revision "2023-07-10" {
+        description
+             "Modified RT value leaf type to use ext-comm-rt-max, to extend support for RT-2 and up to 20 RT values.
+              Modified the must clause of extended community to display custom error message.
+              Added support to match color for extended community value in routing-policy.";
+    }
+
+    revision "2022-12-21" {
+        description
+             "Added support for BGP attributes aigp-metric.
+              Removed the range for metric attribute under set container.
+              Added match clause support for EVPN route types 1, 4 and 5.
+              Added support for hit count for EVPN route policy.
+              Added the range for color attribute under set container.
+              Added Support for clearing the hit count for EVPN RT5 route policy";
+    }
+
     revision "2022-09-22" {
         description
              "Added support for opertional data of large community list.
@@ -362,7 +380,10 @@ module ciena-routing-policy {
                             "Permit or deny a route target extended community.";
 
                         leaf value {
-                            type  cn-l3-types:ext-comm-rt;
+                            type  cn-l3-types:ext-comm-rt-max;
+                            must "not(contains(.,'2:65535:')) and not(contains(.,'2:4294967295:'))" {
+                                     error-message "Invalid Input: Reserved ASN(65535,4294967295) not allowed in Ext-community value.";
+                            }
                             description
                                 "Value for route target or site of origin.";
                         }
@@ -395,7 +416,7 @@ module ciena-routing-policy {
                     }
 
                     list regex {
-                        when "count(../route-target)=0 and count(../site-of-origin)=0";
+                        when "count(../route-target)=0 and count(../site-of-origin)=0 and count(../color)=0";
                         key "value action";
                         max-elements 20;
                         description
@@ -413,6 +434,28 @@ module ciena-routing-policy {
                                 "Action to permit or deny the extended community with matching regular expression.";
                         }
                     }
+
+                    list color {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a color extended community.";
+
+                        leaf value {
+                            type uint32 {
+                              range "1..4294967295";
+                            }
+                            description
+                                "Value for color extended community.";
+                        }
+                        leaf action {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended community type.";
+                        }
+                    }
+
                 }
             }
 
@@ -597,7 +640,19 @@ module ciena-routing-policy {
                             description
                                 "Next-hop address of route specified by prefix-list.";
                         }
-
+                        container evpn  {
+                            description
+                                "Policy match attributes for EVPN address family.";
+                            leaf route-type {
+                                type cn-l3-types:evpn-route-types;
+                                must ". = '1' or . = '4' or . = '5'"{
+                                      error-message
+                                       "Only route types 1, 4 and 5 are supported.";
+                                }
+                                description
+                                    "Specifies the route type to be matched for EVPN address family.";
+                            }
+                        }
                         leaf tag  {
                             type  uint32;
                             description
@@ -755,11 +810,9 @@ module ciena-routing-policy {
                         }
 
                         leaf metric {
-                            type  uint32 {
-                                range "1..4294967295";
-                            }
+                            type  uint32;
                             description
-                                "Metric value for destination routing protocol.";
+                                "Metric value for destination routing protocol. <0..4294967295>";
                         }
 
                         container next-hop  {
@@ -868,7 +921,10 @@ module ciena-routing-policy {
                             }
 
                             leaf-list route-target {
-                                type  cn-l3-types:ext-comm-rt;
+                                type  cn-l3-types:ext-comm-rt-max;
+                                must "not(contains(.,'2:65535:')) and not(contains(.,'2:4294967295:'))" {
+                                     error-message "Invalid Input: Reserved ASN(65535,4294967295) not allowed in Ext-community value.";
+                                }
                                 max-elements 20;
                                 description
                                     "Route target of extended community.";
@@ -895,7 +951,9 @@ module ciena-routing-policy {
                        }
  
                        leaf color {
-                          type uint32;
+                          type uint32 {
+                              range "1..4294967295";
+                          }
                           description
                               "Signifies color attribute associated with a TE path.";
                        }
@@ -933,7 +991,33 @@ module ciena-routing-policy {
                                description
                                    "Standard large community number.";
                            }
-                       }                                               
+                       }
+                       list aigp-metric {
+                           key "replace";
+                           max-elements 1;
+                           description
+                               "Replace or Increment AIGP metric value.";
+
+                           leaf replace {
+                               type cn-l3-types:aigp-metric-type;
+                               description
+                                   "Replace or Increment AIGP metric value.";
+                           }
+                           choice metric {
+                               leaf value {
+                                   type  uint32 {
+                                       range "0..4294967295";
+                                   }
+                                   description
+                                       "AIGP metric value.";
+                               }
+                               leaf igp-metric {
+                                   type empty;
+                                   description
+                                       "Internal routing protocol cost.";
+                               }
+                           }
+                       }
                     }
                 }
             }
@@ -1103,7 +1187,7 @@ module ciena-routing-policy {
                    "Action for the ext-community list.";
            }
            leaf value  {
-               type cn-l3-types:string-max-256;
+               type cn-l3-types:string-max-680;
                description
                    "Value of the ext-community list.";
            }
@@ -1148,6 +1232,43 @@ module ciena-routing-policy {
                 type  uint32;
                 description
                    "Total hit count for large community-list.";
+            }
+        }
+
+        list evpn-route-type {
+           key "name";
+           description
+                 "Policies in use for EVPN address family.";
+           leaf name {
+                 type cn-l3-types:string-max-256;
+                 description
+                       "Name of the evpn routing policy.";
+           }
+           list evpn-policy-statement {
+                key "sequence";
+                description
+                      "Policy statements group conditions and actions within a policy.
+                      They are evaluated in the order specified.";
+                leaf sequence {          
+                      type uint32;
+                      description
+                            "Sequence Number to identify the application order for match statements.";
+                }
+                leaf action {
+                      type cn-l3-types:action;
+                      description
+                            "Action for the EVPN routing policy.";
+                }
+                leaf type {
+                      type cn-l3-types:evpn-route-types;
+                      description
+                            "Specifies the route type to be matched for EVPN address family.";
+                }
+                leaf hit-count {
+                      type uint32;
+                      description
+                            "Total number of hits for the EVPN routing policy.";
+                }
             }
         }
     }
@@ -1199,6 +1320,28 @@ module ciena-routing-policy {
                     "The response could be 'success', or the reason for prefix-list clear failure.";
             }
         }
+    }
+
+    rpc evpn-policy-clear-statistics {
+        description
+            "RPC commands to clear evpn-route type statistics";
+        input {
+            leaf name {
+                type leafref {
+                    path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                }
+                description
+                    "Specify EVPN route policy name to clear hit count.";
+            }
+        }
+        output {
+            leaf response {
+                type string;
+                description
+                    "The response could be 'success', or the reason for EVPN route types clear command failure.";
+            }
+        }
+
     }
 
 }

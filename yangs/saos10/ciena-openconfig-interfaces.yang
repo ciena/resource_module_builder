@@ -22,9 +22,12 @@ module ciena-openconfig-interfaces {
     prefix "ietf-yt";
   }
 
+  import ietf-yang-types {
+    prefix "yang";
+  }
+
   import ietf-inet-types {
     prefix inet;
-    revision-date 2013-07-15;
   }
 
   import yuma-ncx {
@@ -63,6 +66,31 @@ module ciena-openconfig-interfaces {
      information or reproduction of this material is strictly
      forbidden unless prior written permission is obtained from
      Ciena Corporation.";
+
+  revision "2023-08-24" {
+    description
+      "Updated type leaf to clear statistics for Interfaces or all";
+  }
+
+  revision "2023-08-03" {
+    description
+      "Added leaf lockout for interface configuration and leaf lockout last change for interface operational data";
+  }
+
+  revision "2023-06-01" {
+    description
+      "Updated enumerations in leaf down-reason";
+  }
+
+  revision "2023-05-09" {
+    description
+      "Added GARP/UNA Tx stats.";
+  }
+
+  revision "2022-09-12" {
+    description
+      "Added down reason leaf to interface operational data";
+  }
 
   revision "2022-07-12" {
     description
@@ -112,6 +140,11 @@ module ciena-openconfig-interfaces {
   feature cn-notification {
     description
       "This feature indicates that notification is supported.";
+  }
+
+  feature lockout {
+    description
+      "Support for Interface lockout feature.";
   }
 
   typedef ciena-openconfig-interface-ref {
@@ -204,6 +237,50 @@ module ciena-openconfig-interfaces {
     description
         "A generic event type describing the reason for an operational-state change.";
   }
+  typedef interface-type {
+    type enumeration {
+        enum ip {
+           description
+              "Specifies all ip interfaces.";
+        }
+        enum ettp {
+           description
+              "Specifies all ettp interfaces.";
+        }
+        enum agg {
+           description
+              "Specifies all aggregation interfaces.";
+        }
+        enum loopback {
+           description
+              "All virtual interfaces designated as a loopback used for various tasks.";
+        }
+        enum system {
+           description
+              "All management interfaces provided by the system.";
+        }
+        enum ip-unnumbered {
+           description
+              "Specifies all ip unnumbered interfaces.";
+        }
+        enum ip-tunnel{
+           description
+              "Specifies all IP tunnel interfaces.";
+        }
+        enum point-to-point {
+           description
+              "Specifies all layer 3 point to point interfaces.";
+        }
+        enum any {
+           description
+              "Only used by notification registrants to
+               specify any of the enumerated values in the enumeration list.";
+        }
+    }
+    description
+        "A generic type describing the type of interfaces.";
+  }
+
   
   // grouping statement 
 
@@ -319,7 +396,7 @@ module ciena-openconfig-interfaces {
     //                 special beahavior instance. For example: EVC, SAT
     leaf role {
        ncx:user-write "create delete";
-       when "../cn-if:type[.='ip' or .='system' or .='loopback']";
+       when "../cn-if:type[.='ip' or .='system' or .='loopback' or .='point-to-point']";
        type identityref {
          base INTERFACE_ROLE;
        }
@@ -417,6 +494,17 @@ module ciena-openconfig-interfaces {
         }
       }
       default "on";
+    }
+    leaf lockout{
+      if-feature lockout;
+      when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+      type boolean;
+      default "false";
+      description
+        "Gracefully moves services/traffic away from an interface for upgrade, 
+         fiber maintenance, card replacement.
+         TRUE: means interface is locked out for any services/traffic
+         FALSE: means interface is not locked out for any services/traffic";
     }
     leaf access-profile {
       when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
@@ -668,6 +756,36 @@ module ciena-openconfig-interfaces {
         The value is relative to system uptime which is independent
         of system clock time.";
     }
+
+    leaf down-reason {
+      type enumeration {
+        enum admin-down {
+          description
+              "Interface operational state is down, due to admin-state down.";
+        }
+        enum underlay-down {
+           description
+              "Interface operational state is down, due to underlay down.";
+        }
+        enum ppm-down {
+          description
+              "Interface operational state is down, due to PPM policy.";
+        }
+        enum underlay-ppm-down {
+          description
+              "Interface operational state is down, due to underlay down and PPM policy";
+        }
+      }
+      description
+          "Reason for interface operational state down";
+    }
+
+    leaf lockout-last-change {
+      if-feature lockout;
+      type yang:date-and-time;
+      description
+          "The timestamp of the last lockout state change of the interface.";
+    }
   }
 
   augment "/oc-if:interfaces/oc-if:interface/oc-if:state/oc-if:counters" {
@@ -706,6 +824,18 @@ module ciena-openconfig-interfaces {
         prevent their being deliverable to a higher-layer
         protocol.";
     }
+
+    leaf out-gratuitous-arp-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of gratuitous arp packets sent on this interface.";
+    }
+
+    leaf out-unsolicited-neighbor-adv-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of unsolicited neighbor advertisement packets sent on this interface..";
+    }
   }
 
   /*
@@ -730,9 +860,16 @@ module ciena-openconfig-interfaces {
         case all {
           leaf all {
             type empty;
+               description
+                 "Clear stats for all interfaces.";
           }
-          description
-            "Clear stats for all interfaces.";
+        }
+        case type {
+          leaf type {
+            type interface-type;
+               description
+                  "Clear stats for all interfaces of this interface type.";
+          }
         }
       }
     }

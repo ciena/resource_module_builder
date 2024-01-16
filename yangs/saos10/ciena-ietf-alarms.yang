@@ -2,6 +2,10 @@ module ciena-ietf-alarms {
   namespace "http://www.ciena.com/ns/yang/ciena-ietf-alarms";
   prefix "ciena-ietf-alarms";
 
+  import ietf-alarms {
+    prefix al;
+  }
+
   organization
     "Ciena Corporation";
 
@@ -17,7 +21,7 @@ module ciena-ietf-alarms {
   description
     "This YANG module defines Ciena's augmentations to the draft-ietf-ccamp-alarm-module-01 model.
 
-     Copyright (c) 2019-2022 Ciena Corporation.  All rights
+     Copyright (c) 2019-2023 Ciena Corporation.  All rights
      reserved.
 
      All information and intellectual property contained in this
@@ -38,6 +42,39 @@ module ciena-ietf-alarms {
      warranty, either express or implied, as to the use, operation,
      condition, or performance of the Specification. You agree
      that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-10-19" {
+    description
+    " Adding new alarm type pon-onu-service-config-failure.";
+  }
+
+  revision "2023-06-06" {
+    description
+    " Adding new alarm type pon-onu-loss-of-ploam, pon-onu-loss-of-key-synchronization, pon-onu-tx-signal-drift,
+      pon-onu-differential-reach, pon-onu-omci-communication-failure, pon-onu-loss-of-signal, pon-onu-service-config-failure.";
+  }
+
+  revision "2023-04-04" {
+    description
+    " Adding new alarm type pon-onu-dying-gasp.";
+  }
+
+  revision "2023-01-30" {
+    description
+    " Adding new alarm type pon-statistics-retrieval-threshold.";
+  }
+
+  revision "2023-01-12" {
+    description
+    "Adding new alarm types database-mismatch.
+     Adding new alarm types rsvp-tunnel-oper-state-change.
+     Adding a new alarm type for license server communication failure.
+     Adding new alarm type rsvp-tunnel-delete-alarm.
+     Adding new alarm type rsvp-tunnel-mbb-alarm.
+     Adding new alarm type chassis-lid-change-alarm.
+     Augmented parameters in al:alarm-inventory-changed notification.
+     Adding new alarm type isis-te-delay-meas-multi-client.";
+  }
 
   revision "2022-07-08" {
     description
@@ -150,6 +187,12 @@ module ciena-ietf-alarms {
       "RFC 6020: YANG - A Data Modeling Language for
        the Network Configuration Protocol (NETCONF).
        No specific reference; standard not available.";
+  }
+
+  typedef severity {
+    type al:severity;
+    description
+      "Configurable Alarm severity";
   }
 
   typedef alarm-types {
@@ -1142,6 +1185,103 @@ module ciena-ietf-alarms {
          description
          "Indicates that management domain change could not be triggered and restart must be started by the user";
       }
+
+      enum pon-statistics-retrieval-threshold {
+         value 195;
+         description
+         "Indicates too many statistics retrievals are being performed from sensor or gNMI subscriptions. This is
+          resulting in heavy CPU usage and action has been taken to drop processing of statistics for a short period of time";
+      }
+
+      enum pon-onu-dying-gasp {
+         value 196;
+         description
+         "Indicates the ONU is deregistered due to dying gasp.";
+      } 
+
+      enum pon-onu-loss-of-ploam {
+         value 197;
+         description
+         "Indicates the ONU is deregistered due to loss of PLOAM.";
+      }
+
+      enum pon-onu-loss-of-key-synchronization {
+         value 198;
+         description
+         "Indicates the ONU is deregistered due to loss of key synchronization.";
+      }
+
+      enum pon-onu-tx-signal-drift {
+         value 199;
+         description
+         "Indicates the ONU is deregistered due to TX signal drift.";
+      }
+
+      enum pon-onu-differential-reach {
+         value 200;
+         description
+         "Indicates the ONU is deregistered due to differential reach.";
+      }
+
+      enum pon-onu-omci-communication-failure {
+         value 201;
+         description
+         "Indicates the ONU is deregistered due to OMCI communication failure.";
+      }
+
+      enum pon-onu-loss-of-signal {
+         value 202;
+         description
+         "Indicates LOS on the ONU.";
+      }
+
+      enum database-mismatch {
+         value 203;
+         description
+         "Database out of sync";
+      }
+
+      enum rsvp-tunnel-oper-state-change {
+         value 204;
+         description
+         "Indicates Rsvp Tunnel operational state.";
+      }
+
+      enum license-server-comm-failure {
+         value 205;
+         description
+         "Indicates that external license server is not reachable.";
+      }
+
+      enum rsvp-tunnel-delete-alarm {
+         value 206;
+         description
+         "Indicates Rsvp Tunnel delete status.";
+      }
+
+      enum rsvp-tunnel-mbb-alarm {
+         value 207;
+         description
+         "Indicates the mbb status of the tunnel.";
+      }
+
+      enum chassis-lid-change-alarm {
+         value 208;
+         description
+         "Indicates a chassis lid state change.";
+      }
+
+      enum isis-te-delay-meas-multi-client {
+         value 209;
+         description
+         "Indicates that multiple delay measurement clients configured on an IS-IS TE interface.";
+      }
+
+      enum pon-onu-service-config-failure {
+         value 234;
+         description
+         "Indicates Service Config failure on the ONU.";
+      }
     }
   }
 
@@ -1208,6 +1348,40 @@ module ciena-ietf-alarms {
         description
           "Number of alarm entries whose operator state has been set.";
       }
+    }
+  }
+
+  augment "/al:alarm-inventory-changed" {
+    leaf alarm-type-id {
+      type alarm-types;
+      description
+        "The statically defined alarm type identifier for this
+         possible alarm.";
+    }
+    leaf alarm-type-qualifier {
+      type string;
+      description
+        "The optionally dynamically defined alarm type identifier
+         for this possible alarm.";
+    }
+    leaf-list severity-levels {
+      type severity;
+      description
+        "This leaf-list indicates the possible severity levels of
+         this alarm type. Note well that 'clear' is not part of
+         the severity type. In general, the severity level is
+         defined by the system based on dynamic state and not
+         defined statically by the alarm type in order to provide
+         relevant severity level based on dynamic state and
+         context. However most alarm types have a defined set
+         of possible severity level which are listed here.";
+    }
+    leaf description {
+      type string;
+      description
+        "A description of the possible alarm. It should include
+         information on possible underlying root causes and
+         corrective actions.";
     }
   }
 }

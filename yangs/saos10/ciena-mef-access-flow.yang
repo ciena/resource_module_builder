@@ -29,17 +29,36 @@ module ciena-mef-access-flow {
    description
       "This YANG module defines Access Flows and Access Profiles.";
 
+   revision 2023-07-25 {
+      description
+         "Aligning Description for leaves default-filter-stats-collection and stats-collection.
+          Hiding base-access-profile parameter for an access-profile.
+          Adding enum description of logging leaf for acl-logging.";
+   }
+
+   revision 2023-04-06 {
+      description
+         "Added ACL logging enable/disable for access-profile and access-flow
+          level and for default filter rules.
+          Added IP-ACL statistics collection get/clear support.
+          Added ACL logging global configuration support.
+          Disabled ACL logging";
+   }
+
    revision 2021-04-06 {
-      description "Added descriptions";
+      description
+         "Added descriptions";
    }
 
    revision 2020-02-17 {
-      description "Refactored access-profiles container to use access-flow-config 
-                   and classifier-group groupings.";
+      description
+         "Refactored access-profiles container to use access-flow-config
+          and classifier-group groupings.";
    }
 
    revision 2016-02-03 {
-      description "Initial revision";
+      description
+         "Initial revision";
    }
 
  /*
@@ -79,6 +98,14 @@ module ciena-mef-access-flow {
       description
          "This type is used by the data models that need to reference
           configured Access profiles.";
+   }
+   typedef access-profile-flow-ref {
+      type leafref {
+         path "/acl:access-profiles/acl:access-profile/acl:access-flow/acl:name";
+      }
+      description
+         "This type is used by the data models that need to reference
+          configured Access Flow within an Access Profile.";
    }
 
    grouping  acl-destination {
@@ -156,6 +183,19 @@ module ciena-mef-access-flow {
       }
    }
 
+/*
+ * features
+ */
+   feature acl-logging {
+     description
+       "Support acl-logging feature for an access-profile.";
+   }
+
+   feature base-access-profile {
+      description
+         "Support base-access-profile for an access-profile.";
+   }
+
    grouping access-flow-config {
       leaf description {
          type string;
@@ -197,8 +237,23 @@ module ciena-mef-access-flow {
               description "Stats collection turned off";
             }
          }
+         default off;
          description
             "Determines whether stats collection will be turned on or not for an access-flow";
+      }
+      leaf logging {
+         if-feature acl-logging;
+         type enumeration {
+            enum enable {
+               description "Access flow logging enabled";
+            }
+            enum disable {
+               description "Access flow logging disabled";
+            }
+         }
+         default disable;
+         description
+            "Determines whether ACL logging will be enabled or not for an access-flow";
       }
    }
 
@@ -351,6 +406,7 @@ module ciena-mef-access-flow {
          }
 
          leaf base-access-profile {
+            if-feature base-access-profile;
             type acl:access-profile-ref;
             description
                "An Access Profile should be able to refer to another Access Profile and inherit its properties";
@@ -389,11 +445,57 @@ module ciena-mef-access-flow {
 
          leaf stats-collection {
             type enumeration {
-               enum on;
-               enum off;
+               enum on {
+                 description "Stats collection turned on";
+               }
+               enum off {
+                 description "Stats collection turned off";
+               }
             }
+            default off;
             description
                "Determines whether stats collection will be turned on or not for an instance of access-profile";
+         }
+         leaf default-filter-stats-collection {
+            type enumeration {
+               enum on {
+                  description "Stats collection turned on";
+               }
+               enum off {
+                  description "Stats collection turned off";
+               }
+            }
+            default off;
+            description
+               "Determines whether stats collection will be turned on or not for default filter of access-profile";
+         }
+         leaf logging {
+            if-feature acl-logging;
+            type enumeration {
+               enum enable {
+                  description "Enables logging for an access-profile instance";
+               }
+               enum disable {
+                  description "Disables logging for an access-profile instance";
+               }
+            }
+            default disable;
+            description
+               "Determines whether logging will be enabled or not for an instance of access-profile";
+         }
+         leaf default-filter-logging {
+            if-feature acl-logging;
+            type enumeration {
+               enum enable {
+                  description "Enables logging for default filter of an access-profile";
+               }
+               enum disable {
+                  description "Disables logging for default filter of an access-profile";
+               }
+            }
+            default disable;
+            description
+               "Determines whether logging will be enabled or not for default filter of access-profile";
          }
 
          list access-flow {
@@ -418,12 +520,25 @@ module ciena-mef-access-flow {
             "A list of all access-profile configuration entries.";
       }
    }
+   container acl-logging {
+      description
+          "Configures ACL logging global parameters ";
+      if-feature acl-logging;
+      leaf acl-logging-timer {
+         type uint32 {
+            range "60..300";
+         }
+         units seconds;
+         default 60;
+         description
+            "Logging interval in seconds after which packets hitting ACL will be logged.";
+      }
+   }
 
    /*
     * State.
     */
-   container access-flows-state {
-      config false;
+   grouping access-flows-state-group {
 
       description
          "Access Flow operational data for all Access Flows.";
@@ -449,6 +564,88 @@ module ciena-mef-access-flow {
             type uint64;
             description
                "Frame count of frames that hit the Access-Flow";
+         }
+      }
+   }
+   container access-flows-state {
+      config false;
+
+      description
+         "Access Flow operational data for all Access Flows.";
+      uses acl:access-flows-state-group;
+
+   }
+    /*
+    * Statistics.
+    */
+   container access-profiles-state {
+      config false;
+
+      description
+         "Access Profile statistics data for all Access Profiles.";
+
+      list access-profile {
+         key "profilename";
+         description
+            "The statistics data for this Access-Profile.";
+
+         leaf profilename {
+            type string;
+            description
+               "A string that identifies this Access-Profile.";
+         }
+         uses acl:access-flows-state-group;
+
+      }
+   }
+   /*
+    * RPC
+    */
+   rpc clear-access-profile-statistics {
+      description "An RPC operation to clear the statistics for one or all Access Profiles and one or all Access Flows within an Access Profile.";
+
+      input {
+         choice clear-scope {
+
+            case access-flow {
+               leaf access-profile-flow {
+                  type acl:access-profile-ref;
+               }
+               leaf access-flow {
+                  type acl:access-profile-flow-ref;
+               }
+               description
+                  "Clear stats for this Access Flow of this Access Profile.";
+            }
+            case access-profile {
+               leaf access-profile {
+                  type acl:access-profile-ref;
+               }
+               description
+                  "Clear stats for this Access Profile.";
+            }
+            case access-profile-default {
+               leaf access-profile-default {
+                  type acl:access-profile-ref;
+               }
+               description
+                  "Clear stats of default rule of this Access Profile.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all Access Flows of all Access Profiles.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string;
+            description
+               "Status of the clear statistics operation.";
          }
       }
    }

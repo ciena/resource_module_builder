@@ -1,4 +1,5 @@
 module ciena-platform {
+   yang-version 1.1;
    namespace "http://www.ciena.com/ns/yang/ciena-platform";
    prefix "ciena-ocp";
 
@@ -29,7 +30,19 @@ module ciena-platform {
       the property of Ciena Corporation. Dissemination of this 
       information or reproduction of this material is strictly 
       forbidden unless prior written permission is obtained from 
-      Ciena Corporation.";  
+      Ciena Corporation.";
+
+   revision 2023-08-10 {
+        description
+          "Deprecating web-gui option from location-enum of mount location.";
+   }
+
+   revision 2023-04-26 {
+      description
+         "Added Power On Self Test component configuration and status.";
+       reference
+          "";
+     }
 
    revision 2021-08-06 {
       description
@@ -231,6 +244,63 @@ module ciena-platform {
           equipment manager has triggered.";
    }
 
+   feature component-post {
+      description
+         "Indicates that the device supports Power On Self Test (POST)";
+   }
+
+   feature macsec-self-test {
+      description
+         "Indicates that the device supports MACsec self test";
+   }
+
+   typedef post-component-type {
+      type enumeration {
+         enum macsec {
+            value 1;
+            if-feature macsec-self-test;
+            description
+               "POST for MACsec hardware";
+        }
+      }
+      description
+         "This enumeration lists the supported component types";
+   }
+
+   typedef failure-action-type {
+      type enumeration {
+         enum none {
+            description
+               "No action";
+         }
+         enum system-reboot {
+            description
+               "Reboot the device";
+         }
+      }
+      description
+         "This enumeration lists the supported failure actions";
+   }
+
+   typedef test-status-type {
+      type enumeration {
+         enum unknown {
+            description
+               "The test status could not be determined";
+         }
+         enum success {
+            description
+               "The test status determined to be successful";
+         }
+         enum failed {
+            description
+               "The test status determined to be failed";
+         }
+      }
+      description
+         "This enumeration list the supported test status";
+   }
+
   
   /*
    * Configuration data nodes
@@ -302,6 +372,7 @@ module ciena-platform {
          enum web-gui {
             description
                "Web-GUI subsystem";
+            status deprecated;
          }
          enum software-upgrade {
             description
@@ -463,6 +534,71 @@ module ciena-platform {
                "Size of the MAC block allocated";
             type uint32;
          }
-       }
+      }
+   }
+
+   container component-post {
+      if-feature component-post;
+      description
+         "POST related system variables";
+          
+      container components {
+         description
+            "Enclosing container for all components";
+      
+         list component {
+            key "name";
+            description
+               "List of POST components";
+ 
+            leaf name {
+               type post-component-type;
+               description
+                  "Name of the POST component";
+            }
+ 
+            leaf failure-action {
+               type failure-action-type;
+               default none;
+               description
+                  "Action to be taken when the test fails";
+            }
+ 
+            leaf enforce-now {
+               type empty;
+               description
+                  "Enforcing action immediately with the current test status";
+            }
+         }
+      }
+   }
+
+   container component-post-state {
+      config false;
+      description
+         "Operational variables";
+ 
+      container components {
+         description
+            "Enclosing container for all components";
+    
+         list component {
+            key "name";
+            description
+               "List of POST components";
+ 
+            leaf name {
+               type post-component-type;
+               description
+                  "Name of the POST component";
+            }
+ 
+            leaf test-status {
+               type test-status-type;
+               description
+                  "Current POST status";
+            }
+         }
+      }
    }
 }
