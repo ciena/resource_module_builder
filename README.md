@@ -13,10 +13,8 @@ This builder uses a yang definition to generate a resource module for the Ciena 
 
 Generates modules for:
 
-* Waveserver Ai
 * SAOS 10
 * Waveserver 5
-* RLS
 
 ## 2. Usage
 
