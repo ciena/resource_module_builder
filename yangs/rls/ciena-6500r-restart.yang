@@ -1,0 +1,177 @@
+module ciena-6500r-restart {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-restart";
+  prefix restart;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's restarts objects for the 6500r platform";
+
+  revision 2021-07-22 {
+    description
+      "Added support for powered uptime in CTM restart notification";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2021-07-15 {
+    description
+      "Added support for uptime in CTM restart notification";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2021-04-27 {
+    description
+      "Added support for CTM protection switch";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-07-31 {
+    description
+      "Added a component restart notification";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-01-23 {
+    description
+      "Add notifications for restarts";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2019-05-22 {
+    description
+      "Add RPC for restarts and ability to use 'SELF' for slot for restart to trigger the restart of the current CTM";
+    ciena-common-version:string "0.1.0";
+  }
+  revision 2018-11-06 {
+    description
+      "6500r Release 1.0-
+       First release";
+  }
+
+  typedef restart-type {
+    type enumeration {
+      enum COLD {
+        value 0;
+        description
+          "Cold restart";
+      }
+      enum WARM {
+        value 1;
+        description
+          "Warm restart";
+      }
+      enum UNKNOWN {
+        value 2;
+        description
+          "Uknown";
+      }
+      enum PENDING {
+        value 3;
+        description
+          "Restart is pending";
+      }
+    }
+  }
+
+  list restart {
+    key "name";
+    description
+      "List of restarts";
+    leaf name {
+      type string;
+      mandatory true;
+      description
+        "Which slot is to be restarted.  Format is SLOT-<slot number> or 'SELF' for the CTM on which the microservice is running";
+    }
+    leaf type {
+      type restart-type;
+      mandatory true;
+      description
+        "Type of restart";
+    }
+  }
+
+  rpc trigger-restart {
+    input {
+      leaf slot {
+        type string;
+        description
+          "Which slot is to be restarted.  Format is SLOT-<slot number> or 'SELF' for the CTM on which the microservice is running";
+      }
+      leaf type {
+        type restart-type;
+        description
+          "Type of restart";
+      }
+    }
+    output {
+      leaf result {
+        type boolean;
+      }
+    }
+  }
+
+  rpc trigger-ctm-protection-switch {
+    input {
+      leaf slot {
+        type string;
+        description
+          "Apply protection-switch against primary CTM slot provided, format is SLOT-<slot number>.";
+      }
+    }
+    output {
+      leaf result {
+        type boolean;
+        description
+          "Display CTM protection switch result";
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  notification restart_notify {
+    leaf slot {
+      type string;
+      description
+        "Which slot has restarted";
+    }
+    leaf type {
+      type restart-type;
+      description
+        "Type of restart";
+    }
+    leaf uptime {
+      type string {
+        length "1..16";
+      }
+      description
+        "Cumulative uptime since the unit was last restarted (warm or cold), in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS)";
+    }
+    leaf powered-uptime {
+      type string {
+        length "1..16";
+      }
+      config false;
+      description
+        "Cumulative time since the card was last powered on, in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS).";
+    }
+  }
+
+  notification component-restart-notify {
+    leaf slot {
+      type string;
+      description
+        "Which slot has restarted";
+    }
+    leaf type {
+      type restart-type;
+      description
+        "Type of restart";
+    }
+  }
+}

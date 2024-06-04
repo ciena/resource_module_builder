@@ -1,0 +1,272 @@
+module ciena-pro-spli-ssh {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-spli-ssh";
+  prefix spli-ssh;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module is a subset of ciena-pro-ssh for portability in projects where security-mgr is not used";
+
+  revision 2023-03-20 {
+    description
+      "Removed all mandatory leaves.";
+    ciena-common-version:string "1.1.1";
+  }
+  revision 2022-12-06 {
+    description
+      "Initial revision.";
+    ciena-common-version:string "1.1.0";
+  }
+
+  typedef pka-algorithm {
+    type enumeration {
+      enum ssh-rsa {
+        description
+          "RSASSA-PKCS1-v1_5 signature scheme using SHA-1 as the
+           hashing algorithm.";
+      }
+      enum rsa-sha2-256 {
+        description
+          "The rsa-sha2-256 algorithm.";
+      }
+      enum rsa-sha2-512 {
+        description
+          "The rsa-sha2-512 algorithm.";
+      }
+    }
+    description
+      "List of public key authentication algorithms.";
+  }
+
+  typedef kex-algorithm {
+    type enumeration {
+      enum ecdh-sha2-nistp256 {
+        description
+          "Elliptic Curve Diffie-Hellman (ECDH) key exchange using the
+           nistp256 curve and the SHA2 family of hashing algorithms.";
+      }
+      enum diffie-hellman-group14-sha1 {
+        description
+          "Diffie-Hellman key exchange with SHA-1 as HASH and
+           Oakley Group 14 (2048-bit MODP Group).";
+      }
+    }
+    description
+      "List of kex algorithms.";
+  }
+
+  typedef encryption-algorithm {
+    type enumeration {
+      enum aes128-ctr {
+        description
+          "The aes128-ctr algorithm.";
+      }
+      enum aes128-cbc {
+        description
+          "The aes128-cbc algorithm.";
+      }
+      enum aes192-ctr {
+        description
+          "The aes192-ctr algorithm.";
+      }
+      enum aes192-cbc {
+        description
+          "The aes192-cbc algorithm.";
+      }
+      enum aes256-ctr {
+        description
+          "The aes256-ctr algorithm.";
+      }
+      enum aes256-cbc {
+        description
+          "The aes256-cbc algorithm.";
+      }
+      enum aes128-gcm-at-openssh-dot-com {
+        description
+          "The aes128-gcm@openssh.com algorithm.";
+      }
+      enum aes256-gcm-at-openssh-dot-com {
+        description
+          "The aes256-gcm@openssh.com algorithm.";
+      }
+    }
+    description
+      "List of encryption algorithms.";
+  }
+
+  typedef mac-algorithm {
+    type enumeration {
+      enum hmac-sha1 {
+        description
+          "The hmac-sha1 algorithm.";
+      }
+      enum hmac-sha2-256 {
+        description
+          "The hmac-sha2-256 algorithm.";
+      }
+      enum hmac-sha2-512 {
+        description
+          "The hmac-sha2-512 algorithm.";
+      }
+    }
+    description
+      "List of mac algorithms.";
+  }
+
+  grouping transport-params-grouping {
+    description
+      "A reusable grouping for SSH transport parameters.";
+    container host-key {
+      description
+        "Parameters regarding host key.";
+      leaf-list host-key-alg {
+        type pka-algorithm;
+        ordered-by user;
+        description
+          "Acceptable host key algorithms in order of descending
+           preference.
+
+           If this leaf-list is not configured (has zero elements)
+           the acceptable host key algorithms are implementation-
+           defined.";
+      }
+    }
+    container key-exchange {
+      description
+        "Parameters regarding key exchange.";
+      leaf-list key-exchange-alg {
+        type kex-algorithm;
+        ordered-by user;
+        description
+          "Acceptable key exchange algorithms in order of descending
+           preference.
+
+           If this leaf-list is not configured (has zero elements)
+           the acceptable key exchange algorithms are implementation
+           defined.";
+      }
+    }
+    container encryption {
+      description
+        "Parameters regarding encryption.";
+      leaf-list encryption-alg {
+        type encryption-algorithm;
+        ordered-by user;
+        description
+          "Acceptable encryption algorithms in order of descending
+           preference.
+
+           If this leaf-list is not configured (has zero elements)
+           the acceptable encryption algorithms are implementation
+           defined.";
+      }
+    }
+    container mac {
+      description
+        "Parameters regarding message authentication code (MAC).";
+      leaf-list mac-alg {
+        type mac-algorithm;
+        ordered-by user;
+        description
+          "Acceptable MAC algorithms in order of descending
+           preference.
+
+           If this leaf-list is not configured (has zero elements)
+           the acceptable MAC algorithms are implementation-
+           defined.";
+      }
+    }
+  }
+
+  grouping rekey-grouping {
+    description
+      "A reusable grouping for SSH rekey parameters.";
+    container rekey-params {
+      config false;
+      description
+        "Parameters regarding rekey thresholds";
+      leaf rekey-limit {
+        type enumeration {
+          enum 1G {
+            description
+              "Transmit/Receive 1G bytes.";
+          }
+          enum 2G {
+            description
+              "Transmit/Receive 2G bytes.";
+          }
+          enum 4G {
+            description
+              "Transmit/Receive 4G bytes.";
+          }
+          enum 500M {
+            description
+              "Transmit/Receive 500M bytes.";
+          }
+        }
+        default "1G";
+        description
+          "This leaf specifies the number of bytes that are
+           transmitted before the session key is renegotiated.";
+      }
+      leaf rekey-timeout {
+        type uint32 {
+          range "1..3600";
+        }
+        default "3600";
+        description
+          "This leaf specifies the max time (in seconds) that
+           may pass before the session key is renegotiated.";
+      }
+      uses ciena-pro-types:admin-state {
+        refine "admin-state" {
+          default "Disabled";
+        }
+        description
+          "This leaf specifies the administrative
+           state of SSH Server rekeying.";
+      }
+    }
+  }
+
+  grouping ssh-server-config {
+    uses transport-params-grouping;
+    uses rekey-grouping;
+    container authentication {
+      config false;
+      description
+        "SSH server authentication parameters";
+      leaf authentication-retries {
+        type uint8 {
+          range "1 .. 3";
+        }
+        default "3";
+        description
+          "Number of authentication retries allowed before the SSH connection
+           is dropped.";
+      }
+      leaf login-grace-time {
+        type uint32 {
+          range "0 .. 2147483647";
+        }
+        default "60";
+        description
+          "This leaf specifies the time given for successful SSH authentication.";
+      }
+    }
+  }
+}

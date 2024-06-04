@@ -1,0 +1,729 @@
+module ciena-osrp-connection-record {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-connection-record";
+  prefix connection-record;
+  yang-version 1.1;
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's OSRP Connection Record
+     object model for the 6500r platform required to recover connections after reboot";
+
+  revision 2022-11-21 {
+    description
+      "Added traffic-descriptor in sncx0record.";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-01-25 {
+    description
+      "Added traffic-descriptor in sncx0record.";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2021-12-15 {
+    description
+      "Added ordered-by field";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-12-29 {
+    description
+      "Node-id replaced by node-address.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2019-10-24 {
+    description
+      "6500r-series Release 2.0
+       Initial revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  list mc-connection-record {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Call Records name.";
+      mandatory true;
+    }
+    uses common-connection-record;
+    uses common-traffic-descriptor;
+    container ingress-connection-record {
+      uses mc-interface-common-connection-record;
+    }
+    container egress-connection-record {
+      uses mc-interface-common-connection-record;
+    }
+    uses regen-common-record;
+    uses snc-protection-common-record;
+  }
+  list nmc-connection-record {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Call Records name.";
+      mandatory true;
+    }
+    uses common-connection-record;
+    uses common-traffic-descriptor;
+    container ingress-connection-record {
+      uses nmc-interface-common-connection-record;
+    }
+    container egress-connection-record {
+      uses nmc-interface-common-connection-record;
+    }
+    uses regen-common-record;
+    uses snc-protection-common-record;
+  }
+
+  grouping common-connection-record {
+    leaf circuit-id {
+      type string {
+        length "10..2042";
+      }
+      description
+        "Circuit identifier on interface tagged against network-media-channel connections created for snc-group or
+         network-media-channel connections created for snc.";
+    }
+    leaf db-version {
+      type uint32;
+      description
+        "Database Version.";
+    }
+    leaf disown-pending {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if disown is pending.";
+    }
+    leaf incranation-num {
+      type uint32;
+      description
+        "Incarnation number.";
+    }
+    leaf ncci-id {
+      type string {
+        length "10..2042";
+      }
+      description
+        "NCCI Identifier";
+    }
+    leaf ncci-management-id-1 {
+      type string {
+        length "10..1024";
+      }
+      description
+        "NCCI Management Id1.";
+    }
+    leaf ncci-management-id-2 {
+      type string {
+        length "10..1024";
+      }
+      description
+        "NCCI Management Id 2.";
+    }
+    leaf protocol-version {
+      type uint32;
+      description
+        "Protocol Version.";
+    }
+    leaf record-type {
+      type enumeration {
+        enum originating;
+        enum traverse;
+        enum terminating;
+        enum unknown;
+      }
+      description
+        "Type of connection record.";
+    }
+    leaf transit-list-index {
+      type uint32;
+      description
+        "Index of node in dtl";
+    }
+  }
+
+  grouping common-traffic-descriptor {
+    container traffic-descriptor {
+      leaf traffic-type {
+        type enumeration {
+          enum working;
+          enum protect;
+        }
+        description
+          "Indicates whether connection is active or standby.";
+      }
+      leaf connection-type {
+        type enumeration {
+          enum dynamic;
+          enum permanent;
+        }
+        description
+          "Indicates whether connection is dynamic or permanent.";
+      }
+      leaf optical-channel {
+        type uint32;
+        description
+          "Wavelength index in the grid to be used.";
+      }
+      leaf protocol-priority {
+        type enumeration {
+          enum priority-1;
+          enum priority-2;
+          enum priority-3;
+          enum priority-4;
+        }
+        description
+          "Priority.";
+      }
+      leaf bandwidth {
+        type uint16;
+        description
+          "Bandwidth.";
+      }
+      leaf standard {
+        type enumeration {
+          enum standard-mc;
+          enum standard-nmc;
+        }
+        description
+          "Traffic Standard.";
+      }
+    }
+  }
+
+  grouping snc-protection-common-record {
+    container snc-protection-record {
+      leaf is-active-leg {
+        type ciena-osrp-types:yes-no;
+        description
+          "Indicates if snc-protection or snc-group-protection.";
+      }
+      leaf peer-ncci-id {
+        type string {
+          length "10..2042";
+        }
+        description
+          "Peer snc/snc-group NCCI Identifier";
+      }
+      leaf peer-ncci-management-id-1 {
+        type string {
+          length "10..1024";
+        }
+        description
+          "Peer snc/snc-group NCCI Management Id1.";
+      }
+      leaf peer-ncci-management-id-2 {
+        type string {
+          length "10..1024";
+        }
+        description
+          "Peer snc/snc-group NCCI Management Id 2.";
+      }
+    }
+  }
+
+  grouping regen-common-record {
+    container regen-record {
+      leaf-list ingress-regen-port-name {
+        type ciena-osrp-types:port-name;
+        description
+          "Ingress Regen Channel Mux Port Name.";
+      }
+      leaf-list egress-regen-port-name {
+        type ciena-osrp-types:port-name;
+        description
+          "Egress Regen Channel Mux Port Name.";
+      }
+    }
+  }
+
+  grouping mc-interface-common-connection-record {
+    uses interface-common-connection-record;
+    leaf min-freq {
+      type ciena-osrp-types:frequency-mhz;
+      description
+        "Minimum Frequency of Media Channel Connection.";
+    }
+    leaf max-freq {
+      type ciena-osrp-types:frequency-mhz;
+      description
+        "Maximum Frequency of Media Channel Connection.";
+    }
+    leaf nmc-count {
+      type uint32 {
+        range "1..32";
+      }
+      description
+        "Interface id of the link.";
+    }
+  }
+
+  grouping nmc-interface-common-connection-record {
+    uses interface-common-connection-record;
+    leaf center-freq {
+      type ciena-osrp-types:frequency-mhz;
+      description
+        "Center frequency of Network Media Channel Connection.";
+    }
+    leaf spectral-width {
+      type ciena-osrp-types:frequency-mhz;
+      description
+        "Spectral Width of NMC. It's minumum value is 12.5GHz.";
+    }
+    container tx-info-data {
+      leaf channel-port-name {
+        type ciena-osrp-types:port-name;
+        description
+          "Channel Mux Port Name.";
+      }
+      leaf dispersion {
+        type decimal64 {
+          fraction-digits 2;
+        }
+        units "ps-nm";
+        description
+          "AM value of dispersion of an optical channel in ps/nm
+           with two decimal precision.";
+      }
+      leaf link-optimization-mode {
+        type string {
+          length "0..100";
+        }
+        description
+          "Link Optimization Mode.";
+      }
+      leaf transmission-mode {
+        type string {
+          length "0..100";
+        }
+        description
+          "Transmission Mode.";
+      }
+      description
+        "Transmission Information.";
+    }
+  }
+
+  grouping interface-common-connection-record {
+    leaf interface-id {
+      type uint32;
+      description
+        "Interface id of the link.";
+    }
+    leaf call-reference {
+      type uint32;
+      description
+        "Call reference.";
+    }
+    leaf connection-id-facility-association {
+      type enumeration {
+        enum non-facility-association;
+        enum mc-facility;
+        enum nmc-facility;
+      }
+      description
+        "Facility association.";
+    }
+    leaf identifier {
+      type uint32;
+      description
+        "Network-media-channel identifier or Media-channel identifier.";
+    }
+  }
+
+  list snc-group-record {
+    key "name";
+    leaf name {
+      type ciena-osrp-types:snc-group-key;
+      description
+        "Name of Snc-Group.";
+      mandatory true;
+    }
+    container internal-record {
+      description
+        "Specifies the internal snc-group specifc private data required to recover snc-group on originating/terminating nodes.";
+      uses internal-record-common;
+      container flex-dynamic-info {
+        config false;
+        list active-member-snc-info {
+          key "index";
+          description
+            "information of active member SNCs.";
+          config false;
+          leaf index {
+            type uint32 {
+              range "1..22";
+            }
+            description
+              "Index of SNC.";
+            config false;
+          }
+          leaf dynamic-snc-frequency {
+            type ciena-osrp-types:frequency-mhz;
+            description
+              "Allocated Center Frequency for snc.";
+            config false;
+          }
+          leaf local-end-point-port {
+            type ciena-osrp-types:port-name;
+            description
+              "Local  end point port name.";
+            config false;
+          }
+          leaf snc-name {
+            type ciena-osrp-types:snc-key;
+            description
+              "Member SNC Name.";
+            config false;
+          }
+          leaf snc-state {
+            type ciena-osrp-types:snc-fsm-state;
+            description
+              "Indicates current FSM state of the snc/snc-group.";
+            config false;
+          }
+        }
+        leaf dynamic-frequency-max {
+          type ciena-osrp-types:frequency-mhz;
+          description
+            "Indicates the value of Dyn-Fmax.";
+          config false;
+        }
+        leaf dynamic-frequency-min {
+          type ciena-osrp-types:frequency-mhz;
+          description
+            "Indicates the value of Dyn-Fmin.";
+          config false;
+        }
+      }
+    }
+    container connection-record {
+      description
+        "Specifies the connection record required to recover snc-group connections on originating/terminating nodes.";
+      uses common-connection-record;
+      uses common-traffic-descriptor;
+      container ingress-connection-record {
+        uses mc-interface-common-connection-record;
+      }
+      container egress-connection-record {
+        uses mc-interface-common-connection-record;
+      }
+      uses snc-protection-common-record;
+    }
+  }
+  list snc-record {
+    key "name";
+    leaf name {
+      type ciena-osrp-types:snc-key;
+      description
+        "Name of Snc.";
+      mandatory true;
+    }
+    container internal-record {
+      description
+        "Specifies the internal snc specifc private data required to recover snc on originating/terminating nodes.";
+      uses internal-record-common;
+      container flex-dynamic-info {
+        config false;
+        leaf associated-snc-group {
+          type ciena-osrp-types:snc-group-key;
+          description
+            "Name of snc-group which snc belongs to.";
+          config false;
+        }
+        leaf dynamic-frequency-center {
+          type ciena-osrp-types:frequency-mhz;
+          description
+            "Indicates the value of Dynamic Center Frequency.";
+          config false;
+        }
+        leaf flex-snc-type {
+          type ciena-osrp-types:flex-snc-type;
+          description
+            "Identifies the flex snc Type value.";
+          config false;
+        }
+        leaf is-grouped {
+          type ciena-osrp-types:yes-no;
+          description
+            "Indicates if SNC is grouped.";
+          config false;
+        }
+        leaf is-member {
+          type ciena-osrp-types:yes-no;
+          description
+            "Indicates if SNC is member of any snc-group.";
+          config false;
+        }
+        leaf is-referenced {
+          type ciena-osrp-types:yes-no;
+          description
+            "Indicates if SNC is referenced.";
+          config false;
+        }
+      }
+    }
+    container connection-record {
+      description
+        "Specifies the connection record required to recover snc connections on originating/terminating nodes.";
+      uses common-connection-record;
+      uses common-traffic-descriptor;
+      container ingress-connection-record {
+        uses nmc-interface-common-connection-record;
+      }
+      container egress-connection-record {
+        uses nmc-interface-common-connection-record;
+      }
+      uses regen-common-record;
+      uses snc-protection-common-record;
+    }
+  }
+
+  grouping internal-record-common {
+    leaf call-id {
+      type uint32;
+      description
+        "Indication the call id value.";
+      config false;
+    }
+    leaf creation-time-stamp {
+      type uint32;
+      description
+        "Indicates the time-stamp of the creation time on snc-group.";
+      config false;
+    }
+    leaf db-version {
+      type uint32;
+      description
+        "Indicates DB version.";
+      config false;
+    }
+    container dynamic-dtl {
+      description
+        "Indication Dyn DTL information.";
+      config false;
+      list dtl-data {
+        key "nodename";
+        uses ciena-osrp-types:hop-info;
+        ordered-by user;
+        description
+          "Transit List of OSRP hops in route.";
+        config false;
+      }
+      leaf implicit-regen-dtl {
+        type ciena-osrp-types:yes-no;
+        description
+          "Indicates if DTL is implicit regen DTL.";
+        config false;
+      }
+      container dtl-retuning-regen-info {
+        config false;
+        leaf dtl-name {
+          type ciena-osrp-types:dtl-key;
+          description
+            "Name of dtl.";
+          config false;
+        }
+        leaf full-length {
+          type uint32;
+          description
+            "Indicates full length of the DTL.";
+          config false;
+        }
+      }
+    }
+    container home-dtl {
+      description
+        "Indication Home DTL information.";
+      config false;
+      list dtl-data {
+        key "nodename";
+        uses ciena-osrp-types:hop-info;
+        ordered-by user;
+        description
+          "Transit List of OSRP hops in route.";
+        config false;
+      }
+      leaf implicit-regen-dtl {
+        type ciena-osrp-types:yes-no;
+        description
+          "Indicates if DTL is implicit regen DTL.";
+        config false;
+      }
+      container dtl-retuning-regen-info {
+        config false;
+        leaf dtl-name {
+          type ciena-osrp-types:dtl-key;
+          description
+            "Name of dtl.";
+          config false;
+        }
+        leaf full-length {
+          type uint32;
+          description
+            "Indicates full length of the DTL.";
+          config false;
+        }
+      }
+    }
+    leaf exclusive-link {
+      type string;
+      description
+        "Indicates the name of the exclusive link.";
+      config false;
+    }
+    leaf incarnation-number {
+      type uint32;
+      description
+        "Indicates the incarnation value.";
+      config false;
+    }
+    leaf is-home-dtl-present {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if home dtl is present.";
+      config false;
+    }
+    leaf is-dtl-present {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if dtl is present.";
+      config false;
+    }
+    leaf is-preempting {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if snc-group is preempting.";
+      config false;
+    }
+    leaf is-takeover-enabled {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if takeover is enabled.";
+      config false;
+    }
+    leaf peer-origin-node-name {
+      type string;
+      description
+        "Indicates the origin node name of the peer.";
+      config false;
+    }
+    leaf protection {
+      type int32;
+      description
+        "Indicates protection level required.";
+      config false;
+    }
+    leaf remote-node-address {
+      type string {
+        length "1..22";
+      }
+      description
+        "Indicates the node address of the remote node.";
+      config false;
+    }
+    leaf rx-fault-condition {
+      type ciena-osrp-types:yes-no;
+      description
+        "Indicates if rx fault contidition in present";
+      config false;
+    }
+    leaf current-event {
+      type ciena-osrp-types:snc-event;
+      description
+        "Indicates current event on the snc/snc-group.";
+      config false;
+    }
+    leaf fsm-event {
+      type ciena-osrp-types:snc-fsm-state;
+      description
+        "Indicates current FSM state of the snc/snc-group.";
+      config false;
+    }
+    leaf ncci-id {
+      type string {
+        length "10..2042";
+      }
+      description
+        "NCCI Management ID - snc/snc-group Unique ID in network.";
+      config false;
+    }
+    leaf ncci-management-id-1 {
+      type string {
+        length "10..1024";
+      }
+      description
+        "NCCI Management ID - snc/snc-group Name.";
+      config false;
+    }
+    leaf ncci-management-id-2 {
+      type string {
+        length "10..1024";
+      }
+      description
+        "NCCI Management ID - NE Name.";
+      config false;
+    }
+    leaf spvc-type {
+      type ciena-osrp-types:spvc-type;
+      description
+        "Indicates of SpvcType based on node [orignating-node-spvc/termination-node-spvc/...]";
+      config false;
+    }
+    leaf srvc-selector-origin-drop {
+      type uint8;
+      description
+        "Indicates  value of SRVC selector Orig Drop.";
+      config false;
+    }
+    leaf srvc-selector-origin-line {
+      type uint8;
+      description
+        "Indicates  value of SRVC selector Orig Line.";
+      config false;
+    }
+    leaf srvc-selector-terminating-drop {
+      type uint8;
+      description
+        "Indicates  value of SRVC selector Term Drop.";
+      config false;
+    }
+    leaf srvc-selector-terminating-line {
+      type uint8;
+      description
+        "Indicates  value of SRVC selector Term Line.";
+      config false;
+    }
+    leaf standard {
+      type ciena-osrp-types:connection-standard;
+      description
+        "Indicates the standard on the connection.";
+      config false;
+    }
+    leaf user-blocked-link {
+      type string;
+      description
+        "Indicates the name of the user blocked link";
+      config false;
+    }
+    leaf working-time-stamp {
+      type uint32;
+      description
+        "Indicates the time-stamp of the snc-group going to working state.";
+      config false;
+    }
+  }
+}

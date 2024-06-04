@@ -1,0 +1,358 @@
+module ciena-6500r-card-api-types {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-card-api-types";
+  prefix card-api-types;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-optical-types {
+    prefix pro-types;
+  }
+  import ietf-yang-types {
+    prefix yang-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes data types for Ciena's card apis data model for the RLS platform, first introduced in RLS 3.1";
+
+  revision 2022-01-12 {
+    description
+      "6500r-series Release 3.1
+           Initial Revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  typedef api-operation-type {
+    type enumeration {
+      enum execute {
+        description
+          "Request to set amp power target for a given frequency range.";
+      }
+      enum re-notify {
+        description
+          "Request to stop setting amp power target for a given frequency range.";
+      }
+    }
+  }
+
+  typedef mode-enum {
+    type enumeration {
+      enum running {
+        value 1;
+        description
+          "API is in progress.";
+      }
+      enum not-running {
+        value 2;
+        description
+          "API is completed.";
+      }
+    }
+  }
+
+  typedef api-status-enum {
+    type enumeration {
+      enum in-progress {
+        value 1;
+        description
+          "API is in progress.";
+      }
+      enum completed {
+        value 2;
+        description
+          "API is completed.";
+      }
+      enum failed {
+        value 3;
+        description
+          "API is failed.";
+      }
+      enum timeout {
+        value 4;
+        description
+          "API timed out.";
+      }
+      enum na {
+        value 5;
+        description
+          "Indicates that API was never invoked.";
+      }
+    }
+  }
+
+  typedef stc-status-enum {
+    type enumeration {
+      enum success {
+        description
+          "successful ";
+      }
+      enum not-photonic-ready {
+        description
+          "fails when invoked if not photonic-ready";
+      }
+    }
+  }
+
+  typedef stc-status-results-enum {
+    type enumeration {
+      enum success {
+        description
+          "successful ";
+      }
+      enum hw-failure {
+        description
+          "hardware failure";
+      }
+      enum comm-failure {
+        description
+          "comms failure";
+      }
+    }
+  }
+
+  grouping amp-mode {
+    leaf amp-mode {
+      type enumeration {
+        enum power {
+          value 1;
+          description
+            "Control to a Power Mode.";
+        }
+        enum gain {
+          value 2;
+          description
+            "Control to a Gain Mode. (Default) ";
+        }
+        enum gainclamp {
+          value 3;
+          description
+            "Control to a Gainclamp Mode.";
+        }
+        enum gain-tilt {
+          value 4;
+          description
+            "Control seeks to achieve the specified target-gain-tilt.";
+        }
+        enum ase {
+          value 5;
+          description
+            "Control to an ASE Mode to check line out fiber connectivity and APR/ORL detection.
+             Amp output power is limited to the provisioned apr-power-level of the amp's config data.";
+        }
+      }
+    }
+  }
+
+  grouping gain-mode {
+    leaf gain-mode {
+      type enumeration {
+        enum low {
+          value 1;
+          description
+            "Gain Mode is Low.";
+        }
+        enum high {
+          value 2;
+          description
+            "Gain Mode is High.";
+        }
+      }
+      default "high";
+      description
+        "Gain Mode of the AMP.";
+    }
+  }
+
+  grouping stc-api-inputs-group {
+    leaf application-name {
+      type string;
+      description
+        "Name of the application/ microservice requesting card API";
+    }
+    leaf application-instance {
+      type string;
+      description
+        "Indicates application instance requesting card API.";
+    }
+    leaf operation-instance {
+      type uint32;
+      description
+        "Indicates instance of the operation, since there could be multiple concurrent operation running on the same slot by an application and application instance.";
+    }
+    leaf grouping-identifier {
+      type uint32;
+      description
+        "Usually represents optical direction.";
+    }
+    leaf operation {
+      type api-operation-type;
+      description
+        "AFC card API operation.";
+    }
+    leaf transaction {
+      type uint32;
+      config false;
+      description
+        "Indicates transaction number of the current operation operation.";
+    }
+    leaf min-freq {
+      type pro-types:frequency;
+      description
+        "Lower bound of frequency range for which API is executed.";
+    }
+    leaf max-freq {
+      type pro-types:frequency;
+      description
+        "Upper bound of frequency range for which API is executed.";
+    }
+    leaf power-target {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Power target that AMP should reach for a specified frequency range.";
+    }
+  }
+
+  grouping stc-api-outputs {
+    list amp-measurements {
+      key "name";
+      uses amp-status-grouping;
+    }
+    list voas {
+      key "name";
+      uses voa-status-grouping;
+    }
+    list opms {
+      key "name";
+      uses opm-status-grouping;
+    }
+    list optmons {
+      key "name";
+      uses optmon-status-grouping;
+    }
+    leaf algorithm-status {
+      type stc-status-results-enum;
+      description
+        "Result of amp-target-spectrum-control-start algorithm execution.";
+    }
+    leaf timestamp {
+      type yang-types:date-and-time;
+      config false;
+      description
+        "Timestamp of status collection.";
+    }
+  }
+
+  grouping amp-status-grouping {
+    leaf name {
+      type string;
+      description
+        "Amplifier name";
+    }
+    uses amp-in-out-power-grouping;
+    leaf gain-tilt {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Gain tilt in dB.";
+    }
+    leaf gain {
+      type pro-types:gain-dB-1-precision;
+      description
+        "Target Gain in dB.";
+    }
+    uses amp-mode;
+    uses gain-mode;
+  }
+
+  grouping voa-status-grouping {
+    leaf name {
+      type string;
+      description
+        "VOA object name";
+    }
+    leaf target-loss {
+      type pro-types:loss-dB-1-precision;
+      default "0";
+      description
+        "Target Loss in dB.";
+    }
+    leaf current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Current VOA power in dBm.";
+    }
+  }
+
+  grouping opm-status-grouping {
+    leaf name {
+      type string;
+      description
+        "OPM facility name";
+    }
+    leaf-list power-slice {
+      type pro-types:power {
+        range "-75..75.00";
+      }
+      units "dBm";
+      config false;
+      description
+        "Power measured in an OPM slice in dBm.";
+    }
+  }
+
+  grouping optmon-status-grouping {
+    leaf name {
+      type string;
+      description
+        "Optmon object name";
+    }
+    leaf current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Current input power at the optical monitor.";
+    }
+  }
+
+  grouping amp-in-out-power-grouping {
+    leaf in-current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Input power to the AMP in dBm.";
+    }
+    leaf out-current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Output power from the AMP in dBm.";
+    }
+  }
+}

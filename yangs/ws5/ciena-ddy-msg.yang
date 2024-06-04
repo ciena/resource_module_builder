@@ -1,0 +1,355 @@
+module ciena-ddy-msg {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddy-msg";
+  prefix ddy-msg;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+
+  organization "Ciena";
+  contact
+    "";
+  description
+    "";
+
+  revision 2015-04-07 {
+    description
+      "";
+  }
+
+  identity ddm-protocols {
+    description
+      "The base identity to represent ddy-msg protocols.";
+  }
+
+  identity ddm-format {
+    description
+      "The base identity to represent ddy-msg data formats.";
+  }
+
+  identity ddm-json {
+    base ddm-format;
+    description
+      "JSON format";
+  }
+
+  identity ddm-xml {
+    base ddm-format;
+    description
+      "XML format";
+  }
+
+  identity local {
+    base ddm-protocols;
+    description
+      "Local messaging for within the domain";
+  }
+
+  identity ddm-resource-type {
+	    description
+	      "The type of a resource supported by a domain.";
+  }
+  
+  identity ddm-yang-module {
+	    base ddm-resource-type;
+	    description
+	      "A YANG module resource.";
+  }
+  
+  typedef state-type {
+	  type enumeration {
+	      enum "UNKNOWN" {
+	      }
+	      enum "ACTIVE" {
+	      }
+	      enum "INACTIVE" {
+	      }
+	      enum "ACTIVATING" {
+	      }
+	      enum "DEACTIVATING" {
+	      }
+	      enum "FAILED" {
+	      }
+	  }
+  }
+  
+  grouping resource-config {
+    leaf resource-name {
+      type string;
+    }  
+    leaf proxied {
+      type boolean;
+      default false;
+      description 
+        "Indicates if the resource is proxied by this service
+         (true) or if it is owned by this service (false)";
+    }
+    leaf resource-type {
+      type identityref {
+        base ddm-resource-type;
+      }
+    }
+  }
+
+  list domains {
+    key domain;
+    leaf domain {
+      type string;
+      description "The name of the domain.";
+    }
+    leaf local {
+      type boolean;
+      description "Flag to indicate if this is the local domain in a process.";
+    }
+    list protocols {
+      key protocol;
+      leaf protocol {
+        type string;
+        description "The name of the protocol.";
+      }
+      leaf rpc-only {
+        type boolean;
+        default true;
+        description "Flag that indicates if this protocol should be
+                     invoked using only RPC calls (true), or if it
+                     supports action invocation using internal calls
+                     (false).";
+      }
+      leaf type {
+        type identityref {
+          base ddm-protocols;
+        }
+        description "The type of the protocol.";
+      }
+      leaf service {
+        type string;
+        description "Local messaging service to invoke for this protocol.";
+      }
+    }
+    leaf protocol {
+      type leafref {
+        path "/domains/protocols/protocol";
+      }
+    }
+    leaf state {
+      type state-type;
+      description "The state of the domain.";
+    }
+  	leaf managed {
+  		type boolean;
+    		description "Indicates if the lifecycle of the domain is managed by the directory service (true) or not (false).";
+    }
+    leaf on-since {
+      type uint64;
+      description "Time when this domain was last started, in nanoseconds.";
+    }
+    container heartbeat
+    {
+      leaf send-interval {
+        type uint32;
+        description "Interval between heartbeat messages sent by this domain. A value of zero disables heartbeat message.";
+        units "msecs";
+        default "10000";
+      }
+      leaf supported {
+        type boolean;
+        description "Indicates if this domain supports heartbeat messages. A value of false means that no heartbeat message should be sent to this domain.";
+        default true;
+      }
+      leaf failures {
+        type uint32;
+        description "Number of heartbeat failures since the last successful heartbeat";
+        config false;
+      }
+      leaf fail-threshold {
+        type uint32;
+        description "Maximum number of heartbeat failures before the domain state is set to FAILED.";
+        default "3";
+      }
+    }
+    list service {
+      key name;
+      leaf name {
+        type string;
+        description "Service name";
+      }
+      leaf-list requires {
+      	type string;
+      }
+      leaf-list depends  {
+      	type string;
+        description "List of service dependencies related to startup and shutdown";
+      }
+      list resource {
+      	key resource-name;
+      	uses resource-config;
+      }
+      leaf state {
+        type identityref {
+          base yang:state-name;
+        }
+        description "The state of the service.";
+      }
+      list subscription {
+        key id;
+        config false;
+        description "list of subscriptions that configured via internal RPC";
+        leaf id {
+          type uint64;
+          description "uniquely identifies a subscription";
+        }
+        list filters {
+          key path;
+          description "list of subscribed paths and filters. There can be multiple filters to a single subscription";
+          leaf path {
+            type instance-identifier;
+            description "subscription path";
+          }
+          leaf fields {
+            type string;
+            description "The fields specify the interested data in the subscribed path";
+            reference "IETF RFC 8040 fields specification: https://tools.ietf.org/html/rfc8040#section-4.8.3";
+          }
+        }
+        container connection {
+          leaf ip-address {
+            type ietf:ip-address;
+            description "IP address of destination";
+          }
+          leaf port {
+            type uint16;
+            description "port number of destination";
+          }
+          leaf protocol {
+            description "The name of the service.";
+            type leafref{
+              path "/domains/service/name";
+            }
+          }
+        }
+      }
+      container providers {
+        list validator {
+          key target-node;
+          leaf target-node {
+            type string;
+            description "The instance for which the validation provider is registered";
+          }
+        }
+        list stager {
+          key target-node;
+          leaf target-node {
+            type string;
+            description "The instance for which the staging provider is registered";
+          }
+        }
+        list subscriber {
+          yang:alias providers-subscriber;
+          key target-node;
+          leaf target-node {
+            type string;
+            description "The instance for which the subscription provider is registered";
+          }
+          leaf frequency {
+            type uint32;
+            description "The frequency at which the subscriber must be notified";
+          }
+          leaf get-initial {
+            type boolean;
+            description "set to TRUE if request should report the data initially.";
+          }
+        }
+      }
+    }
+  }
+
+  list provider-callout {
+    key target-node;
+    leaf target-node {
+      type string;
+      description "The instance for which a provider callout is to be performed";
+    }
+    list validator {
+      key provider-service;
+      leaf provider-service {
+        type yang:service;
+        description "The service where validation is to be performed";
+      }
+    }
+    list stager {
+      key provider-service;
+      leaf provider-service {
+        type yang:service;
+        description "The service where staging is to be performed";
+      }
+    }
+    list subscriber {
+      key provider-service;
+      leaf provider-service {
+        type yang:service;
+        description "The service where the subscriber resides, where the notification must be issued";
+      }
+      leaf frequency {
+        type uint32;
+        description "The frequency at which the subscriber must be notified";
+      }
+    }
+  }
+
+  rpc get-services {
+    description 
+      "This RPC will return a list of services related to set of 
+       data.  This can be used to determine which services need to 
+       have locks, or how to distribute data to multiple services 
+       if needed";
+    input {
+      anyxml data {
+        description 
+          "The input data to get related services for";
+      }
+      leaf names-only {
+        type boolean;
+        default true;
+        description 
+          "Flag to indicate if only the names of the services are
+           needed, or if the provided data should be split and 
+           associated with each service";
+      }
+    }
+    output {
+      list services {
+        leaf service {
+          type string;
+          description "Name of the service related to the input data";
+        }
+        anyxml data {
+          description 
+            "The data from the input associated with this service.  This
+             is only provided if the 'names-only' parameter is false.";
+        }
+      }
+      uses yang:rpc-result-common;
+    }
+  }
+  rpc stop-service {
+    description 
+      "This RPC sends a shutdown command to a service";
+    input {
+      leaf service-name {
+        type string; 
+        description 
+          "Name of the service";
+      }
+    }
+    output {
+      leaf result {
+       type string;
+      description "Return OK on success";
+      }
+    }
+  }
+}

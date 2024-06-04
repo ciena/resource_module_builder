@@ -1,0 +1,109 @@
+module ciena-pro-scaler-rpcs {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-rpcs";
+  prefix scaler-rpcs;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes scaler's public RPCs";
+
+  revision 2023-02-07 {
+    description
+      "Added exp-channel-power to get-port-trail-power rpc";
+  }
+  revision 2021-08-02 {
+    description
+      "Replaced channel-id list from get-port-trail-power rpc
+       input with center-frequency & nmc-network-id leaf-lists";
+  }
+  revision 2021-07-28 {
+    description
+      "Initial creation.";
+  }
+
+  grouping channel-desc {
+    leaf nmc-network-id {
+      type string;
+      description
+        "Network unique identifier of the end-to-end network media channel";
+    }
+    leaf center-frequency {
+      type ciena-6500r-types:frequency;
+      description
+        "Center frequency of the network media channel";
+    }
+  }
+
+  rpc get-port-trail-power {
+    description
+      "Get site level port trail with respective power values";
+    input {
+      leaf port {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Input port";
+      }
+      leaf-list nmc-network-id {
+        type string;
+        description
+          "Network unique identifier of the end-to-end network media channel";
+      }
+      leaf-list center-frequency {
+        type ciena-6500r-types:frequency;
+        description
+          "Center frequency of the network media channel";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      list power-trail {
+        uses channel-desc;
+        list port-powers {
+          leaf port {
+            type instance-identifier;
+            description
+              "Port";
+          }
+          leaf channel-power {
+            type ciena-6500r-types:power;
+            units "dBm";
+            description
+              "Channel power at the port";
+          }
+          leaf exp-channel-power {
+            type ciena-6500r-types:power;
+            units "dBm";
+            description
+              "Expected channel power at the port";
+          }
+          leaf total-power {
+            type ciena-6500r-types:power;
+            units "dBm";
+            description
+              "Total power at the port";
+          }
+          leaf additional-info {
+            type string;
+            description
+              "Additional information in case of faults or no power to report on the port";
+          }
+        }
+      }
+    }
+  }
+}

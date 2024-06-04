@@ -1,0 +1,216 @@
+module ciena-6500r-led {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-led";
+  prefix led;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's LEDs objects for the 6500r platform";
+
+  revision 2020-02-04 {
+    description
+      "Added ACO button notification";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-01-07 {
+    description
+      "Lamp test and flash now available as RPC";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2018-11-06 {
+    description
+      "6500r Release 1.0-
+       First release";
+  }
+
+  typedef led-status {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "Unknown";
+      }
+      enum OFF {
+        value 1;
+        description
+          "Off";
+      }
+      enum ON {
+        value 2;
+        description
+          "On";
+      }
+      enum FLASH {
+        value 3;
+        description
+          "Flash";
+      }
+      enum GREEN {
+        value 4;
+        description
+          "Green";
+      }
+      enum YELLOW {
+        value 5;
+        description
+          "Yellow";
+      }
+      enum RED {
+        value 6;
+        description
+          "Red";
+      }
+    }
+  }
+
+  typedef card-status {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "Unknown";
+      }
+      enum IDLE {
+        value 1;
+        description
+          "Idle";
+      }
+      enum TEST {
+        value 2;
+        description
+          "Test";
+      }
+      enum FLASH {
+        value 3;
+        description
+          "Flash";
+      }
+    }
+  }
+
+  typedef led-type {
+    type enumeration {
+      enum RED {
+        value 0;
+        description
+          "Red LED";
+      }
+      enum GREEN {
+        value 1;
+        description
+          "Green LED";
+      }
+      enum BLUE {
+        value 2;
+        description
+          "Blue LED";
+      }
+      enum CRITICAL {
+        value 3;
+        description
+          "Critical LED";
+      }
+      enum MAJOR {
+        value 4;
+        description
+          "Major LED";
+      }
+      enum MINOR {
+        value 5;
+        description
+          "Minor LED";
+      }
+      enum REAR {
+        value 6;
+        description
+          "Rear LED";
+      }
+      enum MULTI {
+        value 7;
+        description
+          "Multi Colored LED";
+      }
+    }
+  }
+
+  list leds {
+    key "name";
+    description
+      "Components with LEDs";
+    config false;
+    leaf name {
+      type string;
+      description
+        "Name of the component";
+    }
+    leaf card-status {
+      type card-status;
+    }
+    list leds {
+      key "led-type";
+      description
+        "List of LEDs present";
+      leaf led-type {
+        type led-type;
+      }
+      leaf led-status {
+        type led-status;
+      }
+    }
+  }
+
+  rpc trigger-lamp-flash-test {
+    input {
+      leaf component {
+        type string;
+        description
+          "Which component is to have it's LEDs flash/test";
+      }
+      leaf setting {
+        type card-status;
+        description
+          "To set the status to be flash, test or idle (off)";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-led {
+    input {
+      leaf component {
+        type string;
+        description
+          "Which component is to have it's LEDs tested";
+      }
+      leaf led-type {
+        type led-type;
+      }
+      leaf led-status {
+        type led-status;
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  notification aco-button-notify {
+    leaf slot {
+      type string;
+      description
+        "Which slot has the botton been pressed on";
+    }
+  }
+}

@@ -1,0 +1,94 @@
+module ciena-pro-cluster {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-cluster";
+  prefix cluster;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix common-yang;
+  }
+  import ciena-pro-cluster-types {
+    prefix pro-cluster-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's consolidated network representation.";
+
+  revision 2023-01-17 {
+    description
+      "Added error codes for unsupported and partial-success related to
+       the cluster-rpc RPC";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2022-02-01 {
+    description
+      "Initial draft of pro-cluster yang";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity unsupported {
+    base common-yang:error-code;
+    description
+      "The requested RPC is not supported on this member";
+  }
+
+  identity partial-success {
+    base common-yang:error-code;
+    description
+      "The requested RPC executed successfully only on a subset of members";
+  }
+
+  container cluster {
+    list members {
+      key "name";
+      description
+        "Consolidated network configuration data and operational data.";
+      uses pro-cluster-types:cluster-attribute-group;
+      anyxml data {
+        description
+          "Mounting point for nodal data";
+      }
+    }
+  }
+
+  rpc cluster-rpc {
+    description
+      "This will trigger an RPC on all members in the group.";
+    input {
+      leaf path {
+        type string;
+        description
+          "RPC path.";
+      }
+      anyxml data {
+        description
+          "Includes RPC and input data (if applicable).";
+      }
+    }
+    output {
+      uses common-yang:return-code;
+      list members {
+        key "name";
+        description
+          "List of the RPC output for each member of the group.";
+        uses pro-cluster-types:cluster-attribute-group;
+        uses common-yang:return-code;
+        anyxml data {
+          description
+            "Includes the output of the RPC (if applicable).";
+        }
+      }
+    }
+  }
+}

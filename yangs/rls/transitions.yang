@@ -1,0 +1,171 @@
+module transitions {
+  namespace "http://sssup.it/transitions";
+  prefix ev;
+
+  organization
+    "Scuola Superiore Sant'Anna Network and Services Laboratory";
+  contact
+    " Editor: Matteo Dallaglio
+
+              <mailto:m.dallaglio@sssup.it>
+     
+    ";
+  description
+    "This module contains a YANG definitions of events and generic
+     reactions.";
+
+  revision 2016-03-15 {
+    description
+      "Initial Revision.";
+    reference
+      "RFC xxxx: A YANG data model for the description of events and
+       reactions";
+  }
+
+  identity TRANSITION {
+    description
+      "Base for all types of event";
+  }
+
+  identity ON_CHANGE {
+    base TRANSITION;
+    description
+      "The event when the database changes.";
+  }
+
+  typedef transition-type {
+    type identityref {
+      base TRANSITION;
+    }
+  }
+
+  identity transition-event {
+    description
+      " Base of all transition event ";
+  }
+
+  typedef transition-id-type {
+    type uint32;
+  }
+
+  grouping action-block {
+    leaf id {
+      type transition-id-type;
+    }
+    leaf type {
+      type enumeration {
+        enum CONDITIONAL_OP;
+        enum SIMPLE_OP;
+      }
+      mandatory true;
+    }
+    grouping execution-top {
+      anyxml execute {
+        description
+          "Represent the action to perform";
+      }
+      leaf next-action {
+        type transition-id-type;
+        description
+          "the id of the next action to execute";
+      }
+    }
+
+    container conditional {
+      leaf statement {
+        type string;
+        mandatory true;
+        description
+          "The statement to be evaluated before execution.
+
+           E.g. if a=b";
+      }
+      container true {
+        uses execution-top;
+      }
+      container false {
+        uses execution-top;
+      }
+    }
+    container simple {
+      description
+        "Simple execution of an action without checking any condition";
+      uses execution-top;
+    }
+  }
+
+  grouping action-top {
+    list action {
+      key "id";
+      ordered-by user;
+      uses action-block;
+    }
+  }
+
+  grouping on-change {
+    description
+      "Event occuring when a modification of one or more
+
+       objects occurs";
+    container filters {
+      description
+        "This container contains a list of configurable filters
+
+         that can be applied to subscriptions.  This facilitates
+
+         the reuse of complex filters once defined.";
+      list filter {
+        key "filter-id";
+        description
+          "A list of configurable filters that can be applied to
+
+           subscriptions.";
+        leaf filter-id {
+          type string;
+          description
+            "An identifier to differentiate between filters.";
+        }
+        leaf filter {
+          type string;
+          description
+            "Contains the filter criteria ";
+        }
+      }
+    }
+  }
+
+  grouping transition-top {
+    leaf name {
+      type identityref {
+        base transition-event;
+      }
+      mandatory true;
+    }
+    leaf type {
+      type identityref {
+        base TRANSITION;
+      }
+      mandatory true;
+    }
+    leaf description {
+      type string;
+    }
+    uses on-change {
+      when "type = 'ON_CHANGE'";
+    }
+    container actions {
+      uses action-top;
+    }
+  }
+
+  grouping transitions-top {
+    container transitions {
+      list transition {
+        key "name type";
+        uses transition-top;
+      }
+    }
+  }
+
+  uses transitions-top;
+}

@@ -1,0 +1,136 @@
+module ciena-pro-topo-types {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-topo-types";
+  prefix topo-types;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's common topology types for the 6500r platform";
+
+  revision 2018-05-08 {
+    description
+      "6500r Release 1";
+  }
+
+  typedef associated-object-type {
+    type enumeration {
+      enum unknown;
+      enum optical;
+      enum scaler;
+    }
+  }
+
+  typedef spectral-band {
+    type enumeration {
+      enum unknown;
+      enum c-band-4800;
+      enum l-band-4800;
+    }
+    description
+      "Compact specification of spectral size and granularity";
+  }
+
+  grouping spectral-bits {
+    list spectral-bits {
+      key "index";
+      leaf index {
+        type uint16;
+        description
+          "Index into array of octets representing the spectral bit map";
+      }
+      leaf bits {
+        type uint8;
+        description
+          "8 bits";
+      }
+    }
+    leaf size {
+      type uint16;
+      default "96";
+      description
+        "Number of octets";
+    }
+    description
+      "Default is 768 bits x 6.25GHz from lowest to highest frequency";
+  }
+
+  grouping spectral-data {
+    leaf band-spec {
+      type spectral-band;
+      description
+        "Provides context for the bit mask";
+    }
+    container occupancy-mask {
+      uses spectral-bits;
+      description
+        "Function of channel provisioning";
+    }
+    container filter-mask {
+      uses spectral-bits;
+      description
+        "Function of hardware configuration/provisioning";
+    }
+  }
+
+  grouping associated-object {
+    leaf name {
+      type string {
+        length "1..64";
+      }
+    }
+    leaf type {
+      type associated-object-type;
+    }
+  }
+
+  grouping optical-signal-attr {
+    leaf name {
+      type string {
+        length "1..64";
+      }
+      description
+        "Network unique identifier of the source of the signal...ie. transponder";
+    }
+    leaf cktid {
+      type string {
+        length "1..64";
+      }
+      description
+        "User provisionable circuit identifier propagated from transponder";
+    }
+    leaf center-freq {
+      type common-types:frequency;
+      description
+        "Center frequency of the optical signal";
+    }
+    leaf spectral-width {
+      type common-types:frequency;
+      description
+        "Spectral width of the optical signal";
+    }
+    leaf trans-mode {
+      type string {
+        length "1..64";
+      }
+      description
+        "Transmission mode or modulation scheme of the signal";
+    }
+    leaf control-offset {
+      type common-types:frequency;
+      default "0";
+      description
+        "Defines a control frequency which is offset from the center frequency";
+    }
+  }
+}

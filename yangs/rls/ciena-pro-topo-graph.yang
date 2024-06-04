@@ -1,0 +1,553 @@
+module ciena-pro-topo-graph {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-topo-graph";
+  prefix graph;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-graph-interface {
+    prefix ciena-pro-graph-interface;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's topo graph object for the 6500r-Series platform";
+
+  revision 2023-02-08 {
+    description
+      "Changed the loopback type to enum and added loopback leaf for the get-link-trail-from family of APIs";
+    version:version "version" {
+      version:string "0.12.0";
+    }
+  }
+  revision 2022-11-07 {
+    description
+      "Link trail channel-bitmap-occupancy support";
+    version:version "version" {
+      version:string "0.11.0";
+    }
+  }
+  revision 2022-09-22 {
+    description
+      "Added half-links link trail support";
+    version:version "version" {
+      version:string "0.10.0";
+    }
+  }
+  revision 2022-07-28 {
+    description
+      "Added find-nmc link trail support";
+    version:version "version" {
+      version:string "0.9.0";
+    }
+  }
+  revision 2022-07-20 {
+    description
+      "Added network-id link trail support";
+    version:version "version" {
+      version:string "0.8.0";
+    }
+  }
+  revision 2021-12-20 {
+    description
+      "Support 'max-depth' on 'get-link-trail' and 'get-link-trail-from' family of rpcs.
+       Add 'center-frequency' support to 'get-next-hop-links'";
+    version:version "version" {
+      version:string "0.7.0";
+    }
+  }
+  revision 2021-09-11 {
+    description
+      "Added get-all-link-trail-from support";
+    version:version "version" {
+      version:string "0.6.0";
+    }
+  }
+  revision 2021-07-30 {
+    description
+      "Transponder loopback support";
+    version:version "version" {
+      version:string "0.5.0";
+    }
+  }
+  revision 2021-07-02 {
+    description
+      "Add Site scope";
+    version:version "version" {
+      version:string "0.4.0";
+    }
+  }
+  revision 2020-09-08 {
+    description
+      "RLS 2.1 use ciena-pro-optical-types";
+    version:version "version" {
+      version:string "0.3.0";
+    }
+  }
+  revision 2020-05-29 {
+    description
+      "RLS 2.1 add bundled RPC";
+    version:version "version" {
+      version:string "0.2.0";
+    }
+  }
+  revision 2020-05-28 {
+    description
+      "6500r-series Release 2.0.60";
+  }
+  revision 2019-05-29 {
+    description
+      "6500r-series Release 1.1";
+  }
+
+  typedef direction-enum {
+    type enumeration {
+      enum Forward {
+        description
+          "Traverse Links in the same order as light travels";
+      }
+      enum Backward {
+        description
+          "Traverse links in the reverse order that light travels";
+      }
+    }
+  }
+
+  typedef databasetype-enum {
+    type enumeration {
+      enum Omstopo {
+        description
+          "The whole graph is available for graph traversing";
+      }
+      enum Nodal {
+        description
+          "Indicates nodal scope for graph traversing";
+      }
+      enum Site {
+        description
+          "Indicates site scope for graph traversing";
+      }
+    }
+  }
+
+  typedef scope-enum {
+    type enumeration {
+      enum None {
+        description
+          "The whole graph is available for graph traversing";
+      }
+      enum Node {
+        description
+          "Indicates nodal scope for graph traversing";
+      }
+      enum Site {
+        description
+          "Indicates site scope for graph traversing";
+      }
+      enum Slot {
+        description
+          "Indicates slot scope for graph traversing";
+      }
+    }
+  }
+
+  typedef return-code-enum {
+    type enumeration {
+      enum none {
+        description
+          "Return code not set";
+      }
+      enum source-not-found {
+        description
+          "Specified source port is not part of any discovered link";
+      }
+      enum branch-reached {
+        description
+          "Graph traversing stopped at branch";
+      }
+      enum boundary-reached {
+        description
+          "Graph traversing stopped at boundary.";
+      }
+      enum end-reached {
+        description
+          "Graph traversing stopped at a terminal";
+      }
+      enum request-error {
+        description
+          "The link trail request has an encountered an issue.";
+      }
+      enum transit-not-found {
+        description
+          "Requested transit point not found";
+      }
+      enum destination-not-found {
+        description
+          "Requested destination point not found";
+      }
+      enum nmc-not-found {
+        description
+          "Graph traversing stopped due to missing NMC";
+      }
+    }
+  }
+
+  typedef loopback-enum {
+    type enumeration {
+      enum true {
+        description
+          "link trail(s) must find a loopback link (and only one loopback link)";
+      }
+      enum false {
+        description
+          "link trail(s) must not have a loopback link";
+      }
+      enum allow {
+        description
+          "link trail(s) can have zero or one loopback link";
+      }
+    }
+  }
+
+  grouping return-response {
+    leaf return-code {
+      type return-code-enum;
+      description
+        "Result";
+    }
+    leaf return-str {
+      type string;
+      description
+        "More detailed information associated to the return-code-enum";
+    }
+  }
+
+  grouping get-link-trail-request {
+    leaf from {
+      type instance-identifier;
+      description
+        "From port identifier";
+    }
+    leaf to {
+      type instance-identifier;
+      description
+        "To port identifier";
+    }
+    list transits {
+      description
+        "List of transit points the link trail must traverse";
+      key "transit";
+      leaf transit {
+        type instance-identifier;
+        description
+          "The link trail must transit this slot or port identifier";
+      }
+    }
+    leaf loopback {
+      type loopback-enum;
+      default "false";
+      description
+        "Loopback link, link-trail traversal behavior";
+    }
+    leaf dbtype {
+      type databasetype-enum;
+      default "Site";
+      description
+        "Obsolete, please use stop-at-scope instead.";
+    }
+    leaf stop-at-scope {
+      type scope-enum;
+      default "Site";
+      description
+        "Scope that limits graph traversing from the source";
+    }
+    leaf available-center-frequency {
+      type ciena-6500r-types:frequency;
+      description
+        "Find a link trail with this available center frequency.
+         'occupancy' will be reported in the link trail results.";
+    }
+    leaf available-width {
+      type ciena-6500r-types:frequency;
+      description
+        "Find a link trail with at least this amount of available frequency width.
+         If the available-center-frequency is used, the available-center-frequency is expected to be located
+         in the middle of the available-width.
+         'occupancy' will be reported in the link trail results.
+         A value of zero can be used to report the 'occupancy' without the frequency width check.";
+    }
+    leaf max-depth {
+      type uint32;
+      description
+        "The maximum link trail depth.";
+    }
+  }
+
+  grouping get-common-from-request {
+    leaf source {
+      type instance-identifier;
+      description
+        "Source port identifier";
+    }
+    leaf direction {
+      type direction-enum;
+      description
+        "Link direction to traverse starting from the source port";
+    }
+    leaf center-frequency {
+      type ciena-6500r-types:frequency;
+      description
+        "Follows the center frequency of the Network Media Channel (NMC)";
+    }
+    leaf network-id {
+      type string;
+      description
+        "Any encountered network media channel fragments must be using this network unique identifier ";
+    }
+    leaf find-nmc {
+      type boolean;
+      description
+        "Only select link trails that contains a configured network media channel";
+    }
+    leaf band-bitmap {
+      type ciena-pro-optical-types:band-occupancy;
+      description
+        "Band supported by link trail";
+    }
+    leaf stop-at-scope {
+      type scope-enum;
+      default "Site";
+      description
+        "Scope that limits graph traversing from the source";
+    }
+    leaf half-links {
+      type boolean;
+      default "false";
+      description
+        "If set 'true', half-links should be included in the result";
+    }
+    leaf loopback {
+      type loopback-enum;
+      default "false";
+      description
+        "Loopback link, link-trail traversal behavior";
+    }
+  }
+
+  grouping get-link-trail-from-request {
+    leaf stop-at-branching-port {
+      type ciena-6500r-types:BOOLEAN;
+      description
+        "If set TRUE, link traversing should stop at branching";
+    }
+    leaf max-depth {
+      type uint32;
+      description
+        "The maximum link trail depth.";
+    }
+  }
+
+  grouping get-all-trails-request {
+    leaf max-link-trails {
+      type uint32;
+      description
+        "The maximum number of link trails to return.";
+    }
+    leaf debug {
+      type boolean;
+      description
+        "When debug is set to true, invalid link trails with descriptive responses will also be reported.
+         This can also be used to debug 'get-next-hop-links' when the 'max-depth' is equal to 1";
+    }
+  }
+
+  grouping link-trail-response {
+    list links {
+      description
+        "List of ordered links of the path";
+      key "link";
+      leaf link {
+        type instance-identifier;
+        description
+          "Link identifier";
+      }
+    }
+    leaf valid {
+      type boolean;
+      description
+        "When debug mode is enabled, indicates if this is a valid link trail.";
+    }
+    leaf occupancy {
+      description
+        "List of occupied frequencies in the link trail. Each set bit is a 6.25 Ghz occupied frequency range.";
+      type ciena-pro-graph-interface:channel-bitmap-occupancy;
+    }
+  }
+
+  rpc get-link-trail {
+    description
+      "Get an OAM link trail from a given OAM port to another. A link
+       trail is a series of links connected together by ports.
+       Here we assume there is only one possible path. If multiple paths
+       exist then the first one found will be returned.";
+    input {
+      uses get-link-trail-request;
+    }
+    output {
+      uses link-trail-response;
+      uses return-response;
+    }
+  }
+
+  rpc get-link-trail-bundled {
+    description
+      "For each request get an OAM link trail from a given OAM port to another.
+       Each request will have a corresponding response and they are at the same order.
+       A link trail is a series of links connected together by ports.
+       Here we assume there is only one possible path. If multiple paths
+       exist then the first one found will be returned.";
+    input {
+      list request {
+        uses get-link-trail-request;
+      }
+    }
+    output {
+      list response {
+        uses link-trail-response;
+        uses return-response;
+      }
+    }
+  }
+
+  rpc get-all-link-trails {
+    description
+      "Same as get-link-trail but returns all possible paths.";
+    input {
+      uses get-link-trail-request;
+      uses get-all-trails-request;
+    }
+    output {
+      list link-trails {
+        uses link-trail-response;
+        uses return-response;
+      }
+    }
+  }
+
+  rpc get-link-trail-from {
+    description
+      "Get an OAM link trail from a given OAM port. A link trail is a
+       series of links connected together by ports.
+       Here we assume there is only one possible path. If multiple paths
+       exist then the first one found will be returned.";
+    input {
+      uses get-common-from-request;
+      uses get-link-trail-from-request;
+    }
+    output {
+      uses link-trail-response;
+      uses return-response;
+    }
+  }
+
+  rpc get-link-trail-from-bundled {
+    description
+      "For each request get an OAM link trail from a given OAM port.
+       Each request will have a corresponding response and they are at the same order.
+       A link trail is a series of links connected together by ports.
+       Here we assume there is only one possible path. If multiple paths
+       exist then the first one found will be returned.";
+    input {
+      list request {
+        uses get-common-from-request;
+        uses get-link-trail-from-request;
+      }
+    }
+    output {
+      list response {
+        uses link-trail-response;
+        uses return-response;
+      }
+    }
+  }
+
+  rpc get-all-link-trails-from {
+    description
+      "Same as get-link-trail-from but returns all possible paths.";
+    input {
+      uses get-common-from-request;
+      uses get-link-trail-from-request;
+      uses get-all-trails-request;
+    }
+    output {
+      list link-trails {
+        uses link-trail-response;
+        uses return-response;
+      }
+    }
+  }
+
+  rpc get-next-hop-links {
+    description
+      "Get all OAM links that starts from the given OAM port";
+    input {
+      uses get-common-from-request;
+      leaf dbtype {
+        type databasetype-enum;
+        default "Site";
+        description
+          "Obsolete, please use stop-at-scope instead.";
+      }
+    }
+    output {
+      list links {
+        description
+          "List of unordered links sharing a from port";
+        key "link";
+        leaf link {
+          type instance-identifier;
+          description
+            "Link identifier";
+        }
+      }
+      uses return-response;
+    }
+  }
+
+  rpc execute-command {
+    description
+      "Topo-graph debug commands.";
+    input {
+      leaf command {
+        type string {
+          length "1..200";
+        }
+        description
+          "Debug command. Provide \"command\":\"help\" for help text";
+      }
+    }
+    output {
+      leaf result {
+        type string {
+          length "1..1023";
+        }
+        description
+          "Textual command result if there's any";
+      }
+    }
+  }
+}

@@ -1,0 +1,241 @@
+module ciena-pro-wavelogic-device-extension-types {
+  namespace "urn:ciena:ns:yang:wavelogic-device-extension-types";
+  prefix wavelogic-device-extension-types;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-types;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device-statistics-types {
+    prefix coherent-device-statistics-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Device extensions definitions for coherent devices.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  grouping wavelogic-device-otsi-extensions-group {
+    container wavelogic {
+      leaf link-optimization-mode {
+        type coherent-device-types:coherent-device-link-opt-mode-enum;
+        description
+          "";
+      }
+      leaf tuning-mode {
+        type coherent-device-types:coherent-device-tuning-mode-enum;
+        default "normal";
+        description
+          "";
+      }
+      leaf laser-centering-mode {
+        type coherent-device-types:coherent-device-laser-centering-mode-enum;
+        default "disabled";
+        description
+          "";
+      }
+      container channel-contention-detection {
+        leaf admin-state {
+          type coherent-device-types:admin-state-enum;
+          default "disabled";
+          description
+            "";
+        }
+        leaf threshold {
+          type coherent-device-common-types:decimal-2-dig;
+          default "-14.0";
+          description
+            "";
+        }
+        description
+          "";
+      }
+      leaf tx-power-reduction {
+        type boolean;
+        default "false";
+        description
+          "";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-prefec-sd-sf-db-threshold-group {
+    leaf prefec-sd-threshold-db {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units "dB";
+      description
+        "Pre-FEC Signal Degrade threshold in dB units.";
+    }
+    leaf prefec-sf-threshold-db {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units "dB";
+      description
+        "Pre-FEC Signal Fail threshold in dB units.";
+    }
+    description
+      "Pre-FEC Signal Degrade and Signal Fail definition for optionally
+       basing threshold crossing on thresholds in dB or bit-error-ratio.";
+  }
+
+  grouping wavelogic-device-prefec-sd-threshold-group {
+    container prefec-sd-threshold {
+      leaf mantissa {
+        type uint16;
+        description
+          "Pre-FEC Signal Degrade threshold value mantissa";
+      }
+      leaf exponent {
+        type int8 {
+          range "-9..-1";
+        }
+        description
+          "Pre-FEC Signal Degrade threshold value exponent";
+      }
+      description
+        "Pre-FEC Signal Degrade threshold expressed in error-rate.";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-prefec-sf-threshold-group {
+    container prefec-sf-threshold {
+      leaf mantissa {
+        type uint16;
+        description
+          "Pre-FEC Signal Fail threshold value mantissa";
+      }
+      leaf exponent {
+        type int8 {
+          range "-9..-1";
+        }
+        description
+          "Pre-FEC Signal Fail threshold value exponent";
+      }
+      description
+        "Pre-FEC Signal Fail threshold expressed in error-rate.";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-prefec-sd-sf-threshold-config-group {
+    container wavelogic {
+      uses wavelogic-device-prefec-sd-sf-db-threshold-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-prefec-sd-sf-threshold-state-group {
+    container wavelogic {
+      uses wavelogic-device-prefec-sd-sf-db-threshold-group;
+      uses wavelogic-device-prefec-sd-threshold-group;
+      uses wavelogic-device-prefec-sf-threshold-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-otsi-diagnostics-group {
+    leaf tx-channel-contention {
+      type boolean;
+      default "false";
+      description
+        "";
+    }
+    leaf tx-power-reduction-enabled {
+      type boolean;
+      default "false";
+      description
+        "";
+    }
+    leaf fiber-misconnection {
+      type boolean;
+      default "false";
+      description
+        "An indication that the WaveLogic modem has determined that the Rx and Tx
+         fiber pair are not connected to the same remote device.
+
+         This can occur when photonics protection is deployed and a unidirectional
+         switch occurs.
+
+         This indication can help in -E transmission-modes where trail trace identifer
+         support from OTN is unavailable.
+
+         This defect can occur in normal operations when the photonic layer protection
+         is deployed with regenerator devices immediately adjacent to this transponder
+         and unidirectional protection switching is used. At this time, it is recommended
+         that this diag point be informational only and plaforms not generate an alarm.
+         A means of automatically detecting and handling it is needed.";
+    }
+    leaf connection-validation-in-progress {
+      type boolean;
+      default "false";
+      description
+        "";
+    }
+    leaf duplicate-photonics-controller-discovered {
+      type boolean;
+      default "false";
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping wavelogic-device-otsi-statistics-fec-group {
+    container bits-count {
+      uses coherent-device-statistics-types:instant-total-stats-bits-count-group;
+      description
+        "The total number of bits in a FEC frame for the interval.";
+    }
+    container corrected-bits-count {
+      uses coherent-device-statistics-types:instant-total-stats-bits-count-group;
+      description
+        "The total number of corrected bits in a FEC frame for the interval.";
+    }
+    container frames-count {
+      uses coherent-device-statistics-types:instant-total-stats-frame-count-group;
+      description
+        "The total number of FEC frames for the interval.";
+    }
+    description
+      "";
+  }
+}

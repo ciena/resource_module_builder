@@ -1,0 +1,527 @@
+module ciena-pro-comms-data {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-comms-data";
+  prefix ciena-pro-comms-data;
+
+  import openconfig-inet-types {
+    prefix oc-inet;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import openconfig-if-ethernet {
+    prefix eth;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform dhcp";
+
+  revision 2019-10-08 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity OSPF_NETWORK_TYPE {
+    description
+      "Types of network that OSPF should consider attached to an
+       interface";
+  }
+
+  identity POINT_TO_POINT_NETWORK {
+    base OSPF_NETWORK_TYPE;
+    description
+      "A interface that connects two routers.";
+    reference
+      "RFC2328";
+  }
+
+  identity BROADCAST_NETWORK {
+    base OSPF_NETWORK_TYPE;
+    description
+      "An interface that supports >2 attached routers which has the
+       ability to address all connected systems via a single
+       (broadcast) address.";
+  }
+
+  grouping interface-data {
+    description
+      "Data to configure interface";
+    leaf id {
+      type string;
+      description
+        "Interface name";
+    }
+    leaf ty {
+      type uint32;
+      description
+        "Interface type";
+    }
+    leaf an {
+      type boolean;
+      description
+        "Set to TRUE to request the interface to auto-negotiate
+         transmission parameters with its peer interface.  When
+         set to FALSE, the transmission parameters are specified
+         manually.";
+      reference
+        "IEEE 802.3-2012 auto-negotiation transmission parameters";
+    }
+    leaf dup {
+      type enumeration {
+        enum FULL {
+          description
+            "Full duplex mode";
+        }
+        enum HALF {
+          description
+            "Half duplex mode";
+        }
+      }
+      description
+        "When auto-negotiate is TRUE, this optionally sets the
+         duplex mode that will be advertised to the peer.  If
+         unspecified, the interface should negotiate the duplex mode
+         directly (typically full-duplex).  When auto-negotiate is
+         FALSE, this sets the duplex mode on the interface directly.";
+    }
+    leaf sp {
+      type identityref {
+        base eth:ETHERNET_SPEED;
+      }
+      description
+        "When auto-negotiate is TRUE, this optionally sets the
+         port-speed mode that will be advertised to the peer for
+         negotiation.  If unspecified, it is expected that the
+         interface will select the highest speed available based on
+         negotiation.  When auto-negotiate is set to FALSE, sets the
+         link speed to a fixed value ";
+    }
+    leaf agid {
+      type string;
+      description
+        "The aggregate-id.
+         It is the interface name of the master interface";
+    }
+    leaf ip4 {
+      type string;
+      description
+        "The IPv4 address with prefix length on the interface.
+         The format should be like 1.2.3.4/24";
+    }
+    leaf ref-if4 {
+      type string;
+      description
+        "Name of the interface from which the IPv4 address is
+         borrowed";
+    }
+    leaf ip6 {
+      type string;
+      description
+        "The IPv6 address with prefix length on the interface.
+         The format should be like 2003:0db8::1/64";
+    }
+    leaf ref-if6 {
+      type string;
+      description
+        "Name of the interface from which the IPv6 address is
+         borrowed";
+    }
+  }
+
+  grouping static-routing-data {
+    description
+      "Data to configure static routes";
+    list rt {
+      key "prefix";
+      description
+        "Data to configure a static route";
+      leaf prefix {
+        type string;
+        description
+          "The IP address with prefix length on the interface.
+           The format should be like <ip address>/prefix-length";
+      }
+      list next {
+        key "if";
+        description
+          "next hop list";
+        leaf if {
+          type string;
+          description
+            "Name of the next-hop interface";
+        }
+        leaf addr {
+          type string;
+          description
+            "next hop address";
+        }
+      }
+    }
+  }
+
+  grouping isis-routing-data {
+    description
+      "Data to configure isis routes";
+    list rtr {
+      key "net";
+      description
+        "The net values for the router";
+      leaf net {
+        type string;
+        description
+          "A net address (MAAsystemid) for the router. All net values have the same systemid";
+      }
+    }
+    list if {
+      key "id";
+      description
+        "List of interfaces which are enabled";
+      leaf id {
+        type string;
+        description
+          "Interface name.";
+      }
+      leaf lvl {
+        type enumeration {
+          enum L1 {
+            description
+              "Level 1";
+          }
+          enum L2 {
+            description
+              "Level 2";
+          }
+          enum L1L2 {
+            description
+              "Level 1 and Level 2";
+          }
+        }
+        description
+          "An ISIS if will be fileterd in only if enabled.
+           To save space, the RA will loop on all enabled levels and build the above enum value of the overall level.";
+      }
+    }
+  }
+
+  grouping ospfv2-routing-data {
+    description
+      "Data to configure ospfv2 routes";
+    leaf rid {
+      type yang:dotted-quad;
+      description
+        "A 32-bit number represented as a dotted quad assigned to
+         each router running the OSPFv2 protocol. This number should
+         be unique within the autonomous system";
+      reference
+        "rfc2828";
+    }
+    list area {
+      key "id";
+      description
+        "The OSPFv2 areas within which the local system exists";
+      leaf id {
+        type yang:dotted-quad;
+        description
+          "An identifier for the OSPFv2 area - described as either a
+           32-bit unsigned integer, or a dotted-quad";
+      }
+      list if {
+        key "id";
+        description
+          "List of interfaces which are enabled within this area";
+        leaf id {
+          type string;
+          description
+            "Interface name.";
+        }
+        leaf t {
+          type identityref {
+            base OSPF_NETWORK_TYPE;
+          }
+          description
+            "Interface type.";
+        }
+        leaf d-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds that the local system should let
+             elapse before declaring a silent router down";
+          reference
+            "RFC2328";
+        }
+        leaf h-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds the local system waits between the
+             transmission of subsequent Hello packets";
+        }
+        leaf r-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds that the local system waits before
+             retransmitting an unacknowledged LSA.";
+        }
+      }
+    }
+  }
+
+  grouping ospfv3-routing-data {
+    description
+      "Data to configure ospfv3 routes";
+    leaf rid {
+      type yang:dotted-quad;
+      description
+        "A 32-bit number represented as a dotted quad assigned to
+         each router running the OSPFv3 protocol. This number should
+         be unique within the autonomous system";
+      reference
+        "rfc5340";
+    }
+    list area {
+      key "id";
+      description
+        "The OSPFv3 areas within which the local system exists";
+      leaf id {
+        type yang:dotted-quad;
+        description
+          "An identifier for the OSPFv3 area - described as either a
+           32-bit unsigned integer, or a dotted-quad";
+      }
+      list if {
+        key "id";
+        description
+          "List of interfaces which are enabled within this area";
+        leaf id {
+          type string;
+          description
+            "Interface name.";
+        }
+        leaf iid {
+          type uint8;
+          description
+            "Instance Id";
+        }
+        leaf t {
+          type identityref {
+            base OSPF_NETWORK_TYPE;
+          }
+          description
+            "Interface type.";
+        }
+        leaf d-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds that the local system should let
+             elapse before declaring a silent router down";
+          reference
+            "RFC5340";
+        }
+        leaf h-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds the local system waits between the
+             transmission of subsequent Hello packets";
+        }
+        leaf r-invl {
+          type uint32;
+          units "seconds";
+          description
+            "The number of seconds that the local system waits before
+             retransmitting an unacknowledged LSA.";
+        }
+      }
+    }
+  }
+
+  grouping bgp-data {
+    description
+      "Data to configure BGP";
+    leaf rid {
+      type yang:dotted-quad;
+      description
+        "A 32-bit number represented as a dotted quad assigned to
+         each router running the BGP protocol. This number should
+         be unique within the autonomous system";
+    }
+    leaf as {
+      type uint32;
+      description
+        "Autonomous System id";
+    }
+    list nghb {
+      key "addr";
+      description
+        "List of neighbor addresses";
+      leaf addr {
+        type string;
+        description
+          "Neighbor address. Can be an IPV4 or IPV6 address";
+      }
+      leaf p-as {
+        type uint32;
+        description
+          "Peer AS";
+      }
+      leaf a-pwd {
+        type string;
+        description
+          "Authorization password";
+      }
+      leaf rr-c-id {
+        type string;
+        description
+          "Route Reflector Cluster Id";
+      }
+      leaf rr-cli {
+        type boolean;
+        description
+          "Route Reflector Client";
+      }
+    }
+  }
+
+  grouping slots-data {
+    description
+      "Data to configure slots";
+    list s {
+      key "id";
+      description
+        "List of slots";
+      leaf id {
+        type string;
+        description
+          "Slot name.";
+      }
+      leaf pec {
+        type string;
+        description
+          "Circuit pack";
+      }
+      list s {
+        key "id";
+        description
+          "List of subslots";
+        leaf id {
+          type string;
+          description
+            "Slot name.";
+        }
+        leaf pec {
+          type string;
+          description
+            "Circuit pack";
+        }
+        list o {
+          key "nm";
+          description
+            "List of OSCS facilities";
+          leaf nm {
+            type string;
+            description
+              "Facility name";
+          }
+          leaf pp {
+            type uint32;
+            description
+              "Provisioning Profile";
+          }
+        }
+      }
+    }
+  }
+
+  grouping tconn-data {
+    description
+      "Data for table-connections";
+    list tc {
+      key "sp dp af";
+      description
+        "Three field key";
+      leaf sp {
+        type uint32;
+        description
+          "Source Protocol";
+      }
+      leaf dp {
+        type uint32;
+        description
+          "Destination Protocol";
+      }
+      leaf af {
+        type uint32;
+        description
+          "Address Family";
+      }
+    }
+  }
+
+  grouping comms-data-top {
+    description
+      "Top-level grouping for minimal comms provisioning data
+       for ZTP to bring up data communication channel";
+    container ifs {
+      description
+        "Configuration data for interfaces";
+      list if {
+        key "id";
+        description
+          "Configuration data for interface";
+        uses interface-data;
+      }
+    }
+    container static {
+      description
+        "Configuration data for static routes";
+      uses static-routing-data;
+    }
+    container ospfv2 {
+      description
+        "Configuration data for ospfv2";
+      uses ospfv2-routing-data;
+    }
+    container ospfv3 {
+      description
+        "Configuration data for ospfv3";
+      uses ospfv3-routing-data;
+    }
+    container slots {
+      description
+        "Configuration data for slot";
+      uses slots-data;
+    }
+    container bgp {
+      description
+        "Configuration data for bgp";
+      uses bgp-data;
+    }
+    container tcon {
+      description
+        "Configuration data for NI table-connections";
+      uses tconn-data;
+    }
+    container isis {
+      description
+        "Configuration data for isis";
+      uses isis-routing-data;
+    }
+  }
+
+  uses comms-data-top;
+}

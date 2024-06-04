@@ -1,0 +1,309 @@
+module ciena-common-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-debug";
+  prefix debug;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Model for internal debug data and operations.";
+
+  revision 2024-01-25 {
+    description
+      "Added reflect-data RPC.";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+  }
+  revision 2023-05-29 {
+    description
+      "Added get-handler RPC.";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+  }
+  revision 2023-03-28 {
+    description
+      "Changing minimal-config-test RPC.";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2023-03-24 {
+    description
+      "Adding an rpc to test minimal config.";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2022-09-27 {
+    description
+      "Adding an rpc to convert data to a filter.";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2021-11-26 {
+    description
+      "add priority and msgtrace tag field in yang-pubsub-test input";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-11-11 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef handler-targets {
+    type enumeration {
+      enum get;
+      enum set;
+      enum rpc;
+      enum action;
+      enum del;
+      enum notify;
+      enum req;
+      enum val;
+      enum stage;
+      enum deliver;
+      enum update;
+      enum register-val;
+      enum register-stage;
+      enum register-updater;
+      enum register-notifier;
+      enum deregister-updater;
+      enum deregister-notifier;
+    }
+  }
+
+  rpc yang-pubsub-test {
+    description
+      "RPC to instruct the framework to publish the provided data change
+       or notification.";
+    input {
+      leaf test {
+        type enumeration {
+          enum publish {
+            description
+              "The provided patches will be published for external
+               subscribers to consume (if there are any)";
+          }
+          enum subscribe {
+            description
+              "The provided patches will be processed internally as
+               if they can been received from an external publisher";
+          }
+        }
+        default "publish";
+      }
+      leaf priority {
+        type yang:yang-priority;
+        description
+          "Priority of the action.  Used to allow the service to
+           process faster or slower than a normal message.
+           This field is not effective when test is publish.";
+        default "low";
+      }
+      leaf msgtrace-tag {
+        type string;
+        description
+          "Content of the msgtrace tag to be appended in notification messages.
+           It can be used to identify debug pubsub messages in logs.
+           When path is notification, this field has no effect";
+        default "pubsub-debug";
+      }
+      list patches {
+        description
+          "Set of patches to publish.  Patches can be a list,
+           and these will be published as a bulk notify in a single
+           message.
+
+           If there is only a single patch, the publication will
+           be a yang-delivery notification if the path is a data node.
+           If the path is a notification and the action is 'update',
+           the publication will be the notification specified.";
+        yang:alias "yang-patch";
+        key "action path";
+        uses yang:patch;
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc convert-data-filter {
+    description
+      "RPC to convert data to a target filter, or/and convert fields target-node to a
+       default data tree repesenation of the fields.";
+    input {
+      anyxml data;
+      leaf fields {
+        type yang:target-node;
+        description
+          "The fields for which you want data representation.
+           Refer to ciena-common-yang:target-node for format";
+      }
+      container options {
+        leaf indent {
+          type boolean;
+          description
+            "If true, applies indentation to the output/fields, when data is converted.";
+        }
+      }
+    }
+    output {
+      anyxml data-filter {
+        description
+          "data tree representation of fields with default values when fields is supplied as input.";
+      }
+      leaf fields {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "target-node filter representation of data when data is supplied as input.";
+      }
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc reflect-data {
+    description
+      "RPC that reflects input to output.
+        Can be used to standardize on system-defined serdes behaviour (namespaces, etc) that may be permissable on input but follow standards on output.
+        Can also be used in some protocols to easily convert data between data formats.
+        Can also be used to rinse data and detect any serialization problems";
+    input {
+      anyxml data;
+    }
+    output {
+      anyxml data;
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc minimal-config-test {
+    description
+      "This RPC does a full config get, converts the data to minimal config
+       expands it back to full config, and compare the original full config
+       with the expanded full config.";
+    input {
+      leaf path {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "path to get object from. root if not specified.";
+      }
+      leaf return-only {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "return only the specified component in the rpc output.
+           value can be: full/staged/minimal/expanded/expanded-nonconfig/patches.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+      anyxml full {
+        description
+          "the full config get data.";
+      }
+      anyxml staged {
+        description
+          "the staged data returned by stagers during minimal-config get operation.";
+      }
+      anyxml minimal {
+        description
+          "the minimal config get data.";
+      }
+      anyxml expanded {
+        description
+          "the expanded minimal config get data.";
+      }
+      anyxml expanded-nonconfig {
+        description
+          "the expanded minimal config get data with non-config attributes only.";
+      }
+      list patches {
+        description
+          "list of patches represending the differences,
+           if any, between full and expanded";
+        yang:alias "yang-patch";
+        key "action path";
+        uses yang:patch;
+      }
+    }
+  }
+
+  rpc get-handler {
+    input {
+      leaf domain {
+        type string;
+      }
+      leaf service {
+        type string;
+      }
+      leaf handler {
+        type string;
+      }
+      leaf path {
+        type yang:target-node;
+        mandatory true;
+      }
+      leaf children {
+        default "false";
+        type boolean;
+      }
+      leaf-list targets {
+        type handler-targets;
+      }
+    }
+    output {
+      list handlers {
+        key "index";
+        leaf index {
+          type uint16;
+        }
+        leaf path {
+          type yang:target-node;
+          mandatory true;
+        }
+        leaf domain {
+          type string;
+          mandatory true;
+        }
+        leaf service {
+          type string;
+          mandatory true;
+        }
+        leaf handler {
+          type string;
+          mandatory true;
+        }
+        leaf-list targets {
+          type handler-targets;
+        }
+      }
+    }
+  }
+}

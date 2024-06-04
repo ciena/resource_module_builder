@@ -1,0 +1,142 @@
+module ciena-pro-events-recorder {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-events-recorder";
+  prefix ciena-pro-events-recorder;
+
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-pro-events {
+    prefix ciena-pro-events;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes information about events";
+
+  revision 2020-04-05 {
+    description
+      "Added a new leaf enabled to control whether events-recorder
+       is recording or not";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2019-04-11 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping recorder-options {
+    leaf name {
+      type string;
+      mandatory true;
+      description
+        "Usually the name of domain calling to store
+         the events.";
+    }
+    leaf caches {
+      type uint8;
+      default "20";
+      description
+        "Number of caches to maintain.";
+    }
+    leaf events-per-cache {
+      type uint16;
+      default "100";
+      description
+        "Maximum number of events per cache.";
+    }
+    leaf location {
+      type enumeration {
+        enum ram;
+        enum disk;
+      }
+      default "disk";
+      description
+        "Events recorded will be saved to disk or RAM.";
+    }
+    leaf local-domains-only {
+      type boolean;
+      default "true";
+      description
+        "Listen for events generated from only local domains.";
+    }
+  }
+
+  uses ciena-pro-events:events-group;
+  container events-recorder {
+    leaf enabled {
+      type boolean;
+      description
+        "Control whether to record events or not.";
+    }
+    container options {
+      config false;
+      uses recorder-options;
+    }
+    list caches {
+      key "id";
+      config false;
+      leaf id {
+        type uint8;
+      }
+      leaf current-count {
+        type uint16;
+      }
+      leaf first-event-time {
+        type uint64;
+      }
+      leaf last-event-time {
+        type uint64;
+      }
+    }
+    container cache-state {
+      config false;
+      leaf active-cache {
+        type leafref {
+          path "../../caches/id";
+        }
+      }
+      leaf first-cache {
+        type leafref {
+          path "../../caches/id";
+        }
+      }
+    }
+  }
+
+  rpc events-recorder-init {
+    input {
+      leaf try-recovery {
+        type boolean;
+        default "true";
+        description
+          "Try to recover from disk first.
+           If no disk backup is found, a new recorder will be
+           initialized using the other options specified.
+           If a disk backup is found, other options are ignored.";
+      }
+      uses recorder-options;
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

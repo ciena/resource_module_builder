@@ -1,0 +1,230 @@
+module ciena-ddm-cli {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddm-cli";
+  prefix ddm-cli;
+
+  import ciena-ddy-msg {
+    prefix ciena-ddy-msg;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's CLI model";
+
+  revision 2023-04-12 {
+    description
+      "Added db-file-name for CLI db name";
+    version:version "version" {
+      version:string "1.7.0";
+    }
+  }
+  revision 2023-02-23 {
+    description
+      "Added enable-recording flag to enable recording command";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+  }
+  revision 2022-11-14 {
+    description
+      "Added redirect file path in cli system options";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+  }
+  revision 2022-10-14 {
+    description
+      "Added login-deny-message to display message in case of early login";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2021-12-12 {
+    description
+      "Added bind-for leaf in cli-table-binds to specify CLI display mode.";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2021-11-01 {
+    description
+      "Added server-receive-buffer-max-size in cli system options";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2021-04-21 {
+    description
+      "Added cli system options";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2015-04-07 {
+    description
+      "";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity cli {
+    base ciena-ddy-msg:ddm-protocols;
+    description
+      "CLI Client/Server";
+  }
+
+  augment "/ciena-ddy-msg:domains/ciena-ddy-msg:protocols" {
+    when "ciena-ddy-msg:type = 'ciena-ddy-msg:cli'";
+    container cli-options {
+      leaf ipport {
+        type string;
+        description
+          "IP and Port";
+      }
+    }
+  }
+
+  container cli-system-options {
+    leaf root-allowed {
+      type boolean;
+      default "false";
+      description
+        "Flag to allow root user login in CLI";
+    }
+    leaf rsa-key-path {
+      type string;
+      description
+        "Path to the host key for client authentication";
+    }
+    leaf config-dir-path {
+      type string;
+      description
+        "Path to the config directory";
+    }
+    leaf syntax-spec-dir-path {
+      type string;
+      description
+        "Path to syantax spec directory";
+    }
+    leaf motd-file-path {
+      type string;
+      description
+        "Path to motd banner file";
+    }
+    leaf redirect-file-path {
+      type string;
+      description
+        "redirect file path";
+    }
+    leaf server-receive-buffer-max-size {
+      type uint32;
+      units "kb";
+      default "1024";
+      description
+        "Cli server can buffer X kb data when cli server is
+         not able to send data to cli due to pipeline's sending
+         buffer is full and failed to write";
+    }
+    leaf login-deny-message {
+      type string;
+      description
+        "Message to be displayed in case of early login";
+    }
+    leaf enable-recording {
+      type boolean;
+      default "false";
+      description
+        "This flag will enable the recording command for CLI";
+    }
+    leaf db-file-name {
+      type string;
+      description
+        "CLI db file name";
+      default "bfcli";
+    }
+    config false;
+  }
+  container cli-table-binds {
+    list tablebinds {
+      key "path";
+      leaf path {
+        type string;
+        description
+          "Path of command to be executed";
+      }
+      leaf domain {
+        type string;
+        description
+          "domain name for RPC to display data";
+      }
+      leaf fetch-data {
+        type boolean;
+        default "true";
+        description
+          "check if we need to fetch data before display";
+      }
+      leaf bind-for {
+        description
+          "Specify a CLI display mode to bind.";
+        default "table";
+        type enumeration {
+          enum table {
+            description
+              "Bind for CLI Table display mode.";
+          }
+          enum all {
+            description
+              "Bind for all CLI display modes.";
+          }
+        }
+      }
+    }
+  }
+
+  rpc process-cli-data {
+    input {
+      leaf xpath {
+        type string;
+        description
+          "CLI command xpath";
+      }
+      leaf target-node {
+        type yang:target-node;
+        description
+          "The instance for which display is to be performed.";
+      }
+      leaf command {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Full command";
+      }
+      anyxml data;
+    }
+    output {
+      uses yang:rpc-result-common;
+      leaf output-buf {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "CLI Command Response data";
+      }
+    }
+  }
+}

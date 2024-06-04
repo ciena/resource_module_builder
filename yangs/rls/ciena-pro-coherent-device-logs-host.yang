@@ -1,0 +1,468 @@
+module ciena-pro-coherent-device-logs-host {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:coherent-device-logs-host";
+  prefix coherent-device-logs-host;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device {
+    prefix coherent-device;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Definition for WaveLogic device log collections operations and status";
+
+  revision 2022-01-01 {
+    description
+      "Initial version";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef device-log-types-bits {
+    type bits {
+      bit manual {
+        position 0;
+        description
+          "A log file that was manually created by a host-platform request.";
+      }
+      bit autonomous {
+        position 1;
+        description
+          "A log file that was automatically created by the device due to a
+           hardware failure.";
+      }
+      bit core {
+        position 2;
+        description
+          "A log file for a core dump.";
+      }
+    }
+  }
+
+  typedef state-dump-request-type-enum {
+    type enumeration {
+      enum idle {
+        description
+          "A request has not been received.";
+      }
+      enum create-transfer-delete-all {
+        description
+          "A request to generate a state-dump log file. Afterward all
+           currently available files are transferred to the platform and
+           deleted on successful retrieval. Autonomously generated state-dump
+           logs are not deleted. ";
+      }
+      enum create {
+        description
+          "A request to generate a state-dump log file.";
+      }
+      enum transfer-manual {
+        description
+          "A request to transfer a manually generated state-dump log file.";
+      }
+      enum transfer-autonomous {
+        description
+          "A request to transfer an autonomously generated state-dump log file.";
+      }
+      enum transfer-core {
+        description
+          "A request to transfer a core file.";
+      }
+      enum delete {
+        description
+          "A request to delete all log-files that can be deleted from a device.";
+      }
+    }
+  }
+
+  typedef state-dump-current-action-operation-enum {
+    type enumeration {
+      enum none {
+        description
+          "A state-dump operation is not currently in progress.";
+      }
+      enum autonomous-collection {
+        description
+          "An autonomous state-dump log file collection is in progress.";
+      }
+      enum manual-creation {
+        description
+          "A request to generate a state-dump log file is in progress.";
+      }
+      enum transfer-manual {
+        description
+          "A manually generated state-dump log file transfer is in progress.";
+      }
+      enum transfer-automatic {
+        description
+          "An autonomously generated state-dump log file transfer is in progress.";
+      }
+      enum transfer-core {
+        description
+          "A core log file transfer is in progress.";
+      }
+      enum delete {
+        description
+          "A request to delete available log files is in progress. Autonomously
+           generated state-dump log files are not deleted by this operation.";
+      }
+    }
+  }
+
+  typedef state-dump-current-action-status-enum {
+    type enumeration {
+      enum none {
+        description
+          "A state-dump operation is not currently in progress.";
+      }
+      enum in-progress {
+        description
+          "A state-dump operation is currently in progress.";
+      }
+      enum success {
+        description
+          "A state-dump operation has completed successfully.";
+      }
+      enum failed {
+        description
+          "A state-dump operation has failed.";
+      }
+    }
+    description
+      "A type to represent log collection operation status.";
+  }
+
+  typedef device-log-transfer-interface-type-enum {
+    type enumeration {
+      enum CDB {
+        description
+          "For Ciena and 3rd party coherent QSFP-DD and CFP2-DCO devices.
+           Uses the hardware bus for the specific device for the transfer (e.g., I2C, MDIO).";
+      }
+      enum EMI {
+        description
+          "For WaveLogic Nano and Extreme devices where the host-platform provides an
+           Ethernet Management Interface (EMI).";
+      }
+    }
+  }
+
+  typedef device-file-transfer-protocol-enum {
+    type enumeration {
+      enum scp {
+        description
+          "The file transfer operatoin uses SCP.";
+      }
+    }
+  }
+
+  identity error-log-collection-operation-in-progress {
+    base coherent-device-common-types:error-code;
+    description
+      "Error was that another log collection operation is already in progress.
+       The system can only perform one operation per device at a time.";
+  }
+
+  grouping device-log-file-details-group {
+    leaf size {
+      type uint32;
+      units "bytes";
+      description
+        "The size of a log file in bytes.";
+    }
+    leaf ready {
+      type boolean;
+      description
+        "True indicates the file is ready to be transferred.";
+    }
+  }
+
+  grouping transfer-emi-server-ip-details-group {
+    leaf protocol {
+      type device-file-transfer-protocol-enum;
+      description
+        "";
+    }
+    leaf ip-address {
+      type coherent-device-common-types:ip-address;
+      description
+        "";
+    }
+    leaf ip-port {
+      type coherent-device-common-types:ip-port;
+      description
+        "";
+    }
+  }
+
+  grouping transfer-emi-server-username-group {
+    leaf username {
+      type coherent-device-common-types:username-string;
+      description
+        "Optional";
+    }
+  }
+
+  grouping transfer-emi-server-password-group {
+    leaf password {
+      type coherent-device-common-types:password-string;
+      description
+        "Optional";
+    }
+  }
+
+  grouping transfer-destination-file-group {
+    leaf remote-path {
+      type coherent-device-common-types:string128;
+      description
+        "The path on the platform side where device log-files are transferred.";
+    }
+    leaf filename-prefix {
+      type coherent-device-common-types:string64;
+      description
+        "The optional prefix to be applied to the filename for each type of log-file
+         transferred from the device.";
+    }
+  }
+
+  grouping transfer-emi-server-config-group {
+    container emi-server {
+      uses transfer-emi-server-ip-details-group;
+      uses transfer-emi-server-username-group;
+      uses transfer-emi-server-password-group;
+      description
+        "EMI server details where log-files are transferred to by the device.
+         Currently only SCP is supported when using EMI.";
+    }
+    description
+      "Configuration details for the EMI server to be used for state-dump log file
+       transfer from the device to the platform.";
+  }
+
+  grouping transfer-emi-server-state-group {
+    container emi-server {
+      uses transfer-emi-server-ip-details-group;
+      uses transfer-emi-server-username-group;
+      description
+        "EMI server details last used for log-file transfer from the device to
+         the platform.";
+    }
+    description
+      "State details for the EMI server last used for state-dump log file
+       transfer from the device to the platform.";
+  }
+
+  grouping transfer-interface-group {
+    leaf interface {
+      type device-log-transfer-interface-type-enum;
+      description
+        "The interface to be used for the log file transfer operation.
+         No default defined - host must choose CDB or EMI.";
+    }
+  }
+
+  grouping transfer-details-config-group {
+    uses transfer-destination-file-group;
+    uses transfer-interface-group;
+    uses transfer-emi-server-config-group {
+      when "interface = 'EMI'";
+    }
+    description
+      "A grouping for the details the platform provides to perform a log-file transfer.";
+  }
+
+  grouping transfer-details-state-group {
+    uses transfer-destination-file-group;
+    uses transfer-interface-group;
+    uses transfer-emi-server-state-group {
+      when "interface = 'EMI'";
+    }
+    description
+      "A grouping for the details last provided by the platform to perform a log-file transfer.";
+  }
+
+  grouping log-collection-state-group {
+    container state {
+      config false;
+      leaf current-request {
+        type state-dump-request-type-enum;
+        description
+          "The current platform request that is in progress.";
+      }
+      container current-action {
+        leaf operation {
+          type state-dump-current-action-operation-enum;
+          description
+            "The state-dump operation or step of a request that is currently
+             in progress.";
+        }
+        leaf status {
+          type state-dump-current-action-status-enum;
+          description
+            "The status of the current action operation.";
+        }
+      }
+      container last-transfer-details {
+        leaf log-type {
+          type device-log-types-bits;
+          description
+            "The log type(s) that were successfully transferred due to the last request.
+             As a YANG bits the value is a combination of manual,autonomous,core.
+             The value updates as the transfer of more than one log file type occurs.";
+        }
+        uses transfer-details-state-group;
+        description
+          "Details of the last transfer operation requested by the platform.
+           The data is volatile and does not persist across application or platform
+           restarts.";
+      }
+      list device-files {
+        key "log-type";
+        leaf log-type {
+          type device-log-types-bits;
+          description
+            "They type of log file - manual, automatic, core";
+        }
+        uses device-log-file-details-group;
+        description
+          "A list of the current log-file details on the device. There is one entry
+           per log-file type - manual/host-triggered, automatic/device-triggered, or core.
+
+           When a log file is being created a subscription to /device-files=*/ready
+           can be used to notify the platform when the file is ready for transfer.";
+      }
+      description
+        "";
+    }
+    description
+      "Device log collection state grouping.";
+  }
+
+  grouping log-collection-operations-group {
+    action create-transfer-delete-all {
+      description
+        "An action to trigger the generation of a log file for this device. When
+         complete all log files present on the device are downloaded to the location
+         specified in the dest-path input. On successful download, the generated log file
+         and any core-dumps on the device are deleted. An autonomously generated log file
+         on the device is transferred but is not deleted.
+
+         The format of the log filename at the dest-path is one of the following.
+         The optional prefix from the action input container is added.
+            1. /<filepath>/<prefix>_<device-id>-manual-<date-and-time>.log
+            2. /<filepath>/<prefix>_<device-id>-automatic-<date-and-time>.log
+            3. /<filepath>/<prefix>_<device-id>-core-<date-and-time>.log
+
+         Log file creation requires the device to be present and managed by the WaveLogic
+         Agent - /coherent-devices/device/inventory/equipped = true. The action is rejected
+         if the device is not currently present, is not ready, if any input parameters are
+         invalid, or if an autonomous log collection by the device is currently in-progress.
+
+         The action is asynchronous. It returns success or failure immediately after
+         validating the inputs and state of the device. To track progress monitor the
+         state container or /coherent-devices/device/diagnostics/state-dump diagnostics.";
+      input {
+        uses transfer-details-config-group {
+          refine "remote-path" {
+            mandatory true;
+          }
+          refine "interface" {
+            mandatory true;
+          }
+          refine "emi-server/protocol" {
+            mandatory true;
+          }
+          refine "emi-server/ip-address" {
+            mandatory true;
+          }
+          refine "emi-server/ip-port" {
+            mandatory true;
+          }
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    description
+      "A grouping for the log collection actions for a specific device in inventory.";
+  }
+
+  grouping log-collection-diags-group {
+    leaf manual-log-collection-in-progress {
+      type boolean;
+      config false;
+      description
+        "A host-platform initiated log collection is in-progress.";
+    }
+    leaf manual-log-collection-failed {
+      type boolean;
+      config false;
+      description
+        "A host-platform initiated log collection has failed.";
+    }
+    leaf automatic-log-collection-in-progress {
+      type boolean;
+      config false;
+      description
+        "A device-initiated log collection is in-progress.";
+    }
+    leaf automatic-log-collection-failed {
+      type boolean;
+      config false;
+      description
+        "A device-initiated log collection has failed.";
+    }
+    leaf log-file-transfer-in-progress {
+      type boolean;
+      config false;
+      description
+        "A log file transfer to the host-platform is in-progress.";
+    }
+    leaf log-file-transfer-failed {
+      type boolean;
+      config false;
+      description
+        "A log file transfer to the host-platform has failed.";
+    }
+    description
+      "Internal log-collection specific diagnostic points for the host platform.";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:inventory" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-inventory";
+    container state-dump {
+      uses log-collection-state-group;
+      uses log-collection-operations-group;
+      description
+        "Internal host-platform status and controls for coherent device log collection.";
+    }
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:diagnostics" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-diagnostics";
+    container state-dump {
+      uses log-collection-diags-group;
+    }
+    description
+      "Internal device log-collection diagnostics points.";
+  }
+}

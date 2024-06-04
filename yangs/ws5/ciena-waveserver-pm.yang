@@ -1,0 +1,3086 @@
+module ciena-waveserver-pm {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-pm";
+  prefix pm;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+
+  swagger:support "true";
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines performance monitoring data for the Waveserver.";
+
+  revision 2019-09-18 {
+    description
+      "Added support for Cycle slip indicator and SNR External count.
+       Added support for PM TCA thresholds and baseline values.
+       Added OTDR support to Photonics profile.
+       Added rpc 'waveserver-pm-tca-admin-state-set-interface'.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  revision 2019-01-15 {
+    description
+      "Added 'aggregate-power' container to the optical power PM profile.
+       Added new 'pm-profile-type' value 'photonics'.
+       Updated 'pm-counter-percent-group' counters to 3-digit decimal precision.
+       Added rpc 'waveserver-pm-clear-all'.
+       Added typedef pm-bin-type.
+       Updated 'pm-interface-type' enum values to { ptp | port | channel | slot }.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-07-30 {
+    description
+      "Updated counter type for 'dgd' counters from integer to decimal.
+       Added 'grouping pm-gcm-stats-group'.
+       Added 'list encryption-gcm-performance-instances'.
+       Updated 'pm-profile-type' enum values to { optical-power | modem-performance | 
+                  otu-performance | odu-performance | ethernet-performance | 
+                  encryption-gcm-performance }.
+       Added 'q-factor-standard-deviation' counter to PTP modem performance instances.";
+    reference "Waveserver Ai R1.3 user's guide.";
+  }
+
+  revision 2018-06-27 {
+    description
+      "Obsoleted 'frame-error-count' and 'frame-error-count-second'.
+       Updated counter type for 'frame-error-ratio' to use exponential notation.
+       Added FEC 'uncorrected-second' counter to PTP modem performance instances.
+       Added ESNR, OSNR, and chromatic-dispersion min/max/avg counters to 
+         PTP modem performance instances.
+       Added ncx:user-write to the instances lists.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  revision 2018-01-16 {
+    description
+      "Added DGD max/avg and PDL max/avg PM counters to PTP modem performance instances.
+       Updated Valid range for history bin-numbers are defined.";
+    reference "Waveserver Ai R1.1 user's guide.";
+  }
+
+  revision 2017-09-18 {
+    description
+      "Waveserver Platform Data Model
+      Migrated from Waveserver Classic R1.4 YANG model.
+      Updated namespace to 'ciena-waveserver'.
+      Update 'pm-interface-type' enum values to { ptp | port | channel }.
+      Updated 'pm-profile-type' enum values to { optical-power | modem-performance | 
+                          otu-performance | odu-performance | ethernet-performance }.
+      Removed obsolete 'mac-layer' containers.
+      Removed 'instance-type' leafs and typedef.
+      Removed 'pm-bin-state' leafs and typedef.
+      Removed 'actual' from power-counts grouping.
+      Removed 'post-fec-bit-error-rate' leafs.
+      Removed 'alignment' from 'instance-properties' grouping.
+      Restructured pm bin and instance data into nested groupings.
+      Changed pm counters from leafs to containers with 'value', 'invalid-data-flag', and 'supported' leafs for each.
+      Updated several counter attributes to match the Waveserver Ai data model.
+      Removed 'current-bin-id' from pm instance state container.
+      Removed 'bin-number' from the current bin id containers, only needed for history bins list.
+      Removed 'persistence-interval' and 'persistence-storage-location' from 'global-config' container.";
+    reference "Waveserver Ai R1.0 user's guide.";
+  }
+
+  //////// PM Instance Container Groupings ////////
+
+  grouping pm-instance-id-container {
+    description
+      "Grouping for PM instance id container and attributes.";
+    container id {
+      ui:ui-name "Instance Id";
+      config false;
+      description
+        "PM instance identification.";
+      leaf instance-id {
+        ui:ui-name "PM Instance Id";
+        type uint32;
+        description
+          "ID of the PM instance.";
+      }
+      leaf profile-type {
+        ui:ui-name "PM Profile Type";
+        type pm-profile-type;
+        description
+          "The PM profile type.";
+      }
+    }
+  }//end pm-instance-id-container
+
+  grouping pm-instance-state-container {
+    description
+      "Grouping for PM instance state container and attributes.";
+    container state {
+      ui:ui-name "Instance State";
+      description
+        "PM instance state.";
+      leaf admin-state {
+        ui:ui-name "Admin State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "The configured administrative state of the port.";
+      }
+      leaf tca-admin-state {
+        ui:ui-name "TCA Admin State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "The configured TCA administrative state for this PM instance.";
+      }
+      leaf operational-state {
+        ui:ui-name "Operational State";
+        type cienawstypes:enabled-disabled-enum;
+        config false;
+        description
+          "The operational state of the PM instance.";
+      }
+      leaf collection-start-date-time {
+        ui:ui-name "Collection Start Date and Time";
+        type cienawstypes:string-maxl-64;
+        config false;
+        description
+          "The PM stats collection starting date and time.";
+      }
+      leaf collection-end-date-time {
+        ui:ui-name "Collection End Date and Time";
+        type cienawstypes:string-maxl-64;
+        config false;
+        description
+          "The PM stats collection ending date and time.";
+      }
+    }
+  }//end pm-instance-state-container
+
+  grouping pm-instance-properties-container {
+    description
+      "Grouping for PM instance properties container and attributes.";
+    container properties {
+      ui:ui-name "Instance Properties";
+      description
+        "PM instance properties.";
+      leaf configuration-mode {
+        ui:ui-name "Configuration Mode";
+        type pm-configuration-mode;
+        config false;
+        description
+          "The PM instance configuration mode";
+      }
+      leaf tca-profile-15-min {
+        ui:ui-name "TCA Profile Name 15-min";
+        type cienawstypes:string-maxl-32;
+        description
+          "TCA profile name that is attached to the current 15 minute bin";	 
+      }
+      leaf tca-profile-24-hr {
+        ui:ui-name "TCA Profile Name 24-hr";
+        type cienawstypes:string-maxl-32;
+        description
+          "TCA profile name that is attached to the current 24 hour bin";	 
+      }
+      leaf tca-profile-untimed {
+        ui:ui-name "TCA Profile Name untimed";
+        type cienawstypes:string-maxl-32;
+        description
+          "TCA profile name that is attached to the untimed bin";	 
+      }
+      leaf configured-bin-count {
+        ui:ui-name "Configured Bin Count";
+        type uint32;
+        config false;
+        description
+          "The configured number of history bins.";
+      }
+      leaf configured-bin-duration {
+        ui:ui-name "Configured Bin Duration";
+        type uint32;
+        units "minutes";
+        config false;
+        description
+          "The configured PM bin duration in minutes.";
+      }
+    }
+    container attached-interface {
+      ui:ui-name "Attached Interface";
+      config false;
+      description
+        "Attached interface.";
+      leaf type {
+        ui:ui-name "Interface Type";
+        type pm-interface-type;
+        description
+          "Attached interface type.";
+      }
+      leaf name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Attached interface name.";
+      }
+      leaf operational-state {
+        ui:ui-name "Operational State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Attached interface operational state.";
+      }
+    }
+  }//end pm-instance-properties-container
+
+
+  //////// PM Bin Container Groupings ////////
+
+  grouping pm-bin-id-container {
+    description
+      "Grouping for PM bin id container and attributes.";
+    container id {
+      ui:ui-name "Bin Id";
+      config false;
+      description
+        "PM Bin identification.";
+      leaf bin-name {
+        ui:ui-name "Bin Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "The PM bin name.";
+      }
+    }
+  }//end pm-bin-id-container
+
+  grouping pm-current-bin-state-container {
+    description
+      "Grouping for PM current bin state container and attributes.";
+    container state {
+      ui:ui-name "Bin State";
+      config false;
+      description
+        "PM bin state.";
+      leaf start-date-time {
+        ui:ui-name "Start Date And Time";
+        type cienawstypes:string-maxl-32;
+        description
+          "Start date and time.";
+      }
+      leaf cleared-date-time {
+        ui:ui-name "Cleared Date And Time";
+        type cienawstypes:string-maxl-32;
+        description
+          "Cleared date and time.";
+      }
+    }
+  }//end pm-current-bin-state-container
+
+  grouping pm-history-bin-state-container {
+    description
+      "Grouping for PM history bin state container and attributes.";
+    container state {
+      ui:ui-name "Bin State";
+      config false;
+      description
+        "PM bin state.";
+      leaf start-date-time {
+        ui:ui-name "Start Date And Time";
+        type cienawstypes:string-maxl-32;
+        description
+          "Start date and time.";
+      }
+      leaf end-date-time {
+        ui:ui-name "End Date And Time";
+        type cienawstypes:string-maxl-32;
+        description
+          "End date and time.";
+      }
+    }
+  }//end pm-history-bin-state-container
+
+
+  //////// PM Statistics Groupings ////////
+
+  grouping pm-counter-meta {
+    description
+      "Grouping for PM counter metadata, including IDF and supported flags.";
+    leaf invalid-data-flag {
+      ui:ui-name "IDF";
+      type boolean;
+      description
+        "Invalid Data Flag (IDF) value. Reports the validity of the corresponding 
+        PM data. Reported only with previous interval PM counters. A value of true 
+        indicates the PM data for the specified counter or interval is incomplete 
+        or invalid.";
+      reference
+        "ITU-T G.997.2, sections 7.7.2 and 7.8.2.";
+    }
+    leaf supported {
+      ui:ui-name "Supported";
+      type boolean;
+      description
+        "Indicates whether the specified counter is supported on associated 
+        hardware version and interface type.";
+    }
+    leaf tca-supported {
+      ui:ui-name "TCA Supported";
+      type boolean;
+      description
+        "Indicates whether the specified counter supports TCA.";
+    }
+    leaf tca-active {
+      ui:ui-name "TCA Active";
+      type boolean;
+      description
+        "Indicates whether the specified counter has TCA raised against it.";
+    }
+  }
+
+  grouping pm-counter-group {
+    description
+      "Grouping for basic PM counters, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type uint64;
+      description
+        "PM counter value.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type uint64;
+      description
+        "PM counter TCA threshold.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-signed-group {
+    description
+      "Grouping for signed PM counters, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type int64;
+      description
+        "PM counter value, for signed integer counter values.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type int64;
+      description
+        "PM counter TCA threshold, for signed integer counter values.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-percent-group {
+    description
+      "Grouping for PM counters with percent units, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:decimal-3-dig;
+      units "percent";
+      description
+        "PM value, as a percentage.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:decimal-3-dig;
+      units "percent";
+      description
+        "PM TCA threshold value, as a percentage.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-dbm-group {
+    description
+      "Grouping for PM counters with dBm units, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:decimal-3-dig;
+      units "dBm";
+      description
+        "PM value, as a power level in dBm.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:decimal-3-dig;
+      units "dBm";
+      description
+        "PM TCA threshold value, as a power level in dBm.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-db-group {
+    description
+      "Grouping for PM counters with dB units, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      description
+        "PM value, as loss or gain in dB.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      description
+        "PM TCA threshold value, as loss or gain in dB.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-ps-nm-group {
+    description
+      "Grouping for PM counters with picosecond per nanometer (ps/nm) units,
+       including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:decimal-3-dig;
+      units "ps/nm";
+      description
+        "PM value, in picoseconds per nanometer (ps/nm).";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:decimal-3-dig;
+      units "ps/nm";
+      description
+        "PM TCA threshold value, in picoseconds per nanometer (ps/nm).";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-qfac-group {
+    description
+      "Grouping for q-factor PMs, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:decimal-3-dig;
+      description
+        "PM value, as a q-factor.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:decimal-3-dig;
+      description
+        "PM TCA threshold value, as a q-factor.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping pm-counter-ber-group {
+    description
+      "Grouping for BER PM counters in scientific notation, including count value and metadata.";
+    leaf value {
+      ui:ui-name "Value";
+      type cienawstypes:string-sci;
+      description
+        "PM value, as a bit error rate in scientific notation.";
+    }
+    leaf tca-threshold {
+      ui:ui-name "TCA Threshold";
+      type cienawstypes:string-sci;
+      description
+        "PM TCA threshold value, as a bit error rate in scientific notation.";
+    }
+    uses pm-counter-meta;
+  }
+
+  grouping ethernet-pm-counts-rx {
+    description
+      "Grouping for Ethernet port PM Rx counters.";
+    container bytes {
+      ui:ui-name "Rx bytes";
+      description
+        "Number of bytes received including good and bad packets. This includes
+         FCS bytes, but excludes framing bits.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets {
+      ui:ui-name "Rx packets";
+      description
+        "Number of packets received, including all unicast, multicast, broadcast, 
+         MAC control, and bad packets";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container crc-errored-packets {
+      ui:ui-name "Rx CRC errored packets";
+      description
+        "Number of packets received which contained an FCS error and were 
+         between 64 and 1518 bytes in length.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container multicast-packets {
+      ui:ui-name "Rx multicast packets";
+      description
+        "Number of good multicast packets received that were between 64 and 
+         1518 bytes in length. Excludes MAC control frames";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container broadcast-packets {
+      ui:ui-name "Rx broadcast packets";
+      description
+        "Number of good broadcast packets received that were between 64 and 
+         1518 bytes in length. Excludes MAC control frames";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container undersized-packets {
+      ui:ui-name "Undersized packets";
+      description
+        "Number of packets received that were less than 64 bytes (excluding 
+         framing bits but including FCS bytes) and were otherwise well formed. 
+         This counter also includes the number of packets discarded because of 
+         Ethernet length check errors. Undersize packets are discarded.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container oversized-packets {
+      ui:ui-name "Oversized packets";
+      description
+        "Number of packets received (including unicast, multicast, and broadcast 
+         packets) that were longer than 1518 bytes up to the configured maximum 
+         frame size, that contained a valid FCS (excluding framing bits but 
+         including FCS bytes), and that were otherwise well formed";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container fragment-packets {
+      ui:ui-name "Fragment packets";
+      description
+        "Number of packets received between 10 and 63 bytes in length (excluding 
+         framing bits but including FCS bytes) that had either a bad FCS with an
+         integral number of bytes (FCS Error) or a bad FCS with a non-integral 
+         number of bytes (Alignment Error). Fragment packets are discarded.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container jabber-packets {
+      ui:ui-name "Jabber packets";
+      description
+        "Number of packets received that were longer than 1518 bytes up to the 
+         configured maximum frame size (excluding framing bits, but including 
+         FCS bytes), and had either a bad FCS with an integral number of 
+         bytes (FCS Error) or a bad FCS with a non-integral number of 
+         bytes (Alignment Error). Jabber packets are discarded";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container length-out-of-range-packets {
+      ui:ui-name "Rx length out of range packets";
+      description
+        "Number of Rx length out-of-range packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container pause-packets { 
+      ui:ui-name "Rx pause packets";
+      description
+        "Number of received valid pause packets that were between 64 and 1518 bytes in length";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-64-octet {
+      ui:ui-name "64 octet packets";
+      description
+        "Number of packets (including bad packets) received that were 64 bytes in 
+         length (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-65-127-octet {
+      ui:ui-name "65 to 127 octet packets";
+      description
+        "Number of good and bad packets received that were between 65 and 127 bytes in
+         length (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-128-255-octet {
+      ui:ui-name "128 to 255 octet packets";
+      description
+        "Number of good and bad packets received that were between 128 and 255 bytes in 
+         length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-256-511-octet {
+      ui:ui-name "256 to 511 octet packets";
+      description
+        "Number of good and bad packets received that were between 256 and 511 bytes in 
+         length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-512-1023-octet {
+      ui:ui-name "512 to 1023 octet packets";
+      description
+        "Number of good and bad packets received that were between 512 and 1023 bytes in 
+         length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-1024-1518-octet {
+      ui:ui-name "1024 to 1518 octet packets";
+      description
+        "Number of good and bad packets received that were between 1024 and 1518 bytes in 
+         length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-1519-jumbo-octet {
+      ui:ui-name "1519 to jumbo octet packets";
+      description
+        "Number of good and bad packets received that were between 1519 bytes in 
+         length up to MTU size (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container jumbo-octet-packets {
+      ui:ui-name "Jumbo octet packets";
+      description
+        "Number of good and bad packets received that were greater than MTU size.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container bytes-per-second {
+      ui:ui-name "Bytes per second";
+      description
+        "Average number bytes received per second during this period.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container frames-per-second {
+      ui:ui-name "Frames per second";
+      description
+        "Average number frames received per second during this period.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container average-link-utilization {
+      ui:ui-name "Average Link Utilization";
+      description
+        "Average percent utilization derived from Rx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container minimum-link-utilization {
+      ui:ui-name "Minimum Link Utilization";
+      description
+        "Minimum percent utilization derived from Rx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container maximum-link-utilization {
+      ui:ui-name "Maximum Link Utilization";
+      description
+        "Maximum percent utilization derived from Rx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container block-errors {
+      ui:ui-name "Block Errors";
+      description
+        "PCS block errors.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container multilane-bip-errors {
+      ui:ui-name "Multilane BIP Errors";
+      description
+        "PCS lane BIP errors.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container frame-error-ratio {
+      ui:ui-name "Frame Error Ratio";
+      description
+        "Frame error ratio, expressed in exponential notation.";
+      uses pm-counter-ber-group;
+      swagger:hidden "true";
+    }
+  }//end ethernet-pm-counts-rx
+
+  grouping ethernet-pm-counts-tx {
+    description
+      "Grouping for Ethernet port PM Tx counters.";
+    container bytes {
+      ui:ui-name "Tx bytes";
+      description
+        "Number of transmitted bytes in good and bad packets including FCS bytes and
+         excluding frame bits.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets {
+      ui:ui-name "Tx packets";
+      description
+        "Number of transmitted packets, including all unicast, multicast, broadcast,
+         MAC control, and bad packets";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container excessive-deferred-packets {
+      ui:ui-name "Tx excessive deferred packets";
+      description
+        "Number of transmitted packets experiencing two or more deferrals. 
+         Applicable to copper ports only";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container underrun-packets {
+      ui:ui-name "Tx underrun packets";
+      description
+        "Number of underrun packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container crc-errored-packets {
+      ui:ui-name "Tx CRC errored packets";
+      description
+        "Number of transmitted packets with an FCS error";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container length-check-error-packets {
+      ui:ui-name "Tx length check error packets";
+      description
+        "Number of length check packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container length-out-of-range-packets {
+      ui:ui-name "Tx length out-of-range packets";
+      description
+        "Number of Tx length out-of-range packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container pause-packets {
+      ui:ui-name "Tx pause packets";
+      description
+        "Number of pause packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container giant-packets {
+      ui:ui-name "Tx giant packets";
+      description
+        "Number of well-formed packets larger than 1518 bytes, including FCS bytes 
+         but excluding framing bits.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container multicast-packets {
+      ui:ui-name "Tx multicast packets";
+      description
+        "Number of good multicast packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container broadcast-packets {
+      ui:ui-name "Tx broadcast packets";
+      description
+        "Number of good broadcast packets transmitted";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-64-octet {
+      ui:ui-name "64 octet packets";
+      description
+        "Number of packets (including bad packets) transmitted that were 64 bytes in 
+         length (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-65-127-octet {
+      ui:ui-name "65 to 127 octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 65 and 
+         127 bytes in length (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-128-255-octet {
+      ui:ui-name "128 to 255 octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 128 and 
+         255 bytes in length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-256-511-octet {
+      ui:ui-name "256 to 511 octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 256 and 
+         511 bytes in length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-512-1023-octet {
+      ui:ui-name "512 to 1023 octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 512 and 
+         1023 bytes in length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-1024-1518-octet {
+      ui:ui-name "1024 to 1518 octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 1024 and 
+         1518 bytes in length inclusive (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container packets-1519-jumbo-octet {
+      ui:ui-name "1519 to jumbo octet packets";
+      description
+        "Number of good and bad packets transmitted that were between 1519 bytes in 
+         length up to MTU size (excluding framing bits but including FCS bytes).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container jumbo-octet-packets {
+      ui:ui-name "Jumbo octet packets";
+      description
+        "Number of good and bad packets transmitted that were greater than MTU size.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container bytes-per-second {
+      ui:ui-name "Bytes per second";
+      description
+        "Average number bytes transmitted per second during this period.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container frames-per-second {
+      ui:ui-name "Frames per second";
+      description
+        "Average number frames transmitted per second during this period.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container average-link-utilization {
+      ui:ui-name "Average Link Utilization";
+      description
+        "Average percent utilization derived from Tx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container minimum-link-utilization {
+      ui:ui-name "Minimum Link Utilization";
+      description
+        "Minimum percent utilization derived from Tx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container maximum-link-utilization {
+      ui:ui-name "Maximum Link Utilization";
+      description
+        "Maximum percent utilization derived from Tx bytes and port speed.";
+      uses pm-counter-percent-group;
+      swagger:hidden "true";
+    }
+    container block-errors {
+      ui:ui-name "Block Errors";
+      description
+        "PCS block errors.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container multilane-bip-errors {
+      ui:ui-name "Multilane BIP Errors";
+      description
+        "PCS lane BIP errors.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container frame-error-ratio {
+      ui:ui-name "Frame Error Ratio";
+      description
+        "Frame error ratio, expressed in exponential notation.";
+      uses pm-counter-ber-group;
+      swagger:hidden "true";
+    }
+  }//end ethernet-pm-counts-tx
+
+  grouping error-counts {
+    description
+      "Grouping for common PM error counts (ES, SES, UAS).";
+    container errored-seconds {
+      ui:ui-name "Errored Seconds";
+      description
+        "Number of seconds that error happened.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container severely-errored-seconds {
+      ui:ui-name "Severely Errored Seconds";
+      description
+        "Number of seconds that severe error happened.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container unavailable-seconds {
+      ui:ui-name "Unavailable Seconds";
+      description
+        "Number of seconds that the interface was unavailable.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+  }//end error-counts
+
+  grouping fec-layer-counts {
+    description
+      "Grouping for Ethernet port FEC layer counts.";
+    container corrected-codeword-count {
+      ui:ui-name "Corrected Codeword Count";
+      description
+        "FEC layer corrected codeword count";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container uncorrected-codeword-count {
+      ui:ui-name "Uncorrected Codeword Count";
+      description
+        "FEC layer uncorrected codeword count";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container symbol-error-count {
+      ui:ui-name "Symbol Error Count";
+      description
+        "FEC layer symbol error count. This is the total of error counts across 
+         all PMA lanes on this interface.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+  }//end fec-layer-counts
+
+  grouping dgd-counts {
+    description
+      "Differential Group Delay (DGD) Grouping.";
+    container maximum {
+      ui:ui-name "Maximum DGD";
+      description
+        "Maximum differential group delay (in ps).";
+      uses pm-counter-ps-nm-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average DGD";
+      description
+        "Average differential group delay (in ps).";
+      uses pm-counter-ps-nm-group;
+      swagger:hidden "true";
+    }
+  }//end dgd-counts
+
+  grouping pdl-counts {
+    description
+      "Polarization Dependent Loss (PDL) Grouping.";
+    container maximum {
+      ui:ui-name "Maximum PDL";
+      description
+        "Maximum polarization dependent loss (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average PDL";
+      description
+        "Average polarization dependent loss (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+  }//end pdl-counts
+
+  grouping snr-counts {
+    description
+      "Signal-to-Noise Ratio (SNR) Grouping, for ESNR, SNR External and OSNR PM stats.";
+    container minimum {
+      ui:ui-name "Minimum SNR";
+      description
+        "Minimum signal-to-noise ratio (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum SNR";
+      description
+        "Maximum signal-to-noise ratio (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average SNR";
+      description
+        "Average signal-to-noise ratio (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+  }//end snr-counts
+
+  grouping csi-counts {
+    description
+      "Cycle Slip Indicator (CSI) Grouping.";
+    container maximum {
+      ui:ui-name "Maximum CSI";
+      description
+        "Maximum cycle slip indicator.";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average CSI";
+      description
+        "Average cycle slip indicator.";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+  }//end csi-counts
+
+  grouping cd-counts {
+    description
+      "Chromatic Dispersion Grouping.";
+    container minimum {
+      ui:ui-name "Minimum CD";
+      description
+        "Minimum chromatic dispersion value (in ps/nm).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum CD";
+      description
+        "Maximum chromatic dispersion value (in ps/nm).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average CD";
+      description
+        "Average chromatic dispersion value (in ps/nm).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+  }//end cd-counts
+
+  grouping power-counts {
+    description
+      "Optical Power Grouping. Can be used for Tx or Rx optical power PM instances.";
+    container minimum {
+      ui:ui-name "Minimum Power";
+      description
+        "Minimum power reading.";
+      uses pm-counter-dbm-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum Power";
+      description
+        "Maximum power reading.";
+      uses pm-counter-dbm-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average Power";
+      description
+        "Average power reading.";
+      uses pm-counter-dbm-group;
+      swagger:hidden "true";
+    }
+    leaf baseline {
+      ui:ui-name "PM TCA Baseline";
+      type cienawstypes:decimal-3-dig;
+      units "dBm";
+      description
+        "PM TCA baseline value, as a power level in dBm. Not applicable to history bins.";
+    }
+  }
+
+  grouping signal-loss-counts {
+    description
+      "Signal Loss Grouping, for Return Loss and Tx or Rx Span Loss stats.";
+    container minimum {
+      ui:ui-name "Minimum";
+      description
+        "Minimum loss (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum";
+      description
+        "Maximum loss (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container average {
+      ui:ui-name "Average";
+      description
+        "Average loss (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    leaf baseline {
+      ui:ui-name "PM TCA Baseline";
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      description
+        "PM TCA baseline value in dB. Not applicable to history bins.";
+    }
+  }//end signal-loss-counts
+
+  grouping pm-otdr-counter-signed-group {
+    description
+      "OTDR Grouping, for OTDR trace counts for Tx or Rx, short and long.";
+    container minimum {
+      ui:ui-name "Minimum";
+      description
+        "Minimum count (int).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum";
+      description
+        "Maximum count (int).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container current {
+      ui:ui-name "Current";
+      description
+        "Current count (int).";
+      uses pm-counter-signed-group;
+      swagger:hidden "true";
+    }
+    leaf baseline {
+      ui:ui-name "PM Baseline";
+      type int64;
+      description
+        "PM baseline value (int). Not applicable to history bins.";
+    }
+  }//end pm-otdr-counter-signed-group
+
+  grouping pm-otdr-counter-db-group {
+    description
+      "OTDR Grouping, for OTDR trace counts for Tx or Rx, short and long.";
+    container minimum {
+      ui:ui-name "Minimum";
+      description
+        "Minimum count (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum";
+      description
+        "Maximum count (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    container current {
+      ui:ui-name "Current";
+      description
+        "Current count (in dB).";
+      uses pm-counter-db-group;
+      swagger:hidden "true";
+    }
+    leaf baseline {
+      ui:ui-name "PM TCA Baseline";
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      description
+        "PM TCA baseline value in dB. Not applicable to history bins.";
+    }
+  }//end pm-otdr-counter-db-group
+
+  grouping otdr-counts {
+    description
+      "OTDR Counts Grouping, for OTDR trace counts for Tx or Rx, short and long.";
+    container event-count {
+      ui:ui-name "Event Count";
+      description
+        "Event count (int).";
+      uses pm-otdr-counter-signed-group;
+      swagger:hidden "true";
+    }
+    container event-maximum-loss {
+      ui:ui-name "Event Maximum Loss";
+      description
+        "Event maximum loss (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+    container event-maximum-loss-distance {
+      ui:ui-name "Event Maximum Loss Distance";
+      description
+        "Event maximum loss distance (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+    container event-maximum-reflection {
+      ui:ui-name "Event Maximum Reflection";
+      description
+        "Event maximum reflection (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+    container event-maximum-reflection-distance {
+      ui:ui-name "Event Maximum Reflection Distance";
+      description
+        "Event maximum reflection distance (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+    container cumulative-loss {
+      ui:ui-name "Cumulative Loss";
+      description
+        "Cumulative loss (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+    container cumulative-reflection {
+      ui:ui-name "Cumulative Reflection";
+      description
+        "Cumulative reflection (in dB).";
+      uses pm-otdr-counter-db-group;
+      swagger:hidden "true";
+    }
+  }//end otdr-counts
+
+  grouping ber-counts {
+    description
+      "Grouping for common PM Bit-Error-Rate values.";
+    container bit-error-rate {
+      ui:ui-name "Bit Error Rate";
+      description
+        "Bit error rate reading.";
+      uses pm-counter-ber-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum BER";
+      description
+        "Maximum BER reading.";
+      uses pm-counter-ber-group;
+      swagger:hidden "true";
+    }
+  }
+
+  grouping q-factor-counts {
+    description
+      "Grouping for PM modem Q-Factor values.";
+    container q-factor {
+      ui:ui-name "Q-Factor";
+      description
+        "Average Q-Factor reading.";
+      uses pm-counter-qfac-group;
+      swagger:hidden "true";
+    }
+    container minimum {
+      ui:ui-name "Minimum Q-Factor";
+      description
+        "Minimum Q-Factor reading.";
+      uses pm-counter-qfac-group;
+      swagger:hidden "true";
+    }
+    container maximum {
+      ui:ui-name "Maximum Q-Factor";
+      description
+        "Maximum Q-Factor reading.";
+      uses pm-counter-qfac-group;
+      swagger:hidden "true";
+    }
+    container standard-deviation {
+      ui:ui-name "Q-Factor Std Dev";
+      description
+        "Q-Factor standard deviation value.";
+      uses pm-counter-qfac-group;
+      swagger:hidden "true";
+    }
+  }
+
+  grouping fec-error-counts {
+    description
+      "Grouping for line PTP FEC counts.";
+    container frame-error-count {
+      ui:ui-name "FEC Frame Error Counts";
+      status obsolete;
+      description
+        "FEC Frame error counts.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container frame-error-count-second {
+      ui:ui-name "FEC Frame Error Count Second";
+      status obsolete;
+      description
+        "FEC Frame error count second.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container uncorrected-block-count {
+      ui:ui-name "FEC Uncorrected Block Count";
+      description
+        "FEC uncorrected block count.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container uncorrected-second {
+      ui:ui-name "FEC Uncorrected Second";
+      description
+        "FEC uncorrected second count.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container high-correction-count-seconds {
+      ui:ui-name "FEC High Correction Count Seconds";
+      description
+        "FEC high correction count seconds.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+  }
+
+  grouping pm-ethernet-stats-group {
+    description
+      "Grouping for Ethernet port statistics containers and attributes.";
+    container interface-counts {
+      ui:ui-name "Interface Counts";
+      description
+        "Ethernet PM interface counts.";
+      container rx {
+        ui:ui-name "RX Counts";
+        description
+          "Ethernet interface Rx counts.";
+        uses ethernet-pm-counts-rx;
+      }
+      container tx {
+        ui:ui-name "TX Counts";
+        description
+          "Ethernet interface Tx counts.";
+        uses ethernet-pm-counts-tx;
+      }
+    }
+    container pcs-layer {
+      ui:ui-name "PCS Layer";
+      description
+        "PCS layer statistics.";
+      container sync-header-errors {
+        ui:ui-name "Sync Header Errors";
+        description
+          "PCS sync header errors.";
+        uses pm-counter-group;
+        swagger:hidden "true";
+      }
+      uses error-counts;
+    }
+    container fec-layer {
+      ui:ui-name "FEC Layer";
+      description
+        "Ethernet FEC layer PM statistics.";
+      uses fec-layer-counts;
+    }
+  }
+
+  grouping pm-optical-power-stats-group {
+    description
+      "Grouping for PTP optical power statistics containers and attributes.";
+    leaf number-of-lanes {
+      ui:ui-name "Number of Lanes";
+      type uint16;
+      description
+        "Number of optical lanes.";
+    }
+    list optical-power {
+      ui:ui-name "Lanes";
+      key "lane-number";
+      config false;
+      max-elements "4";
+      description
+        "Statistics for a PTP optical lane.";
+      leaf lane-number {
+        ui:ui-name "Lane Number";
+        type cienawstypes:lanes-number;
+        config false;
+        description
+          "Lane number.";
+      }
+      container rx-power {
+        ui:ui-name "Rx Power";
+        config false;
+        uses power-counts;
+        description
+          "Rx power reading.";
+      }
+      container tx-power {
+        ui:ui-name "Tx Power";
+        config false;
+        uses power-counts;
+        description
+          "Tx power reading.";
+      }
+    }
+    container channel-power {
+      ui:ui-name "Channel Power";
+      config false;
+      description
+        "Total optical channel power readings. Only applies to line PTP in 'colourless' mode.";
+      container rx-power {
+        ui:ui-name "Rx Power";
+        config false;
+        uses power-counts;
+        description
+          "Rx power reading.";
+      }
+    }
+    container aggregate-power {
+      ui:ui-name "Aggregate Power";
+      config false;
+      description
+        "For OTM PTP instances, this contains the total DWDM + OSC power readings.";
+      container rx-power {
+        ui:ui-name "Rx Power";
+        config false;
+        uses power-counts;
+        description
+          "Rx aggregate power reading.";
+      }
+      container tx-power {
+        ui:ui-name "Tx Power";
+        config false;
+        uses power-counts;
+        description
+          "Tx aggregate power reading.";
+      }
+    }
+  }
+
+  grouping pm-photonics-stats-group {
+    description
+      "Grouping for OTM PTP photonics statistics.";
+    container return-loss {
+      ui:ui-name "Return Loss";
+      swagger:hidden "true";
+      config false;
+      uses signal-loss-counts;
+      description
+        "Return Loss measurements.";
+    }
+    container rx-span-loss {
+      ui:ui-name "Rx Span Loss";
+      swagger:hidden "true";
+      config false;
+      uses signal-loss-counts;
+      description
+        "Rx Span Loss measurements.";
+    }
+    container tx-span-loss {
+      ui:ui-name "Tx Span Loss";
+      swagger:hidden "true";
+      config false;
+      uses signal-loss-counts;
+      description
+        "Tx Span Loss measurements.";
+    }
+    container rx-otdr-trace-short {
+      ui:ui-name "Rx OTDR Trace Short";
+      swagger:hidden "true";
+      config false;
+      uses otdr-counts;
+      description
+        "Rx OTDR trace counts short.";
+    }
+    container rx-otdr-trace-long {
+      ui:ui-name "Rx OTDR Trace Long";
+      swagger:hidden "true";
+      config false;
+      uses otdr-counts;
+      description
+        "Rx OTDR trace counts long.";
+    }
+    container tx-otdr-trace-short {
+      ui:ui-name "Tx OTDR Trace Short";
+      swagger:hidden "true";
+      config false;
+      uses otdr-counts;
+      description
+        "Tx OTDR trace counts short.";
+    }
+    container tx-otdr-trace-long {
+      ui:ui-name "Tx OTDR Trace Long";
+      swagger:hidden "true";
+      config false;
+      uses otdr-counts;
+      description
+        "Tx OTDR trace counts long.";
+    }
+  }
+
+  grouping pm-modem-stats-group {
+    description
+      "Grouping for PTP modem statistics containers and attributes.";
+    container pre-fec-bit-error-rate {
+      ui:ui-name "PRE-FEC BER";
+      config false;
+      uses ber-counts;
+      description
+        "Pre-FEC BER counts.";
+    }
+    container q-factor {
+      ui:ui-name "Q-Factor";
+      config false;
+      uses q-factor-counts;
+      description
+        "Q-Factor count.";
+    }
+    container fec-error {
+      ui:ui-name "FEC Error";
+      config false;
+      uses fec-error-counts;
+      description
+        "FEC error counts.";
+    }
+    container dgd {
+      ui:ui-name "DGD";
+      description
+        "Differential group delay (DGD) counts.";
+      uses dgd-counts;
+    }
+    container pdl {
+      ui:ui-name "PDL";
+      description
+        "Polarization dependent loss (PDL) counts.";
+      uses pdl-counts;
+    }
+    container esnr {
+      ui:ui-name "ESNR";
+      description
+        "Electrical Signal-to-Noise Ratio (ESNR) counts.";
+      uses snr-counts;
+    }
+    container snre {
+      ui:ui-name "SNR External";
+      description
+        "Signal-to-Noise Ratio (SNR) External counts.";
+      uses snr-counts;
+    }
+    container osnr {
+      ui:ui-name "OSNR";
+      description
+        "Optical Signal-to-Noise Ratio (OSNR) counts.";
+      uses snr-counts;
+    }
+    container csi {
+      ui:ui-name "Cycle Slip Indicator";
+      description
+        "Cycle Slip Indicator (CSI) counts.";
+      uses csi-counts;
+    }
+    container chromatic-dispersion {
+      ui:ui-name "Chromatic Dispersion";
+      description
+        "Chromatic Dispersion counts.";
+      uses cd-counts;
+    }
+  }
+
+  grouping pm-otn-stats-group {
+    description
+      "Grouping for OTN port/channel statistics containers and attributes.";
+    container background-block-errors {
+      ui:ui-name "Background Block Errors (BBE)";
+      description
+        "Background Block Errors (BBE).";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    uses error-counts;
+    container far-end {
+      description
+        "Far-end statistics.";
+      container background-block-errors {
+        ui:ui-name "Background Block Errors (BBE)";
+        description
+          "Background Block Errors (BBE).";
+        uses pm-counter-group;
+        swagger:hidden "true";
+      }
+      uses error-counts;
+    }
+  }
+
+  grouping pm-gcm-stats-group {
+    description
+      "Grouping for Encryption-GCM channel statistics containers and attributes.";
+    container error-count {
+      ui:ui-name "Error Count";
+      description
+        "GCM tag error count.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container severely-errored-seconds {
+      ui:ui-name "Severely Errored Seconds (SES)";
+      description
+        "Number of seconds that severe errors happened.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+    container unavailable-seconds {
+      ui:ui-name "Unavailable Seconds (UAS)";
+      description
+        "Number of seconds that the interface was unavailable.";
+      uses pm-counter-group;
+      swagger:hidden "true";
+    }
+  }
+
+  typedef pm-persistence-status {
+    type enumeration {
+      enum "none" {
+        description
+          "Save to persistence not attempted.";
+      }
+      enum "inprogress" {
+        description
+          "Save to persistence in progress.";
+      }
+      enum "complete" {
+        description
+          "Save to persistence complete.";
+      }
+      enum "not-found" {
+        description
+          "File not found.";
+      }
+      enum "inaccessible" {
+        description
+          "Unable to access persistence storage location.";
+      }
+      enum "aborted" {
+        description
+          "Save to persistence aborted.";
+      }
+      enum "corrupt" {
+        description
+          "Persistence file is corrupt.";
+      }
+      enum "failed" {
+        description
+          "Save to persistence failed.";
+      }
+      enum "partial" {
+        description
+          "Save to persistence was only partially successful.";
+      }
+      enum "not-ready" {
+        description
+          "Persistence not ready.";
+      }
+    }
+    description
+      "PM persistence status.";
+  }
+
+  typedef pm-persistence-state {
+    type enumeration {
+      enum "not-initialized" {
+        description
+          "PM persistence not-initialized";
+      }
+      enum "initialized" {
+        description
+          "PM persistence initialized";
+      }
+    }
+    description
+      "PM persistence state.";
+  }
+
+  typedef pm-configuration-mode {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Unknown PM instance configuration mode.";
+      }
+      enum "auto-created" {
+        description
+          "PM instance is auto-created (default).";
+      }
+      enum "user-created" {
+        description
+          "PM instance is user-created.";
+      }
+    }
+    description
+      "PM configuration mode.";
+  }
+
+  typedef pm-interface-type {
+    type enumeration {
+      enum "ptp" {
+        description
+          "Associated interface is a PTP.";
+      }
+      enum "port" {
+        description
+          "Associated interface is an Ethernet or OTN port.";
+      }
+      enum "channel" {
+        description
+          "Associated interface is an ODU channel.";
+      }
+      enum "slot" {
+        description
+          "Associated interface is line module.";
+      }
+    }
+    description
+      "PM interface type. The object type on which the PMs are being collected/reported.";
+  }
+
+  typedef pm-profile-type {
+    type enumeration {
+      enum "optical-power" {
+        description
+          "PTP Optical Power PM profile type.";
+      }
+      enum "modem-performance" {
+        description
+          "PTP Modem PM profile type.";
+      }
+      enum "otu-performance" {
+        description
+          "Port OTU PM profile type.";
+      }
+      enum "odu-performance" {
+        description
+          "Port/Channel ODU profile type.";
+      }
+      enum "ethernet-performance" {
+        description
+          "Port Ethernet PM profile type.";
+      }
+      enum "encryption-gcm-performance" {
+        description
+          "Port Ethernet PM profile type.";
+      }
+      enum "photonics" {
+        description
+          "PTP Photonics PM profile type.";
+      }
+    }
+    description
+      "PM profile type.";
+  }
+
+  typedef pm-bin-type {
+    type enumeration {
+      enum "15-min" {
+        description
+          "Identifies the 15-min current bin only.";
+      }
+      enum "24-hr" {
+        description
+          "Identifies the 24-hr current bin only.";
+      }
+      enum "untimed" {
+        description
+          "Identifies the untimed bin only.";
+      }
+      enum "history" {
+        description
+          "Identifies all historical 15-min and 24-hour bins.";
+      }
+      enum "all" {
+        description
+          "Identifies all current and historical bins.";
+      }
+    }
+    description
+      "PM bin type.";
+  }
+  typedef tca-notification-type {
+    type enumeration {
+      enum "summary-event" {
+        description
+          "TCA generates summary events.";
+      }
+      enum "summary-alarm" {
+        description
+          "TCA generates summary alarms.";
+      }
+      enum "event" {
+        description
+          "TCA generates events against interface/bin.";
+      }
+      enum "alarm" {
+        description
+          "TCA generates alarms against interface/bin.";
+      }
+    }
+    description
+      "TCA notification type.";
+  }
+
+  container waveserver-pm {
+    ui:ui-name "Performance Monitoring";
+    description
+      "Waveserver performance monitoring configuration and operational data.";
+    container global-config {
+      ui:ui-name "PM Global Configuration";
+      description
+        "Performance monitoring global configuration on the Waveserver.";
+      leaf admin-state {
+        ui:ui-name "Global Admin State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Global admin state.";
+      }
+      leaf tca-admin-state {
+        ui:ui-name "Global TCA Admin State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Global TCA administrative state.";
+      }
+      leaf tca-notification-type {
+        ui:ui-name "Global TCA Notification Type";
+        type tca-notification-type;
+        description
+          "Global TCA notification type.";
+      }
+    }
+    container persistence-state {
+      ui:ui-name "Performance Monitoring Persistence State";
+      config false;
+      description
+        "Performance monitoring persistence state on the Waveserver.";
+      leaf state {
+        ui:ui-name "Persistent State";
+        type pm-persistence-state;
+        description
+          "Persistence state initialized or not.";
+      }
+      leaf next-history-bin-save {
+        ui:ui-name "Next History Bin Save";
+        type uint32;
+        units "seconds";
+        description
+          "Number of seconds left before current bin is saved to history.";
+      }
+      leaf current-file-size {
+        ui:ui-name "Current File Size";
+        type uint32;
+        units "bytes";
+        description
+          "Current file size.";
+      }
+      leaf save-status {
+        ui:ui-name "Persistence Status";
+        type pm-persistence-status;
+        description
+          "Persistence storage setting.";
+      }
+      leaf instances-saved {
+        ui:ui-name "Instances Saved";
+        type uint32;
+        description
+          "Number of the PM instances saved.";
+      }
+      leaf elapsed-save-time {
+        ui:ui-name "Elapsed Save Time";
+        type uint32;
+        units "seconds";
+        description
+          "Number of seconds passed since the save begin.";
+      }
+      leaf load-status {
+        ui:ui-name "Load Status";
+        type pm-persistence-status;
+        description
+          "Persistence load status.";
+      }
+      leaf instances-in-file {
+        ui:ui-name "Instances In File";
+        type uint32;
+        description
+          "Total number of PM instances in file.";
+      }
+      leaf instances-loaded {
+        ui:ui-name "Instances Loaded";
+        type uint32;
+        description
+          "Number of loaded instances.";
+      }
+      leaf elapsed-load-time {
+        ui:ui-name "Elapsed Load Time";
+        type uint32;
+        units "seconds";
+        description
+          "Elaspsed Load Time.";
+      }
+    }
+    container auto-created {
+      ui:ui-name "PM Auto Created Instances";
+      config false;
+      description
+        "PM auto created instances.";
+      list instances {
+        ui:ui-name "PM Auto Created Instances";
+        key "instance-id";
+        config false;
+        description
+          "PM auto-created instance list.";
+        leaf instance-id {
+          ui:ui-name "Instance Id";
+          type uint32;
+          description
+            "ID of the PM instance.";
+        }
+        leaf instance-name {
+          ui:ui-name "Instance Name";
+          type cienawstypes:string-maxl-32;
+          description
+            "The PM instance name.";
+        }
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "The configured administrative state of the PM instance.";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "The operational state of the PM instance.";
+        }
+        leaf bin-count {
+          ui:ui-name "Bin Count";
+          type uint32;
+          description
+            "The number of history bins.";
+        }
+        leaf bin-duration {
+          ui:ui-name "Bin Duration";
+          type uint32;
+          units "minutes";
+          description
+            "The PM bin duration in minutes.";
+        }
+        leaf attached-interface-type {
+          ui:ui-name "Interface Type";
+          type pm-interface-type;
+          description
+            "Attached interface type.";
+        }
+        leaf attached-interface-name {
+          ui:ui-name "Interface Name";
+          type cienawstypes:string-maxl-32;
+          description
+            "Attached interface name.";
+        }
+      }
+    }
+
+    // Ethernet PM Profile Instances
+    list ethernet-performance-instances {
+      ui:ui-name "Ethernet Port PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "Ethernet port PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-ethernet-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-ethernet-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-ethernet-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-ethernet-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-ethernet-stats-group;
+        }
+      }
+    }//end ethernet-performance-instances
+
+    // Optical Power PM Profile Instances
+    list optical-power-instances {
+      ui:ui-name "PTP Optical Power PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "PTP Optical Power PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-optical-power-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-optical-power-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-optical-power-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-optical-power-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-optical-power-stats-group;
+        }
+      }
+    }//end optical-power-instances
+
+    // Photonics PM Profile Instances
+    list photonics-instances {
+      ui:ui-name "PTP Photonics PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "PTP Photonics PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-photonics-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-photonics-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-photonics-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-photonics-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-photonics-stats-group;
+        }
+      }
+    }//end photonics-instances
+
+    // Modem PM Profile Instances
+    list modem-performance-instances {
+      ui:ui-name "PTP Modem PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "PTP Modem PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-modem-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-modem-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-modem-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-modem-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-modem-stats-group;
+        }
+      }
+    }//end modem-performance-instances
+
+    // OTU PM Profile Instances
+    list otu-performance-instances {
+      ui:ui-name "Port OTU PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "Port OTU PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-otn-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+    }//end otu-performance-instances
+
+    // ODU PM Profile Instances
+    list odu-performance-instances {
+      ui:ui-name "Port/Channel ODU PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "Port/channel ODU PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-otn-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-otn-stats-group;
+        }
+      }
+    }//end odu-performance-instances
+
+    // Encryption-GCM PM Profile Instances
+    list encryption-gcm-performance-instances {
+      ui:ui-name "Channel Encryption GCM PM Instance List";
+      ncx:user-write "update";
+      key "instance-name";
+      description
+        "Channel Encryption-GCM PM instances.";
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      uses pm-instance-id-container;
+      uses pm-instance-state-container;
+      uses pm-instance-properties-container;
+      container current-bin {
+        ui:ui-name "PM Current 15 Min Bin";
+        config false;
+        description
+          "PM current 15-minute bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-gcm-stats-group;
+        }
+      }
+      container current-24-hour-bin {
+        ui:ui-name "PM Current 24 Hour Bin";
+        config false;
+        description
+          "PM current 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-gcm-stats-group;
+        }
+      }
+      container untimed-bin {
+        ui:ui-name "PM Untimed Bin";
+        config false;
+        description
+          "PM untimed bin.";
+        uses pm-bin-id-container;
+        uses pm-current-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-gcm-stats-group;
+        }
+      }
+      container history {
+        ui:ui-name "PM History 15 Min";
+        config false;
+        description
+          "PM 15-minute bin history.";
+        list bins {
+          ui:ui-name "PM History 15 Min Bin List";
+          key "bin-number";
+          config false;
+          description
+            "PM history 15-minute bin list.";
+          leaf bin-number {
+            ui:ui-name "Bin Number";
+            type uint32 {
+              range "1..96";
+            }
+            description
+              "The PM bin number, an index value representing the current position
+               in the list of historical PM bins at the time the data is requested.
+               1 is the most recent history bin, and 96 is the oldest.";
+          }
+          uses pm-bin-id-container;
+          uses pm-history-bin-state-container;
+          container statistics {
+            ui:ui-name "Bin Statistics";
+            config false;
+            description
+              "Statistics data.";
+            uses pm-gcm-stats-group;
+          }
+        }
+      }
+      container history-24-hour-bin {
+        ui:ui-name "PM History 24 Hour Bin";
+        config false;
+        description
+          "PM History 24-hour bin.";
+        uses pm-bin-id-container;
+        uses pm-history-bin-state-container;
+        container statistics {
+          ui:ui-name "Bin Statistics";
+          config false;
+          description
+            "Statistics data.";
+          uses pm-gcm-stats-group;
+        }
+      }
+    }//end encryption-gcm-performance-instances
+  }//end waveserver-pm
+
+  rpc waveserver-pm-clear-instance {
+    description
+      "Clear statistics for the specified instance.";
+    input {
+      leaf instance-name {
+        ui:ui-name "Instance Name";
+        type cienawstypes:string-maxl-32;
+        description
+          "Unique name for PM instance.";
+      }
+      leaf history {
+        ui:ui-name "History";
+        type boolean;
+        description
+          "Whether to clear history.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-pm-clear-interface {
+    description
+      "Clear statistics for the specified interface.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name.";
+      }
+      leaf interface-type {
+        ui:ui-name "Interface Type";
+        type pm-interface-type;
+        mandatory true;
+        description
+          "Interface type (PTP, Port, Channel, Slot)";
+      }
+      leaf profile-type {
+        ui:ui-name "PM Profile Type";
+        type pm-profile-type;
+        description
+          "The PM profile type. Can be optionally specified to clear only a 
+           specific profile on this interface.";
+      }
+      leaf bin-type {
+        ui:ui-name "PM Bin Type";
+        type pm-bin-type;
+        description
+          "The PM bin type. Can be optionally specified to clear only a 
+           specific bin or history on this interface.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-pm-clear-all {
+    description
+      "Clear statistics for the specified interface.";
+    input {
+      leaf history {
+        ui:ui-name "History";
+        type boolean;
+        description
+          "Whether to clear history.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-pm-baseline-set-all {
+    description
+      "Set chassis baselines.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-pm-baseline-set-interface {
+    description
+      "Set baseline for the specified interface.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name for slot or ptp.";
+      }
+      leaf interface-type {
+        ui:ui-name "Interface Type";
+        type enumeration {
+            enum "slot" {
+              description
+                "Slot interface.";
+            }
+            enum "ptp" {
+              description
+                "PTP interface type.";
+            }
+        }
+        mandatory true;
+        description
+          "Interface type slot or ptp.";
+      }
+      leaf direction {
+        ui:ui-name "Direction";
+        type enumeration {
+            enum "rx" {
+              description
+                "Rx direction.";
+            }
+            enum "tx" {
+              description
+                "Tx direction.";
+            }
+        }
+        description
+          "Direction for ptp baseline.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pm-baseline-clear-all {
+    description
+      "Clear chassis baselines.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-pm-baseline-clear-interface {
+    description
+      "Clear baseline for the specified interface.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name for slot or ptp.";
+      }
+      leaf interface-type {
+        ui:ui-name "Interface Type";
+        type enumeration {
+            enum "slot" {
+              description
+                "Slot interface.";
+            }
+            enum "ptp" {
+              description
+                "PTP interface type.";
+            }
+        }
+        mandatory true;
+        description
+          "Interface type slot or ptp.";
+      }
+      leaf direction {
+        ui:ui-name "Direction";
+        type enumeration {
+            enum "rx" {
+              description
+                "Rx direction.";
+            }
+            enum "tx" {
+              description
+                "Tx direction.";
+            }
+        }
+        description
+          "Direction for ptp baseline.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pm-tca-admin-state-set-interface {
+    description
+      "Set adminState for the specified interface.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name for slot or ptp or port or channel.";
+      }
+      leaf interface-type {
+        ui:ui-name "Interface Type";
+        type enumeration {
+            enum "slot" {
+              description
+                "Slot interface.";
+            }
+            enum "ptp" {
+              description
+                "PTP interface type.";
+            }
+            enum "port" {
+              description
+                "Port interface type.";
+            }
+            enum "channel" {
+              description
+                "Channel interface type.";
+            }
+        }
+        mandatory true;
+        description
+          "Interface type slot or ptp.";
+      }
+      leaf tca-admin-state {
+        ui:ui-name "TCA Admin State";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "The TCA administrative state for this interface.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

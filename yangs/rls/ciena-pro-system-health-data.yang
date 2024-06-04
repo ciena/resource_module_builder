@@ -1,0 +1,905 @@
+module ciena-pro-system-health-data {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-system-health-data";
+  prefix health-data;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the system's health data YANG structures used to get CPU, memory, temperature, etc...";
+
+  revision 2022-11-18 {
+    description
+      "Added additional port stats to net-stats grouping";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-03-21 {
+    description
+      "Added health-data-temperature-indexes. This is an enum range to help users index into a given temperature sensor in list temperature-stats";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+  revision 2020-09-22 {
+    description
+      "Initial Creation of health-data pro service";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef health-data-historical-value {
+    description
+      "Returns a fractional value with 1 digit precision";
+    type decimal64 {
+      fraction-digits 1;
+      range "0..21474836";
+    }
+  }
+
+  typedef health-data-temperature-value {
+    description
+      "Returns a fractional value with 1 digit precision";
+    type decimal64 {
+      fraction-digits 1;
+      range "0..21474836";
+    }
+  }
+
+  typedef health-data-percent-range {
+    description
+      "Allows a percent (whole numbers) to be set";
+    type uint32 {
+      range "0..100";
+    }
+  }
+
+  typedef health-data-state {
+    description
+      "Setting of either enabled or disabled";
+    type enumeration {
+      enum enabled {
+        value 1;
+      }
+      enum disabled {
+        value 0;
+      }
+    }
+  }
+
+  typedef health-data-temperature-indexes {
+    description
+      "Temperature sensor indexes. Helps user to extract appropriate temperature sensor";
+    type enumeration {
+      enum control-processor-index {
+        value 0;
+      }
+      enum chassis-sensor-index {
+        value 1;
+      }
+      enum access-panel-index {
+        value 2;
+      }
+      enum chassis-intake-index {
+        value 4;
+      }
+      enum chassis-exhaust-index {
+        value 5;
+      }
+      enum module-1-index {
+        value 10;
+      }
+      enum module-2-index {
+        value 20;
+      }
+      enum module-3-index {
+        value 30;
+      }
+      enum module-4-index {
+        value 40;
+      }
+      enum module-5-index {
+        value 50;
+      }
+      enum module-6-index {
+        value 60;
+      }
+      enum module-7-index {
+        value 70;
+      }
+      enum module-8-index {
+        value 80;
+      }
+      enum psu-1-intake-index {
+        value 310;
+      }
+      enum psu-1-exhaust-index {
+        value 311;
+      }
+      enum psu-2-intake-index {
+        value 320;
+      }
+      enum psu-2-exhaust-index {
+        value 321;
+      }
+      enum fan-1-index {
+        value 410;
+      }
+      enum fan-2-index {
+        value 420;
+      }
+    }
+  }
+
+  grouping long-term-stats-group {
+    description
+      "Long term (24-hr and multi-day) statistics";
+    leaf min {
+      type health-data-historical-value;
+      description
+        "Minimum percent recorded of the type over the period.";
+    }
+    leaf max {
+      type health-data-historical-value;
+      description
+        "Maximum percent recorded of the type over the period.";
+    }
+    leaf avg {
+      type health-data-historical-value;
+      description
+        "Average percent recorded of the type over the period.";
+    }
+    leaf hours-collected {
+      type uint32;
+      description
+        "The number of hours actually collected (could be less than max if reset)";
+    }
+  }
+
+  grouping cpu-stats-group {
+    description
+      "Generic Grouping for CPU performance statistics";
+    leaf current {
+      type health-data-historical-value;
+      description
+        "Current percent of CPU time spent for this group.";
+    }
+    leaf min {
+      type health-data-historical-value;
+      description
+        "Minimum percent of CPU time spent historically for this group.";
+    }
+    leaf max {
+      type health-data-historical-value;
+      description
+        "Maximum percent of CPU time spent historically for this group.";
+    }
+    leaf avg {
+      type health-data-historical-value;
+      description
+        "Average percent of CPU time spent historically for this group.";
+    }
+  }
+
+  grouping memory-stats-group {
+    description
+      "Generic Grouping for memory statistics";
+    leaf current {
+      type uint32;
+      description
+        "Current KB of memory for this group.";
+    }
+    leaf min {
+      type uint32;
+      description
+        "Minimum KB of memory historically for this group.";
+    }
+    leaf max {
+      type uint32;
+      description
+        "Maximum KB of memory historically for this group.";
+    }
+    leaf avg {
+      type uint32;
+      description
+        "Average KB of memory historically for this group.";
+    }
+  }
+
+  grouping memory-used-percentage-group {
+    description
+      "Grouping for used RAM percentages";
+    leaf current {
+      type health-data-historical-value;
+      description
+        "Current RAM usage in percent.";
+    }
+    leaf min {
+      type health-data-historical-value;
+      description
+        "Minimum RAM usage in percent.";
+    }
+    leaf max {
+      type health-data-historical-value;
+      description
+        "Maximum RAM usage in percent.";
+    }
+    leaf avg {
+      type health-data-historical-value;
+      description
+        "Average RAM usage in percent.";
+    }
+  }
+
+  grouping overall-disk-stats-group {
+    description
+      "Generic Grouping for summarized disk statistics";
+    leaf current {
+      type uint64;
+      description
+        "Current size in MB for this group.";
+    }
+    leaf min {
+      type uint64;
+      description
+        "This minimum size in MB recored for this group.";
+    }
+    leaf max {
+      type uint64;
+      description
+        "Maximum size in MB recored for this group.";
+    }
+    leaf avg {
+      type health-data-historical-value;
+      description
+        "Average percent of this category recored for this group.";
+    }
+  }
+
+  grouping overall-disk-percentage-group {
+    description
+      "Generic Grouping for summarized disk percentage used";
+    leaf current {
+      type health-data-historical-value;
+      description
+        "Current percent of disk space used.";
+    }
+    leaf min {
+      type health-data-historical-value;
+      description
+        "Minimum percent of disk space used recorded.";
+    }
+    leaf max {
+      type health-data-historical-value;
+      description
+        "Maximum percent of disk space used recorded.";
+    }
+    leaf avg {
+      type health-data-historical-value;
+      description
+        "Average percent used historically for this group.";
+    }
+  }
+
+  grouping net-stats-group {
+    description
+      "Generic Grouping for network statistics";
+    leaf rx-bytes {
+      type uint64;
+      description
+        "Total bytes received.";
+    }
+    leaf rx-packets {
+      type uint64;
+      description
+        "Total packets received.";
+    }
+    leaf rx-unicast-packets {
+      type uint64;
+      description
+        "Total unicast packets received.";
+    }
+    leaf rx-broadcast-packets {
+      type uint64;
+      description
+        "Total broadcast packets received.";
+    }
+    leaf rx-multicast-packets {
+      type uint64;
+      description
+        "Total multicast packets received.";
+    }
+    leaf rx-errors {
+      type uint64;
+      description
+        "Total errored packets received.";
+    }
+    leaf rx-drop {
+      type uint64;
+      description
+        "Total receive packets dropped.";
+    }
+    leaf tx-bytes {
+      type uint64;
+      description
+        "Total bytes transmitted.";
+    }
+    leaf tx-packets {
+      type uint64;
+      description
+        "Total packets transmitted.";
+    }
+    leaf tx-unicast-packets {
+      type uint64;
+      description
+        "Total unicast packets transmitted.";
+    }
+    leaf tx-broadcast-packets {
+      type uint64;
+      description
+        "Total broadcast packets transmitted.";
+    }
+    leaf tx-multicast-packets {
+      type uint64;
+      description
+        "Total multicast packets transmitted.";
+    }
+    leaf tx-errors {
+      type uint64;
+      description
+        "Total errored packets transmitted.";
+    }
+    leaf tx-drop {
+      type uint64;
+      description
+        "Total transmit packets dropped.";
+    }
+  }
+
+  grouping component-group {
+    description
+      "Generic Grouping for a component (card)";
+    leaf name {
+      type string {
+        length "0..80";
+      }
+      description
+        "Component name like chassis-301, module-1, module-2, etc...";
+    }
+    leaf sample-date {
+      type string {
+        length "0..32";
+      }
+      description
+        "Date that System Health Data bin was taken.";
+    }
+    container cpu-stats {
+      description
+        "CPU performance statistics.";
+      container user {
+        description
+          "User space CPU statistics.";
+        uses cpu-stats-group;
+      }
+      container nice {
+        description
+          "Nice priority activity (within user space) CPU statistics.";
+        uses cpu-stats-group;
+      }
+      container system {
+        description
+          "System (kernel) space CPU statistics.";
+        uses cpu-stats-group;
+      }
+      container io-wait {
+        description
+          "I/O wait space CPU statistics.";
+        uses cpu-stats-group;
+      }
+      container idle {
+        description
+          "Idle time CPU statistics.";
+        uses cpu-stats-group;
+      }
+    }
+    container memory-stats {
+      description
+        "System Memory Usage Statistics";
+      container kb-mem-free {
+        description
+          "Kilobytes (KB) of memory free";
+        uses memory-stats-group;
+      }
+      container kb-mem-used {
+        description
+          "Kilobytes (KB) of memory used";
+        uses memory-stats-group;
+      }
+      container percent-of-used-mem {
+        description
+          "Percent of memory used";
+        uses memory-used-percentage-group;
+      }
+    }
+    list per-process-memory {
+      key "index";
+      description
+        "List of the processes that are using memory above a threshold defined in settings.";
+      leaf index {
+        type uint8;
+        description
+          "The index for this entry";
+      }
+      leaf process-name {
+        type string {
+          length "0..32";
+        }
+        description
+          "The Process name that's taking memory";
+      }
+      leaf process-id {
+        type uint32;
+        description
+          "Linux Process Id (PID)";
+      }
+      leaf kb-used {
+        type uint32;
+        description
+          "Current kilobytes of memory in use for this process. This is the RSS memory total (like from top).";
+      }
+      leaf percent-total-memory {
+        type health-data-historical-value;
+        description
+          "Current percent of total memory this process is using.";
+      }
+    }
+    list per-process-cpu {
+      key "index";
+      description
+        "List of the processes (and their threads) using CPU time (idle processes will not show up).";
+      leaf index {
+        type uint8;
+        description
+          "The index for this entry";
+      }
+      leaf process-name {
+        type string {
+          length "0..32";
+        }
+        description
+          "The Process name that's taking CPU time";
+      }
+      leaf process-id {
+        type uint32;
+        description
+          "Linux Process Id (PID)";
+      }
+      leaf cpu-percentage {
+        type health-data-historical-value;
+        description
+          "Percent of the CPU being used by this process.";
+      }
+      list threads {
+        key "index";
+        description
+          "List of the threads within the process using CPU time. Idle threads will not appear.";
+        leaf index {
+          type uint8;
+          description
+            "The index for this entry";
+        }
+        leaf thread-name {
+          type string {
+            length "0..32";
+          }
+          description
+            "Name of the thread that's taking CPU time";
+        }
+        leaf thread-id {
+          type uint32;
+          description
+            "Linux Thread Id (TID)";
+        }
+        leaf cpu-percentage {
+          type health-data-historical-value;
+          description
+            "Percent of the CPU being used by this thread";
+        }
+      }
+    }
+    container overall-disk-stats {
+      description
+        "Show a summary of the disk filesystem usage";
+      leaf total-disk-size {
+        type uint64;
+        description
+          "megabytes (MB) of total disk space";
+      }
+      container used-disk-size {
+        description
+          "megabytes (MB) of disk space in use";
+        uses overall-disk-stats-group;
+      }
+      container free-disk-size {
+        description
+          "megabytes (MB) of disk space free";
+        uses overall-disk-stats-group;
+      }
+      container percent-of-disk-used {
+        description
+          "percentage of used disk space";
+        uses overall-disk-percentage-group;
+      }
+    }
+    list disk-stats {
+      key "disk-index";
+      description
+        "List of the individual disk filesystem's statistics in both size and inodes.";
+      leaf disk-index {
+        type uint8;
+        description
+          "The disk index";
+      }
+      leaf directory-name {
+        type string {
+          length "0..32";
+        }
+        description
+          "Directory where the disk mounted";
+      }
+      leaf filesystem {
+        type string {
+          length "0..16";
+        }
+        description
+          "Filesystem name";
+      }
+      leaf filesystem-type {
+        type string {
+          length "0..16";
+        }
+        description
+          "Filesystem type";
+      }
+      leaf percentage-used {
+        type string {
+          length "0..6";
+        }
+        description
+          "Percentage of this filesystem currently being used";
+      }
+      leaf total-size-in-meg {
+        type uint64;
+        description
+          "Filesystem's maximum size in megabytes.";
+      }
+      leaf used-size-in-meg {
+        type uint64;
+        description
+          "Filesystem's used size in megabytes.";
+      }
+      leaf free-size-in-meg {
+        type uint64;
+        description
+          "Filesystem's free size in megabytes.";
+      }
+      leaf inode-percentage-used {
+        type string {
+          length "0..6";
+        }
+        description
+          "Percentage of this filesystem's inodes currently being used";
+      }
+      leaf maximum-possible-inodes {
+        type uint64;
+        description
+          "Filesystem's maximum number of possible inodes.";
+      }
+      leaf used-number-of-inodes {
+        type uint64;
+        description
+          "Filesystem's used number of inodes.";
+      }
+    }
+    list net-stats {
+      key "index";
+      description
+        "List of each network interface's statistics.";
+      leaf index {
+        type uint8;
+        description
+          "The network interface index. Unique id, read-only attribute.";
+      }
+      leaf name {
+        type string {
+          length "0..16";
+        }
+        description
+          "The network interface's name.";
+      }
+      container interface {
+        description
+          "Network interfaces Data";
+        uses net-stats-group;
+      }
+    }
+    container ipc-stats {
+      description
+        "System SysV IPC (Linux kernel) statistics.";
+      container shared-memory {
+        description
+          "System shared memory statistics.";
+        leaf segments-allocated {
+          type uint32;
+          description
+            "Current shared memory segments allocated.";
+        }
+        leaf max-segments-allowed {
+          type uint32;
+          description
+            "Total shared memory segments possible.";
+        }
+        leaf pages-allocated {
+          type uint32;
+          description
+            "Current shared memory pages allocated.";
+        }
+        leaf pages-resident {
+          type uint32;
+          description
+            "Current shared memory pages resident.";
+        }
+        leaf pages-swapped {
+          type uint32;
+          description
+            "Current shared memory pages swapped.";
+        }
+        leaf swap-attempts {
+          type uint32;
+          description
+            "Current count of shared memory page swap attempts.";
+        }
+        leaf swap-successes {
+          type uint32;
+          description
+            "Current count of shared memory page swap successes.";
+        }
+      }
+      container semaphores {
+        description
+          "System semaphore statistics.";
+        leaf arrays-used {
+          type uint32;
+          description
+            "Current count of semaphore arrays used.";
+        }
+        leaf max-arrays-allowed {
+          type uint32;
+          description
+            "Maximum number of semaphore arrays allowed.";
+        }
+        leaf semaphores-allocated {
+          type uint32;
+          description
+            "Current count of semaphores allocated.";
+        }
+        leaf max-semaphores-allowed {
+          type uint32;
+          description
+            "Maximum number of semaphores allowed.";
+        }
+      }
+      container message-queues {
+        description
+          "System message queue statistics.";
+        leaf allocated {
+          type uint32;
+          description
+            "Current count of message queues allocated.";
+        }
+        leaf used-headers {
+          type uint32;
+          description
+            "Current count of message queue headers used.";
+        }
+        leaf used-space {
+          type uint32;
+          description
+            "Current message queue space used in bytes.";
+        }
+      }
+    }
+    list temperature-stats {
+      key "index";
+      description
+        "List of temperature sensor readings";
+      leaf index {
+        type uint16;
+        description
+          "The temperature sensor index";
+      }
+      leaf sensor-name {
+        type string {
+          length "0..32";
+        }
+        description
+          "Temperature sensor's name";
+      }
+      leaf current-temperature {
+        type health-data-temperature-value;
+        description
+          "Current temperature reading in degrees Celsius.";
+      }
+      leaf min-temperature {
+        type health-data-temperature-value;
+        description
+          "Minimum temperature reading over last hour in degrees Celsius.";
+      }
+      leaf max-temperature {
+        type health-data-temperature-value;
+        description
+          "Maximum temperature reading over last hour in degrees Celsius.";
+      }
+      leaf avg-temperature {
+        type health-data-temperature-value;
+        description
+          "Average temperature reading over last hour in degrees Celsius.";
+      }
+    }
+    list fan-stats {
+      key "fan-index";
+      description
+        "List of fan settings.";
+      leaf fan-index {
+        type uint8;
+        description
+          "The fan index";
+      }
+      leaf fan-name {
+        type string {
+          length "0..32";
+        }
+        description
+          "Fan name (fan-1 or fan-2)";
+      }
+      leaf speed {
+        type uint32;
+        description
+          "Fan speed setting 0-255. This is the speed the fan was set to";
+      }
+      leaf RPM {
+        type uint32;
+        description
+          "RPMs the fans are spinning at.";
+      }
+    }
+  }
+
+  container system-health-data {
+    description
+      "Container around the System Health Data service data.";
+    container settings {
+      description
+        "System Health Data service configuration data.";
+      leaf debug-logging {
+        type health-data-state;
+        description
+          "Enable the running collection software debug logs to be collected per poll.";
+      }
+      leaf admin-state {
+        type health-data-state;
+        description
+          "Enable or disable the polling thread. Defaults to enabled. If disabled no new bins will be collected.";
+      }
+      leaf publish-notifications {
+        type health-data-state;
+        description
+          "Enable or disable the publishing of the current bin. Defaults to enabled. For Waveservers, this should not be disabled.";
+      }
+      leaf minimum-percentage-to-list {
+        type health-data-percent-range;
+        description
+          "When listing the per-process-data, only show processes whose total percent CPU usage is greater than or equal to this number. Default is 1.";
+      }
+      leaf minimum-memory-percentage-to-list {
+        type health-data-percent-range;
+        description
+          "When listing the per-process memory data, only show processes whose total percent memory usage is greater than or equal to this number. Default is 1.";
+      }
+      leaf number-of-times-to-run-open-fd-check {
+        type uint32 {
+          range "0..60";
+        }
+        description
+          "Number of times per hour to run the open file descriptor check. Default is 1. 0 turns it off completely.";
+      }
+      leaf long-term-stats-multi-day-lookback-in-days {
+        type uint32 {
+          range "2..30";
+        }
+        description
+          "There is a 1 day look back and a multi-day look back. This sets the multi-day lookback for memory and CPU. Default is 15 days.";
+      }
+    }
+    list bins {
+      key "bin-number";
+      config false;
+      description
+        "List of System Health Data history bins collected over the past 60 minutes.";
+      leaf bin-number {
+        type uint32;
+        description
+          "Bin number that was written.";
+      }
+      list components {
+        key "index";
+        config false;
+        description
+          "List of System Health Data components (chassis-xxx, module x etc...)";
+        leaf index {
+          type uint32;
+          description
+            "Component Index number";
+        }
+        container component {
+          description
+            "The component being written";
+          uses component-group;
+        }
+      }
+    }
+    container current-bin {
+      config false;
+      description
+        "The most recent local component written. This data will be published once a minute.";
+      uses component-group;
+    }
+    container long-term-stats {
+      config false;
+      description
+        "Long term (24-hr and multi-day) statistics";
+      container one-day-cpu {
+        description
+          "CPU statistics over the previous 24-hr period";
+        uses long-term-stats-group;
+      }
+      container multi-day-cpu {
+        description
+          "CPU statistics over the previous multi-day period";
+        uses long-term-stats-group;
+      }
+      container one-day-memory {
+        description
+          "Memory statistics over the previous 24-hr period";
+        uses long-term-stats-group;
+      }
+      container multi-day-memory {
+        description
+          "Memory statistics over the previous multi-day period";
+        uses long-term-stats-group;
+      }
+    }
+    container latest-bin-number {
+      config false;
+      description
+        "Latest filled System Health Data bin number. Users can subscribe to this to know which bin is the latest.";
+      leaf bin-number {
+        type uint32;
+        description
+          "Latest submitted bin number";
+      }
+    }
+  }
+}

@@ -1,0 +1,378 @@
+module ciena-pro-configs {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-configs";
+  prefix ciena-pro-configs;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's config operations";
+
+  revision 2023-08-08 {
+    description
+      "Added Stop on error parameter in run RPC";
+    version:version "version" {
+      version:string "1.11.0";
+    }
+  }
+  revision 2023-03-31 {
+    description
+      "Rename minimal to minimal-config option in save-config and load-config rpcs.";
+    version:version "version" {
+      version:string "1.10.0";
+    }
+  }
+  revision 2023-03-29 {
+    description
+      "Add minimal config option to save-config and load-config rpcs.";
+    version:version "version" {
+      version:string "1.9.0";
+    }
+  }
+  revision 2023-03-16 {
+    description
+      "Added commands-list input type and corresponding response data in run RPC.";
+    version:version "version" {
+      version:string "1.8.0";
+    }
+  }
+  revision 2023-03-10 {
+    description
+      "Add a save-config rpc option for minimal config.";
+    version:version "version" {
+      version:string "1.7.0";
+    }
+  }
+  revision 2022-12-02 {
+    description
+      "Modified bulk-actions:name type to string.";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+  }
+  revision 2022-11-22 {
+    description
+      "Added container bulk actions and RPC to execute the actions.";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+  }
+  revision 2022-09-14 {
+    description
+      "Allow load RPC to use input string instead of filename, return save-config commands output instead of writing to a file";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2022-07-21 {
+    description
+      "Allow run RPC to use input string instead of filename";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2021-09-26 {
+    description
+      "Added descriptions and diff-config RPC";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2021-09-14 {
+    description
+      "Added config options";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-07-30 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping action {
+    container action {
+      leaf domain {
+        type string;
+        description
+          "The name of domain. If omitted, the default value is the local domain.";
+      }
+      leaf service {
+        type string;
+        description
+          "The name of service. If omitted, the default value is the local service.";
+      }
+      leaf path {
+        mandatory true;
+        type yang:target-node;
+        description
+          "The target-node path of the action / RPC to be performed.";
+      }
+      anyxml data {
+        mandatory true;
+        description
+          "The configuration data for the action to be performed.";
+      }
+    }
+  }
+
+  grouping options-actions-grouping {
+    container options {
+      leaf base-time {
+        type uint64;
+        units "ns";
+        description
+          "The start time of the bulk action sequence, in Unix Epoch nanoseconds (since Jan 1, 1970 00:00:00 UTC).
+           Base time X in the past denotes that the whole sequence started running at time X (for replay purposes).
+           If omitted, the base time will be 0.";
+      }
+      anyxml on-failure {
+        description
+          "An action to take when any or all executed items fail.";
+      }
+    }
+    list actions {
+      key "action-name";
+      leaf action-name {
+        type string;
+        description
+          "A human readable name for the action / RPC to be executed.";
+      }
+      leaf time {
+        type uint64;
+        units "ns";
+        description
+          "If the value is not provided, the action will be executed immediately
+           once the last action is completed.";
+      }
+      uses action;
+      anyxml result {
+        config false;
+        description
+          "This is the output from the action / RPC.";
+      }
+    }
+  }
+
+  list bulk-actions {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of the bulk actions.";
+    }
+    uses options-actions-grouping;
+  }
+
+  rpc run-bulk-actions {
+    description
+      "This RPC will execute a list of actions or RPCs with the ability to schedule their timings.";
+    input {
+      uses options-actions-grouping;
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc save-config {
+    description
+      "Query and save the current config to a file.  File is
+       saved as the set of commands needed to replicate the
+       configuration as a root-level replacement";
+    input {
+      leaf filename {
+        type string;
+        description
+          "Name of the file to save to";
+      }
+      leaf scope {
+        type instance-identifier;
+        description
+          "Instance for the save-config scope path, if not specified, assume it to be root level";
+      }
+      leaf write-to-file {
+        type boolean;
+        default "true";
+        description
+          "false if you want command output instead of file output, this will be true by defualt";
+      }
+      leaf minimal-config {
+        type boolean;
+        default "false";
+        description
+          "True if you want to return only the minimal configuration necessary to get full provisioning.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+      leaf commands {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "CLI Command Response data";
+      }
+    }
+  }
+
+  rpc load-config {
+    description
+      "Load a config from the specified file and use it as a
+       root-level replacement.  Items missing in the config
+       file will be deleted.  The entire config replacement
+       is attempted and if any error occurs, the config is
+       not modified.  The format of the file is a set of CLI
+       commands.";
+    input {
+      leaf filename {
+        type string;
+        description
+          "Name of the file";
+      }
+      leaf commands {
+        description
+          "Newline separated commands to execute.  If a filename is
+           specified, these commands are ignored";
+        type string {
+          yang:stringptr "true";
+        }
+      }
+      leaf scope {
+        type instance-identifier;
+        description
+          "Instance for the load-config scope path, if not specified, assume it to be root level";
+      }
+      leaf minimal-config {
+        type boolean;
+        default "false";
+        description
+          "True if the file being loaded contains minimal config.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc diff-config {
+    description
+      "Load a config from the specified file and compare it
+       to the running config.  The patches reported are the
+       patches that would need to be applied to the current
+       config to align the config to the file contents.
+       The configuration is not modified, only differences
+       are reported.";
+    input {
+      leaf filename {
+        type string;
+        mandatory true;
+        description
+          "Name of the file";
+      }
+      leaf reverse {
+        type boolean;
+        default "false";
+        description
+          "If true, the reverse diff is performed.  This
+           indicates all changes that would need to be applied
+           to the saved config to arrive at the current config.";
+      }
+    }
+    output {
+      list patches {
+        yang:alias "yang-patch";
+        key "action path";
+        uses yang:patch;
+      }
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc run {
+    description
+      "Load a specified file and execute the CLI commands in it.";
+    input {
+      choice type {
+        leaf filename {
+          type string;
+          description
+            "Name of the file ";
+        }
+        leaf commands {
+          description
+            "Newline separated commands to execute.  If a filename is
+             specified, these commands are ignored";
+          type string {
+            yang:stringptr "true";
+          }
+        }
+        leaf-list commands-list {
+          type string {
+            yang:stringptr "true";
+          }
+          description
+            "CLI command input. Run RPC output is generated only for this input type and not for the new line separated commands. This input type supports show commands as well along with existing commands input support in run rpc.";
+        }
+      }
+      leaf scope {
+        type instance-identifier;
+        description
+          "Instance for the run scope path, if not specified, assume it to be root level";
+      }
+      leaf batched {
+        type boolean;
+        default "false";
+        description
+          "To execute all the command inside a batch";
+      }
+      leaf stop-on-error {
+        type boolean;
+        default "true";
+        description
+          "To stop execution of commands whenever error is encountered.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+      list response {
+        key "index";
+        leaf index {
+          type uint16;
+          description
+            "Index of the command-list response output.";
+        }
+        leaf input {
+          type string {
+            yang:stringptr "true";
+          }
+          description
+            "CLI input command with input type command-list.";
+        }
+        leaf output {
+          type string {
+            yang:stringptr "true";
+          }
+          description
+            "Raw CLI Command Response output for corresponding CLI command input type command-list. Only YAML format is supported for show command output.";
+        }
+      }
+    }
+  }
+}

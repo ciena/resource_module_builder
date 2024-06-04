@@ -1,0 +1,335 @@
+module ciena-pro-scaler-delta-monitor {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-delta-monitor";
+  prefix scaler-delta-monitor;
+
+  import ciena-pro-scaler-types {
+    prefix scaler-types;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-ddy-diag {
+    prefix ciena-ddy-diag;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's delta monitor object for the 6500r-Series platform";
+
+  revision 2023-06-02 {
+    description
+      "Added data-refresh-rate and moving-average-window to delta-monitor-desc";
+  }
+  revision 2023-02-01 {
+    description
+      "Renamed raw-data-refresh-times to timestamps with min/max";
+  }
+  revision 2023-01-06 {
+    description
+      "Added publish-on-refresh to delta-monitor-options. Added incarnation-number to delta-monitor. Added raw-data-refresh-times to power-results.";
+  }
+  revision 2022-03-24 {
+    description
+      "Moved log level outside of get-multiple-delta-powers to parent container";
+  }
+  revision 2022-03-10 {
+    description
+      "Added data-refresh-rate to delta-monitor-desc. Added log-level to get-delta-powers, get-multiple-delta-powers
+       and get-delta-powers-multiple-freq.";
+  }
+  revision 2021-11-19 {
+    description
+      "Added mute-publications option";
+  }
+  revision 2021-10-28 {
+    description
+      "Added deadzone field to delta-monitor-desc";
+  }
+  revision 2019-05-27 {
+    description
+      "Initial creation.";
+  }
+
+  grouping delta-monitor-options {
+    container options {
+      leaf auto-refresh {
+        type boolean;
+        default "true";
+        description
+          "If true, re-execute affected recipes as soon as data changes. If false, execute affected recipes on a get request only";
+      }
+      leaf apply-fudge-factor {
+        type boolean;
+        default "false";
+        description
+          "Take the fudge factor into account when calculating delta between to and from points.";
+      }
+      leaf remove-remote-gain {
+        type boolean;
+        default "false";
+        description
+          "Take the raman-gain into account when calculating delta between to and from points.";
+      }
+      leaf mute-publications {
+        type boolean;
+        default "false";
+        description
+          "Publications will be muted on the delta-monitor if set to true";
+      }
+      leaf publish-on-refresh {
+        type boolean;
+        default "false";
+        description
+          "Publish the delta-monitor on every re-scaling cycle if set to true";
+      }
+    }
+  }
+
+  grouping delta-monitor-desc {
+    leaf from {
+      type instance-identifier;
+      mandatory true;
+      description
+        "From point identifier";
+    }
+    leaf to {
+      type instance-identifier;
+      mandatory true;
+      description
+        "To point identifier";
+    }
+    leaf owner {
+      type identityref {
+        base scaler-types:owner;
+      }
+      mandatory true;
+      description
+        "Owner of this delta monitor object";
+    }
+    leaf name {
+      type string;
+      mandatory true;
+      description
+        "Name of this delta monitor object";
+    }
+    uses delta-monitor-options;
+    leaf deadzone {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      description
+        "Only power-delta changes strictly above the specified value should be published";
+    }
+    leaf data-refresh-rate {
+      type uint16;
+      units "seconds";
+      description
+        "The minimum rate at which data changes are published.";
+    }
+    leaf moving-average-window {
+      type uint16;
+      units "seconds";
+      description
+        "When greater than 0, deltas will be subjected to m-point moving average filtering where m is the number of samplings within the window";
+    }
+  }
+
+  grouping power-results {
+    list power-delta {
+      key "index";
+      config false;
+      leaf index {
+        type int16;
+        description
+          "Bin index";
+      }
+      leaf power {
+        mandatory true;
+        type ciena-6500r-types:power;
+        units "dBm";
+        description
+          "Power difference between the to and from points,i.e. to power minus from power";
+      }
+    }
+    container timestamps {
+      config false;
+      leaf min {
+        type uint64;
+      }
+      leaf max {
+        type uint64;
+      }
+      description
+        "Epoch times of when raw data used for scaling are refreshed.";
+    }
+    container diagnostic {
+      config false;
+      uses scaler-types:diagnostic;
+    }
+    leaf debug-info {
+      config false;
+      type string;
+      description
+        "Additional debugging info";
+    }
+  }
+
+  list delta-monitor {
+    key "from to owner name";
+    uses delta-monitor-desc;
+    leaf cache-revision {
+      type uint64;
+      description
+        "Revision of cache";
+    }
+    leaf incarnation-number {
+      config false;
+      type uint32;
+      description
+        "Incarnation number that is incremented on every publication cycle.";
+    }
+    container diagnostic {
+      config false;
+      uses scaler-types:diagnostic;
+    }
+    leaf debug-info {
+      config false;
+      type string;
+      description
+        "Additional debugging info";
+    }
+    list freq-range {
+      key "fmin";
+      uses scaler-types:freq-desc;
+      uses power-results;
+    }
+  }
+
+  grouping source {
+    leaf source-type {
+      type scaler-types:source-type-enum;
+      mandatory true;
+      description
+        "Source type";
+    }
+    leaf destination-port {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Destination port";
+    }
+    leaf source-port {
+      type instance-identifier;
+      description
+        "Source port";
+    }
+    leaf direction {
+      type scaler-types:direction-enum;
+      description
+        "Direction of scaling";
+    }
+    uses scaler-types:monitor-point-options;
+  }
+
+  rpc get-delta-powers {
+    description
+      "Get delta powers without creating monitor-points or a delta-monitor";
+    input {
+      uses scaler-types:freq-desc;
+      container from {
+        uses source;
+      }
+      container to {
+        uses source;
+      }
+      leaf log-level {
+        type ciena-ddy-diag:log-level;
+        description
+          "Logging level which is in effect for the duration of the RPC.";
+      }
+      uses delta-monitor-options;
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      uses power-results;
+    }
+  }
+
+  rpc get-multiple-delta-powers {
+    description
+      "Get multiple delta powers without creating monitor-points or a delta-monitor";
+    input {
+      uses scaler-types:freq-desc;
+      list endpoints {
+        container from {
+          uses source;
+        }
+        container to {
+          uses source;
+        }
+        uses delta-monitor-options;
+      }
+      leaf log-level {
+        type ciena-ddy-diag:log-level;
+        description
+          "Logging level which is in effect for the duration of the RPC.";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      list deltas {
+        leaf from {
+          type instance-identifier;
+          description
+            "From port";
+        }
+        leaf to {
+          type instance-identifier;
+          description
+            "To port";
+        }
+        uses power-results;
+      }
+    }
+  }
+
+  rpc get-delta-powers-multiple-freq {
+    description
+      "Get delta powers for multiple frequency ranges without creating monitor-points or a delta-monitor";
+    input {
+      list freq-range {
+        uses scaler-types:freq-desc;
+      }
+      container from {
+        uses source;
+      }
+      container to {
+        uses source;
+      }
+      leaf log-level {
+        type ciena-ddy-diag:log-level;
+        description
+          "Logging level which is in effect for the duration of the RPC.";
+      }
+      uses delta-monitor-options;
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      list deltas {
+        uses scaler-types:freq-desc;
+        uses power-results;
+      }
+    }
+  }
+}

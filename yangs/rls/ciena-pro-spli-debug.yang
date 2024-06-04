@@ -1,0 +1,482 @@
+module ciena-pro-spli-debug {
+  namespace "urn:ciena:parms:xml:ns:yang:ciena-pro-spli-debug";
+  prefix spli-debug;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ciena-pro-tx-proxy {
+    prefix ciena-pro-tx-proxy;
+  }
+  import ciena-pro-rx-proxy {
+    prefix ciena-pro-rx-proxy;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-pro-spli-common-types {
+    prefix ciena-pro-spli-types;
+  }
+  import ciena-pro-ssh {
+    prefix ciena-pro-ssh;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This modules describes Ciena's SPLI data model ";
+
+  revision 2022-11-22 {
+    description
+      "Added missing transponder attributes for Waveserver";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.10.0";
+    }
+  }
+  revision 2022-08-09 {
+    description
+      "Added syncprov";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.9.0";
+    }
+  }
+  revision 2021-10-01 {
+    description
+      "Added ipv6 address in local shelf and bool is neigbor IPv6 address";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.9.0";
+    }
+  }
+  revision 2021-09-22 {
+    description
+      "Added scm-ssh-algo container for storing SCM SSH algos";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.8.0";
+    }
+  }
+  revision 2021-06-03 {
+    description
+      "Add support for external-port (string), external-port (int) and external-sub-port (int)";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.7.0";
+    }
+  }
+  revision 2021-03-15 {
+    description
+      "Changed Encrypted String Length";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.6.0";
+    }
+  }
+  revision 2021-02-20 {
+    description
+      "Adding Encrypted Shared Secret Key Container";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.5.0";
+    }
+  }
+  revision 2021-02-08 {
+    description
+      "Removed Wavelenth Spacing Parameter";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.4.0";
+    }
+  }
+  revision 2021-02-05 {
+    description
+      "Add auto-update-neighbour & is-siteid-required in local shelf container";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.3.0";
+    }
+  }
+  revision 2021-01-31 {
+    description
+      "Moved Line system type from slot to port";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+  }
+  revision 2021-01-21 {
+    description
+      "Add dispersion-mode and move insertion-loss from Config to Inventory";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+  }
+  revision 2020-10-30 {
+    description
+      "Initial revision.";
+  }
+
+  grouping proxy-info {
+    leaf equipment-code {
+      type string;
+      description
+        "PEC code";
+    }
+    leaf modem-type {
+      type ciena-pro-spli-types:modem-type-enum;
+      description
+        "Transponder Modem Type";
+    }
+    leaf match-type {
+      type ciena-pro-spli-types:match-type-enum;
+      description
+        "Transponder match type";
+    }
+    leaf config-type {
+      type ciena-pro-spli-types:config-type-enum;
+      description
+        "Transponder config type";
+    }
+    leaf frequency-resolution {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      description
+        "Modem transmitter frequency resolution, in GHz";
+    }
+    leaf pre-compensation-value {
+      type int32;
+      description
+        "Pre-Compensation Value";
+    }
+    leaf laser-centering-range {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      description
+        "Laser Centering Range - Photonics";
+    }
+  }
+
+  grouping shelf-info {
+    description
+      "Shelf information containing name, IP, platform type, and format prefix";
+    leaf name {
+      type ciena-pro-spli-types:shelf-name;
+      description
+        "The name of the shelf";
+    }
+    leaf ip-address {
+      type inet:ip-address;
+      description
+        "The IP address of the shelf";
+    }
+    leaf ipv6-address {
+      type inet:ipv6-address-no-zone;
+      description
+        "The IPv6 address of the shelf.";
+    }
+    leaf platform-type {
+      type ciena-pro-spli-types:platform-type-enum;
+      description
+        "Platform type, can be WS, 6500, 5400 etc..";
+    }
+    leaf shelf-type {
+      type ciena-pro-spli-types:shelf-type-enum;
+      description
+        "Identifies whether the shelf is photonic line, transponder or combination of photonic line and transponder shelf. Examples are: PHOTONIC, TRANSPONDER, PHOTONIC_TRANSPONDER.";
+    }
+    leaf node-name-format {
+      type ciena-pro-spli-types:shelf-name-format-enum;
+      description
+        "Node name format. Examples: tid, tid-bay, ip...";
+    }
+  }
+
+  container spli-debug {
+    description
+      "Top level SPLI container describing  SPLI data model";
+    list neighbours {
+      description
+        "List of neighbours. The name of the neighbour is the name of the shelf.";
+      key "name";
+      uses shelf-info;
+      leaf shelf-state {
+        type ciena-pro-spli-types:shelf-status-enum;
+        description
+          "The state of the neighbour shelf";
+      }
+      leaf comms-type {
+        type ciena-pro-spli-types:comms-type-enum;
+        description
+          "Comms type supported by SPLI for shelf protocol. Examples: UDP/TCP/TCPSSH/UDP_TCP, UDP_TCPSSH...";
+      }
+      container diagnostic {
+        description
+          "List of possible fault for spli neighbour";
+        config false;
+        leaf neighbour-data-unreliable {
+          type boolean;
+          description
+            "Indicates no spli packets has been received from the neighbour node in at least 20 minutes.";
+        }
+      }
+    }
+    container scm-ssh-algo {
+      description
+        "SSH Algorithms for SCM Server Daemon Configuration File";
+      uses ciena-pro-ssh:ssh-server-config;
+    }
+    container local-shelf-info {
+      description
+        "Local Shelf Info.";
+      uses shelf-info;
+      leaf site-id {
+        type ciena-pro-types:site;
+        description
+          "Site identifier.";
+      }
+      leaf shelf-id {
+        type ciena-pro-spli-types:shelf-number;
+        description
+          "Local Shelf id used enable current shelfid handling in SPLI";
+      }
+      leaf shelf {
+        type instance-identifier;
+        description
+          "Local shelf identifier";
+      }
+      leaf auto-update-neighbour {
+        type boolean;
+        description
+          "Indicates whether Neighbour entry in SPLI Common will be auto added or not";
+      }
+      leaf is-siteid-required {
+        type boolean;
+        description
+          "Indicates whether siteid is mandatory parameter or not";
+      }
+    }
+    container encrypted-shared-secret {
+      config false;
+      leaf encrypted-shared-secret1 {
+        type string {
+          length "0..64";
+        }
+        description
+          "Encrypted Shared Secret Key1 for SPLI SCM SSH Authentication";
+      }
+      leaf encrypted-shared-secret2 {
+        type string {
+          length "0..64";
+        }
+        description
+          "Encrypted Shared Secret Key2 for SPLI SCM SSH Authentication";
+      }
+    }
+    grouping port-group {
+      description
+        "Port data for SPLI.";
+      list port {
+        description
+          "SPLI Port Data";
+        key "port-number";
+        leaf port-number {
+          type ciena-pro-spli-types:port-number;
+          description
+            "Port number associated with the port name on the photonic line which can be connected to the transponder (internal)";
+        }
+        leaf external-port {
+          type ciena-pro-types:object-name;
+          description
+            "External port string associated with the port name on the photonic line which can be connected to the transponder";
+        }
+        leaf external-port-number {
+          type ciena-pro-spli-types:port-number;
+          description
+            "External port number associated with the port name on the photonic line which can be connected to the transponder";
+        }
+        leaf external-subport-number {
+          type ciena-pro-spli-types:sub-port-number;
+          description
+            "External subport number associated with the port name on the photonic line which can be connected to the transponder";
+        }
+        leaf line-system-type {
+          type ciena-pro-spli-types:line-system-type-enum;
+          description
+            "Photonic Line System Type";
+        }
+        leaf child-facility {
+          type instance-identifier;
+          description
+            "Facility identifier, it can be either tx-proxy identifier or rx-proxy indentifier";
+        }
+        leaf port-direction {
+          mandatory true;
+          type ciena-pro-spli-types:port-direction-enum;
+          description
+            "Whether port is uni (tx/rx) or bi-directional";
+        }
+        leaf partner-port {
+          when '../port-direction[.= tx or .= rx]';
+          type leafref {
+            path "../port-number";
+          }
+          mandatory true;
+          description
+            "Port partner";
+        }
+        leaf remote-node-name {
+          type ciena-pro-spli-types:shelf-name;
+          description
+            "Remote node name";
+        }
+        leaf remote-node-name-format {
+          type ciena-pro-spli-types:shelf-name-format-enum;
+          description
+            "Format of the remote node name. Some examples: TID, TID-BAY/IP";
+        }
+        leaf remote-far-end-opaque-address {
+          type string;
+          description
+            "Opaque string containing remote far end address of the transponder. Example: nodeName-shelf- type ciena-pro-types:object-name;-port ";
+        }
+        leaf far-end-address-format {
+          type ciena-pro-spli-types:far-end-address-format-enum;
+          description
+            "Format of the far end addres string. Some examples:SL_PRT / SL_SBSL_PRT /SHL_SL_PRT ...";
+        }
+        leaf remote-shelf-id {
+          type ciena-pro-spli-types:shelf-number;
+          description
+            "Remote Shelf id extracted from the far end opaque string";
+        }
+        leaf remote-slot-id {
+          type ciena-pro-spli-types:slot-number;
+          description
+            "Remote Slot id extracted from the Far End opaque string";
+        }
+        leaf remote-sub-slot-id {
+          type ciena-pro-spli-types:sub-slot-number;
+          description
+            "Remote Subslot id extracted from the Far End opaque string";
+        }
+        leaf remote-port-id {
+          type ciena-pro-spli-types:port-number;
+          description
+            "Remote Port id extracted from the Far End opaque string";
+        }
+        leaf remote-sub-port-id {
+          type ciena-pro-spli-types:sub-port-number;
+          description
+            "Remote Subport id extracted from the Far End opaque string";
+        }
+        leaf wavelength {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          units "nm";
+          config false;
+          description
+            "Wavelength in nm. It is populated when center frequency provisioned in tx-proxy is on the grid.";
+        }
+        leaf dispersion-mode {
+          type ciena-pro-spli-types:dispersion-mode-enum;
+          default "auto";
+          description
+            "Dispersion Mode indicates whther path dispersion or precompensation is used.";
+        }
+        leaf sync-prov {
+          type boolean;
+          description
+            "Proviosioning on photonics port is allowed, required for OPS config ADJ-TX port of OPS";
+        }
+        container proxy-config {
+          description
+            "Transponder provisionable attributes";
+          container tx {
+            when '../../port-direction[.= tx]';
+            uses ciena-pro-tx-proxy:tx-proxy;
+          }
+          container rx {
+            when '../port-direction[.= rx]';
+            uses ciena-pro-rx-proxy:rx-proxy;
+          }
+          uses proxy-info;
+        }
+        container proxy-inventory {
+          description
+            "Transponder discovered attributes";
+          config false;
+          container tx {
+            when '../../port-direction[.= tx]';
+            uses ciena-pro-tx-proxy:tx-proxy;
+            leaf insertion-loss-tx {
+              type ciena-pro-optical-types:loss-dB-1-precision;
+              default "0.0";
+              description
+                "This loss accounts for the insertion loss in dBm for devices present on the connection path. Example: loss due to the presence of an external OPS connected connected between a Photonics and Transponder equipment. ";
+            }
+          }
+          container rx {
+            when '../port-direction[.= rx]';
+            uses ciena-pro-rx-proxy:rx-proxy;
+            leaf insertion-loss-rx {
+              type ciena-pro-optical-types:loss-dB-1-precision;
+              default "0.0";
+              description
+                "This loss accounts for the insertion loss in dBm for devices present on the connection path. Example: loss due to the presence of an external OPS connected connected between a Photonics and Transponder equipment.";
+            }
+          }
+          uses proxy-info;
+        }
+      }
+    }
+
+    list slot-info {
+      description
+        "Information about card which is connected to transponder";
+      key "slot-id";
+      leaf slot-id {
+        type ciena-pro-spli-types:slot-number;
+        description
+          "Slot number";
+      }
+      leaf name {
+        type ciena-pro-types:object-name;
+        description
+          "Slot name";
+      }
+      leaf local-slot {
+        type instance-identifier;
+        description
+          "Local slot identifier";
+      }
+      leaf eqpt-type {
+        type uint8 {
+          range "0..100";
+        }
+        description
+          "Type of equipment which is connected to the transponder";
+      }
+      leaf total-num-port {
+        type uint8 {
+          range "0..100";
+        }
+        description
+          "Total number of SPLI supported ports per slot";
+      }
+      container port-info {
+        description
+          "Inormation about ports connected to transponder which belong to card on the photonic line";
+        uses port-group;
+      }
+    }
+  }
+
+  rpc dump-spli-cache {
+    output {
+      list slot-info;
+    }
+  }
+}

@@ -1,0 +1,204 @@
+module ciena-pro-model-translation {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-translation-service";
+  prefix ts;
+
+  import ciena-pro-translation-mapper {
+    prefix mapper;
+  }
+  import ciena-common-yang {
+    prefix ciena;
+  }
+  import ciena-ddy-msg {
+    prefix ddy-msg;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "Model translation service.";
+
+  revision 2021-12-09 {
+    description
+      "Add invalid keys warning option";
+  }
+  revision 2021-12-09 {
+    description
+      "Make all strings stringptrs instead";
+  }
+  revision 2021-05-28 {
+    description
+      "Adding the error-translation error code";
+    reference
+      "";
+  }
+  revision 2021-05-04 {
+    description
+      "Adding remove-keys-only-lists option";
+    reference
+      "";
+  }
+  revision 2020-11-12 {
+    description
+      "Adding num-worker-proccess";
+    reference
+      "";
+  }
+  revision 2018-08-07 {
+    description
+      "Initial";
+    reference
+      "";
+  }
+
+  identity error-translation {
+    base ciena:error-code;
+    description
+      "A translation-related error occurred. Reasons for translation
+       failures include: improper or incomplete mappings, handler
+       exceptions, and others. The description associated with the
+       error indicates what went wrong.";
+  }
+
+  container translation-service {
+    description
+      "Root container for all of translation-service's data.";
+    list loaded-models {
+      key "name";
+      config false;
+      description
+        "The set of translation models that have been loaded and are available
+         for use in the translation API.";
+      leaf name {
+        type mapper:model-name-string;
+        description
+          "Name of the model.";
+      }
+      container model-data {
+        description
+          "Metadata about the model.";
+        uses ddy-msg:resource-config;
+        container mapping {
+          description
+            "The model map between the current model and the native model.";
+          uses mapper:model-map-root;
+        }
+      }
+    }
+    leaf num-worker-process {
+      type int8;
+      description
+        "Number of worker process";
+    }
+  }
+
+  grouping trans-model-specification {
+    description
+      "Common leafs for specifying the models to convert to/from";
+    leaf model {
+      type leafref {
+        path "/ts:translation-service/ts:loaded-models/ts:name";
+      }
+      mandatory true;
+      description
+        "The model that the input is expressed in.";
+    }
+    leaf translate-to {
+      type enumeration {
+        enum native {
+          description
+            "The model that is used by the supported services";
+        }
+        enum external {
+          description
+            "Models which are not used by the supported services";
+        }
+      }
+      mandatory true;
+      description
+        "The model for the output to be expressed in.";
+    }
+    leaf remove-keys-only-lists {
+      type boolean;
+      default "false";
+      description
+        "Whether or not we want to eliminate lists that contains only keys in the output";
+    }
+    leaf invalid-keys-warning {
+      type boolean;
+      default "false";
+      description
+        "Whether or not we want to add error in output if a list key fails all discriminators";
+    }
+  }
+
+  grouping filter-list {
+    list filters {
+      key "filter";
+      description
+        "The data to be translated from the 'from' model to the 'to' model.
+         the data in this node MUST be valid data in the from-model. If
+         any data is not valid then the RPC will fail.";
+      leaf filter {
+        type instance-identifier;
+        description
+          "Input filter in the starting model; to be translated to the output model.";
+      }
+      leaf children {
+        type boolean;
+        description
+          "Whether all of the children of the filter path should appear in the output.";
+      }
+    }
+  }
+
+  rpc yang-translate-filter {
+    description
+      "Translate a filter (set of paths, including keys) into a new model domain.";
+    input {
+      uses ts:trans-model-specification;
+      uses ts:filter-list;
+    }
+    output {
+      uses ciena:rpc-result-common;
+      list filters {
+        key "filter";
+        description
+          "Translated filters for the input filter";
+        leaf filter {
+          type instance-identifier;
+          description
+            "Output filter in the target model.";
+        }
+      }
+    }
+  }
+
+  rpc yang-translate-data {
+    description
+      "Translate data between different equivalent models.
+
+       This RPC takes data described by one of the loaded models and translates
+       it into an equivalent representation in another loaded model.
+      ";
+    input {
+      uses ts:trans-model-specification;
+      uses ts:filter-list;
+      anyxml data {
+        description
+          "The data to be translated from the 'from' model to the 'to' model.
+           the data in this node MUST be valid data in the from-model. If
+           any data is not valid then the RPC will fail.";
+      }
+    }
+    output {
+      uses ciena:rpc-result-common;
+      anyxml data {
+        description
+          "The output data of the translated get call.";
+      }
+    }
+  }
+}

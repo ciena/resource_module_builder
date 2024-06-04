@@ -1,0 +1,396 @@
+module ciena-common-recording-agent {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-recording-agent";
+  prefix recorder;
+  yang-version 1.1;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Service to allow recording of messages and tracepoints.";
+
+  revision 2024-01-25 {
+    description
+      "Add timestamp representing the current wall-clock time";
+    version:version "version" {
+      version:string "2.8.0";
+    }
+  }
+  revision 2023-12-13 {
+    description
+      "Add recording signal to yang delivery";
+    version:version "version" {
+      version:string "2.7.0";
+    }
+  }
+  revision 2023-12-11 {
+    description
+      "Add active-recording information to signal";
+    version:version "version" {
+      version:string "2.6.0";
+    }
+  }
+  revision 2023-10-24 {
+    description
+      "Add `annotate` action to allow users to add arbitrary text data to recordings.";
+    version:version "version" {
+      version:string "2.5.0";
+    }
+  }
+  revision 2023-06-15 {
+    description
+      "Added recording types for stage/set/get/val/request/action types";
+    version:version "version" {
+      version:string "2.4.0";
+    }
+  }
+  revision 2023-04-24 {
+    description
+      "Change recording type to an enum.  Add a list of types to the
+       signal to allow tag-based selection";
+    version:version "version" {
+      version:string "2.3.0";
+    }
+  }
+  revision 2023-04-04 {
+    description
+      "Add more data to previous-hop.";
+    version:version "version" {
+      version:string "2.2.0";
+    }
+  }
+  revision 2023-03-01 {
+    description
+      "Add previous-hop in recording-signal.";
+    version:version "version" {
+      version:string "2.1.0";
+    }
+  }
+  revision 2023-01-13 {
+    description
+      "Update name to `recording-agent` to better capture its usecase.
+       Move most content to groupings so that it can be used in ciena-pro-recording-mgr";
+    version:version "version" {
+      version:string "2.0.0";
+    }
+  }
+  revision 2022-05-31 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity recording-type {
+    description
+      "The base identity to represent recording types.";
+  }
+
+  identity rpc-request {
+    base recording-type;
+    description
+      "Incoming RPC request.";
+  }
+
+  identity rpc-response {
+    base recording-type;
+    description
+      "Outgoing RPC response.";
+  }
+
+  identity get-request {
+    base recording-type;
+    description
+      "Incoming get request.";
+  }
+
+  identity get-response {
+    base recording-type;
+    description
+      "Outgoing get response.";
+  }
+
+  identity set-request {
+    base recording-type;
+    description
+      "Incoming set request.";
+  }
+
+  identity set-response {
+    base recording-type;
+    description
+      "Outgoing set response.";
+  }
+
+  identity action-request {
+    base recording-type;
+    description
+      "Incoming action request.";
+  }
+
+  identity action-response {
+    base recording-type;
+    description
+      "Outgoing action response.";
+  }
+
+  identity validate-request {
+    base recording-type;
+    description
+      "Incoming validate request.";
+  }
+
+  identity validate-response {
+    base recording-type;
+    description
+      "Outgoing validate response.";
+  }
+
+  identity stage-request {
+    base recording-type;
+    description
+      "Incoming stage request.";
+  }
+
+  identity stage-response {
+    base recording-type;
+    description
+      "Outgoing stage response.";
+  }
+
+  identity request-object-request {
+    base recording-type;
+    description
+      "Incoming request object request.";
+  }
+
+  identity request-object-response {
+    base recording-type;
+    description
+      "Outgoing request object response.";
+  }
+
+  identity pub-send {
+    base recording-type;
+    description
+      "Publication send.";
+  }
+
+  identity pub-receive {
+    base recording-type;
+    description
+      "Publication received.";
+  }
+
+  grouping recording-signal {
+    leaf name {
+      type string;
+      description
+        "Name of a recording.  This tag is used in a recording
+         signal to indicate records should be locally spooled.";
+    }
+    leaf collector {
+      type string;
+      description
+        "Name of collector domain.  Records should be spooled and
+         pushed to this domain to consolidate records at a common
+         location";
+    }
+    leaf level {
+      type uint8;
+      description
+        "Level of logging.  All recording points that are lower than
+         this level will be recorded";
+    }
+    leaf-list types {
+      type identityref {
+        base recording-type;
+      }
+      description
+        "List of tags to match.  All recording points that match an
+         element in this set will be recorded.  If the leaf-list is
+         empty, all will be recorded";
+    }
+    container active-recording {
+      description
+        "This contains information about signal originated from active-recording,
+         if a signal originated from from active-recording then check for
+         active-recording state everytime before a message is recorded";
+      leaf domain {
+        type string;
+        description
+          "The domain where active-recording signal originated";
+      }
+    }
+  }
+
+  grouping recording-trace {
+    description
+      "Tracing information for recordings.";
+    container previous-hop {
+      leaf domain {
+        type string;
+        description
+          "The domain of the previous hop in the recording chain. This field
+           can be used by users/tools to see what caused/invoked the current
+           message. If the message was caused by a user, then this field
+           will be missing.";
+      }
+      leaf time {
+        type uint64;
+        units "ns";
+        description
+          "The time field of the previous hop; used to trace the exact message
+           that originated this one";
+      }
+    }
+  }
+
+  grouping recording-list {
+    list recording {
+      description
+        "List of configurable recordings in this service.";
+      key "name";
+      uses recording-signal;
+      action annotate {
+        description
+          "Add an annotation to a recording";
+        input {
+          leaf note {
+            mandatory true;
+            type string {
+              yang:stringptr "true";
+            }
+          }
+        }
+      }
+      list messages {
+        description
+          "List of messages captured in this recording";
+        config false;
+        key "time";
+        leaf time {
+          type uint64;
+          units "ns";
+          description
+            "Time the message was captured";
+        }
+        leaf real-time {
+          type uint64;
+          units "ns";
+          description
+            "Time the message was captured as clock representing of the
+             current wall-clock time";
+        }
+        leaf domain {
+          type string;
+          description
+            "Domain the message was captured in";
+        }
+        leaf service {
+          type string;
+          description
+            "Service the message was related to";
+        }
+        leaf function {
+          type string;
+          description
+            "Function the message was captured in.";
+        }
+        leaf line {
+          type uint32;
+          description
+            "Line number in the source file the message was captured in.";
+        }
+        leaf level {
+          type uint32;
+          description
+            "Recording level associated with the captured message.";
+        }
+        leaf type {
+          type identityref {
+            base recording-type;
+          }
+        }
+        leaf note {
+          type string {
+            yang:stringptr "true";
+          }
+          description
+            "An annotated note which can be used to hold notes about the
+             recording. Users can create new notes with the `annotate` action on
+             the `recording` list.";
+        }
+        uses recording-trace;
+        anyxml data;
+      }
+    }
+  }
+
+  container recording-agent {
+    description
+      "Top level container related to recording service";
+    leaf active-recording {
+      type leafref {
+        path "../recording/name";
+      }
+      description
+        "Configurable leaf to indicate that a specific recording is
+         active.  This makes records be captured for this recording
+         even if recording metadata is not supplied in a message";
+    }
+    container config {
+      description
+        "Configurable behaviour of recording-agent";
+      leaf default-collector-domain {
+        type string;
+        description
+          "The default domain to publish updates to, if none is specified in
+           the recording signal in yang-rpc-action (or stack/session). If this
+           field is present in the recording-agent then it will be used, otherwise
+           if no value is set then no publication will happen.";
+      }
+      leaf default-collector-service {
+        type string;
+        description
+          "The default service to publish updates to, if none is specified in
+           the recording signal in yang-rpc-action (or stack/session). If this
+           field is present in the recording-agent then it will be used, otherwise
+           if no value is set then no publication will happen.";
+      }
+    }
+    uses recording-list;
+  }
+
+  grouping signal {
+    container recording {
+      yang:alias "recording-signal";
+      uses recording-signal;
+      uses recording-trace;
+    }
+  }
+
+  augment "/yang:yang-rpc-action/yang:input" {
+    yang:augment-name "recording";
+    uses signal;
+  }
+
+  augment "/yang:yang-delivery" {
+    yang:augment-name "yang-delivery-recording";
+    uses signal;
+  }
+}

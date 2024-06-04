@@ -1,0 +1,190 @@
+module ciena-waveserver-protection {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-protection";
+  prefix protection;
+
+  import ciena-waveserver-ptp {
+    prefix ptp;
+  }
+  import ciena-ddf {
+    prefix ddf;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines common protection attributes for the Waveserver
+     Platform. It augments the ciena-waveserver-ptp module. The PTP model
+     represents the signal carried by the modem transceiver at a physical line
+     port. The PTP objects are automatically provisioned during service module
+     installation.";
+
+  revision 2019-01-02 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of this module.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  grouping protection-attributes-group {
+    description
+      "Grouping for common protection attributes.";
+
+    leaf revertive {
+      ui:ui-name "Revertive";
+      type boolean;
+      description
+        "Specifies whether protection switch reversion is enabled on the line.
+         If reversion is enabled, a switch from the working path to the
+         protection path will attempt to re-establish the working path once
+         it is available and the wait-to-restore period has elapsed.";
+    }
+    leaf max-reversion-attempts {
+      type uint8 {
+        range "0..10";
+      }
+      description
+        "Maximum tries for reversion. A value of zero indicates indefinite.";
+    }
+    leaf wait-to-restore {
+      type uint16 {
+        range "10..3600";
+      }
+      units "seconds";
+      description
+        "Time to wait before traffic will be restored to the working path, if
+         reversion is enabled.";
+    }
+    leaf user-switch-action {
+      ui:ui-name "User Switch Action";
+      type enumeration {
+        enum "none" {
+          description
+            "No user-initiated switching operation is active. The active path
+             will be selected by the system.";
+        }
+        enum "force-working" {
+          description
+            "Force the active path to the working path.";
+        }
+        enum "force-protection" {
+          description
+            "Force the active path to the protection path.";
+        }
+      }
+      description
+        "User-specified protection switching action on the specified line.";
+    }
+    leaf active-path {
+      ui:ui-name "Active Path";
+      type enumeration {
+        enum "working" {
+          description
+            "The working/primary protection path is currently active.";
+        }
+        enum "protection" {
+          description
+            "The protection/secondary protection path is currently active.";
+        }
+        enum "none" {
+          description
+            "No protection path is selected, or applicable.";
+        }
+      }
+      config false;
+      description
+        "Specifies which path is currently active on the line.";
+    }
+    leaf last-switch-reason {
+      ui:ui-name "Last Switch Reason";
+      type enumeration {
+        enum "unknown" {
+          description
+            "Last switch reason is unknown or not applicable.";
+        }
+        enum "fault-detected" {
+          description
+            "Modem reported a fault condition.";
+        }
+        enum "wait-to-restore-expired" {
+          description
+            "Switch reverted due to WTR expiry.";
+        }
+        enum "forced-switch" {
+          description
+            "User initiated a forced switch action.";
+        }
+        enum "disabled" {
+          description
+            "Line/port was administratively disabled.";
+        }
+      }
+      config false;
+      description
+        "Indicates the source that triggered the most recent switch action on
+         this line.";
+    }
+    leaf switch-status {
+      ui:ui-name "Switch Status";
+      type enumeration {
+        enum "uninitialized" {
+          description
+            "Protection switch status has not been initialized or is
+             unavailable.";
+        }
+        enum "disabled" {
+          description
+            "Protection switching is disabled.";
+        }
+        enum "idle" {
+          description
+            "Protection switch is idle.";
+        }
+        enum "wait-to-restore" {
+          description
+            "Waiting to restore to the working path.";
+        }
+        enum "forced-switch-active" {
+          description
+            "User initiated a forced switch action.";
+        }
+      }
+      config false;
+      description
+        "Indicates the source that triggered the most recent switch action on
+         this line.";
+    }
+  }//end protection-attributes-group
+
+  augment "/ptp:waveserver-ptps/ptp:ptps/ptp:properties" {
+    when "ptp:type = 'WLAi-iOPS'" {
+      description
+        "PTP properties specific to WaveLogic Ai modem with integrated OPS support.";
+    }
+    description
+      "PTP properties specific to WaveLogic Ai modem with integrated OPS support.";
+    ddf:ddf-struct-version "WlAiOps";
+
+    container protection {
+      ui:ui-name "Protection";
+      description
+        "Optical Protection Switching (OPS) properties for line PTPs.";
+      uses protection-attributes-group;
+    }//end protection
+
+  }//end augment to ptps/properties (for OPS)
+
+}

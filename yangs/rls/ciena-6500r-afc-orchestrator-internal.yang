@@ -1,0 +1,553 @@
+module ciena-6500r-afc-orchestrator-internal {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-afc-orchestrator-internal";
+  prefix afc-orchestrator-internal;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-6500r-afc-orchestrator-types {
+    prefix afc-orchestrator-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "Auto fiber characterization orchestrator(AFCO) is an
+     application which measures fiber non-linear parameters.";
+
+  revision 2023-02-26 {
+    description
+      "Introducing rpc to enable/disable logs encryption.";
+    ciena-common-version:string "1.3.8";
+  }
+  revision 2022-12-13 {
+    description
+      "Introducing rpc to enable/disable 2 peak measurements.";
+    ciena-common-version:string "1.3.7";
+  }
+  revision 2022-11-02 {
+    description
+      "Add filename parameter to two-peak debug function";
+    ciena-common-version:string "1.3.6";
+  }
+  revision 2022-10-15 {
+    description
+      "Add debug action to display action table  info.";
+    ciena-common-version:string "1.3.5";
+  }
+  revision 2022-10-10 {
+    description
+      "Add two peak frequency mapping,
+       add stage-amp, opm, pwrmon to pre afc data.";
+    ciena-common-version:string "1.3.4";
+  }
+  revision 2022-09-26 {
+    description
+      "Add debug action to populate two-peak data in yang.";
+    ciena-common-version:string "1.3.3";
+  }
+  revision 2022-08-30 {
+    description
+      "Update depth0 in section data.";
+    ciena-common-version:string "1.3.2";
+  }
+  revision 2022-07-28 {
+    description
+      "Adding of new debug actions for timer expiry/missed notifications";
+    ciena-common-version:string "1.3.1";
+  }
+  revision 2022-07-27 {
+    description
+      "Enhancement of save PFG data for afc-calculator";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-07-04 {
+    description
+      "Remove explicit config=true.";
+    ciena-common-version:string "1.2.2";
+  }
+  revision 2022-06-03 {
+    description
+      "Updating input of set-debug-state action to use afc-orchestrator-types:afco-fsm-state.";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2022-05-05 {
+    description
+      "Defined actions for testing state transitions.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2021-11-15 {
+    description
+      " New Dgff list is introduced under preAfcData container.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-10-08 {
+    description
+      "6500r-series Release 2.5 Initial version.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping ciena-6500r-afc-orchestrator-internal-mount-data {
+    container afc-orchestrator-internal {
+      list instance {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Name of functional-group";
+        }
+        container action {
+          config false;
+          description
+            "Action table data for automatic fiber characterization orchestrator.";
+          uses afco-action-data;
+        }
+        container pre-afc-data {
+          config false;
+          list wss {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-wss;
+          }
+          list amps {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-amp;
+          }
+          list voa {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-voa;
+          }
+          list raman {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-raman;
+          }
+          list partner-raman {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-raman;
+          }
+          list dgff {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-dgff;
+          }
+          container boundary-in {
+            uses afc-orchestrator-types:afco-data-boundary;
+          }
+          container boundary-out {
+            uses afc-orchestrator-types:afco-data-boundary;
+          }
+          list stage-amp {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-stage-amp;
+          }
+          list opm {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-opm;
+          }
+          list pwrmon {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-pwrmon;
+          }
+        }
+        list section {
+          config false;
+          key "node-name name";
+          leaf node-name {
+            type string;
+            description
+              "Node name of other functional-groups in the section.";
+          }
+          leaf name {
+            type string;
+            description
+              "Name of functional-group in the section.";
+          }
+          leaf depth0 {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "Depth0 value computed for the span";
+          }
+        }
+        list two-peak-freq-mapping {
+          description
+            "Map the index and frequency";
+          key "index";
+          leaf index {
+            type uint8;
+          }
+          leaf frequency {
+            type ciena-pro-optical-types:frequency;
+            description
+              "Frequency of the two peak channel";
+          }
+        }
+        action set-debug-state {
+          description
+            "A debug RPC to wait at a particular state.";
+          input {
+            leaf state {
+              type afc-orchestrator-types:afco-fsm-state;
+              description
+                "Name of the state to wait at";
+            }
+          }
+        }
+        action ignore-notifications {
+          description
+            "A debug RPC to ignore notifications from a particular node.";
+          input {
+            leaf node-name {
+              type string;
+              description
+                "Node whose notifications we want to ignore.";
+            }
+          }
+        }
+        action expire-timer {
+          description
+            "A debug RPC to expire the provided timer if it is running.";
+          input {
+            leaf timer {
+              type string;
+              description
+                "Name of the timer to expire (ex. fsm, action)";
+            }
+            leaf force-expire {
+              type boolean;
+              description
+                "Force the timer to expire, irrespective of retries";
+              default "true";
+            }
+          }
+        }
+        action populate-two-peak {
+          description
+            "A debug RPC to populate two-peak data.";
+          input {
+            leaf filename {
+              type string;
+              description
+                "Name of file to populate";
+            }
+            leaf num_freq {
+              type decimal64 {
+                fraction-digits 1;
+              }
+              description
+                "Number of frequency measurements to populate";
+            }
+            leaf num_pwr_meas {
+              type decimal64 {
+                fraction-digits 1;
+              }
+              description
+                "Number of power measurements to populate";
+            }
+            leaf opm_points {
+              type decimal64 {
+                fraction-digits 1;
+              }
+              description
+                "Number of opm points in the power-slice (typically 2 or 783)";
+            }
+          }
+        }
+        action display-action-table {
+          description
+            "Display all afc actions info of action table.";
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-internal-mount-actions-notifs {
+    action two-peak-measurements {
+      description
+        "Request to enable/disable 2 peak measurements.";
+      input {
+        leaf enable {
+          type boolean;
+          description
+            "Enabling/Disabling two peak measurements(true/false).";
+        }
+      }
+      output {
+        leaf result {
+          description
+            "Output result message.";
+          type string {
+            length "0..100";
+          }
+        }
+      }
+    }
+    action logs-encryption {
+      description
+        "Request to enable/disable logs encryption.";
+      input {
+        leaf enable {
+          type boolean;
+          description
+            "Enabling/Disabling logs encryption(true/false).";
+        }
+      }
+      output {
+        leaf result {
+          description
+            "Output result message.";
+          type string {
+            length "0..100";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-internal-mount-actions-notifs-as-cont {
+    container two-peak-measurements {
+      description
+        "Request to enable/disable 2 peak measurements.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+    container logs-encryption {
+      description
+        "Request to enable/disable logs encryption.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-internal-mount-data-actions-notifs-as-cont {
+    container afc-orchestrator-internal {
+      list instance {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Name of functional-group";
+        }
+        container action {
+          config false;
+          description
+            "Action table data for automatic fiber characterization orchestrator.";
+          uses afco-action-data;
+        }
+        container pre-afc-data {
+          config false;
+          list wss {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-wss;
+          }
+          list amps {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-amp;
+          }
+          list voa {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-voa;
+          }
+          list raman {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-raman;
+          }
+          list partner-raman {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-raman;
+          }
+          list dgff {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-dgff;
+          }
+          container boundary-in {
+            uses afc-orchestrator-types:afco-data-boundary;
+          }
+          container boundary-out {
+            uses afc-orchestrator-types:afco-data-boundary;
+          }
+          list stage-amp {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-stage-amp;
+          }
+          list opm {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-opm;
+          }
+          list pwrmon {
+            key "object-id";
+            uses afc-orchestrator-types:afco-data-pwrmon;
+          }
+        }
+        list section {
+          config false;
+          key "node-name name";
+          leaf node-name {
+            type string;
+            description
+              "Node name of other functional-groups in the section.";
+          }
+          leaf name {
+            type string;
+            description
+              "Name of functional-group in the section.";
+          }
+          leaf depth0 {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "Depth0 value computed for the span";
+          }
+        }
+        list two-peak-freq-mapping {
+          description
+            "Map the index and frequency";
+          key "index";
+          leaf index {
+            type uint8;
+          }
+          leaf frequency {
+            type ciena-pro-optical-types:frequency;
+            description
+              "Frequency of the two peak channel";
+          }
+        }
+        container set-debug-state {
+          description
+            "A debug RPC to wait at a particular state.";
+          container input {
+            ciena-common-yang:containerptr "true";
+          }
+        }
+        container ignore-notifications {
+          description
+            "A debug RPC to ignore notifications from a particular node.";
+          container input {
+            ciena-common-yang:containerptr "true";
+          }
+        }
+        container expire-timer {
+          description
+            "A debug RPC to expire the provided timer if it is running.";
+          container input {
+            ciena-common-yang:containerptr "true";
+          }
+        }
+        container populate-two-peak {
+          description
+            "A debug RPC to populate two-peak data.";
+          container input {
+            ciena-common-yang:containerptr "true";
+          }
+        }
+        container display-action-table {
+          description
+            "Display all afc actions info of action table.";
+        }
+      }
+    }
+    container two-peak-measurements {
+      description
+        "Request to enable/disable 2 peak measurements.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+    container logs-encryption {
+      description
+        "Request to enable/disable logs encryption.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+  }
+
+  uses ciena-6500r-afc-orchestrator-internal-mount-data;
+
+  rpc two-peak-measurements {
+    description
+      "Request to enable/disable 2 peak measurements.";
+    input {
+      leaf enable {
+        type boolean;
+        description
+          "Enabling/Disabling two peak measurements(true/false).";
+      }
+    }
+    output {
+      leaf result {
+        description
+          "Output result message.";
+        type string {
+          length "0..100";
+        }
+      }
+    }
+  }
+
+  rpc logs-encryption {
+    description
+      "Request to enable/disable logs encryption.";
+    input {
+      leaf enable {
+        type boolean;
+        description
+          "Enabling/Disabling logs encryption(true/false).";
+      }
+    }
+    output {
+      leaf result {
+        description
+          "Output result message.";
+        type string {
+          length "0..100";
+        }
+      }
+    }
+  }
+
+  grouping afco-action-data {
+    leaf action-performed {
+      type afc-orchestrator-types:afco-actions;
+      description
+        "Indicates the last action performed in action table.";
+    }
+    leaf action-index {
+      type uint32;
+      description
+        "Indicates an index of current action performed in action table.";
+    }
+    leaf node-index {
+      type uint32;
+      description
+        "Indicates an index in the ordered list of NE in the OMS.";
+    }
+  }
+}

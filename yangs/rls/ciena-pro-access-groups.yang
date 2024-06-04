@@ -1,0 +1,186 @@
+module ciena-pro-access-groups {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-access-groups";
+  prefix access-groups;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "Access groups are system and user sets of filters that can be
+     queried and modified.  They can be assigned to users or user
+     groups to allow for customized access control to any
+     system level yang objects.";
+
+  revision 2020-04-16 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Intial revision.";
+  }
+
+  identity error-access-denied {
+    base yang:error-code;
+    description
+      "Error was generated because because the user priviledges do not
+       allow for an operation on the specified object.";
+  }
+
+  typedef filter-type {
+    type enumeration {
+      enum include {
+        description
+          "Include the specified filter from the overall filter";
+      }
+      enum exclude {
+        description
+          "Exclude the specified filter from the overall filter";
+      }
+    }
+    description
+      "Type of filter.  An 'include' filter merges its content
+       on top of previous filters and extends those filters.
+       An 'exclude' filter removes its content from previous
+       filters and excludes the specified filter";
+  }
+
+  grouping filter-set {
+    description
+      "Grouping to define a set of filters.
+
+       This is a list of filters that is constructed in
+       order by applying include or exclude filters.
+
+       The final filter is computed by merging each provided
+       filter as specified (include or exclude) to arrive
+       at one computer result.  This final filter is staged
+       for all affected filters when any change is made.";
+    list filter {
+      key "name";
+      ordered-by user;
+      leaf name {
+        type string;
+        description
+          "Name of the filter in the list.  Just used as a key.";
+      }
+      leaf type {
+        type filter-type;
+        description
+          "Type of filter and how to merge with previous filters.";
+      }
+      leaf filter {
+        type yang:target-node;
+        description
+          "Specified filter to include or exclude";
+      }
+    }
+    anyxml combined {
+      config false;
+      description
+        "Computer filter based on the starting base and additional
+         inclusions and exclusions";
+    }
+  }
+
+  container access {
+    description
+      "Top level container to hold access configuration data";
+    leaf base {
+      type leafref {
+        path "../groups/name";
+      }
+      description
+        "Base level access specification.
+
+         A system will typically have one base level group that
+         indicates the system level support.  This is not editable, and
+         is not a security violation if access is requested outside the
+         filter.  This is a system level support violation.  System
+         level access groups should be based on this definition and
+         no access group can provide support beyond this filter";
+    }
+    list groups {
+      key "name";
+      description
+        "Access groups configuation.  List of groups typically used
+         by system level resource constraints (which elements in
+         supported resources are supported) and access control modules
+         configuration.
+
+         A group can be based on another group and then extend it by
+         using include or exclude filters.
+
+         The system will typically have a set of predefined filters
+         (limited, system, diag, admin for example).  These will be
+         marked as system and cannot be modified or deleted.";
+      leaf name {
+        type string;
+        description
+          "Name of the access group.";
+      }
+      leaf parent {
+        type leafref {
+          path "../name";
+        }
+        description
+          "Access group this group is based on.  If this is omitted,
+           the group is based on the base filter.";
+      }
+      leaf system {
+        type boolean;
+        default "false";
+        description
+          "Flag that indicates if this access group is a system level
+           group.  System groups cannot be deleted or modified";
+      }
+      container read {
+        description
+          "Read access group.  Content in this filter is used to
+           constrain get responses, rpc output, and notification
+           content.
+
+           Mounted (anyxml or anydata) data will also have this
+           filter applied to it.";
+        yang:alias "access-group-filter";
+        uses filter-set;
+      }
+      container write {
+        description
+          "Write access group.  Content in this filter is used to
+           constrain set actions.  Attempts to set elements outside
+           this filter should be rejected";
+        yang:alias "access-group-filter";
+        uses filter-set;
+      }
+      container execute {
+        description
+          "Execute access group.  Content in this filter is used to
+           constrain rpcs and actions.  Attempts to execute rpc or
+           actions outside this filter should be rejected.
+
+           This filter also can apply to rpc or action input/output
+           blocks to restrict the parameters provided or returned by
+           the RPC/Action";
+        yang:alias "access-group-filter";
+        uses filter-set;
+      }
+      container notification {
+        description
+          "Notification access group.  Content in this filter is used to
+           constrain notifications and notification content.
+           Notifications outside this filter will not be reported.
+
+           This filter also can apply to notification content
+           to restrict the data reported by a supported notification.";
+        yang:alias "access-group-filter";
+        uses filter-set;
+      }
+    }
+  }
+}

@@ -1,0 +1,95 @@
+module ciena-common-batch {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-batch";
+  prefix batch;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Model to represent a batch of commands";
+
+  revision 2021-02-23 {
+    description
+      "Added new leaf for batch mode";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-11-12 {
+    description
+      "Initial revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping batch-group {
+    description
+      "Grouping to represent a batch.  A batch is a set of patches
+       and config that indicates how to process the batch.";
+    list commands {
+      description
+        "List of commands in the batch";
+      yang:alias "yang-patch";
+      key "action path";
+      uses yang:patch;
+    }
+    list diffs {
+      description
+        "Differences against the running config";
+      yang:alias "yang-patch";
+      key "action path";
+      uses yang:patch;
+    }
+    list errors {
+      description
+        "Errors reported against the batch.";
+      leaf error {
+        type string;
+      }
+    }
+    leaf error-mode {
+      type enumeration {
+        enum stop;
+        enum continue;
+      }
+    }
+    leaf mode {
+      description
+        "Current batch mode";
+      type string;
+    }
+  }
+
+  list batches {
+    config false;
+    description
+      "List of batches.";
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of the batch";
+    }
+    uses batch-group;
+  }
+  container batch {
+    config false;
+    description
+      "Unnamed batch";
+    uses batch-group;
+  }
+}

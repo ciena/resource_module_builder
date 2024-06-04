@@ -1,0 +1,291 @@
+module ciena-pro-pm-driver-interface {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pm-driver-interface";
+  prefix pm-driver-interface;
+
+  import ciena-pro-pm-types {
+    prefix pm-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's pm runtime objects for the Bifrost platform";
+
+  revision 2023-03-28 {
+    description
+      "remove config statement in otn-instances-init RPC";
+    ciena-common-version:string "1.2.5";
+  }
+  revision 2023-03-14 {
+    description
+      "Add invalid-raw-pm rpc";
+    ciena-common-version:string "1.2.4";
+  }
+  revision 2022-11-15 {
+    description
+      "Add PM process data container";
+    ciena-common-version:string "1.2.3";
+  }
+  revision 2022-11-02 {
+    description
+      "Add gather-get rpc";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-10-04 {
+    description
+      "Add otn-instances-init rpc";
+    ciena-common-version:string "1.2.2";
+  }
+  revision 2022-08-15 {
+    description
+      "Add uid in usr-set rpc";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2022-08-08 {
+    description
+      "Add gather-set and usr-set rpc";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2022-04-01 {
+    description
+      "Add init-dynamic-instance rpc";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2022-02-18 {
+    description
+      "Add index_range_count";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2021-07-29 {
+    description
+      "Initial revision";
+  }
+
+  container pm-process-data {
+    description
+      "Processed PM data to be post processed and binned";
+    leaf sequence-number {
+      type uint64;
+      description
+        "Sequence Number for each PM tick";
+    }
+    leaf index {
+      type uint32;
+      description
+        "Index requried to access one second worth of data from 10 seconds of process cache";
+    }
+    anydata data {
+      description
+        "This data represents the pm process tree for all the PM instances";
+    }
+  }
+
+  rpc invalid-raw-pm {
+    input {
+      leaf card-name {
+        type string;
+      }
+    }
+  }
+
+  rpc instances-init {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+      leaf index_range_count {
+        type uint16;
+        default "0";
+        description
+          "count index range or not";
+      }
+    }
+    output {
+      leaf return_code {
+        type uint32;
+        description
+          "success or failure";
+      }
+    }
+  }
+
+  rpc init-dynamic-instance {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+      leaf signal-type {
+        type pm-types:signal-type;
+        description
+          "Signal type SDMON or NMCMON";
+      }
+      leaf parent-port {
+        type string;
+        description
+          "parent-port for NMCMON or SDMON";
+      }
+    }
+  }
+
+  rpc update-dynamic-instance {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+      anyxml data {
+        description
+          "This data tree represents dynamic instance data.";
+      }
+      leaf signal-type {
+        type pm-types:signal-type;
+        description
+          "Signal type SDMON or NMCMON";
+      }
+    }
+  }
+
+  rpc config-data-updater {
+    input {
+      leaf card-name {
+        type string;
+      }
+      anyxml data {
+        description
+          "This data tree represents data on the card.";
+      }
+    }
+  }
+
+  rpc delete-pm-instance {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+    }
+  }
+
+  rpc gather-set {
+    input {
+      anyxml data {
+        description
+          "This data tree represents dynamic instance data.";
+      }
+    }
+  }
+
+  rpc gather-get {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+      leaf fields {
+        type string;
+        description
+          "Fields to create filter for gather get";
+      }
+    }
+    output {
+      anyxml data {
+        description
+          "This data tree represents pm gather data.";
+      }
+      leaf count {
+        type uint32;
+        description
+          "count for output data";
+      }
+    }
+  }
+
+  rpc usr-set {
+    input {
+      anyxml data {
+        description
+          "This data tree represents pm usr data.";
+      }
+      leaf uid {
+        type string;
+        description
+          "uid for custom PM data";
+      }
+    }
+  }
+
+  rpc otn-instances-init {
+    input {
+      leaf pm-instance {
+        type instance-identifier;
+        description
+          "pm instance_id";
+      }
+      leaf signal-type {
+        type pm-types:otn-signal-type;
+        description
+          "OTN signal type associated with the PM instance";
+      }
+      leaf is_delete {
+        type boolean;
+        description
+          "Indicates whether to delete the given instance";
+      }
+      list montype {
+        key "name";
+        description
+          "The list of PM montypes to be enabled";
+        leaf name {
+          type pm-types:montype;
+          description
+            "PM montype name";
+        }
+        list instance {
+          key "sublayer location direction";
+          description
+            "This contains the list of PM Parameters to be displayed for each location direction and sublayer";
+          leaf sublayer {
+            type identityref {
+              base pm-types:sublayer-identity;
+            }
+            mandatory true;
+            description
+              "Sublayer, indicates if it is either odu, otu, tcm, etc";
+          }
+          leaf location {
+            type pm-types:location;
+            mandatory true;
+            description
+              "Location, indicating either NearEnd or FarEnd";
+          }
+          leaf direction {
+            type pm-types:direction;
+            mandatory true;
+            description
+              "Direction, indicating either Transmit or Recieve";
+          }
+        }
+      }
+    }
+    output {
+      leaf return_code {
+        type uint32;
+        description
+          "success or failure";
+      }
+    }
+  }
+}

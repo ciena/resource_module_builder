@@ -1,0 +1,284 @@
+module ciena-waveserver-xcvr-modem {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-xcvr-modem";
+  prefix xcvr-modem;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-waveserver-xcvr {
+    prefix xcvr;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-ddf {
+    prefix ddf;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's XCVR modem specific data for the NETCONF protocol. It will augment the ciena-waveserver-xcvr module.";
+
+  revision 2018-05-07 {
+    description
+      "Removed 'supported-modes' leaf in vendor-data properties. This is moved to the common xcvr module.
+       Add supported link-optimization-mode attributes to the supported-modes list via augmentation.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  revision 2017-10-24 {
+    description
+      "Changed type for 'frequency-min' and 'frequency-max' leafs from int to decimal.
+       Changed type for 'tx-dispersion-min' and 'tx-dispersion-max' from unsigned to signed int.";
+    reference "Waveserver Ai R1.1 user's guide.";
+  }
+
+  revision 2017-08-28 {
+    description
+      "Waveserver Platform Data Model
+      Migrated from Waveserver Classic R1.4 YANG model.
+      Updated namespace to 'ciena-waveserver'.
+      Added 'c-band', 'l-band', and 'frequency-resolution' to 'transmitter-technology' container.
+      Removed 'modulation-support' container and added 'supported-modes' to 'vendor-data/properties' container.
+      Added 'temperature-critical' and 'temperature-warning' to 'diagnostics/device' container.
+      Removed 'wavelength-control' and 'wavelength-tolerance' attributes.
+      Removed 'transport-protocols' and 'line-system-support' containers.";
+    reference "Waveserver Ai R1.0 user's guide.";
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:diagnostic-monitoring" {
+    when "../../../xcvr:type = 'WaveLogic Ai'" {
+      description
+        "XCVR vendor diagnostic-monitoring properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR vendor diagnostic-monitoring properties specific to modem XCVRs.";
+
+    ddf:ddf-struct-version "WL3VendorDMT";
+    leaf diagnostic-support {
+      ui:ui-name "Diagnostic Support";
+      type cienawstypes:yes-no-enum;
+      config false;
+      description
+        "Diagnostic Monitoring, is Diagnostic Support turned on.";
+    }
+    leaf dispersion-measurement {
+      ui:ui-name "Dispersion Measurement";
+      type cienawstypes:yes-no-enum;
+      config false;
+      description
+        "Diagnostic Monitoring, is Dispersion Measurement turned on.";
+    }
+  }
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties" {
+    when "../../xcvr:type = 'WaveLogic Ai'" {
+      description
+        "XCVR vendor properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR vendor properties specific to modem XCVRs.";
+
+    ddf:ddf-struct-version "WL3VDataProps";
+    container transmitter-technology {
+      ui:ui-name "Transmitter Technology";
+      config false;
+      description
+        "Modem Transmitter Technology properties/capabilities.";
+
+      leaf tunable {
+        ui:ui-name "Transmitter Tunable";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Modem Transmitter Technology, Tunable.";
+      }
+      leaf wavelength-min {
+        ui:ui-name "Transmitter Wavelength Min";
+        type cienawstypes:decimal-2-dig;
+        units "nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Wavelength Min value, in nanometers.";
+      }
+      leaf wavelength-max {
+        ui:ui-name "Transmitter Wavelength Max";
+        type cienawstypes:decimal-2-dig;
+        units "nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Wavelength Max value, in nanometers.";
+      }
+      leaf frequency-min {
+        ui:ui-name "Transmitter Frequency Min";
+        type cienawstypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "Modem Transmitter Technology, minimum supported frequency, in GHz.";
+      }
+      leaf frequency-max {
+        ui:ui-name "Transmitter Frequency Max";
+        type cienawstypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "Modem Transmitter Technology, maximum supported frequency, in GHz.";
+      }
+      leaf frequency-resolution {
+        ui:ui-name "Transmitter Frequency Resolution";
+        type uint32;
+        units "MHz";
+        config false;
+        description
+          "Modem Transmitter Technology, frequency resolution, in MHz.";
+      }
+      leaf tx-dispersion-min {
+        ui:ui-name "Transmitter Tx Dispersion Min";
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Tx Dispersion Min (ps/nm).";
+      }
+      leaf tx-dispersion-max {
+        ui:ui-name "Transmitter Tx Dispersion Max";
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Tx Dispersion Max (ps/nm).";
+      }
+      leaf edfa {
+        ui:ui-name "EDFA";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem is an EDFA modem.";
+      }
+      leaf c-band {
+        ui:ui-name "C-Band";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem supports C-Band frequencies.";
+      }
+      leaf l-band {
+        ui:ui-name "L-Band";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem supports L-Band frequencies.";
+      }
+    }
+  }
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:supported-modes" {
+    when "../../../xcvr:type = 'WaveLogic Ai'" {
+      description
+        "XCVR supported-mode properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR supported-mode properties specific to modem XCVRs.";
+
+    ddf:ddf-struct-version "AiSuppModeProps";
+    leaf default-link-optimization-mode {
+      type cienawstypes:link-optimization-mode;
+      description
+        "The default link optimization mode for this XCVR mode.";
+    }
+    leaf supported-link-optimization-modes {
+      type cienawstypes:supported-link-optimization-modes;
+      description
+        "The set of supported link optimization modes for this XCVR mode.";
+    }
+  }
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:diagnostics/xcvr:device" {
+    when "../../xcvr:type = 'WaveLogic Ai'" {
+      description
+        "XCVR device diagnostic properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR device diagnostic properties specific to modem XCVRs.";
+
+    ddf:ddf-struct-version "WL3DiagDeviceData";
+    container equipment-status {
+      ui:ui-name "Equipment Status";
+      config false;
+      description
+        "XCVR modem equipment status properties.";
+      leaf transmitter-state {
+        ui:ui-name "Transmitter State";
+        type cienawstypes:enabled-disabled-enum;
+        config false;
+        description
+          "Transmitter State of the Modem.";
+      }
+      leaf equipment-out-of-spec {
+        ui:ui-name "Equipment Out of Spec";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Equipment Out of Spec raised.";
+      }
+      leaf temperature-critical {
+        ui:ui-name "Temperature Critical";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is there a critical temperature alarm currently raised.";
+      }
+      leaf temperature-warning {
+        ui:ui-name "Temperature Warning";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is there a temperature warning currently raised.";
+      }
+      leaf equipment-failure {
+        ui:ui-name "Equipment Failure";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Equipment Failure raised.";
+      }
+      leaf data-link-suspect {
+        ui:ui-name "Data Link Suspect";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Data Link Suspect raised.";
+      }
+      leaf comms-link-suspect {
+        ui:ui-name "Comms Link Suspect";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Comms Link Suspect raised.";
+      }
+      leaf clock-suspect {
+        ui:ui-name "Clock Suspect";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Clock Suspect raised.";
+      }
+      leaf loss-of-synchronization-tick {
+        ui:ui-name "Loss of Synchronization Tick";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Loss of Synchronization Tick raised.";
+      }
+    }
+  }
+}

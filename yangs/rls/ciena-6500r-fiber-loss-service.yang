@@ -1,0 +1,377 @@
+module ciena-6500r-fiber-loss-service {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-fiber-loss-service";
+  prefix fiber-loss-service;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+  import ciena-pro-fiber-types {
+    prefix fiber-types;
+  }
+  import ciena-pro-scaler-types {
+    prefix ciena-pro-scaler-types;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's R-series platform fiber loss service model";
+
+  revision 2023-02-09 {
+    description
+      "Introduced dm-enabled and last-dm-check-time";
+    version:version "version" {
+      version:string "1.10.0";
+    }
+  }
+  revision 2023-01-26 {
+    description
+      "Introduced fiber-length-group and associated-osc";
+    version:version "version" {
+      version:string "1.9.0";
+    }
+  }
+  revision 2022-12-08 {
+    description
+      "Introduced fiber-length-source and fiber-length-latency";
+    version:version "version" {
+      version:string "1.8.0";
+    }
+  }
+  revision 2022-10-17 {
+    description
+      "Introduced low-fiber-loss diagnostic";
+    version:version "version" {
+      version:string "1.7.0";
+    }
+  }
+  revision 2022-10-14 {
+    description
+      "Introduced low-fiber-loss threshold and hysteresis";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+  }
+  revision 2022-10-03 {
+    description
+      "Introduced link-id";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+  }
+  revision 2022-03-04 {
+    description
+      "Adding delta-monitor-deadzone";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2022-02-28 {
+    description
+      "Introduced isCvCapable";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2021-06-02 {
+    description
+      "Introduced cv-total-power-delta and cv-signal-power-delta,
+       deprecated output-cv-power and far-end-input-cv-power";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+
+  identity fiber-loss-service {
+    base ciena-pro-scaler-types:owner;
+    description
+      "Extension of the owner type for fiber-loss-service";
+  }
+
+  typedef fiber-loss-status {
+    type enumeration {
+      enum TOTAL {
+        description
+          "Total Power";
+      }
+      enum OSC {
+        description
+          "OSC Power";
+      }
+      enum TELEMETRY {
+        description
+          "Telemetry Power";
+      }
+      enum CV {
+        description
+          "CV Total Power";
+      }
+      enum VARYING {
+        description
+          "Fiber Loss is varying";
+      }
+      enum LINEFAULT {
+        description
+          "Fiber Loss is unavailble due to line fault";
+      }
+      enum CV-SIGNAL {
+        description
+          "CV Signal Power";
+      }
+    }
+    description
+      "Fiber Loss Status.";
+  }
+
+  typedef diagnostic {
+    type bits {
+      bit high-fiber-loss-minor {
+        position 0;
+      }
+      bit high-fiber-loss-major {
+        position 1;
+      }
+      bit fiber-type-unknown {
+        position 2;
+      }
+      bit fiber-break-detected {
+        position 3;
+      }
+      bit dark-fiber {
+        position 4;
+      }
+      bit high-fiber-loss-fault {
+        position 5;
+      }
+      bit fiber-type-unknown-fault {
+        position 6;
+      }
+      bit fiber-break-detected-fault {
+        position 7;
+      }
+      bit low-fiber-loss {
+        position 8;
+      }
+    }
+    description
+      "Diagnostic";
+  }
+
+  grouping cv-power-delta {
+    leaf output-cv-power {
+      status deprecated;
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Output CV power";
+    }
+    leaf far-end-input-cv-power {
+      status deprecated;
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Far end input CV power";
+    }
+    leaf cv-total-power-delta {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Power delta of the CV total powers";
+    }
+    leaf cv-signal-power-delta {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Power delta of the CV signal powers";
+    }
+  }
+
+  grouping fiber-length-group {
+    leaf fiber-length {
+      type uint64;
+      config false;
+      units "m";
+      default "0";
+      description
+        "Calculated length of the fiber in m";
+      when '../link-type = line-fiber';
+    }
+    leaf fiber-length-source {
+      type ciena-pro-link:length-source-type;
+      description
+        "Source used to derive fiber-length";
+    }
+    leaf fiber-length-latency {
+      type uint32;
+      units "ns";
+      description
+        "one way average latency(in ns) used to calculate fiber-length";
+    }
+    leaf associated-osc {
+      type instance-identifier;
+      description
+        "osc facility identifier";
+    }
+    leaf dm-enabled {
+      type boolean;
+      description
+        "Delay-measuremnt admin-state enabled";
+    }
+    leaf last-dm-check-time {
+      type yang:date-and-time;
+      description
+        "Timestamp of the last sucessful dm query";
+    }
+  }
+
+  list fibers {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "The name of the fiber/Link.";
+    }
+    leaf link-id {
+      type string {
+        length "0..79";
+      }
+      description
+        "internal id of a link";
+    }
+    leaf fiber-type {
+      type leafref {
+        path "/fiber-types:fiber-type/fiber-types:fiber-type";
+      }
+      default "unknown";
+    }
+    leaf link-type {
+      type ciena-pro-link:link-type;
+      default "unknown";
+    }
+    leaf deadzone {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      default "0.50";
+      description
+        "Deadzone where CV Fiber Loss changes below this amount are not recorded.";
+    }
+    leaf delta-monitor-deadzone {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      description
+        "Deadzone where delta monitor Fiber Loss changes below this amount are not recorded.";
+    }
+    leaf output-port {
+      type instance-identifier;
+      description
+        "Output port";
+    }
+    leaf input-port {
+      type instance-identifier;
+      description
+        "Input port";
+    }
+    uses fiber-length-group;
+    leaf status {
+      type fiber-loss-status;
+      description
+        "Status of powers used to calculate fiber loss";
+    }
+    leaf line-fault {
+      type boolean;
+      description
+        "Indicates if there is a line fault";
+    }
+    leaf loopback {
+      type boolean;
+      description
+        "Indicates if this is a loop fiber";
+    }
+    leaf actual-measured-loss {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Measured fiber power loss of a link.";
+    }
+    leaf measured-physical-loss {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Physical fiber power loss derived from power measurement. This will be used to evaulate hfl alarm.";
+    }
+    leaf expected-physical-loss {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "Expected physical power loss is from link object.This will be used to evaulate hfl alarm.";
+    }
+    leaf high-fiber-loss-minor-threshold {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "1.5";
+      description
+        "A fixed threshold combined with the expected loss to determine whether to raise or clear high fiber loss minor alarm.";
+    }
+    leaf high-fiber-loss-major-threshold {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "10.0";
+      description
+        "A fixed threshold combined with the expected loss to determine whether to raise or clear high fiber loss major alarm.";
+    }
+    leaf low-fiber-loss-threshold {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "3.0";
+      description
+        "A fixed threshold combined with the expected loss to determine whether to raise or clear low fiber loss alarm.";
+    }
+    leaf high-fiber-loss-minor-hysteresis {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "0.5";
+      description
+        "A configurable hysteresis apply to high fiber loss minor alarm clearing and severity change.";
+    }
+    leaf high-fiber-loss-major-hysteresis {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "0.5";
+      description
+        "A configurable hysteresis apply to high fiber loss major alarm clearing and severity change.";
+    }
+    leaf low-fiber-loss-hysteresis {
+      type ciena-6500r-types:loss-dB-1-precision;
+      default "0.5";
+      description
+        "A configurable hysteresis apply to low fiber loss alarm clearing and severity change.";
+    }
+    uses cv-power-delta {
+      when '../link-type = logical';
+    }
+    list power-delta {
+      key "spectral-type loss-type";
+      uses ciena-pro-link:loss-desc;
+      leaf value {
+        type ciena-6500r-types:loss-dB-1-precision;
+        description
+          "Power loss of the specified spectral and type for the given link";
+      }
+    }
+    leaf isCvCapable {
+      type boolean;
+      description
+        "Indicates if both from and to ports support CV functionality or not.";
+    }
+    leaf diagnostic {
+      type diagnostic;
+    }
+    config false;
+  }
+}

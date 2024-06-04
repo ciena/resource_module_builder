@@ -1,0 +1,520 @@
+module ciena-6500r-pwr-profile-private {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-pwr-profile-private";
+  prefix pwr-profile-private;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ietf-yang-types {
+    prefix ietf;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-6500r-pwr-profile {
+    prefix profile;
+  }
+  import ciena-pro-fiber-types {
+    prefix ciena-pro-fiber-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes the private data for Pwr-profile-manager Service";
+
+  revision 2023-10-11 {
+    description
+      "6500r-series Release 3.1.60
+       Added ccs-instance, max-undershoot-compensation, max-Insertion-Loss and alarm-eval-required to profile-tracking";
+    version:version "version" {
+      version:string "1.10.0";
+    }
+  }
+  revision 2023-03-01 {
+    description
+      "6500r-series Release 3.1
+       Added spectral-diag-eval-required and spectral-deficit-debounce-count to profile-tracking
+       Added monitor-point data polling frequency debugging to debug-pwr-profile RPC";
+    version:version "version" {
+      version:string "1.9.2";
+    }
+  }
+  revision 2022-12-19 {
+    description
+      "6500r-series Release 3.1
+       Added check-input-profile-threshold debugging capability";
+    version:version "version" {
+      version:string "1.9.1";
+    }
+  }
+  revision 2022-12-12 {
+    description
+      "6500r-series Release 3.1
+       Added internal-link-info grouping";
+    version:version "version" {
+      version:string "1.9.0";
+    }
+  }
+  revision 2022-05-18 {
+    description
+      "6500r-series Release 3.0
+       Added cascade-count";
+    version:version "version" {
+      version:string "1.8.0";
+    }
+  }
+  revision 2022-05-10 {
+    description
+      "6500r-series Release 3.0
+       Added los-threshold-set-required";
+    version:version "version" {
+      version:string "1.7.0";
+    }
+  }
+  revision 2022-01-26 {
+    description
+      "6500r-series Release 3.0
+       Added target-psd";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+  }
+  revision 2022-04-05 {
+    description
+      "6500r-series Release 2.5
+       Added total-source-power-mismatch-threshold to debug rpc";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+  }
+  revision 2021-12-17 {
+    description
+      "6500r-series Release 2.5
+       Added additional-info";
+    version:version "version" {
+      version:string "1.4.5";
+    }
+  }
+  revision 2021-08-30 {
+    description
+      "6500r-series Release 2.5
+       Added target and baseline bin-modified fields to tracker";
+    version:version "version" {
+      version:string "1.4.4";
+    }
+  }
+  revision 2021-08-26 {
+    description
+      "6500r-series Release 2.5
+       Added monitor-point leaf to profile-tracking";
+    version:version "version" {
+      version:string "1.4.3";
+    }
+  }
+  revision 2021-08-22 {
+    description
+      "6500r-series Release 2.5
+       Added new diags timeout audit leaf to debug rpc";
+    version:version "version" {
+      version:string "1.4.2";
+    }
+  }
+  revision 2021-08-09 {
+    description
+      "6500r-series Release 2.5
+       Added totalPower and tilt to tracker";
+    version:version "version" {
+      version:string "1.4.1";
+    }
+  }
+  revision 2021-07-15 {
+    description
+      "6500r-series Release 2.5
+       Added link-loss-baseline and timestamp to tracker";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2021-05-17 {
+    description
+      "6500r-series Release 2.4
+       Split link into internal and external versions";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2020-12-11 {
+    description
+      "6500r-series Release 2.2
+       Introduced override-required";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2020-08-27 {
+    description
+      "6500r-series Release 2.1
+       Introduced amp";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-01-14 {
+    description
+      "6500r-series Release 2.0
+       Introduced pfg";
+  }
+  revision 2019-09-13 {
+    description
+      "Initial revision";
+  }
+
+  grouping link-info {
+    leaf link-instance {
+      type instance-identifier;
+      description
+        "Associated link Instance";
+    }
+    leaf amp-instance {
+      type instance-identifier;
+      description
+        "Associated internal amp Instance";
+    }
+    leaf loss {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "The loss associated with the link";
+    }
+    leaf max-insertion-loss {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "The max-insertion-loss associated with the link";
+    }
+    leaf wdl-coeff {
+      type binary {
+        length "8";
+      }
+      description
+        "The Wavelength Dependent Loss (WDL) coefficients, each encoded in signed 16 bits
+         in network byte order.
+         Each link can have up to 4 integer coefficients.
+         The order of encoding is A0, A1, A2, A3.
+         The formula that uses these coefficients is:
+         (A3*(f-fc)^3 + A2*(f-fc)^2 + A1*(f-fc) + A0) * 0.0001";
+    }
+  }
+
+  list profile-tracking {
+    key "name1 parent-port name2";
+    leaf name1 {
+      type ciena-6500r-types:object-name;
+      description
+        "Name1 of the Profile Tracking Entry";
+    }
+    leaf parent-port {
+      type ciena-6500r-types:object-name;
+      description
+        "Parent-port of the Profile Tracking Entry";
+    }
+    leaf name2 {
+      type ciena-6500r-types:object-name;
+      description
+        "Name2 of the Profile Tracking Entry";
+    }
+    leaf method {
+      type profile:pwr-profile-build-method;
+      description
+        "The method used to generate the power profile";
+    }
+    leaf state {
+      type profile:pwr-profile-state;
+      description
+        "State of Power Profile";
+    }
+    leaf link-presence-required {
+      type boolean;
+      description
+        "This Profile is dependent on the presence of a link";
+    }
+    leaf link-data-required {
+      type boolean;
+      description
+        "This Profile is dependent on link data";
+    }
+    leaf fiber-loss-compensation-active {
+      type boolean;
+      description
+        "This Profile is actively compensating for Fiber Loss changes from the baseline";
+    }
+    leaf link-baseline-set-required {
+      type boolean;
+      description
+        "The Link Baseline needs to be set at this Profile port location";
+    }
+    leaf los-threshold-set-required {
+      type boolean;
+      description
+        "The LOS threshold needs to be set at this Profile's associated switch in port location";
+    }
+    leaf cascade-count {
+      type uint16;
+      description
+        "The number of cascades used to calculate LOS threshold";
+    }
+    leaf override-required {
+      type boolean;
+      description
+        "The Profile needs to be Overridden";
+    }
+    leaf target-bin-modified {
+      type boolean;
+      description
+        "Flag indicating that the target profile was modified";
+    }
+    leaf baseline-bin-modified {
+      type boolean;
+      description
+        "Flag indicating that the baseline profile was modified";
+    }
+    leaf link {
+      type instance-identifier;
+      description
+        "The Link required for scaling (deprecated, use internal or external link)";
+    }
+    leaf internal-link {
+      type instance-identifier;
+      description
+        "The internal Link required for scaling (deprecated, use internal or external link-info)";
+    }
+    leaf external-link {
+      type instance-identifier;
+      description
+        "The external Link required for scaling (deprecated, use internal or external link-info)";
+    }
+    container internal-link-info {
+      uses link-info;
+    }
+    container external-link-info {
+      uses link-info;
+    }
+    leaf profile {
+      type instance-identifier;
+      description
+        "The Profile required for scaling";
+    }
+    leaf amp {
+      type instance-identifier;
+      description
+        "The Amp required for scaling (deprecated, use internal or external link-info )";
+    }
+    leaf timestamp {
+      type ietf:date-and-time;
+      description
+        "The time that the profile was set";
+    }
+    leaf link-loss-baseline {
+      type ciena-6500r-types:loss-dB-1-precision;
+      description
+        "The baseline loss of the link.";
+    }
+    leaf tracking-details {
+      type string;
+      description
+        "Tracking details around personality and needed data";
+    }
+    leaf build-details {
+      type string;
+      description
+        "Build details around reasons for not building";
+    }
+    leaf pfg {
+      type instance-identifier;
+      description
+        "The PFG associated with the tracker";
+    }
+    uses profile:pwr-spectrum-spec;
+    leaf band-type {
+      type ciena-pro-fiber-types:band;
+      description
+        "Band of the Profile Tracking Entry";
+    }
+    leaf monitor-point {
+      type instance-identifier;
+      config false;
+      description
+        "The monitor-point associated with the pwrmon instance";
+    }
+    leaf additional-info {
+      type string;
+      description
+        "Additional info reported by the power profile";
+    }
+    leaf target-psd {
+      type ciena-6500r-types:power;
+      description
+        "The power within a bin";
+    }
+    leaf spectral-diag-eval-required {
+      type boolean;
+      description
+        "This Profile shall perform spectral degrade diag evaluation if a monitor point is present";
+    }
+    leaf spectral-deficit-debounce-count {
+      type uint16;
+      description
+        "Number of debounce that has occurred for spectral deficit diag evaluation";
+    }
+    leaf alarm-eval-required {
+      type boolean;
+      default "true";
+      description
+        "This Profile shall perform alarm evaluation if a monitor point is present";
+    }
+    leaf ccs-instance {
+      type instance-identifier;
+      description
+        "The ccs-instance associated with the section-mux";
+    }
+    leaf max-undershoot-compensation {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "The max-undershoot-compensation associated with the ccs-instance";
+    }
+  }
+
+  rpc dump-pwr-profile-private-inst {
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "Power Profile Private to dump";
+      }
+    }
+    output {
+      leaf data {
+        type string {
+          length "1..5000";
+        }
+        description
+          "Dump data";
+      }
+    }
+  }
+
+  grouping check-input-profile-thresholds {
+    leaf total-pwr-delta-threshold {
+      type ciena-pro-types:delta-dB-1-precision;
+      default "0.5";
+      description
+        "Threshold used in check-input-profile validation if the delta between target and measured total power is off by that limit.";
+    }
+    leaf tilt-threshold {
+      type ciena-pro-types:delta-dB-1-precision;
+      default "0.5";
+      description
+        "Threshold used in check-input-profile validation if the delta between target and measured tilt is off by that limit.";
+    }
+    leaf ripple-threshold {
+      type ciena-pro-types:delta-dB-1-precision;
+      default "1.0";
+      description
+        "Threshold used in check-input-profile validation if the delta between target and measured ripple is off by that limit.";
+    }
+  }
+
+  grouping monitor-point-data-poll-freq {
+    leaf target-unachievable-alarm {
+      type uint8 {
+        range "1..255";
+      }
+      units "second";
+      description
+        "New Monitor-point data polling frequency (in secs) for evaluating target-unachievable alarm";
+    }
+    leaf spectral-degrade-alarm {
+      type uint8 {
+        range "1..255";
+      }
+      units "second";
+      description
+        "New Monitor-point data polling frequency (in secs) for evaluating spectral-degrade alarm ";
+    }
+    leaf reset-to-default {
+      type boolean;
+      description
+        "Reset the monitor-point data polling frequency for target-unachievable alarm
+         and spectral-degrade alarm to its default value";
+    }
+  }
+
+  rpc debug-pwr-profile {
+    input {
+      leaf audit-timeout {
+        type uint32;
+        description
+          "Audit Timeout";
+      }
+      leaf dump-cache {
+        type boolean;
+        description
+          "Dump the nodes cache";
+      }
+      leaf diag-audit-timeout {
+        type uint32;
+        description
+          "Audit Diag Timeout";
+      }
+      leaf source-total-power-mismatch-threshold {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dB";
+        description
+          "New total-source-power-mismatch threshold";
+      }
+      uses check-input-profile-thresholds;
+      leaf dump-check-input-profile-thresholds {
+        type boolean;
+        description
+          "Dump the check-input-threshold values";
+      }
+      leaf reset-check-input-profile-thresholds {
+        type boolean;
+        description
+          "Reset the check-input-profile thresholds";
+      }
+      container monitor-point-data-poll-freq {
+        uses monitor-point-data-poll-freq;
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+      anyxml cache;
+    }
+  }
+}

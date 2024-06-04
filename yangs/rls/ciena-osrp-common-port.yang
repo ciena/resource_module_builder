@@ -1,0 +1,309 @@
+module ciena-osrp-common-port {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-common-port";
+  prefix ciena-osrp-common-port;
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+  import ciena-osrp-common-types {
+    prefix osrp-common-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's osrp-port object for the 6500r platform";
+
+  revision 2023-04-20 {
+    description
+      "'faults' was changed to non-config data.
+       Added 'clear-fault' and 'simulate-fault' actions.";
+    ciena-common-version:string "1.5.0";
+  }
+  revision 2022-09-12 {
+    description
+      "Added virtual-connection-id and connectivity-type in port";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-06-11 {
+    description
+      "Added osrp-pfg-type to remote-config of osrp-newport.";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-02-17 {
+    description
+      "'operational-state' is reverted back to config data.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2022-02-02 {
+    description
+      "'operational-state' is non-config data.";
+    ciena-common-version:string "1.1.1";
+  }
+  revision 2021-10-30 {
+    description
+      "'band-type' made as osrp-newport/spectrum-info/freq-marker key.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-07-28 {
+    description
+      "Initial revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping osrp-common-port {
+    leaf name {
+      type osrp-common-types:osrp-port-identifier;
+      description
+        "Port Name.";
+      mandatory true;
+    }
+    leaf admin-state {
+      type osrp-common-types:osrp-admin-state;
+      description
+        "Administrative state of port.";
+    }
+    leaf grid-type {
+      type osrp-common-types:port-grid-type;
+      description
+        "Specified the type of GRID supported on the port based on the spectrum-info.";
+    }
+    leaf logical-port-identifier {
+      type uint32;
+      description
+        "Logical port id.";
+    }
+    leaf port-identifier {
+      type instance-identifier;
+      description
+        "Port identifier.";
+    }
+    leaf partner-port-identifier {
+      type instance-identifier;
+      description
+        "Peer Port identifier.";
+    }
+    leaf port-type {
+      type osrp-common-types:osrp-port-type;
+      description
+        "Type of port i.e. service, routing or internal.";
+    }
+    leaf port-direction {
+      type osrp-common-types:osrp-port-direction;
+      description
+        "Direction of port i.e. mux or demux.";
+    }
+    leaf virtual-connection-id {
+      type string;
+      description
+        "Identifies a unique virtual connection or logical association between two nodes connected by a pair of partner links.";
+    }
+    container spectrum-info {
+      leaf tx-minimum-spectral-width {
+        type osrp-common-types:frequency-mhz;
+        description
+          "Tx Minimum Spectral Width (MHz). Applicable for service ports.";
+      }
+      leaf minimum-guard-band {
+        type osrp-common-types:frequency-mhz;
+        description
+          "Lower Guard Band (MHz). Applicable for service ports.";
+      }
+      leaf maximum-guard-band {
+        type osrp-common-types:frequency-mhz;
+        description
+          "Higher Guard Band (MHz). Applicable for service ports.";
+      }
+      list freq-marker-list {
+        key "band-type";
+        leaf band-type {
+          type osrp-common-types:band-type;
+          description
+            "Type of the band for the mentioned frequency start/end.";
+        }
+        leaf freq-marker-start {
+          type osrp-common-types:frequency-mhz;
+          description
+            "Start frequency marker (MHz). freq-marker-start & freq-marker-end must be same in case of Colored CMD port.";
+          mandatory true;
+        }
+        leaf freq-marker-end {
+          type osrp-common-types:frequency-mhz;
+          description
+            "End frequency marker (MHz). freq-marker-start & freq-marker-end must be same in case of Colored CMD port.";
+          mandatory true;
+        }
+      }
+    }
+    leaf group-id {
+      type string {
+        length "0..64";
+      }
+      description
+        "Port Group Identifier.";
+    }
+    leaf operational-state {
+      type osrp-common-types:osrp-operational-state;
+      description
+        "Specifies whether the port can be used or not.";
+    }
+    leaf osc-name {
+      type osrp-common-types:osrp-port-identifier;
+      description
+        "Name of OSC.";
+    }
+    leaf regen-peer-port {
+      type osrp-common-types:osrp-port-identifier;
+      description
+        "Name of peer port in case of regen.";
+    }
+    list faults {
+      key "fault-type";
+      description
+        "Fault(s) on the port.";
+      leaf fault-type {
+        type osrp-common-types:osrp-port-fault;
+        description
+          "Type of fault on the port.";
+      }
+      leaf fault-source {
+        type osrp-common-types:osrp-port-fault-source;
+        description
+          "Source of fault. It is service name if the fault is from local shelf,
+           or ILA shelf name and osrp-port if the fault is from ILA.";
+      }
+      leaf fault-cause {
+        type osrp-common-types:osrp-port-fault-cause;
+        description
+          "Root cause or point of failure of fault.";
+      }
+      config false;
+    }
+    list node-specific-config {
+      key "pfg-name";
+      description
+        "Node specific data.";
+      leaf pfg-name {
+        type string;
+        description
+          "Name of PFG port belongs to.";
+      }
+      leaf port-role {
+        type osrp-common-types:osrp-port-role;
+        description
+          "Role of port i.e. boundary-in, boundary-out, etc.";
+      }
+      list remote-config {
+        key "pfg-name";
+        description
+          "Intra-shelf Out-of-band provisioning data.";
+        leaf pfg-name {
+          type string;
+          description
+            "Name of PFG remote port belongs to.";
+        }
+        leaf connectivity-type {
+          type osrp-common-types:connectivity-type;
+          description
+            "Type of connectivity with remote-link.";
+        }
+        leaf functional-type {
+          type osrp-common-types:osrp-pfg-type;
+          description
+            "Type of Pfg i.e. channel, section or line.";
+        }
+        leaf node-id {
+          type osrp-common-types:node-id-hex-type;
+          description
+            "Remote Node id.";
+        }
+        leaf oob-port {
+          type uint16;
+          description
+            "Remote Out-of-band port.";
+        }
+        leaf osrp-port {
+          type osrp-common-types:osrp-port-identifier;
+          description
+            "Remote Port name.";
+        }
+        leaf ip-address {
+          type ietf:ip-address;
+          description
+            "Remote IP address, for Inter-Shelf/Inter-Site Comms.";
+        }
+      }
+      list internal-remote-config {
+        key "osrp-port";
+        description
+          "Intra-card connectivity.";
+        leaf osrp-port {
+          type osrp-common-types:osrp-port-identifier;
+          description
+            "Remote Port name.";
+        }
+      }
+    }
+    leaf additional-information {
+      type string {
+        length "512";
+      }
+      description
+        "Additional information of osrp-port,
+         for e.g. available-bandwidth to maximum-bandwidth ratio.";
+    }
+    action clear-fault {
+      description
+        "Clear fault against osrp-port. If no fault-type is specified,
+         all faults against this osrp-port will be cleared.
+         This action also accepts 'all' as osrp-port name, which will
+         clear all faults against all osrp-ports.";
+      input {
+        leaf fault-type {
+          type osrp-common-types:osrp-port-fault;
+          description
+            "Fault type to be cleared.";
+        }
+      }
+    }
+    action simulate-fault {
+      description
+        "Simulate fault against osrp-port.";
+      input {
+        leaf fault-type {
+          type osrp-common-types:osrp-port-fault;
+          description
+            "Fault type to be simulated.";
+          mandatory true;
+        }
+        leaf fault-source {
+          type osrp-common-types:osrp-port-fault-source;
+          description
+            "Source of fault.";
+        }
+        leaf fault-cause {
+          type osrp-common-types:osrp-port-fault-cause;
+          description
+            "Cause of fault.";
+        }
+      }
+      output {
+        leaf response {
+          type string;
+          description
+            "Output response message.";
+        }
+      }
+    }
+  }
+}

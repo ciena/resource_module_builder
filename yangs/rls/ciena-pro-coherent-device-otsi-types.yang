@@ -1,0 +1,295 @@
+module ciena-pro-coherent-device-otsi-types {
+  namespace "urn:ciena:ns:yang:coherent-device-otsi-types";
+  prefix coherent-device-otsi-types;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-types;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device-otsi-power-types {
+    prefix coherent-device-otsi-power-types;
+  }
+  import ciena-pro-coherent-device-otsi-fec-types {
+    prefix coherent-device-otsi-fec-types;
+  }
+  import ciena-pro-coherent-device-otsi-statistics-types {
+    prefix coherent-device-otsi-statistics-types;
+  }
+  import ciena-pro-coherent-device-otsi-diagnostics-types {
+    prefix coherent-device-otsi-diagnostics-types;
+  }
+  import ciena-pro-coherent-device-test-signal-types {
+    prefix coherent-device-test-signal-types;
+  }
+  import ciena-pro-wavelogic-device-extension-types {
+    prefix wavelogic-device-extension-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "OTSI definitions for coherent devices.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  grouping coherent-device-otsi-common-group {
+    leaf label {
+      type string {
+        length "128";
+      }
+      description
+        "";
+    }
+    leaf media-interface-group {
+      type instance-identifier;
+      description
+        "Identifies the media interface group to which this OTSI belongs.";
+    }
+    container transmission-mode {
+      leaf baud {
+        type coherent-device-types:coherent-device-tm-baud-enum;
+        description
+          "";
+      }
+      leaf bitrate {
+        type coherent-device-types:coherent-device-tm-bitrate-enum;
+        description
+          "";
+      }
+      leaf type {
+        type coherent-device-types:coherent-device-tm-mapping-type-enum;
+        description
+          "";
+      }
+      leaf operating-mode {
+        type coherent-device-types:coherent-device-tm-operating-mode-enum;
+        description
+          "";
+      }
+      description
+        "The current read-only transmission-mode configuration for this OTSI.
+         Note the container is RW but not modifiable. To configure use the interface-prov container.";
+    }
+    uses wavelogic-device-extension-types:wavelogic-device-otsi-extensions-group;
+    description
+      "";
+  }
+
+  grouping coherent-device-otsi-transmitter-config-group {
+    leaf transmitter-state {
+      type coherent-device-types:admin-state-enum;
+      description
+        "";
+    }
+    leaf tx-frequency {
+      type coherent-device-common-types:frequency-100MHz;
+      default "0";
+      description
+        "TX frequency is in GHz with 100MHz precision. For example 193950.0.
+         When the device for this interface is tunable, this attribute is provisionable.";
+    }
+    leaf tx-power {
+      type coherent-device-common-types:optical-power-dBm;
+      description
+        "Target power level for the transmitter.";
+    }
+    description
+      "";
+  }
+
+  grouping coherent-device-otsi-transmitter-state-group {
+    leaf transmitter-state {
+      type coherent-device-types:admin-state-enum;
+      config false;
+      description
+        "Indication whether the transmitter is currently enabled or disabled.
+         Disabling may be due to administrative action or conditioning.
+         This node is not available when the device is not physically present.";
+    }
+    leaf tx-frequency {
+      type coherent-device-common-types:frequency-100MHz;
+      default "0";
+      description
+        "TX frequency is in GHz with 100MHz precision. For example 193950.0.
+         When the device for this interface is tunable, this attribute is provisionable.";
+    }
+    leaf tx-wavelength {
+      type coherent-device-common-types:wavelength-nm;
+      config false;
+      description
+        "TX wavelength value in nanometers (nm).";
+    }
+    leaf tx-tuning-status {
+      type coherent-device-common-types:laser-tuning-status-enum;
+      config false;
+      description
+        "Describes the laser TX tuning state.";
+    }
+    leaf tx-power {
+      type coherent-device-common-types:optical-power-dBm;
+      description
+        "Target power level for the transmitter.";
+    }
+    description
+      "";
+  }
+
+  grouping coherent-device-otsi-test-signal-config-tx-group {
+    container tx {
+      uses coherent-device-test-signal-types:coherent-device-test-signal-generator-config-group;
+      description
+        "Container for coherent-device test-signal tx configuration.";
+    }
+    description
+      "Grouping for coherent-device test-signal tx configuration.";
+  }
+
+  grouping coherent-device-otsi-test-signal-config-rx-group {
+    container rx {
+      uses coherent-device-test-signal-types:coherent-device-test-signal-monitor-config-group;
+      description
+        "Container for coherent-device test-signal rx configuration.";
+    }
+    description
+      "Grouping for coherent-device test-signal rx configuration.";
+  }
+
+  grouping coherent-device-otsi-test-signal-state-rx-group {
+    container rx {
+      uses coherent-device-test-signal-types:coherent-device-test-signal-monitor-state-group;
+      container statistics {
+        uses coherent-device-test-signal-types:coherent-device-test-signal-statistics-group;
+        description
+          "Container for the coherent-device test-signal statistics.";
+      }
+      container diagnostics {
+        uses coherent-device-test-signal-types:coherent-device-test-signal-diagnostics-group;
+        description
+          "Container for coherent-device test-signal diagnostics.";
+      }
+      description
+        "Container for coherent-device test-signal rx state.";
+    }
+    description
+      "Grouping for coherent-device test-signal rx state.";
+  }
+
+  grouping coherent-device-otsi-test-signal-config-group {
+    container test-signal {
+      uses coherent-device-otsi-test-signal-config-tx-group;
+      uses coherent-device-otsi-test-signal-config-rx-group;
+      description
+        "Container for coherent-device test-signal configuration.";
+    }
+    description
+      "Grouping for coherent-device test-signal configuration.";
+  }
+
+  grouping coherent-device-otsi-test-signal-state-group {
+    container test-signal {
+      uses coherent-device-otsi-test-signal-config-tx-group;
+      uses coherent-device-otsi-test-signal-state-rx-group;
+      description
+        "Container for coherent-device test-signal state.";
+    }
+    description
+      "Grouping for coherent-device test-signal state.";
+  }
+
+  grouping coherent-device-otsi-config-group {
+    container otsi {
+      leaf admin-state {
+        type coherent-device-types:admin-state-enum;
+        description
+          "";
+      }
+      uses coherent-device-otsi-common-group;
+      uses coherent-device-otsi-transmitter-config-group;
+      uses coherent-device-otsi-power-types:coherent-device-otsi-power-config-group;
+      uses coherent-device-otsi-fec-types:coherent-device-otsi-fec-config-group;
+      uses coherent-device-otsi-test-signal-config-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping coherent-device-otsi-state-group {
+    container otsi {
+      leaf admin-state {
+        type coherent-device-types:admin-state-enum;
+        description
+          "";
+      }
+      leaf operational-state {
+        type identityref {
+          base coherent-device-types:operational-state-identity;
+        }
+        config false;
+        description
+          "";
+      }
+      uses coherent-device-otsi-common-group;
+      uses coherent-device-otsi-transmitter-state-group;
+      uses coherent-device-otsi-power-types:coherent-device-otsi-power-state-group;
+      uses coherent-device-otsi-fec-types:coherent-device-otsi-fec-state-group;
+      uses coherent-device-otsi-test-signal-state-group;
+      uses coherent-device-otsi-statistics-types:coherent-device-otsi-statistics-group;
+      uses coherent-device-otsi-diagnostics-types:coherent-device-otsi-diagnostics-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping coherent-device-otsi-state-group-no-actions {
+    container otsi {
+      leaf admin-state {
+        type coherent-device-types:admin-state-enum;
+        description
+          "";
+      }
+      leaf operational-state {
+        type identityref {
+          base coherent-device-types:operational-state-identity;
+        }
+        config false;
+        description
+          "";
+      }
+      uses coherent-device-otsi-common-group;
+      uses coherent-device-otsi-transmitter-state-group;
+      uses coherent-device-otsi-power-types:coherent-device-otsi-power-state-group-no-actions;
+      uses coherent-device-otsi-fec-types:coherent-device-otsi-fec-state-group;
+      uses coherent-device-otsi-test-signal-state-group;
+      uses coherent-device-otsi-statistics-types:coherent-device-otsi-statistics-group;
+      uses coherent-device-otsi-diagnostics-types:coherent-device-otsi-diagnostics-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+}

@@ -1,0 +1,949 @@
+module ciena-waveserver-configuration {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-configuration";
+  prefix configuration;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-waveserver-system {
+    prefix system;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines configuration data for the Waveserver.";
+
+  revision 2018-12-03 {
+    description
+      "Added waveserver-configuration-clear-backup-config-warning RPC.
+       Added waveserver-configuration-clear-config-errors-warning RPC.
+       Added waveserver-configuration-clear-no-config-warning RPC.
+       Added waveserver-configuration-copy RPC.
+       Added waveserver-configuration-rename RPC.
+       Added waveserver-configuration-upload-running-config RPC.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-06-19 {
+    description
+      "Added waveserver-configuration-reset-to-defaults RPC.
+       Added waveserver-configuration-reset-to-factory-defaults RPC.
+       Added Zero Touch Provisioning (ZTP) support.";
+    reference "Waveserver Ai R1.3 user's guide.";
+  }
+
+  revision 2018-04-17 {
+    description
+      "Added 'state' container.
+       Added waveserver-configuration-delete RPC.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  revision 2017-08-24 {
+    description
+      "Waveserver Platform Data Model
+      Migrated from Waveserver Classic R1.4 YANG model.
+      Updated namespace to 'ciena-waveserver'.
+      Added 'include-default-settings' option to waveserver-configuration-save RPC (from WS 1.5).
+      Added 'include-default-settings' option to waveserver-configuration-backup RPC (from WS 1.5).
+      Remove 'max-elements' from the configuration-files/file-list.";
+    reference "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef ztp-operational-state {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "ZTP operational state is unknown.";
+      }
+      enum "idle" {
+        value 1;
+        description
+          "ZTP is idle.";
+      }
+      enum "start" {
+        value 2;
+        description
+          "ZTP has started.";
+      }
+      enum "restarting" {
+        value 3;
+        description
+          "ZTP is restarting.";
+      }
+      enum "waiting-for-dhcp-lease" {
+        value 4;
+        description
+          "ZTP is waiting for dhcp lease renewal.";
+      }
+      enum "downloading-boot-file" {
+        value 5;
+        description
+          "ZTP is downloading a boot file.";
+      }
+      enum "parsing-boot-file" {
+        value 6;
+        description
+          "ZTP is parsing a boot file.";
+      }
+      enum "processing-ztp-timeout" {
+        value 7;
+        description
+          "ZTP is processing ztpTimeout attribute.";
+      }
+      enum "processing-license-id" {
+        value 8;
+        description
+          "ZTP is processing license registrationId attribute.";
+      }
+      enum "processing-combo-license" {
+        value 9;
+        description
+          "ZTP is processing combo license.";
+      }
+      enum "downloading-licenses" {
+        value 10;
+        description
+          "ZTP is downloading the license file.";
+      }
+      enum "installing-licenses" {
+        value 11;
+        description
+          "ZTP is installing the license file.";
+      }
+      enum "downloading-login-banner" {
+        value 12;
+        description
+          "ZTP is downloading and processing the login banner.";
+      }
+      enum "downloading-welcome-banner" {
+        value 13;
+        description
+          "ZTP is downloading and processing the welcome banner.";
+      }
+      enum "downloading-config-file" {
+        value 14;
+        description
+          "ZTP is downloading the config file.";
+      }
+      enum "applying-config-file" {
+        value 15;
+        description
+          "ZTP is applying the config file.";
+      }
+      enum "downloading-script-file" {
+        value 16;
+        description
+          "ZTP is downloading the script file.";
+      }
+      enum "applying-script-file" {
+        value 17;
+        description
+          "ZTP is applying the script file.";
+      }
+      enum "processing-software-package" {
+        value 18;
+        description
+          "ZTP is processing the software package.";
+      }
+      enum "requesting-reboot" {
+        value 19;
+        description
+          "ZTP is requesting a cold reboot.";
+      }
+      enum "upgrading-software" {
+        value 20;
+        description
+          "ZTP is upgrading the software load.";
+      }
+      enum "booting" {
+        value 21;
+        description
+          "ZTP is booting.";
+      }
+      enum "failed" {
+        value 22;
+        description
+          "ZTP has failed.";
+      }
+      enum "completed" {
+        value 23;
+        description
+          "ZTP has completed.";
+      }
+    }
+    description
+      "ZTP operational states.";
+  }
+
+  typedef ztp-error {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown ZTP Error.";
+      }
+      enum "none" {
+        value 1;
+        description
+          "No ZTP Errors.";
+      }
+      enum "boot-file-download-failed" {
+        value 2;
+        description
+          "ZTP Boot File Download Failed.";
+      }
+      enum "boot-file-parse-error" {
+        value 3;
+        description
+          "ZTP Error Parsing Boot File.";
+      }
+      enum "ztp-timeout-error" {
+        value 4;
+        description
+          "Error Processing ZTP Timeout.";
+      }
+      enum "license-id-error" {
+        value 5;
+        description
+          "ZTP Error Setting License Registration ID.";
+      }
+      enum "combo-license-error" {
+        value 6;
+        description
+          "ZTP Combo License Error.";
+      }
+      enum "license-download-error" {
+        value 7;
+        description
+          "ZTP Error Downloading Licenses.";
+      }
+      enum "license-install-error" {
+        value 8;
+        description
+          "ZTP Error Installing Licenses.";
+      }
+      enum "license-host-id-mismatch-error" {
+        value 9;
+        description
+          "ZTP Error Installing Licenses: Host Id Mismatch.";
+      }
+      enum "license-warm-reboot-required" {
+        value 10;
+        description
+          "ZTP Error Installing Licenses: Warm Reboot Required.";
+      }
+      enum "license-unsupported-file-type" {
+        value 11;
+        description
+          "ZTP Error Installing Licenses: Unsupported File Type.";
+      }
+      enum "expired-license-file" {
+        value 12;
+        description
+          "ZTP Error Installing Licenses: Expired License File.";
+      }
+      enum "system-time-not-set" {
+        value 13;
+        description
+          "ZTP Error System Time Not Set.";
+      }
+      enum "login-banner-error" {
+        value 14;
+        description
+          "ZTP Error Downloading/Installing Login Banner.";
+      }
+      enum "welcome-banner-error" {
+        value 15;
+        description
+          "ZTP Error Downloading/Installing Welcome Banner.";
+      }
+      enum "script-file-download-failed" {
+        value 16;
+        description
+          "ZTP Failed to Download Script File.";
+      }
+      enum "script-file-apply-failed" {
+        value 17;
+        description
+          "ZTP Failed to Execute Script File.";
+      }
+      enum "config-file-download-failed" {
+        value 18;
+        description
+          "ZTP Failed to Download Config File.";
+      }
+      enum "config-file-apply-failed" {
+        value 19;
+        description
+          "ZTP Failed to Apply Config File.";
+      }
+      enum "software-upgrade-failed" {
+        value 20;
+        description
+          "ZTP Software Package Upgrade Failed.";
+      }
+      enum "software-download-failed" {
+        value 21;
+        description
+          "ZTP Software Download Failed.";
+      }
+      enum "software-already-running" {
+        value 22;
+        description
+          "ZTP Did Not Upgrade Software. Correct 
+           Software Load is Already Installed.";
+      }
+    }
+    description
+      "ZTP errors.";
+  }
+
+  container waveserver-configuration {
+    ui:ui-name "Configuration";
+    description
+      "Waveserver Configuration: configuration data and operational data.";
+
+    container state {
+      ui:ui-name "Configuration State";
+      config false;
+      description
+        "System configuration status operational data.";
+      leaf operational-state {
+        type enumeration {
+          enum idle {
+            description
+              "Configuration subsystem is idle.";
+          }
+          enum loading {
+            description
+              "Configuration subsystem is loading the default, startup or
+               installed configuration.";
+          }
+          enum augmenting {
+            description
+              "Configuration is being augmented from another file. The config
+               data will be applied to the running config without replacing it.";
+          }
+          enum checking {
+            description
+              "Configuration subsystem is performing syntax validation on a
+               configuration file.";
+          }
+        }
+        description
+          "The operational state of the configuration management subsystem.";
+        ui:ui-name "Operational State";
+      }
+      leaf loaded-configuration {
+        type enumeration {
+          enum default {
+            description
+              "The default/primary configuration was loaded.";
+          }
+          enum backup {
+            description
+              "The backup configuration was loaded.";
+          }
+          enum zero-touch-provisioning {
+            description
+              "The ZTP configuration was loaded. Not currently supported.";
+          }
+          enum none {
+            description
+              "No configuration has been loaded.";
+          }
+        }
+        description
+          "Specifies the active configuration most recently loaded by the
+           configuration subsystem.";
+        ui:ui-name "Loaded Configuration";
+      }
+      leaf errors {
+        type boolean;
+        description
+          "Specifies whether the previously loaded configuration had errors
+           when being applied.";
+        ui:ui-name "Errors";
+      }
+      leaf dirty {
+        type boolean;
+        description
+          "The dirty flag indicates whether the running configuration differs
+           from the saved configuration.";
+        ui:ui-name "Dirty";
+      }
+    }
+
+    container configuration-files {
+      ui:ui-name "Configuration Files";
+      config false;
+      description
+        "List of saved configuration files on the Waveserver.";
+      leaf-list file-list {
+        type cienawstypes:string-maxl-254;
+        config false;
+        description
+          "The filename list for all the saved configuration files.";
+        ui:ui-name "File List";
+      }
+    }
+    container default-files {
+      ui:ui-name "Default Files";
+      description
+        "Waveserver Configuration: default configuration files.";
+      leaf save-filename {
+        type cienawstypes:string-maxl-254;
+        description
+          "The filename for the default save configuration file.";
+        ui:ui-name "Default Save File Name";
+      }
+      leaf load-filename {
+        type cienawstypes:string-maxl-254;
+        description
+          "The filename for the default load configuration file.";
+        ui:ui-name "Default Load File Name";
+      }
+      leaf backup-load-filename {
+        type cienawstypes:string-maxl-254;
+        description
+          "The filename for the backup load configuration file.";
+        ui:ui-name "Backup Load File Name";
+      }
+    }
+    container ztp {
+      description
+        "Waveserver Configuration: zero touch provisioning data";
+      ui:ui-name "Zero Touch Provisioning";
+      container state {
+        description
+          "ZTP configuration and operational data."; 
+        ui:ui-name "ZTP State";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether the ZTP admin state is enabled or disabled.
+             When ZTP is disabled, DHCP bootfile requests will be ignored.";
+          ui:ui-name "Admin State";
+        }
+        leaf operational-state {
+          type ztp-operational-state;
+          config false;
+          description
+            "The current status or functional step being executed in the 
+             ZTP process. ZTP operational state will be 'idle' before ZTP 
+             is run, and 'completed' when the bootfile has been fully 
+             processed and applied.";
+          ui:ui-name "Operational State";
+        }
+        leaf last-failure {
+          type ztp-error;
+          config false;
+          description
+            "The most recent failure encountered while running ZTP. This 
+             failure will be blank if no failure has occurred, or if the 
+             failure has been cleared due to successful completion of 
+             ZTP procedure.";
+          ui:ui-name "Last ZTP Failure";
+        }
+        leaf ztp-timeout {
+          type uint16 {
+            range "30 .. 3600";
+          }
+          units "seconds";
+          config false;
+          description
+            "ZTP timeout value setting in seconds. The default is
+             30 seconds unless changed by the user in the boot file. 
+             This is the timeout value used before requesting a DHCP
+             lease renewal on a ZTP failure.";
+          ui:ui-name "ZTP Timeout";
+        }
+        leaf last-command-file {
+          type cienawstypes:string-maxl-256;
+          config false;
+          description
+            "The filename of the most recent command file (bootfile) 
+             processed by DHCP/ZTP.";
+          ui:ui-name "Last ZTP Command File";
+        }
+        leaf last-config-file {
+          type cienawstypes:string-maxl-256;
+          config false;
+          description
+            "The filename of the most recent config file processed by ZTP.";
+          ui:ui-name "Last ZTP Config File";
+        }
+        leaf tftp-server {
+          type cienawstypes:string-maxl-64;
+          config false;
+          description
+            "Tftp Server Name received in DHCP option 66.";
+          ui:ui-name "DHCP Option 66 Tftp Server Name";
+        }
+      }
+    }
+  }
+  rpc waveserver-configuration-save {
+    description
+      "Save configuration.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        ui:ui-name "File Name";
+        description
+          "The name of the configuration file.";
+      }
+      leaf strip-user-comments {
+        type boolean;
+        ui:ui-name "Strip User Comments";
+        description
+          "Indicates whether to remove user comments when saving the
+           configuration file.";
+      }
+      leaf include-default-settings {
+        type boolean;
+        ui:ui-name "Include Default Settings";
+        description
+          "Indicates whether to include the default settings when saving the
+           configuration file.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-backup {
+    description
+      "Backup configuration to the specified file.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the backup configuration file.";
+      }
+      leaf strip-user-comments {
+        type boolean;
+        ui:ui-name "Strip User Comments";
+        description
+          "Indicates whether to remove user comments when saving the backup
+           configuration file.";
+      }
+      leaf include-default-settings {
+        type boolean;
+        ui:ui-name "Include Default Settings";
+        description
+          "Indicates whether to include the default settings when saving the
+           backup configuration file.";
+      }
+
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-install {
+    description
+      "Install configuration from specified file.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the configuration file to install.";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-check {
+    description
+      "Check the configuration file for errors.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the configuration file to check.";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-delete {
+    description
+      "Delete local configuration file.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the configuration file to delete.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-reset-to-user-config {
+    description
+      "Restart the Waveserver and apply the user-specified configuration file.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the user-specified configuration file.";
+      }
+      leaf revert-timeout {
+        type cienawstypes:string-maxl-32;
+        ui:ui-name "Revert Timeout";
+        description
+          "The amount of time before auto-reversion to the previous configuration
+           file after the Waveserver restarts. Must follow format: number/time:
+           N[ymwdhms], e.g 1h10m3s for 1 hour 10 minutes and 3 seconds.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-reset-to-defaults {
+    description
+      "Reset the configuration file to system default settings.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-reset-to-factory-defaults {
+    description
+      "Perform a full RTFD operation on the configuration and system files.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-cancel-revert {
+    description
+      "Cancel the configuration automatic revert when the auto-revert timer is
+       running.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-ztp-reset-last-command-file {
+    description
+      "Reset the last command file processed by ZTP";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-ztp-reset-last-config-file {
+    description
+      "Reset the last config file processed by ZTP";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-clear-backup-config-warning {
+    description
+      "Clear the warning indicating the backup configuration file is currently
+       loaded.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-clear-config-errors-warning {
+    description
+      "Clear the warning indicating that the previously loaded configuration
+       encountered errors when being applied.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-clear-no-config-warning {
+    description
+      "Clear the warning indicating no configuration file was loaded.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-copy {
+    description
+      "Copy configuration file to another file.";
+    input {
+      leaf source-filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Source File Name";
+        description
+          "The name of the file to be copied from.";
+      }
+      leaf destination-filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Destination File Name";
+        description
+          "The name of the file to be copied to.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-rename {
+    description
+      "Rename configuration file to another filename.";
+    input {
+      leaf source-filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Source File Name";
+        description
+          "The name of the file to be renamed.";
+      }
+      leaf destination-filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Destination File Name";
+        description
+          "The renamed filename.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-configuration-upload-running-config {
+    description
+      "Upload a snapshot of the running configuration to a specified remote 
+       location ... without changing the saved configuration on the local
+       system.";
+    input {
+      leaf filename {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "File Name";
+        description
+          "The name of the uploaded configuration file.";
+      }
+      leaf brief {
+        type boolean;
+        ui:ui-name "Brief";
+        description
+          "Indicates whether to produce a minimal version of the running 
+           configuration, without any comments, defaults, or extra whitespace in
+           the generated output.";
+      }
+      leaf differences-from-saved {
+        type boolean;
+        ui:ui-name "Differences From Saved";
+        description
+          "Indicates whether to limit the output to only include differences 
+           between the running configuration and the saved configuration.";
+      }
+      leaf include-default-settings {
+        type boolean;
+        ui:ui-name "Include Default Settings";
+        description
+          "Indicates whether to include the default settings when saving the
+           configuration file.";
+      }
+      leaf line-numbered {
+        type boolean;
+        ui:ui-name "Line Numbered";
+        description
+          "Indicates whether to include line numbers when saving the
+           configuration file.";
+      }
+      leaf strip-user-comments {
+        type boolean;
+        ui:ui-name "Strip User Comments";
+        description
+          "Indicates whether to remove user comments when saving the
+           configuration file.";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

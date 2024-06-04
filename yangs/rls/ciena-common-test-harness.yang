@@ -1,0 +1,1941 @@
+module ciena-common-test-harness {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-test-harness";
+  prefix harness;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-ddy-msg {
+    prefix ddm;
+  }
+  import ciena-common-exceptions {
+    prefix ciena-common-exceptions;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "Module to invoke tests between client and server";
+
+  revision 2024-01-26 {
+    description
+      "Add get initial test.";
+  }
+  revision 2024-01-25 {
+    description
+      "Add pubsub-subscribe-to-stopped-service RPC.";
+  }
+  revision 2023-11-28 {
+    description
+      "Add Fast-forward-test RPC.";
+  }
+  revision 2023-11-23 {
+    description
+      "Add generic-test RPC.";
+  }
+  revision 2023-10-23 {
+    description
+      "Add ambiguous-object-test RPC.";
+  }
+  revision 2023-07-10 {
+    description
+      "Add yang-get-keys-test RPC.";
+  }
+  revision 2023-07-07 {
+    description
+      "Added recording test for async rpc notification";
+  }
+  revision 2023-05-23 {
+    description
+      "Add inter-domain-recordings test rpc.  Make grouping for output
+       block when exceptions are used";
+  }
+  revision 2023-05-16 {
+    description
+      "Add seg-fault test rpc";
+  }
+  revision 2023-05-12 {
+    description
+      "Add pubsub-refresh-object test rpc";
+  }
+  revision 2023-04-25 {
+    description
+      "Add mounted-staged-patches test rpc.";
+  }
+  revision 2023-04-18 {
+    description
+      "Add deregister2 test rpc";
+  }
+  revision 2023-04-03 {
+    description
+      "Add async-rpc-test rpc ";
+  }
+  revision 2023-03-02 {
+    description
+      "Add deadline rpc ";
+  }
+  revision 2023-02-16 {
+    description
+      "Add minimal-config test rpcs";
+  }
+  revision 2022-11-14 {
+    description
+      "Add encryption rpc";
+  }
+  revision 2022-11-10 {
+    description
+      "Add filtered list delete test";
+  }
+  revision 2022-10-05 {
+    description
+      "Add pubsub-suppress-telemetry rpc";
+  }
+  revision 2022-03-04 {
+    description
+      "Add with-defaults rpc";
+  }
+  revision 2021-12-22 {
+    description
+      "Add trigger-gpb-mismatch rpc";
+  }
+  revision 2021-01-04 {
+    description
+      "Add sorted cache rpc";
+  }
+  revision 2021-11-25 {
+    description
+      "Add pubsub debug rpc";
+  }
+  revision 2021-10-18 {
+    description
+      "Add cache publish patches rpc";
+  }
+  revision 2021-06-19 {
+    description
+      "Add return code rpc";
+  }
+  revision 2021-06-07 {
+    description
+      "Adding the test-service-register-validate rpc";
+  }
+  revision 2021-05-26 {
+    description
+      "Adding service-broker-staging-max rpc";
+  }
+  revision 2021-05-20 {
+    description
+      "Added the test-service-validate interface";
+  }
+  revision 2021-03-25 {
+    description
+      "Adding rpc-result-common to db rpc";
+  }
+  revision 2021-03-01 {
+    description
+      "Add filtered list replace test";
+  }
+  revision 2021-01-22 {
+    description
+      "Add test for service broker staged-replace";
+  }
+  revision 2020-10-08 {
+    description
+      "Add stage-transaction option to tests
+       Add test for the stage-transaction RPC
+       Add tests for set-object tests";
+  }
+  revision 2020-09-21 {
+    description
+      "Add test for service broker skip-actions";
+  }
+  revision 2020-09-21 {
+    description
+      "Add test for json-peek lists
+       Add test for prioritized RPCs";
+  }
+  revision 2020-09-03 {
+    description
+      "Add test for instance-id lists";
+  }
+  revision 2020-04-03 {
+    description
+      "Add test for remote staging list changes";
+  }
+  revision 2020-04-02 {
+    description
+      "Add test for bindings; add grouping for common test RPC outputs";
+  }
+  revision 2019-10-02 {
+    description
+      "Add prelock parameter to the simple-edit-notify rpc";
+  }
+  revision 2019-08-08 {
+    description
+      "Add wait-lock-service rpc";
+  }
+  revision 2018-01-01 {
+    description
+      "Initial revision";
+  }
+
+  identity exception-critical {
+    base ciena-common-exceptions:exception;
+    description
+      "Exception used to track critical errors that will fail a testcase";
+  }
+
+  identity exception-expected {
+    base ciena-common-exceptions:exception;
+    description
+      "Exception used to track known errors that will be logged but will not fail a testcase";
+  }
+
+  identity exception-pass {
+    base ciena-common-exceptions:exception;
+    description
+      "Exception used to indicate a pass of a portion of a testcase for logging";
+  }
+
+  grouping test-rpc-output-common {
+    description
+      "Common definitions for test RPCs indicating a pass/fail
+       and failure location, when applicable.";
+    leaf pass {
+      type boolean;
+      description
+        "Whether the testcase passed or not";
+    }
+    list failures {
+      key "line-number";
+      description
+        "A list of failures that occurred during the testcase. Some
+         RPCs may stop on first error but others may test as many
+         cases as possible before exiting.";
+      leaf line-number {
+        type uint32;
+        description
+          "Line number that the error occurred on.";
+      }
+      leaf reason {
+        type string;
+        description
+          "Short reason string for why the testcase failed.";
+      }
+    }
+  }
+
+  grouping result-grouping {
+    leaf success-count {
+      type uint64;
+    }
+    leaf fail-count {
+      type uint64;
+      units "ns";
+    }
+    leaf min-time {
+      type uint64;
+      units "ns";
+    }
+    leaf max-time {
+      type uint64;
+      units "ns";
+    }
+    leaf avg-time {
+      type uint64;
+      units "ns";
+    }
+    leaf stddev-time {
+      type decimal64 {
+        fraction-digits 3;
+      }
+    }
+    list error-messages {
+      key "error-message";
+      leaf error-message {
+        type string;
+      }
+    }
+  }
+
+  grouping output-with-exceptions {
+    leaf pass {
+      type boolean;
+      description
+        "Overall result.  True if all tests pass.";
+    }
+    list exceptions {
+      uses ciena-common-exceptions:exception-data;
+    }
+    uses yang:rpc-result-common;
+  }
+
+  list filtered-replace-tests {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of the test";
+    }
+    leaf filtered-path {
+      type yang:target-node;
+      description
+        "Filtered path to do the replace at";
+    }
+    anyxml replace-with;
+    leaf filename {
+      type string;
+      description
+        "Filename of the file that holds the expected results";
+    }
+  }
+
+  rpc service-broker-filtered-replace {
+    description
+      "This testcase will test that service broker supports filtered
+       replace";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/filtered-replace";
+        default "tests/data/filtered-replace";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-staged-replace {
+    description
+      "This testcase will test the service broker Staged-replace
+       feature.";
+    output {
+      leaf pass {
+        type boolean;
+        description
+          "Overall result.  True if all tests pass.";
+      }
+      leaf disable-feature {
+        type boolean;
+      }
+      container disabled {
+        leaf create {
+          type boolean;
+        }
+        leaf edit {
+          type boolean;
+        }
+        leaf delete {
+          type boolean;
+        }
+        leaf replace {
+          type boolean;
+        }
+      }
+      leaf enable-feature {
+        type boolean;
+      }
+      container enabled {
+        leaf create {
+          type boolean;
+        }
+        leaf edit {
+          type boolean;
+        }
+        leaf delete {
+          type boolean;
+        }
+        leaf replace {
+          type boolean;
+        }
+      }
+    }
+  }
+
+  rpc service-broker-stage-transaction {
+    description
+      "This testcase will test that service broker actions can be
+       staged.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-validate-transaction {
+    description
+      "This testcase will test that service broker actions can be
+       validated and not committed.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc async-rpcs {
+    description
+      "This testcase will test that async RPCs work as expected.
+
+       Can fire off a set of RPCs and collect their status after they finish
+
+       Can execute a sync RPC with the same APIs
+
+       Can have results delivered via a callback instead of receive call
+
+       Timeouts work as expected
+
+       Stacks from calling task can be passed to execution task
+
+       Return codes from execution task can be passed back to calling task
+
+       Asynch RPCs cannot be nested
+
+       Get stats back from asynch calls
+       
+      ";
+    input {
+      leaf nest-level {
+        type uint8;
+      }
+      leaf first-guarded {
+        type boolean;
+        default "false";
+        description
+          "indicates of the first call of the order rpc should be
+           called with the guard set.  doing so will make none of the
+           following rpcs asynch";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc async-rpc-test {
+    description
+      "This testcase will test that async RPCs work as expected.
+       This will call an RPC asynchronous by calling that RPC
+       inside yang-rpc-action with async options and output
+       is expected in table, then it will call async-rpc-status
+       to get result of the rpc executed asynchronously.
+      ";
+    input {
+      leaf test-type {
+        type enumeration {
+          enum table {
+            description
+              "Perform testing for async rpc table mode";
+          }
+          enum notification {
+            description
+              "Perform testing for async rpc with notification response";
+          }
+        }
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc async-rpc-notification-recording-test {
+    description
+      "This testcase will test if the notification generated by
+       asynchronous RPC is recorded.
+      ";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc return-code {
+    description
+      "This testcase will test different values in the return code.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc json {
+    description
+      "This testcase will test and failures of json parser.";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/serdes";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc serdes_bad_empty {
+    description
+      "This testcase will test bad empty type.";
+    input {
+      leaf filename {
+        type string;
+        description
+          "Filename to use as input for bad empty test.  If not
+           provided, will default to tests/data/serdes_bad_empty_test.json";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+        description
+          "Overall result.  True if all tests pass.";
+      }
+    }
+  }
+
+  rpc serdes {
+    description
+      "This testcase will test success and timing of serdes.";
+    input {
+      leaf filename {
+        type string;
+        description
+          "Filename to use as input for serdes test.  If not
+           provided, will default to tests/data/serdes.json";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+        description
+          "Overall result.  True if all tests pass.";
+      }
+      container copy-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container serialize {
+        container json-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container results-xml {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container gpb-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container cli-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container flat-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+      }
+      container deserialize {
+        container json-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container results-xml {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container gpb-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container cli-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+        container flat-results {
+          yang:alias "client-results";
+          uses result-grouping;
+        }
+      }
+      list exceptions {
+        uses ciena-common-exceptions:exception-data;
+      }
+    }
+  }
+
+  rpc user-ordered-lists {
+    description
+      "This testcase will test user ordered lists.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc deletes {
+    description
+      "This testcase will test deletes to caches, databases,
+       and services via service-broker.";
+    input {
+      leaf stage-transaction {
+        type boolean;
+        default "false";
+        description
+          "This is used when passing service broker stage-transaction option
+           if it is true then service-broker will use the stage-transaction
+           RPC instead of yang-stage-object to stage ddy-test-server changes";
+      }
+      list num-of-messages {
+        key "test-name";
+        leaf test-name {
+          type string;
+        }
+        leaf num-of-messages {
+          type uint16;
+        }
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc test-handler-bindings {
+    description
+      "A testcase for bindings.
+
+       This test is intended to cover different ways of binding handlers
+       and ensure that the bindings cause the handlers to be invoked
+       correctly when called. In particular, the following testcases
+       are intended:
+
+        * Regular bindings with the data bound to a module
+        * Specific RPC bindings with the RPC bound to a particular
+          service.
+      ";
+    output {
+      uses test-rpc-output-common;
+    }
+  }
+
+  rpc instance-id-lists {
+    description
+      "This testcase will test lists which have instance-ids as keys.";
+    input {
+      leaf size {
+        type uint64;
+        default "1000";
+      }
+      leaf iterations {
+        type uint8;
+        default "1";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf line-number {
+        type uint32;
+      }
+      leaf iterations {
+        type uint8;
+      }
+      leaf data-size {
+        type uint64;
+      }
+      leaf cache-test-total-time {
+        type uint64;
+      }
+      leaf messaging-test-total-time {
+        type uint64;
+      }
+    }
+  }
+
+  rpc access-control-management {
+    description
+      "This testcase will exercise the access control management.";
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc concurrent-actions {
+    description
+      "This testcase will exercise performing concurrent actions on a service.";
+    input {
+      leaf number-of-threads {
+        type uint32;
+      }
+      leaf iterations {
+        type uint32;
+      }
+      leaf min-delay {
+        type uint32;
+        description
+          "If supplied will insert a random delay between every iteration.  This
+           will be the minimum delay in ms";
+        units "ms";
+      }
+      leaf max-delay {
+        type uint32;
+        description
+          "If supplied will insert a random delay between every iteration.  This
+           will be the maximum delay in ms";
+        units "ms";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      list threads {
+        key "thread-number";
+        description
+          "A list of thread results.";
+        leaf thread-number {
+          type uint32;
+          description
+            "A numberic identifier for one of the threads.";
+        }
+        leaf test-complete {
+          type boolean;
+          description
+            "An indication if the thread complete the test.";
+        }
+        leaf pass-fail {
+          type boolean;
+          description
+            "An indication if the thread complete the test successfully (true) or encountered a failure (false).";
+        }
+        leaf line-number {
+          type uint32;
+          description
+            "Line number of a failure, if one was encountered.";
+        }
+        leaf total-time {
+          type uint64;
+          description
+            "Total time in milliseconds required to complete the test in the given thread.";
+        }
+      }
+    }
+  }
+
+  rpc pipelining {
+    description
+      "This testcase will test that pipelines can be
+       created and that the pipeline service works
+       with those pipeline";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc deployment-data {
+    description
+      "This testcase will test that deployment data can be
+       loaded and queried externally
+
+       It loads a file and tests that the data that does not
+       have a local handler can be queried and the data that
+       does have a local handler cannot be queried";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc test-existence {
+    description
+      "This testcase will test service broker can handle
+       set requests that check existence for creation and
+       deletion.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc trigger-gpb-mismatch {
+    description
+      "This testcase will trigger a gpb yang library mismatch.";
+    input {
+      leaf enable {
+        type boolean;
+        default "false";
+        description
+          "enable or disable mismatch.";
+      }
+      leaf count {
+        type uint32;
+        default "0";
+        description
+          "number of zmq msg to generate.";
+      }
+      leaf notif-interval {
+        type uint32;
+        default "0";
+        description
+          "enable client notification at specified interval.";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc generic-test {
+    description
+      "This is a generic rpc to invoke arbitrary tests with arbitrary arguments.";
+    input {
+      leaf test-name {
+        type string;
+        description
+          "test name";
+      }
+      leaf-list args {
+        type uint32;
+      }
+      leaf-list str-args {
+        type string;
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc with-defaults {
+    description
+      "This testcase will test with-defaults feature.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc minimal-config-stage {
+    description
+      "This testcase will test minimal-config stage object with flags.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc minimal-config-get {
+    description
+      "This testcase will test minimal-config get feature.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-server-restart-test {
+    description
+      "This testcase will test pubsub behavior on server restart";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-server-restart-test-config {
+    description
+      "This testcase will config pubsub before server restart";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-subscribe-to-non-existent-domain-service {
+    description
+      "This testcase will subscribe to non-existent domain and service";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-subscribe-to-stopped-domain-service {
+    description
+      "This testcase will subscribe to a stopped domain and service";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc augments {
+    description
+      "This test case will test that augments were processed";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-verify-subscribe-to-non-existent-domain-service {
+    description
+      "This testcase will subscribe to non-existent domain and service";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  list depth-tests {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of the test";
+    }
+    leaf path {
+      type instance-identifier;
+      description
+        "Path to query from the base";
+    }
+    leaf depth {
+      type uint16;
+      description
+        "Depth to query to";
+    }
+    leaf filename {
+      type string;
+      description
+        "Filename of the file that holds the expected results";
+    }
+  }
+
+  rpc extensions {
+    description
+      "This testcase will test that extensions were processed";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc deviations {
+    description
+      "This testcase will test that deviations were processed";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc depth {
+    description
+      "This testcase will test that depth filters work between client and server as well as database gets";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/depth";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  list subtree-tests {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of the test";
+    }
+    leaf path {
+      type instance-identifier;
+      description
+        "Path to query from the base";
+    }
+    anyxml subtree;
+    leaf subtree-value-match {
+      description
+        "Flag that indicates if the subtree should be treated as a
+         filter or as a tree used for value matching.  Default
+         behaviour is to treat it as a filter";
+      type boolean;
+      default "false";
+    }
+    leaf-list targets {
+      type yang:target-node;
+    }
+    leaf filename {
+      type string;
+      description
+        "Filename of the file that holds the expected results";
+    }
+  }
+
+  rpc subtree {
+    description
+      "This testcase will test that subtree filters work between client and server as well as database gets";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/subtree";
+        default "tests/data/subtree";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+      list tree-construction {
+        key "number";
+        leaf number {
+          type uint8;
+        }
+        leaf size {
+          type uint32;
+        }
+        leaf branches {
+          type uint32;
+        }
+        leaf time {
+          type uint64;
+          units "us";
+        }
+      }
+    }
+  }
+
+  rpc paging {
+    description
+      "This testcase will test that paging gets works";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/paging";
+        default "tests/data/paging";
+      }
+      leaf runs {
+        type uint32;
+        description
+          "How many runs to do to get list-test data from base.json";
+        default "5";
+      }
+      leaf iterative {
+        type boolean;
+        description
+          "Whether to test paging iteratively";
+        default "false";
+      }
+    }
+    output {
+      list test-runs {
+        key "test-name";
+        leaf test-name {
+          type string;
+        }
+        list run {
+          key "number";
+          leaf number {
+            type uint8;
+          }
+          leaf chunk-size {
+            type uint32;
+          }
+          leaf chunks {
+            type uint32;
+          }
+          leaf time {
+            type uint64;
+            units "ns";
+          }
+          leaf overhead {
+            type decimal64 {
+              fraction-digits 1;
+            }
+          }
+        }
+        leaf base-time {
+          type uint64;
+          units "ns";
+        }
+        uses output-with-exceptions;
+      }
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc set-object-tests {
+    description
+      "This testcase will test that the set-object tests work as expected";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc shared-memory {
+    description
+      "This testcase will test that shared memory is working";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-grouped-batches {
+    description
+      "This testcase will test grouped batches";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-non-config {
+    description
+      "This testcase will test that edits of non-config data are rejected";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc cache-publish-patches {
+    description
+      "This testcase will test that patches are published when an edit is performed on the cache.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-debug {
+    description
+      "This testcase will test that pubsub debug rpc";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-undo {
+    description
+      "This testcase will test that undo patches are generated for sets and commits.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc sorted-cache {
+    description
+      "This testcase will test that sorted option for ddy cache";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc void-mount {
+    description
+      "This testcase will test that data beyond a void mount can be read and written";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc mount-action {
+    description
+      "This testcase will test mounted rpc and action can be invoked and forwarded";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc mount-pubsub {
+    description
+      "This testcase will test mounted pubsub works for void mounts";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-suppress-telemetry {
+    description
+      "This testcase will test suppress redundant telemetry";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-suppress-telemetry-switchover {
+    description
+      "This testcase will test suppress redundant telemetry switchover from suppress to non suppress mode for same target and same domain and service";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc encryption {
+    description
+      "This testcase will test encryption feature";
+    input {
+      leaf path {
+        yang:encrypt "path-encrypted";
+        yang:encrypt-path "/ciena-common-test-harness/encryption/input";
+        type instance-identifier;
+      }
+      leaf path-encrypted {
+        type string {
+          yang:stringptr "true";
+        }
+        yang:decrypt "path";
+        yang:decrypt-path "/ciena-common-test-harness/encryption/input";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc db-format-change {
+    description
+      "This tests that database files can change format on a
+       running database";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc deadline-timeout {
+    description
+      "This tests that client waits for response till the provded deadline or
+        timeout";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc to-pointers {
+    description
+      "This tests that ciena-common-options:to-pointer-paths depo option is sucessfully applied to
+       given paths";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc deregister2 {
+    description
+      "This tests the deregistration2 of handlers.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc list-size-validate {
+    description
+      "This tests min-elements and max-elements yang statement is validated in framework.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc mounted-staged-patches {
+    description
+      "This tests that mounted paths work with ddy_addToStagedPatches.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc inter-domain-recordings {
+    description
+      "This tests that recordings can be enabled and collected back to a specified domain";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc single-key-filter {
+    description
+      "This tests that a get made on a multi-key list, with a single key
+       as a filter still returns all keys in the response";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc yang-get-keys-test {
+    description
+      "This tests that the yang-get-keys RPC works, and that an overbind can be done.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc ambiguous-object-test {
+    description
+      "This tests the preferred-modules ddf-parser option.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc fast-forward-test {
+    description
+      "This tests the Fast-forward server response after client gets timed out";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc get-initial-test {
+    description
+      "This tests get initial notification caching feature.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc simplest-get-set {
+    description
+      "This testcase will run the very simplest get and set operations.";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc test-service-validate {
+    description
+      "This testcase will exercise service validation.";
+    output {
+      leaf pass {
+        type boolean;
+      }
+    }
+  }
+
+  rpc test-service-register-validate {
+    description
+      "This testcase will exercise service register validation.";
+    output {
+      leaf pass {
+        type boolean;
+      }
+    }
+  }
+
+  rpc filtered-list-replace {
+    description
+      "Replace a list with a filter";
+    output {
+      uses output-with-exceptions;
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc filtered-list-delete {
+    description
+      "Delete a list with a filter";
+    output {
+      uses output-with-exceptions;
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc full-tree {
+    description
+      "This testcase sets values into every leaf in the tree
+       and tests that they can be read back";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+      leaf batched {
+        type boolean;
+        default "false";
+      }
+      leaf stage-transaction {
+        type boolean;
+        default "false";
+        description
+          "This is used when passing service broker stage-transaction option
+           if it is true then service-broker will use the stage-transaction
+           RPC instead of yang-stage-object to stage ddy-test-server changes";
+      }
+      anyxml test;
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      anyxml passed;
+      anyxml del-failures;
+      anyxml get-failures;
+      anyxml set-failures;
+      anyxml diff-failures;
+    }
+  }
+
+  rpc exceptions {
+    description
+      "This testcase will test exception handling in the
+       client.";
+    output {
+      leaf pass {
+        type boolean;
+        description
+          "Overall result.  True if all tests pass.";
+      }
+      leaf nested-single-func {
+        type boolean;
+        description
+          "Test to see that labeled exceptions can be
+           nested in the same function";
+      }
+      leaf nested {
+        type boolean;
+        description
+          "Test to see that an exception thrown from
+           a function two stack calls away is detected.
+           Tests that the trace contains 3 levels";
+      }
+      leaf single-level {
+        type boolean;
+        description
+          "Test to see that an exception thrown from
+           a function one stack call away is detected.
+           Tests that the trace contains 2 levels";
+      }
+      leaf no-exception {
+        type boolean;
+        description
+          "Test to see the code works when no exception is
+           thrown.  Makes sure that no exceptions exist after
+           the test code is run.";
+      }
+      leaf exceptions-no-test {
+        type boolean;
+        description
+          "Tests to make sure an exception is caught even when
+           there is no test clause.  Confirms the entire try
+           block is executed, and then the exceptions are
+           present.";
+      }
+      leaf exceptions-with-test {
+        type boolean;
+        description
+          "Tests to make sure an exception is caught even when
+           there is a test clause.  Confirms the try is
+           aborted when the test detects the exception and the
+           rest of the lock is not executed, and then the exceptions are
+           present.";
+      }
+      leaf caught-single {
+        type boolean;
+        description
+          "Tests that a single exception thrown in the try
+           block is caught.";
+      }
+      leaf caught-multiple {
+        type boolean;
+        description
+          "Tests that a multiple exceptions thrown in the try
+           block are caught.";
+      }
+      leaf duplicate-unhandled {
+        type boolean;
+        description
+          "Tests that a multiple, duplicate exceptions thrown in
+           the try block, none of them caught.";
+      }
+      leaf catch-all {
+        type boolean;
+        description
+          "Tests that a multiple exceptions thrown in the try
+           block are caught by a single catch-all block.";
+      }
+      leaf throw-inside-catch {
+        type boolean;
+        description
+          "Tests that a catch block can throw an exception and
+           it is caught by the local catch logic.";
+      }
+      leaf finally-on-success {
+        type boolean;
+        description
+          "Tests that the finally block is executed even when
+           no exceptions are thrown.";
+      }
+      leaf finally-on-failure {
+        type boolean;
+        description
+          "Tests that the finally block is executed when
+           exceptions are thrown.";
+      }
+    }
+  }
+
+  rpc simple-edit-notify {
+    description
+      "This testcase will read the /red object, increment
+       /red/blue/a by one, set the value, and expect odd
+       values to fail, and even ones to be successful.  A
+       successful edit should result in a notification of the
+       change.  This also tests database diffs for the simple
+       edit";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+      leaf iterations {
+        type uint64;
+        default "10000";
+      }
+      leaf delay {
+        type uint32;
+        default "0";
+        units "us";
+      }
+      leaf prelock {
+        description
+          "If this parameter is set to true, then before starting
+           the test, ddy-test will be locked for a fake transaction
+           so it cannot be locked for the simple-edit-notify change.
+           This tests behaviour when a brokered service cannot be
+           locked for a transaction because it is already locked for
+           another transaction.";
+        type boolean;
+        default "false";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      container get-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container set-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container diff-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container publish-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container notification-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+      container update-results {
+        yang:alias "client-results";
+        uses result-grouping;
+      }
+    }
+  }
+
+  rpc staging {
+    description
+      "This RPC runs all the testcases for staging";
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf local-staging {
+        type boolean;
+      }
+      leaf remote-staging {
+        type boolean;
+      }
+      leaf delete-staging {
+        type boolean;
+      }
+      leaf replace-staging {
+        type boolean;
+      }
+      leaf edit-staging {
+        type boolean;
+      }
+      leaf multiple-staging {
+        type boolean;
+      }
+      leaf child-staging {
+        type boolean;
+      }
+      leaf list-staging {
+        type boolean;
+      }
+      leaf stage-transaction {
+        type boolean;
+      }
+    }
+  }
+
+  rpc action {
+    description
+      "This RPC tests the yang action";
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf basic-action {
+        type boolean;
+      }
+      leaf mounted-action {
+        type boolean;
+      }
+      leaf mounted-rpc {
+        type boolean;
+      }
+    }
+  }
+
+  rpc validate {
+    description
+      "This RPC is intended to allow testing of various validation functionality";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+      leaf test-type {
+        type enumeration {
+          enum REMOTE_VALIDATION {
+            description
+              "Perform a validation at a remote service via a call to valObject";
+          }
+          enum REGISTER_VALIDATOR {
+            description
+              "Register a validator on a remote service";
+          }
+          enum INVOKE_REGISTERED_VALIDATOR {
+            description
+              "Invoke validation on a remote service which calls out to a registered validator";
+          }
+          enum YANG_VALIDATION {
+            description
+              "Invoke validation on yang-validator service via ddy-test server";
+          }
+          enum INVOKE_CONFIRMED_VALIDATOR {
+            description
+              "Invoke validation on a remote service which calls out to a registered
+               validator with confirmations required and supplied.
+               This tests the round trip of the confirmation data from
+               client, into service, and back into client.";
+          }
+          enum INVOKE_UNCONFIRMED_VALIDATOR {
+            description
+              "Invoke validation on a remote service which calls out to a registered
+               validator with confirmations required and not supplied.
+               This tests the round trip of the confirmation data from
+               client, into service, and back into client.";
+          }
+        }
+        description
+          "The type of validation test to be performed";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+    }
+  }
+
+  rpc transaction {
+    description
+      "This RPC is intended to allow testing of various transaction functionality";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+      leaf test-type {
+        type enumeration {
+          enum TRANSACTION_START {
+            description
+              "Perform some testing of the transaction start RPC";
+          }
+          enum EDIT_CANDIDATE_DB {
+            description
+              "Perform some setObject testing on candidate DBs";
+          }
+          enum TRANSACTION_ABORT {
+            description
+              "Perform some testing of the transaction abort RPC";
+          }
+          enum TRANSACTION_COMMIT {
+            description
+              "Perform some testing of the transaction commit RPC";
+          }
+        }
+        description
+          "The type of transaction test to be performed";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+    }
+  }
+
+  rpc mounts {
+    description
+      "This testcase will test mounting of paths in the client.";
+    output {
+      leaf pass {
+        type boolean;
+        description
+          "Overall result.  True if all tests pass.";
+      }
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc big-data {
+    description
+      "This testcase will test set and get of a large amount of data.";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+      leaf size {
+        type uint64;
+        default "1000";
+      }
+      leaf iterations {
+        type uint8;
+        default "1";
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf line-number {
+        type uint32;
+      }
+      leaf iterations {
+        type uint8;
+      }
+      leaf data-size {
+        type uint64;
+      }
+      leaf set-time-avg {
+        type uint64;
+      }
+      leaf set-time-lwm {
+        type uint64;
+      }
+      leaf set-time-hwm {
+        type uint64;
+      }
+      leaf get-time-avg {
+        type uint64;
+      }
+      leaf get-time-lwm {
+        type uint64;
+      }
+      leaf get-time-hwm {
+        type uint64;
+      }
+      leaf db-set-time-avg {
+        type uint64;
+      }
+      leaf db-set-time-lwm {
+        type uint64;
+      }
+      leaf db-set-time-hwm {
+        type uint64;
+      }
+      leaf db-get-time-avg {
+        type uint64;
+      }
+      leaf db-get-time-lwm {
+        type uint64;
+      }
+      leaf db-get-time-hwm {
+        type uint64;
+      }
+    }
+  }
+
+  rpc wait-lock-service {
+    description
+      "This testcase exercises code that allows transactions to wait to lock a service";
+    input {
+      leaf protocol {
+        type identityref {
+          base ddm:ddm-protocols;
+        }
+      }
+      leaf format {
+        type identityref {
+          base ddm:ddm-format;
+        }
+      }
+    }
+    output {
+      leaf pass {
+        type boolean;
+      }
+      leaf line-number {
+        type uint32;
+      }
+    }
+  }
+
+  rpc pubsub {
+    description
+      "This testcase will test various pub sub use cases.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-publish-to {
+    description
+      "This testcase will test publishing to a specific subscriber.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-publish-to-multicase {
+    description
+      "This testcase will test publishing to all the different combinations of domain and service.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc pubsub-refresh-object {
+    description
+      "This testcase will test the refresh-objext rpc.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc seg-fault {
+    description
+      "This testcase will cause a seg fault.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc db {
+    description
+      "This testcase will test various database and cache use cases.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc json-peek {
+    description
+      "This testcase will json peek.  This is ability to parse
+       a portion of a serdes string
+
+       In the provided (or default) path, will read in the
+       'base.json' file and then will loop through each file
+       provided, do a peek of the base data based on the file
+       names of the test files, and compare the peeked data
+       to the content of the test files.
+
+       A failure is generated if there is a diff";
+    input {
+      leaf path {
+        type string;
+        description
+          "Path to get json test files from. If not
+           provided, will default to tests/data/serdes-peek";
+      }
+    }
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc priority-rpc {
+    description
+      "This testcase will test that RPCs can be sent with priority tags via internal APIs";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-skip-actions {
+    description
+      "This testcase will test that service broker actions can be
+       skipped.";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+
+  rpc service-broker-staging-max {
+    description
+      "This testcase will test service broker stage-max option";
+    output {
+      uses output-with-exceptions;
+    }
+  }
+}

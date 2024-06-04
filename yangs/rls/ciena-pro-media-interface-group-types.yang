@@ -1,0 +1,216 @@
+module ciena-pro-media-interface-group-types {
+  namespace "urn:ciena:ns:yang:ciena-pro-media-interface-group-types";
+  prefix media-interface-group-types;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-types;
+  }
+  import ciena-pro-coherent-device-service-types {
+    prefix coherent-device-service-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "OTSI group definitions for coherent devices.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  grouping media-interface-group-config-group {
+    leaf admin-state {
+      type coherent-device-types:admin-state-enum;
+      description
+        "";
+    }
+    leaf label {
+      type string;
+      description
+        "";
+    }
+    list member {
+      key "otsi";
+      leaf otsi {
+        type instance-identifier;
+        description
+          "";
+      }
+      description
+        "";
+    }
+    list media-channel {
+      key "channel-id";
+      description
+        "Logical representations of the ZR or FlexO layer.";
+      leaf channel-id {
+        type uint8;
+        description
+          "A unique identifier for the media channel.";
+      }
+      leaf admin-state {
+        type coherent-device-types:admin-state-enum;
+        description
+          "Administrative state of the media channel instance.";
+      }
+      leaf type {
+        type coherent-device-types:media-channel-type-enum;
+        description
+          "Type of the media channel.";
+      }
+    }
+    description
+      "";
+  }
+
+  grouping media-interface-group-state-group {
+    leaf admin-state {
+      type coherent-device-types:admin-state-enum;
+      description
+        "";
+    }
+    leaf operational-state {
+      type identityref {
+        base coherent-device-types:operational-state-identity;
+      }
+      config false;
+      description
+        "";
+    }
+    leaf label {
+      type string;
+      description
+        "";
+    }
+    leaf max-capacity {
+      type coherent-device-types:coherent-device-capacity;
+      config false;
+      description
+        "";
+    }
+    list member {
+      key "otsi";
+      leaf otsi {
+        type instance-identifier;
+        description
+          "";
+      }
+      leaf max-capacity {
+        type coherent-device-types:coherent-device-capacity;
+        config false;
+        description
+          "";
+      }
+      description
+        "";
+    }
+    list media-channel {
+      key "channel-id";
+      description
+        "Logical representations of the ZR or FlexO layer.";
+      leaf channel-id {
+        type uint8;
+        description
+          "A unique identifier for the media channel.";
+      }
+      leaf admin-state {
+        type coherent-device-types:admin-state-enum;
+        description
+          "Administrative state of the media channel instance.";
+      }
+      leaf operational-state {
+        type identityref {
+          base coherent-device-types:operational-state-identity;
+        }
+        description
+          "Actual state of the media channel instance.
+           Up    - the media channel and its parent media interface group are operating normally.
+           Down  - the media channel is administratively disabled.
+           Fault - the media channel currently has 1 or more alarmable conditions associated with it.
+           LLD   - the parent media interface group is in the faulted state";
+      }
+      leaf type {
+        type coherent-device-types:media-channel-type-enum;
+        description
+          "Type of the media channel.";
+      }
+      leaf rate {
+        type coherent-device-types:media-channel-rate-enum;
+        description
+          "The max-capacity of the media channel.
+           400G for coherent-pluggable-400g, etc.";
+      }
+      container zr {
+        when "../type = 'ZR'";
+        description
+          "ZR-specific operational data.";
+        uses coherent-device-service-types:service-list-state-group;
+        uses zr-diagnostic-group;
+      }
+    }
+    description
+      "";
+  }
+
+  grouping zr-diagnostic-group {
+    description
+      "Grouping for ZR-specific diagnostics.";
+    container diagnostics {
+      leaf loss-of-frame {
+        type boolean;
+        default "false";
+        description
+          "Out-of-frame for the 400ZR frame has been detected.";
+      }
+      leaf loss-of-multiframe {
+        type boolean;
+        default "false";
+        description
+          "The multiframe of the 400ZR has been lost.";
+      }
+      leaf deskew-loss-of-alignment {
+        type boolean;
+        default "false";
+        description
+          "Loss of alignment has been detected for the 400ZR frame.";
+      }
+      leaf remote-phy-fault {
+        type boolean;
+        default "false";
+        description
+          "Signal fail status has been detected at the upstream receiver.";
+      }
+      leaf link-degrade {
+        type boolean;
+        default "false";
+        description
+          "The quality of the link at the local receiver is degraded and
+           it has been indicated to the downstream receiver.";
+      }
+      leaf remote-degrade {
+        type boolean;
+        default "false";
+        description
+          "The quality of the link at the upstream receiver is degraded.";
+      }
+      description
+        "";
+    }
+  }
+}

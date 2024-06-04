@@ -1,0 +1,901 @@
+waveserver-aaa:
+  description: Waveserver AAA configuration and operational data. Defines authentication,
+    authorization and accounting services.
+  suboptions:
+    authentication:
+      description: Global authentication configuration.
+      suboptions:
+        authentication-method:
+          description: Ordered list of authentication methods for user login attempts,
+            indexed by priority. If an authentication attempt fails using the first
+            method, the next defined method will be attempted, until all specified
+            authentication methods have been tried, at which point the user will be
+            denied access. By default, this list will have a single entry with type
+            'local'.
+          suboptions:
+            priority:
+              description: Authentication priority, indicating the order in which
+                each of the authentication providers will be consulted.
+              required: true
+              type: uint8
+            scope:
+              description: Scope of the authentication method.
+              required: true
+              type: authentication-scope-type
+            statistics:
+              description: User Authentication Statistics.
+              suboptions:
+                called:
+                  description: Number of times the authentication method has been
+                    called.
+                  required: true
+                  type: uint32
+                failure:
+                  description: Number of failed authentication attempts via this method.
+                  required: true
+                  type: uint32
+                skipped:
+                  description: Number of skipped authentication attempts via this
+                    method.
+                  required: true
+                  type: uint32
+                success:
+                  description: Number of times the authentication method has been
+                    successful.
+                  required: true
+                  type: uint32
+              type: dict
+            type:
+              description: The authentication method / provider type. Must be unique
+                within the list.
+              required: true
+              type: authentication-method-type
+          type: list
+      type: dict
+    radius:
+      description: Top-level RADIUS container.
+      suboptions:
+        global-config:
+          description: Global RADIUS configuration attributes.
+          suboptions:
+            admin-state:
+              description: RADIUS administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            key:
+              description: The non-encrypted key that can be configured to generate
+                a shared secret between the authentication server and the device.
+                This string is clear-text and will not be retrievable nor stored directly
+                on the device. Specifying a zero-length string will clear the key
+                value.
+              required: true
+              type: string
+            operational-state:
+              description: RADIUS operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            retries:
+              description: The number of retries. Default is 3.
+              required: false
+              type: uint16
+            search-method:
+              description: 'RADIUS Search Method (Default: priority)'
+              required: false
+              type: server-search-method
+            secret:
+              description: The encrypted shared secret key used between the authentication
+                server and the device. Specifying a zero-length string will clear
+                the shared secret value.
+              required: true
+              type: string
+            timeout:
+              description: Global timeout period in seconds on responses from a RADIUS
+                server.
+              required: true
+              type: uint16
+          type: dict
+        server:
+          description: Global list of RADIUS servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            statistics:
+              description: RADIUS Server Statistics.
+              suboptions:
+                access-accepts:
+                  description: server access accepts.
+                  required: true
+                  type: uint32
+                access-challenges:
+                  description: server access challenges.
+                  required: true
+                  type: uint32
+                access-rejects:
+                  description: server access rejects.
+                  required: true
+                  type: uint32
+                access-requests:
+                  description: server access requests.
+                  required: true
+                  type: uint32
+                access-retransmissions:
+                  description: server access retransmissions.
+                  required: true
+                  type: uint32
+                bad-authenticator-packets:
+                  description: bad authenticator server packets.
+                  required: true
+                  type: uint32
+                malformed-responses:
+                  description: malformed server responses.
+                  required: true
+                  type: uint32
+                packet-timeouts:
+                  description: server packet timeouts.
+                  required: true
+                  type: uint32
+                packets-dropped:
+                  description: server packets dropped.
+                  required: true
+                  type: uint32
+                pending-requests:
+                  description: pending server requests.
+                  required: true
+                  type: uint32
+              type: dict
+            udp-port:
+              description: RADIUS server UDP Port. Default value is 1812.
+              required: true
+              type: uint16
+          type: list
+      type: dict
+    radsec:
+      description: Top-level RADSec container.
+      suboptions:
+        global-config:
+          description: Global RADSec configuration attributes.
+          suboptions:
+            admin-state:
+              description: RADSec administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            certificate-fingerprint:
+              description: RADSec device certificate fingerprint.
+              required: true
+              type: string
+            certificate-name:
+              description: RADSec device certificate name.
+              required: true
+              type: string
+            certificate-status:
+              description: RADSec device certificate/key status string to indicate
+                if the certificate exists (irrespective of active or expired), in
+                which case the displayed result is OK. If the certificate doesn't
+                exist, the displayed result will be one of the appropriate error strings,
+                like no private key, no device certificate, etc.
+              required: true
+              type: cienawstypes:string-maxl-254
+            check-fingerprint:
+              description: Check the fingerprint of the peer's certificate.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            check-ip-host:
+              description: Check peer's specified ip or hostname against it's certificate.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            operational-state:
+              description: RADSec operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            search-method:
+              description: 'RADSec Search Method (Default: priority)'
+              required: false
+              type: server-search-method
+            timeout:
+              description: Global timeout period in seconds on responses from a RADSec
+                server.
+              required: true
+              type: uint16
+          type: dict
+        ocsp-config:
+          description: RADSec Online Certificate Status Protocol (OCSP) configuration
+            attributes.
+          suboptions:
+            admin-state:
+              description: Whether OCSP verification is enabled or disabled.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            default-responder:
+              description: Default OCSP responder. It should be in URL format. e.g.
+                https://192.168.20.2:2440. If the 'responder-preference' is not set
+                to 'default-responder', the URL given will be used only if no responder
+                URL (AIA extension) is specified in the client certificate being verified.
+              required: true
+              type: cienawstypes:string-maxl-128
+            nonce:
+              description: Determine whether queries to OCSP responders should contain
+                a nonce or not. By default nonce option is turned on.
+              required: true
+              type: cienawstypes:on-off-enum
+            responder-preference:
+              description: If 'responder-preference' is set to aia, the OCSP responder
+                referred in client certificate AIA extension will be used first during
+                OCSP certificate validation. If it is set to 'default-responder',
+                the configured default OCSP responder is used first.
+              required: true
+              type: enumeration
+          type: dict
+        server:
+          description: Global list of RADSec servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            port:
+              description: RADSec server TCP Port. Default value is 2083.
+              required: false
+              type: uint16
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            statistics:
+              description: RADSec Server Statistics.
+              suboptions:
+                access-accepts:
+                  description: server access accepts.
+                  required: true
+                  type: uint32
+                access-challenges:
+                  description: server access challenges.
+                  required: true
+                  type: uint32
+                access-rejects:
+                  description: server access rejects.
+                  required: true
+                  type: uint32
+                access-requests:
+                  description: server access requests.
+                  required: true
+                  type: uint32
+                bad-authenticator-packets:
+                  description: bad authenticator server packets.
+                  required: true
+                  type: uint32
+                closed-connections:
+                  description: server closed connections.
+                  required: true
+                  type: uint32
+                connection-attempts:
+                  description: server connection attempts.
+                  required: true
+                  type: uint32
+                failed-tcp-connections:
+                  description: server failed tcp connections.
+                  required: true
+                  type: uint32
+                failed-tls-connections:
+                  description: server failed tls connections.
+                  required: true
+                  type: uint32
+                malformed-responses:
+                  description: malformed server responses.
+                  required: true
+                  type: uint32
+                packets-dropped:
+                  description: server packets dropped.
+                  required: true
+                  type: uint32
+                responses:
+                  description: server responses.
+                  required: true
+                  type: uint32
+                successful-connections:
+                  description: server successful connections.
+                  required: true
+                  type: uint32
+                timeout-connections:
+                  description: server timeout connections.
+                  required: true
+                  type: uint32
+                unexpected-closes:
+                  description: server unexpected closes.
+                  required: true
+                  type: uint32
+                unknown-types:
+                  description: server unknown types.
+                  required: true
+                  type: uint32
+              type: dict
+            trusted-dns:
+              description: Trusted dns name used to check peer's certificate. The
+                name should be fully qualified whenever possible, and can accept a
+                leading wildcard period.
+              required: true
+              type: string
+            trusted-fingerprint:
+              description: Trusted fingerprint for peer's certificate. The string
+                should have length of 95, except when it is empty or 'Not Set'.
+              required: true
+              type: string
+          type: list
+      type: dict
+    tacacs:
+      description: Top-level TACACS+ container.
+      suboptions:
+        accounting-server:
+          description: List of TACACS+ accounting servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            source-address:
+              description: Source IP address used in messages to the TACACS+ server.
+              required: true
+              type: cienawstypes:string-maxl-64
+            statistics:
+              description: TACACS+ Accounting Server Statistics.
+              suboptions:
+                access-accepts:
+                  description: server access accepts.
+                  required: true
+                  type: uint32
+                access-rejects:
+                  description: server access rejects.
+                  required: true
+                  type: uint32
+                access-requests:
+                  description: server access requests.
+                  required: true
+                  type: uint32
+                access-retransmissions:
+                  description: server access retransmissions.
+                  required: true
+                  type: uint32
+                bad-authenticator-packets:
+                  description: bad authenticator server packets.
+                  required: true
+                  type: uint32
+                malformed-responses:
+                  description: malformed server responses.
+                  required: true
+                  type: uint32
+                packet-rx-with-bad-seq:
+                  description: server packets received with bad sequence.
+                  required: true
+                  type: uint32
+                packet-timeouts:
+                  description: server packet timeouts.
+                  required: true
+                  type: uint32
+              type: dict
+            tcp-port:
+              description: TACACS+ server TCP Port. Default value is 49.
+              required: false
+              type: uint16
+          type: list
+        authentication-server:
+          description: List of TACACS+ authentication servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            source-address:
+              description: Source IP address used in messages to the TACACS+ server.
+              required: true
+              type: cienawstypes:string-maxl-64
+            statistics:
+              description: TACACS+ Authentication Server Statistics.
+              suboptions:
+                access-accepts:
+                  description: server access accepts.
+                  required: true
+                  type: uint32
+                access-rejects:
+                  description: server access rejects.
+                  required: true
+                  type: uint32
+                access-requests:
+                  description: server access requests.
+                  required: true
+                  type: uint32
+                access-retransmissions:
+                  description: server access retransmissions.
+                  required: true
+                  type: uint32
+                bad-authenticator-packets:
+                  description: bad authenticator server packets.
+                  required: true
+                  type: uint32
+                malformed-responses:
+                  description: malformed server responses.
+                  required: true
+                  type: uint32
+                packet-rx-with-bad-seq:
+                  description: server packets received with bad sequence.
+                  required: true
+                  type: uint32
+                packet-timeouts:
+                  description: server packet timeouts.
+                  required: true
+                  type: uint32
+              type: dict
+            tcp-port:
+              description: TACACS+ server TCP Port. Default value is 49.
+              required: false
+              type: uint16
+          type: list
+        authorization-server:
+          description: List of TACACS+ authorization servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            source-address:
+              description: Source IP address used in messages to the TACACS+ server.
+              required: true
+              type: cienawstypes:string-maxl-64
+            statistics:
+              description: TACACS+ Authorization Server Statistics.
+              suboptions:
+                access-accepts:
+                  description: server access accepts.
+                  required: true
+                  type: uint32
+                access-rejects:
+                  description: server access rejects.
+                  required: true
+                  type: uint32
+                access-requests:
+                  description: server access requests.
+                  required: true
+                  type: uint32
+                access-retransmissions:
+                  description: server access retransmissions.
+                  required: true
+                  type: uint32
+                bad-authenticator-packets:
+                  description: bad authenticator server packets.
+                  required: true
+                  type: uint32
+                malformed-responses:
+                  description: malformed server responses.
+                  required: true
+                  type: uint32
+                packet-rx-with-bad-seq:
+                  description: server packets received with bad sequence.
+                  required: true
+                  type: uint32
+                packet-timeouts:
+                  description: server packet timeouts.
+                  required: true
+                  type: uint32
+              type: dict
+            tcp-port:
+              description: TACACS+ server TCP Port. Default value is 49.
+              required: false
+              type: uint16
+          type: list
+        global-config:
+          description: Global TACACS+ configuration attributes.
+          suboptions:
+            accounting-admin-state:
+              description: TACACS+ accounting administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            accounting-command-enabled:
+              description: Specifies whether TACACS+ command accounting is enabled.
+              required: true
+              type: boolean
+            accounting-session-enabled:
+              description: Specifies whether TACACS+ session accounting is enabled.
+              required: true
+              type: boolean
+            admin-state:
+              description: TACACS+ administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            authentication-admin-state:
+              description: TACACS+ authentication administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            authorization-admin-state:
+              description: TACACS+ authorization administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            global-servers:
+              description: Specifies whether the TACACS+ global servers list is enabled
+                for all AAA functions.
+              required: true
+              type: cienawstypes:on-off-enum
+            key:
+              description: The non-encrypted key that can be configured to generate
+                a shared secret between the authentication server and the device.
+                This string is clear-text and will not be retrievable nor stored directly
+                on the device. Specifying a zero-length string will clear the key
+                value.
+              required: true
+              type: string
+            key-min-length:
+              description: The minimum secret key length in bytes.
+              required: true
+              type: uint16
+            operational-state:
+              description: TACACS+ operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            privilege-level-admin:
+              description: 'value for read-write privilege level (Default: 2).'
+              required: false
+              type: uint16
+            privilege-level-diag:
+              description: 'value for diagnostic privilege level (Default: 15).'
+              required: false
+              type: uint16
+            privilege-level-rw:
+              description: 'value for read-write-create privilege level (Default:
+                10)'
+              required: false
+              type: uint16
+            search-method:
+              description: 'set the search method for TACACS+ servers (Default: priority)'
+              required: false
+              type: server-search-method
+            secret:
+              description: The encrypted shared secret key used between the authentication
+                server and the device. Specifying a zero-length string will clear
+                the shared secret value.
+              required: true
+              type: string
+            syslog-admin-state:
+              description: TACACS+ syslog administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            timeout:
+              description: Global timeout period in seconds on responses from a TACACS+
+                server.
+              required: true
+              type: uint16
+          type: dict
+        server:
+          description: Global list of TACACS+ servers to use for AAA functions.
+          suboptions:
+            address:
+              description: Configured IP address or Domain Name of the remote server.
+              required: true
+              type: cienawstypes:ipaddr-or-hostname
+            admin-state:
+              description: Server administrative state.
+              required: true
+              type: cienawstypes:enabled-disabled-enum
+            ip-address:
+              description: Operational IP address associated with the remote server,
+                if configured/available, or 'Unresolved' otherwise.
+              required: true
+              type: cienawstypes:ip-address
+            operational-state:
+              description: Server operational state.
+              required: true
+              type: cienawstypes:up-down-enum
+            priority:
+              description: Server priority.
+              required: true
+              type: uint8
+            source-address:
+              description: Source IP address used in messages to the TACACS+ server.
+              required: true
+              type: cienawstypes:string-maxl-64
+            statistics:
+              description: TACACS+ Global AAA Server Statistics.
+              suboptions:
+                accounting:
+                  description: TACACS+ Global Server Accounting Statistics.
+                  suboptions:
+                    access-accepts:
+                      description: server access accepts.
+                      required: true
+                      type: uint32
+                    access-rejects:
+                      description: server access rejects.
+                      required: true
+                      type: uint32
+                    access-requests:
+                      description: server access requests.
+                      required: true
+                      type: uint32
+                    access-retransmissions:
+                      description: server access retransmissions.
+                      required: true
+                      type: uint32
+                    bad-authenticator-packets:
+                      description: bad authenticator server packets.
+                      required: true
+                      type: uint32
+                    malformed-responses:
+                      description: malformed server responses.
+                      required: true
+                      type: uint32
+                    packet-rx-with-bad-seq:
+                      description: server packets received with bad sequence.
+                      required: true
+                      type: uint32
+                    packet-timeouts:
+                      description: server packet timeouts.
+                      required: true
+                      type: uint32
+                  type: dict
+                authentication:
+                  description: TACACS+ Global Server Authentication Statistics.
+                  suboptions:
+                    access-accepts:
+                      description: server access accepts.
+                      required: true
+                      type: uint32
+                    access-rejects:
+                      description: server access rejects.
+                      required: true
+                      type: uint32
+                    access-requests:
+                      description: server access requests.
+                      required: true
+                      type: uint32
+                    access-retransmissions:
+                      description: server access retransmissions.
+                      required: true
+                      type: uint32
+                    bad-authenticator-packets:
+                      description: bad authenticator server packets.
+                      required: true
+                      type: uint32
+                    malformed-responses:
+                      description: malformed server responses.
+                      required: true
+                      type: uint32
+                    packet-rx-with-bad-seq:
+                      description: server packets received with bad sequence.
+                      required: true
+                      type: uint32
+                    packet-timeouts:
+                      description: server packet timeouts.
+                      required: true
+                      type: uint32
+                  type: dict
+                authorization:
+                  description: TACACS+ Global Server Authorization Statistics.
+                  suboptions:
+                    access-accepts:
+                      description: server access accepts.
+                      required: true
+                      type: uint32
+                    access-rejects:
+                      description: server access rejects.
+                      required: true
+                      type: uint32
+                    access-requests:
+                      description: server access requests.
+                      required: true
+                      type: uint32
+                    access-retransmissions:
+                      description: server access retransmissions.
+                      required: true
+                      type: uint32
+                    bad-authenticator-packets:
+                      description: bad authenticator server packets.
+                      required: true
+                      type: uint32
+                    malformed-responses:
+                      description: malformed server responses.
+                      required: true
+                      type: uint32
+                    packet-rx-with-bad-seq:
+                      description: server packets received with bad sequence.
+                      required: true
+                      type: uint32
+                    packet-timeouts:
+                      description: server packet timeouts.
+                      required: true
+                      type: uint32
+                  type: dict
+              type: dict
+            tcp-port:
+              description: TACACS+ server TCP Port. Default value is 49.
+              required: false
+              type: uint16
+          type: list
+      type: dict
+    user:
+      description: List of local user accounts used for local authentication.
+      suboptions:
+        access-level:
+          description: The access-level or role assigned to the local user.
+          required: true
+          type: enumeration
+        last-failure:
+          description: The date and time of the most recent failed login attempt in
+            'YYYY-MM-DD HH:MM:SS' format, or empty string if not applicable or unknown.
+          required: true
+          type: cienawstypes:string-maxl-32
+        locked-out:
+          description: Indicates whether this local user account is currently locked
+            out.
+          required: true
+          type: boolean
+        login-failures:
+          description: Number of consecutive failed login attempts for this user account.
+          required: true
+          type: uint32
+        password:
+          description: The user password, supplied as cleartext. This is a write-only
+            attribute that should not be stored nor returned on user retrieval. The
+            password will be encrypted via one-way hash function and stored only in
+            its encrypted format. The hashed password string can be retrieved via
+            the 'secret' attribute.
+          required: true
+          type: cienawstypes:string-maxl-128
+        secret:
+          description: The encrypted user password string, supplied as a hashed value.
+            This should only be configured at user creation time, and will be ignored
+            if the user account already exists.
+          required: true
+          type: cienawstypes:string-maxl-256
+        user-name:
+          description: The configured username for this local user. Must be unique
+            across the list of configured local users.
+          required: true
+          type: cienawstypes:string-maxl-64
+      type: list
+    user-management:
+      description: User management.
+      suboptions:
+        active-users:
+          description: display active users.
+          suboptions:
+            idle-time:
+              description: Idle time.
+              required: true
+              type: uint64
+            interface-type:
+              description: Interface type.
+              required: true
+              type: cienawstypes:string-maxl-15
+            session-id:
+              description: Session Id.
+              required: true
+              type: uint64
+            terminal:
+              description: Terminal.
+              required: true
+              type: cienawstypes:string-maxl-128
+            username:
+              description: User name.
+              required: true
+              type: cienawstypes:string-maxl-64
+          type: list
+        current-admin-users:
+          description: Current number of network logins of admin-level users.
+          required: true
+          type: uint8
+        current-limited-users:
+          description: Current number of network logins of limited-level users.
+          required: true
+          type: uint8
+        current-super-users:
+          description: Current number of network logins of super users.
+          required: true
+          type: uint8
+        lockout-interval:
+          description: User lockout time interval, in minutes. Applies only to local
+            user accounts. System default is 10 min.
+          required: true
+          type: uint16
+        max-admin-users:
+          description: Maximum number of network logins of admin-level users.
+          required: true
+          type: uint8
+        max-limited-users:
+          description: Maximum number of network logins of limited-level users.
+          required: true
+          type: uint8
+        max-login-attempt:
+          description: Maximum number of consecutive unsuccessful login attempts allowed
+            before a user account is locked out. Applies only to local user accounts.
+            System default is 5.
+          required: true
+          type: uint16
+        max-super-users:
+          description: Maximum number of network logins of super users.
+          required: true
+          type: uint8
+        min-password-length:
+          description: Minimum length of the user password.
+          required: true
+          type: uint16
+      type: dict
+  type: dict

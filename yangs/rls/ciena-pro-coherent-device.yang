@@ -1,0 +1,636 @@
+module ciena-pro-coherent-device {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:ciena-pro-coherent-device";
+  prefix coherent-device;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-types;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device-statistics-types {
+    prefix coherent-device-statistics-types;
+  }
+  import ciena-pro-coherent-device-thresholds-types {
+    prefix coherent-device-thresholds-types;
+  }
+  import ciena-pro-coherent-device-transceiver-types {
+    prefix coherent-device-transceiver-types;
+  }
+  import ciena-pro-coherent-device-otsi-types {
+    prefix coherent-device-otsi-types;
+  }
+  import ciena-pro-coherent-device-diagnostics-types {
+    prefix coherent-device-diagnostics-types;
+  }
+  import ciena-pro-coherent-device-restart-types {
+    prefix coherent-device-restart-types;
+  }
+  import ciena-pro-coherent-device-upgrade-types {
+    prefix coherent-device-upgrade-types;
+  }
+  import ciena-pro-coherent-device-interface-diagnostics-types {
+    prefix coherent-device-interface-diagnostics-types;
+  }
+  import ciena-pro-coherent-device-capability-types {
+    prefix coherent-device-capability-types;
+  }
+  import ciena-pro-media-interface-group-types {
+    prefix media-interface-group-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Coherent device object model.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  grouping coherent-device-config-common-group {
+    leaf admin-state {
+      type coherent-device-types:admin-state-enum;
+      default "enabled";
+      description
+        "Configures the administrative state of the device instance.";
+    }
+    leaf device-class {
+      type coherent-device-types:device-class-type;
+      description
+        "Indicates the expected class of the device and the validation rules to be applied.
+         The device is identified as a coherent pluggable supporting up to a maximum bandwidth
+         modulation scheme and services (e.g., 400G or in the future 800G) or another type of
+         coherent device (e.g., a WaveLogic network interface card).";
+    }
+    leaf power-state {
+      type coherent-device-transceiver-types:transceiver-power-state-config-enum;
+      default "automatic";
+      description
+        "Configures how the transceiver device's power state is determined.
+         If this attribute is configured to 'automatic', the transceiver device's power state
+         is determined by the system. If this attribute is configured to 'low-power-mode',
+         the transceiver device's power state is forced into low power mode.";
+    }
+    leaf modem-class {
+      type coherent-device-types:device-modem-class-enum;
+      default "terrestrial";
+      description
+        "Identifies through provisioning whether this device is terrestrial or submarine
+         class. The provisioned value is used to compare against the far-end device and
+         when mismatched results in a far-end-modem-class-mismatch diagnostic point.
+
+         This attribute is only relevant to WaveLogic Extreme devices.";
+    }
+    leaf parent-resource {
+      type coherent-device-common-types:string128;
+      description
+        "Identifies the parent resource (e.g. equipment) where the coherent-device is physically present.";
+    }
+    description
+      "Group of the device instance's configurable data.";
+  }
+
+  grouping coherent-device-state-common-group {
+    leaf admin-state {
+      type coherent-device-types:admin-state-enum;
+      default "enabled";
+      description
+        "Represents the current administrative state of the device instance.";
+    }
+    leaf device-class {
+      type coherent-device-types:device-class-type;
+      description
+        "Indicates the actual class of the device.";
+    }
+    leaf device-type {
+      type coherent-device-types:device-type-actual-type;
+      config false;
+      description
+        "Indicates the actual type of device present in inventory.
+         For example, whether the device is a Ciena WL5n coherent pluggable optics module,
+         a non-Ciena Coherent-CMIS compliant QSFP-DD pluggable optics module, or another
+         variant of Ciena WaveLogic device.";
+    }
+    leaf form-factor {
+      type coherent-device-transceiver-types:transceiver-type-enum;
+      config false;
+      description
+        "Indicates the form factor of the coherent device - e.g., QSFP-DD, CFP2-DCO,
+         or a Ciena WaveLogic network interface card.
+         The form factor is only available when the device is present in inventory.";
+    }
+    leaf operational-state {
+      type identityref {
+        base coherent-device-types:operational-state-identity;
+      }
+      config false;
+      description
+        "Represents the operational state of the device instance.";
+    }
+    leaf power-state {
+      type coherent-device-transceiver-types:transceiver-power-state-actual-enum;
+      description
+        "Represents the actual power state, whether it is 'high-power-mode', 'low-power-mode' or
+         'reset'.";
+    }
+    leaf modem-class {
+      type coherent-device-types:device-modem-class-enum;
+      default "terrestrial";
+      description
+        "Identifies through provisioning whether this device is terrestrial or submarine
+         class. The provisioned value is used to compare against the far-end device and
+         when mismatched results in a far-end-modem-class-mismatch diagnostic point.
+
+         This attribute is only relevant to WaveLogic Extreme devices.";
+    }
+    leaf parent-resource {
+      type coherent-device-common-types:string128;
+      description
+        "Identifies the parent resource (e.g. equipment) where the coherent-device is physically present.";
+    }
+    description
+      "Group of the device instance's operational data.";
+  }
+
+  grouping coherent-device-config-media-interface-list-group {
+    list media-interface {
+      key "interface-id";
+      min-elements 1;
+      leaf interface-id {
+        type uint8;
+        description
+          "A unique identifier for the interface.";
+      }
+      uses coherent-device-types:coherent-device-config-media-interface-group {
+        description
+          "The top-level configuration attribute for the interface on the WaveLogic device.
+
+           When the media-config/mode is configured to a WaveLogic transmission-mode, it automatically
+           instantiates the appropriate set of objects for the media interface of the WaveLogic device.
+           For example, when a -O transmission mode is configured OTSI, OTUCn, ODUCn objects are created
+           with default configuration unless otherwise specified in the configuration request. The ODUk/ODUflex
+           layer is only created once the host service configuration is provisioned by the system.
+           For a -E transmission-mode, only an OTSI object is created.
+
+           The host-config list reports the current service-configuration for this Wavelogic device. Typically
+           the service configuration is handled automatically by the intenals of the product.";
+      }
+      uses coherent-device-otsi-types:coherent-device-otsi-config-group;
+      description
+        "List of configurable attributes of media interface instance.";
+    }
+    description
+      "Group of the configurable attributes of media interface instance.";
+  }
+
+  grouping coherent-device-state-media-interface-list-group {
+    list media-interface {
+      key "interface-id";
+      leaf interface-id {
+        type uint8;
+        description
+          "A unique identifier for the interface.";
+      }
+      uses coherent-device-types:coherent-device-state-media-interface-group {
+        description
+          "The top-level configuration attribute for the interface on the WaveLogic device.
+
+           When the media-config/mode is configured to a WaveLogic transmission-mode, it automatically
+           instantiates the appropriate set of objects for the media interface of the WaveLogic device.
+           For example, when a -O transmission mode is configured OTSI, OTUCn, ODUCn objects are created
+           with default configuration unless otherwise specified in the configuration request. The ODUk/ODUflex
+           layer is only created once the host service configuration is provisioned by the system.
+           For a -E transmission-mode, only an OTSI object is created.
+
+           The host-config list reports the current service-configuration for this Wavelogic device. Typically
+           the service configuration is handled automatically by the intenals of the product.";
+      }
+      uses coherent-device-otsi-types:coherent-device-otsi-state-group;
+      uses coherent-device-interface-diagnostics-types:coherent-device-interface-diagnostics-group;
+      description
+        "List of operational attributes of media interface instance.";
+    }
+    description
+      "Group of the operational attributes of media interface instance.";
+  }
+
+  grouping coherent-device-state-media-interface-list-group-no-actions {
+    list media-interface {
+      key "interface-id";
+      leaf interface-id {
+        type uint8;
+        description
+          "A unique identifier for the interface.";
+      }
+      uses coherent-device-types:coherent-device-state-media-interface-group {
+        description
+          "The top-level configuration attribute for the interface on the WaveLogic device.
+
+           When the media-config/mode is configured to a WaveLogic transmission-mode, it automatically
+           instantiates the appropriate set of objects for the media interface of the WaveLogic device.
+           For example, when a -O transmission mode is configured OTSI, OTUCn, ODUCn objects are created
+           with default configuration unless otherwise specified in the configuration request. The ODUk/ODUflex
+           layer is only created once the host service configuration is provisioned by the system.
+           For a -E transmission-mode, only an OTSI object is created.
+
+           The host-config list reports the current service-configuration for this Wavelogic device. Typically
+           the service configuration is handled automatically by the intenals of the product.";
+      }
+      uses coherent-device-otsi-types:coherent-device-otsi-state-group-no-actions;
+      uses coherent-device-interface-diagnostics-types:coherent-device-interface-diagnostics-group;
+      description
+        "List of operational attributes of media interface instance.";
+    }
+    description
+      "Group of the operational attributes of media interface instance.";
+  }
+
+  grouping coherent-device-state-group {
+    container inventory {
+      config false;
+      description
+        "Container is absent in retrieve responses or published
+         updates when device is not present.";
+      leaf equipped {
+        type boolean;
+        default "false";
+        config false;
+        description
+          "An indication of whether the device is present. When absent,
+           inventory data is unavailable and the inventory container is
+           omitted from retrieve responses and publications.";
+      }
+      container id {
+        config false;
+        uses coherent-device-transceiver-types:transceiver-base-device-id-group;
+        description
+          "";
+      }
+      container firmware {
+        uses coherent-device-upgrade-types:min-firmware-baseline-group;
+        uses coherent-device-upgrade-types:firmware-status-group;
+        uses coherent-device-upgrade-types:firmware-upgrade-status-group;
+        description
+          "";
+      }
+      container restart {
+        config false;
+        uses coherent-device-restart-types:restart-status-group;
+        description
+          "";
+      }
+    }
+    description
+      "";
+  }
+
+  grouping coherent-device-inventory-details-group {
+    description
+      "";
+    leaf device-type {
+      type coherent-device-types:device-type-actual-type;
+      config false;
+      description
+        "Indicates the actual type of device present in inventory.
+         For example, whether the device is a Ciena WaveLogic 5 Nano coherent pluggable
+         optics module, a non-Ciena Coherent-CMIS compliant QSFP-DD pluggable optics module,
+         or another variant of Ciena WaveLogic device.";
+    }
+    leaf form-factor {
+      type coherent-device-transceiver-types:transceiver-type-enum;
+      config false;
+      description
+        "Indicates the form factor of the coherent device - e.g., QSFP-DD, CFP2-DCO,
+         or a Ciena WaveLogic network interface card.
+         The form factor is only available when the device is present in inventory.";
+    }
+    leaf is-pluggable-optics {
+      type boolean;
+      config false;
+      description
+        "Defines whether the Wavelogic device is pluggable optics.
+         The value is only known when the device is present in inventory.";
+    }
+    container inventory {
+      container id {
+        uses coherent-device-transceiver-types:transceiver-base-device-id-group;
+        description
+          "";
+      }
+      container capabilities {
+        uses coherent-device-capability-types:coherent-device-capability-full-group;
+        description
+          "";
+      }
+      config false;
+      description
+        "";
+    }
+  }
+
+  grouping ciena-pro-coherent-device-mount-data {
+    container coherent-devices {
+      list device {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list. This device-id is also used to identify the the group-id of
+             the corresponding media-interface-group instance.";
+        }
+        container config {
+          uses coherent-device-config-common-group;
+          uses coherent-device-config-media-interface-list-group;
+          description
+            "This node is used to provision configuration for the specific coherent device.
+
+             On retrieval the \"config\" node represents the provisioned configuration
+             as provided for the device instance. As configuration data this node only
+             accepts and returns nodes that are config = true.
+
+             Any staged or expanded configuration created by the system as part of handling
+             a configuration request on this node is represented in the \"state\" node below
+             as part of the actual configuration applied to the hardware when it is present.";
+        }
+        container state {
+          uses coherent-device-state-common-group;
+          uses coherent-device-state-group;
+          uses coherent-device-state-media-interface-list-group;
+          uses coherent-device-statistics-types:device-statistics-group;
+          uses coherent-device-thresholds-types:device-thresholds-group;
+          uses coherent-device-diagnostics-types:coherent-device-diagnostics-group;
+          config false;
+          description
+            "This node represents the actual configuration of the device-id instance. The
+             actual configuration consists of accepted provisioning configuration and the
+             system staging/expansion of that configuration. In the event of a provisioning
+             mismatch, the actual configuration represented in this node may be different
+             than the configuration represented in the \"config\" node.
+
+             This node also represents the operational-state (config = false elements) defined.
+
+             All elements in this data tree are config = false.";
+        }
+        description
+          "The list of managed (with configuration) and known (inventory) coherent devices.
+           Current support includes WaveLogic 5n pluggable coherent devices. Non-Ciena coherent
+           QSFP-DD that are CMIS and C-CMIS compliant are tolerated to operate in ZR and ZR+ modes.";
+      }
+      list device-inventory-details {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          config false;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list.";
+        }
+        container state {
+          uses coherent-device-inventory-details-group;
+          description
+            "";
+        }
+        config false;
+        description
+          "";
+      }
+      list media-interface-group {
+        key "group-id";
+        leaf group-id {
+          type coherent-device-types:media-interface-group-id-type;
+          description
+            "The top-level identifier for an OTSI group represented in this list.";
+        }
+        container config {
+          uses media-interface-group-types:media-interface-group-config-group;
+          description
+            "";
+        }
+        container state {
+          uses media-interface-group-types:media-interface-group-state-group;
+          config false;
+          description
+            "";
+        }
+        description
+          "";
+      }
+      description
+        "";
+    }
+  }
+
+  grouping ciena-pro-coherent-device-mount-actions-notifs;
+
+  grouping ciena-pro-coherent-device-mount-actions-notifs-as-cont;
+
+  grouping ciena-pro-coherent-device-mount-data-actions-notifs-as-cont {
+    container coherent-devices {
+      list device {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list. This device-id is also used to identify the the group-id of
+             the corresponding media-interface-group instance.";
+        }
+        container config {
+          uses coherent-device-config-common-group;
+          uses coherent-device-config-media-interface-list-group;
+          description
+            "This node is used to provision configuration for the specific coherent device.
+
+             On retrieval the \"config\" node represents the provisioned configuration
+             as provided for the device instance. As configuration data this node only
+             accepts and returns nodes that are config = true.
+
+             Any staged or expanded configuration created by the system as part of handling
+             a configuration request on this node is represented in the \"state\" node below
+             as part of the actual configuration applied to the hardware when it is present.";
+        }
+        container state {
+          uses coherent-device-state-common-group;
+          uses coherent-device-state-group;
+          uses coherent-device-state-media-interface-list-group;
+          uses coherent-device-statistics-types:device-statistics-group;
+          uses coherent-device-thresholds-types:device-thresholds-group;
+          uses coherent-device-diagnostics-types:coherent-device-diagnostics-group;
+          config false;
+          description
+            "This node represents the actual configuration of the device-id instance. The
+             actual configuration consists of accepted provisioning configuration and the
+             system staging/expansion of that configuration. In the event of a provisioning
+             mismatch, the actual configuration represented in this node may be different
+             than the configuration represented in the \"config\" node.
+
+             This node also represents the operational-state (config = false elements) defined.
+
+             All elements in this data tree are config = false.";
+        }
+        description
+          "The list of managed (with configuration) and known (inventory) coherent devices.
+           Current support includes WaveLogic 5n pluggable coherent devices. Non-Ciena coherent
+           QSFP-DD that are CMIS and C-CMIS compliant are tolerated to operate in ZR and ZR+ modes.";
+      }
+      list device-inventory-details {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          config false;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list.";
+        }
+        container state {
+          uses coherent-device-inventory-details-group;
+          description
+            "";
+        }
+        config false;
+        description
+          "";
+      }
+      list media-interface-group {
+        key "group-id";
+        leaf group-id {
+          type coherent-device-types:media-interface-group-id-type;
+          description
+            "The top-level identifier for an OTSI group represented in this list.";
+        }
+        container config {
+          uses media-interface-group-types:media-interface-group-config-group;
+          description
+            "";
+        }
+        container state {
+          uses media-interface-group-types:media-interface-group-state-group;
+          config false;
+          description
+            "";
+        }
+        description
+          "";
+      }
+      description
+        "";
+    }
+  }
+
+  grouping ciena-pro-coherent-device-mount-data-actions-notifs-as-cont-no-actions {
+    container coherent-devices {
+      list device {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list. This device-id is also used to identify the the group-id of
+             the corresponding media-interface-group instance.";
+        }
+        container config {
+          uses coherent-device-config-common-group;
+          uses coherent-device-config-media-interface-list-group;
+          description
+            "This node is used to provision configuration for the specific coherent device.
+
+             On retrieval the \"config\" node represents the provisioned configuration
+             as provided for the device instance. As configuration data this node only
+             accepts and returns nodes that are config = true.
+
+             Any staged or expanded configuration created by the system as part of handling
+             a configuration request on this node is represented in the \"state\" node below
+             as part of the actual configuration applied to the hardware when it is present.";
+        }
+        container state {
+          uses coherent-device-state-common-group;
+          uses coherent-device-state-group;
+          uses coherent-device-state-media-interface-list-group-no-actions;
+          uses coherent-device-statistics-types:device-statistics-group;
+          uses coherent-device-thresholds-types:device-thresholds-group;
+          uses coherent-device-diagnostics-types:coherent-device-diagnostics-group;
+          config false;
+          description
+            "This node represents the actual configuration of the device-id instance. The
+             actual configuration consists of accepted provisioning configuration and the
+             system staging/expansion of that configuration. In the event of a provisioning
+             mismatch, the actual configuration represented in this node may be different
+             than the configuration represented in the \"config\" node.
+
+             This node also represents the operational-state (config = false elements) defined.
+
+             All elements in this data tree are config = false.";
+        }
+        description
+          "The list of managed (with configuration) and known (inventory) coherent devices.
+           Current support includes WaveLogic 5n pluggable coherent devices. Non-Ciena coherent
+           QSFP-DD that are CMIS and C-CMIS compliant are tolerated to operate in ZR and ZR+ modes.";
+      }
+      list device-inventory-details {
+        key "device-id";
+        leaf device-id {
+          type coherent-device-types:device-id-type;
+          config false;
+          description
+            "The top-level identifier for a coherent device represented
+             in this list.";
+        }
+        container state {
+          uses coherent-device-inventory-details-group;
+          description
+            "";
+        }
+        config false;
+        description
+          "";
+      }
+      list media-interface-group {
+        key "group-id";
+        leaf group-id {
+          type coherent-device-types:media-interface-group-id-type;
+          description
+            "The top-level identifier for an OTSI group represented in this list.";
+        }
+        container config {
+          uses media-interface-group-types:media-interface-group-config-group;
+          description
+            "";
+        }
+        container state {
+          uses media-interface-group-types:media-interface-group-state-group;
+          config false;
+          description
+            "";
+        }
+        description
+          "";
+      }
+      description
+        "";
+    }
+  }
+
+  uses ciena-pro-coherent-device-mount-data;
+}

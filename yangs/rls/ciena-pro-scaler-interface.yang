@@ -1,0 +1,164 @@
+module ciena-pro-scaler-interface {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-interface";
+  prefix scaler-interface;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-scaler-types {
+    prefix ciena-pro-scaler-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's scaler monitor point manager";
+
+  revision 2023-09-13 {
+    description
+      "RLS Release 3.1.60 - added out-of-range diag container";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-01-05 {
+    description
+      "RLS Release 2.4";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity scaler-monitor-mgr {
+    base ciena-pro-scaler-types:owner;
+    description
+      "Extension of the owner type for Scaler Monitor Manager";
+  }
+
+  typedef power-type-enum {
+    type enumeration {
+      enum Measured;
+      enum Expected;
+    }
+  }
+
+  grouping monitor-powers {
+    leaf type {
+      type power-type-enum;
+      description
+        "Power type";
+    }
+    list bins {
+      key "index";
+      leaf index {
+        type int16;
+        description
+          "Bin index";
+      }
+      leaf power {
+        type ciena-6500r-types:power-dBm-1-precision;
+        description
+          "Bin power";
+      }
+    }
+  }
+
+  grouping evaluator {
+    leaf out-of-range-high-threshold {
+      type ciena-6500r-types:power-dBm-1-precision;
+      description
+        "Threshold for declaring OOR-high";
+    }
+    leaf out-of-range-low-threshold {
+      type ciena-6500r-types:power-dBm-1-precision;
+      description
+        "Threshold for declaring OOR-low";
+    }
+    leaf out-of-range-high {
+      type boolean;
+      description
+        "OOR-high diag point";
+    }
+    leaf out-of-range-low {
+      type boolean;
+      description
+        "OOR-low diag point";
+    }
+  }
+
+  grouping freq-range {
+    leaf min-freq {
+      type ciena-6500r-types:frequency;
+      description
+        "Min frequency of the range";
+    }
+    leaf max-freq {
+      type ciena-6500r-types:frequency;
+      description
+        "Max frequency of the range";
+    }
+    leaf bin-size {
+      type ciena-6500r-types:frequency;
+      description
+        "Size of the spectral bin";
+    }
+    leaf bin-spacing {
+      type ciena-6500r-types:frequency;
+      description
+        "Spacing between spectral bins";
+    }
+  }
+
+  grouping power-source {
+    leaf type {
+      type power-type-enum;
+      description
+        "Power type";
+    }
+    leaf source-id {
+      type instance-identifier;
+      description
+        "Object used as source for the powers";
+    }
+  }
+
+  list monitors {
+    description
+      "Aggregated data from the monitor points sharing the same parent";
+    key "parent-object";
+    config false;
+    leaf parent-object {
+      type instance-identifier;
+      config false;
+      description
+        "Parent object for the monitor points";
+    }
+    list power-sources {
+      key "type";
+      uses power-source;
+      config false;
+      description
+        "List of data source ID's for supported power types";
+    }
+    list freq-ranges {
+      key "min-freq";
+      uses freq-range;
+      list powers {
+        key "type";
+        uses monitor-powers;
+      }
+      container diag-evaluator {
+        uses evaluator;
+      }
+      config false;
+      description
+        "A list of frequency ranges with power data";
+    }
+  }
+}

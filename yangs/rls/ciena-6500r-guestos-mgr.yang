@@ -1,0 +1,154 @@
+module ciena-6500r-guestos-mgr {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-guestos-mgr";
+  prefix guestosmgr;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module is a placeholder for the guestos-mgr";
+
+  revision 2021-11-10 {
+    description
+      "Added operational-state to guestos container";
+    ciena-common-version:string "0.3.0";
+  }
+  revision 2021-10-14 {
+    description
+      "Added support for CLI commands for GuestOS cleanup, run-script, get-script-result, download-script";
+    ciena-common-version:string "0.2.0";
+  }
+  revision 2021-08-26 {
+    description
+      "Added support for CLI commands for set/get GuestOS enabled state";
+    ciena-common-version:string "0.1.0";
+  }
+  revision 2021-08-11 {
+    description
+      "Default empty file to serve as a placeholder";
+    ciena-common-version:string "0.0.0";
+  }
+
+  typedef script-status {
+    type enumeration {
+      enum in-progress {
+        value 0;
+        description
+          "Script is being executed";
+      }
+      enum finished {
+        value 1;
+        description
+          "Script finished executing";
+      }
+      enum failed {
+        value 2;
+        description
+          "Script failed to execute";
+      }
+      enum idle {
+        value 3;
+        description
+          "No script is being executed";
+      }
+    }
+  }
+
+  container guestos {
+    leaf enabled {
+      type boolean;
+      config true;
+      description
+        "Value used to enable(true)/disable(false) GuestOS";
+    }
+    leaf operational-state {
+      type enumeration {
+        enum disabled;
+        enum enabled;
+        enum not-supported;
+        enum unknown;
+      }
+      config false;
+      description
+        "Used for retrieving GuestOS actual operational-state";
+    }
+  }
+
+  rpc guestos-cleanup {
+    description
+      "Perform a SLAT on GuestOS";
+    input {
+      leaf confirm {
+        type enumeration {
+          enum cleanup-user-confirmation;
+        }
+        mandatory true;
+        description
+          "Confirmation string to safeguard against accidental GuestOS cleanup operation";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc guestos-run-script {
+    description
+      "Runs the main user script in GuestOS";
+    input {
+      leaf script-action {
+        type enumeration {
+          enum start;
+          enum stop;
+          enum restart;
+        }
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc guestos-get-script-result {
+    input {
+      leaf script {
+        description
+          "Which script is being queried: Install/Main";
+        type enumeration {
+          enum main;
+          enum install;
+        }
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      leaf result {
+        type script-status;
+        description
+          "Status of script execution (in-progress/finished/failed/idle)";
+      }
+      leaf return-code {
+        type int8;
+        description
+          "Numerical return code of script execution";
+      }
+    }
+  }
+
+  rpc guestos-download-script {
+    description
+      "Download user script(s) into GuestOS from RLS OS";
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

@@ -1,0 +1,240 @@
+module ciena-6500r-cv-shelf-cache {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-cv-shelf-cache";
+  prefix cv-shelf-cache;
+
+  import ietf-inet-types {
+    prefix ietf-inet-types;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform connection validation service shelf cache";
+
+  revision 2022-02-03 {
+    description
+      "Added power-loss-db container";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2021-05-26 {
+    description
+      "Added slot list in the cv-alarms container";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2020-11-22 {
+    description
+      "Added nmc-notif container";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-09-08 {
+    description
+      "Initial revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  container cv-shelf-cache {
+    leaf ipv4-address {
+      type ietf-inet-types:ipv4-address-no-zone;
+      description
+        "IPv4 address of the shelf.";
+    }
+    leaf ipv6-address {
+      type ietf-inet-types:ipv6-address-no-zone;
+      description
+        "IPv6 address of the shelf.";
+    }
+    leaf system-name {
+      type string;
+      description
+        "An alpha-numeric string which indicates System name.";
+    }
+    leaf vendor-id {
+      type uint8;
+      description
+        "A number which indicates Vendor's id.";
+    }
+    container port-nmc-db {
+      list port {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Flattened CV tx/rx port name.";
+        }
+        list nmc {
+          key "nmc";
+          leaf nmc {
+            type instance-identifier;
+          }
+          description
+            "NMC provisioned on the path of this port";
+        }
+      }
+    }
+    container power-loss-db {
+      list slots {
+        key "name";
+        leaf name {
+          type ciena-6500r-types:object-name;
+          description
+            "Name of the slot that supports cv";
+        }
+        list rx-port {
+          key "name";
+          leaf name {
+            type string;
+            description
+              "Name of the rx port receiving cv packet";
+          }
+          leaf timestamp {
+            type yang:date-and-time;
+            description
+              "Time when the cv packet received successfully";
+          }
+          leaf total-power-loss {
+            type ciena-6500r-types:loss-dB-1-precision;
+            description
+              "Total power loss between tx and rx port";
+          }
+          leaf cv-signal-loss {
+            type ciena-6500r-types:loss-dB-1-precision;
+            description
+              "CV signal loss between tx and rx port";
+          }
+        }
+      }
+    }
+    config false;
+  }
+  container cv-alarms {
+    list port {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "Flattened CV rx port name.";
+      }
+      leaf alarm-id {
+        type uint32;
+        description
+          "Identification of the alarm raised against CV rx port.";
+      }
+      leaf mask-alarm {
+        type boolean;
+        default "false";
+        description
+          "Indicates if the alarm is masked or not.";
+      }
+      leaf link-identifier {
+        type string;
+        description
+          "The link that has given cv rx port as To port.";
+      }
+      leaf fiber-break-detected {
+        type boolean;
+        default "false";
+        description
+          "fiber break detected in a link that ends to this port.";
+      }
+      leaf high-fiber-loss {
+        type boolean;
+        default "false";
+        description
+          "HFL detected in a link that ends to this port.";
+      }
+      leaf expected-physical-loss {
+        type ciena-6500r-types:loss-dB-1-precision;
+        description
+          "expected physical loss in a link that ends to this port.";
+      }
+      leaf measured-physical-loss {
+        type ciena-6500r-types:loss-dB-1-precision;
+        description
+          "measured physical loss in a link that ends to this port.";
+      }
+    }
+    list slots {
+      key "name";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the slot.";
+      }
+      leaf card-present {
+        type boolean;
+        description
+          "The slot is serving as the host slot for a card that is physically present.";
+      }
+      leaf cv-rx-admin-state {
+        type boolean;
+        description
+          "The slot cv functionality is enabled in the rx direction.";
+      }
+      leaf photonic-ready {
+        type boolean;
+        description
+          "The slot is in photonic-ready state.";
+      }
+      leaf cp-admin-state {
+        type boolean;
+        description
+          "The slot circuit-pack admin state is enabled.";
+      }
+      leaf full-impacted {
+        type boolean;
+        description
+          "The slot is in full-impacted state when CV is running in Focus on the site.";
+      }
+      leaf mask-any-alarm {
+        type boolean;
+        description
+          "The slot masks any cv alarm raised in any cv rx ports.";
+      }
+      leaf mask-state-changed {
+        type yang:date-and-time;
+        description
+          "The last time masking state changed.";
+      }
+      leaf blackout-period {
+        type boolean;
+        description
+          "The slot is in blackout period and masks any alarm raised in any cv rx ports.";
+      }
+    }
+  }
+
+  rpc connection-validation-svc-debug {
+    input {
+      leaf polling-period {
+        type uint16;
+        description
+          "How often the poller should run, set to 0 to disable polling";
+        units "s";
+      }
+    }
+  }
+}

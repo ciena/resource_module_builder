@@ -1,0 +1,934 @@
+module ciena-pro-telemetry-internal {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-telemetry-internal";
+  prefix telemetry-internal;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-telemetry {
+    prefix telemetry;
+  }
+  import ciena-ddy-diag {
+    prefix diag;
+  }
+  import ietf-yang-types {
+    prefix yang-types;
+  }
+  import ietf-yang-patch {
+    prefix ypatch;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module is telemetry YANG used internally by Waveserver
+
+     Copyright (c) 2020 Ciena (R) Corporation. All rights reserved.
+
+     CONFIDENTIALITY AND LIMITED USE
+
+     This software, including any software of third parties embodied herein,
+     contains information and concepts which are confidential to Ciena
+     and such third parties. This software is licensed for use
+     solely in accordance with the terms and conditions of the applicable
+     license agreement with Ciena.";
+
+  revision 2023-07-20 {
+    description
+      "Added 'enable-one-sync-response','enable-one-subscription-notification' and 'terminate-on-disabled-state' flags
+       under 'subscription-manager-options'.
+       Added 'receviers-list' for unique receivers accross subscriptions.";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2023-05-08 {
+    description
+      "Added internal flags under subscription-manager-options to differentiate between subscription manager as pro service or ws specific.
+       Added receiver-status container for setting the connection state of receivers
+       Added internal flag under subscription-manager-options to enable/disable openconfig-telemetry support at subscription-manager.
+       Added internal flag under subscription-manager-options for supporting hostname";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2023-02-23 {
+    description
+      "Added configuration data for dial-out configured subscriptions.
+       Added subscription 'type' leaf to managed-subscriptions/subscription list.
+       Added 'label' leaf to all internal subscription lists.
+       Added 'subscription-started', 'subscription-terminated', and 'publish-dialout-GNMI' notifications for use
+         by configured subscriptions.
+       Added 'defects' container for defects/alarms.
+       Changed publish/subscription to be non-configurable.
+       Added start-test and stop-test rpcs for internal diagnostics.";
+    reference
+      "See product documentation";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-08-09 {
+    description
+      "Initial revision";
+    reference
+      "See product documentation";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping internal-paths {
+    description
+      "Target-defined (internal) subscription paths required to establish an internal
+       subscription in order to service an external subscription";
+    list target-defined-path {
+      key "path";
+      description
+        "List of paths as defined internally by the target";
+      leaf path {
+        type yang:target-node;
+        description
+          "Internally defined path";
+      }
+    }
+  }
+
+  grouping update-trigger {
+    description
+      "Reusable definition(s) related to subscription update-triggers";
+    leaf update-trigger {
+      type identityref {
+        base telemetry:update-trigger-type;
+      }
+      description
+        "Update trigger used to publish an update for a subscription";
+    }
+  }
+
+  augment "/telemetry:telemetry/telemetry:managed-subscriptions/telemetry:subscription" {
+    description
+      "Augment the managed subscription list with internal only data";
+    leaf sync-on-start-done {
+      type boolean;
+      default "false";
+      description
+        "Flag to indicate whether initial synchronization notification sent for each path and receiver in the subscription if applicable";
+    }
+  }
+
+  augment "/telemetry:telemetry/telemetry:managed-subscriptions/telemetry:subscription/telemetry:path-config" {
+    description
+      "Augment the managed subscription path config list with internal only data";
+    leaf sync-complete {
+      type boolean;
+      default "false";
+      description
+        "Flag to indicate whether the initial synchronization notification has been sent for this path";
+    }
+  }
+
+  augment "/telemetry:subscribe-request/telemetry:input/telemetry:path-config" {
+    description
+      "Augment the subscribe request RPC with internal only data";
+    uses internal-paths;
+  }
+
+  augment "/telemetry:telemetry/telemetry:managed-subscriptions/telemetry:subscription/telemetry:path-config" {
+    description
+      "Augment with internal only path data";
+    uses internal-paths;
+  }
+
+  augment "/telemetry:telemetry/telemetry:managed-subscriptions/telemetry:subscription/telemetry:receiver" {
+    when "../../type = 'configured'";
+    description
+      "Augment the managed subscription receiver group receiver list with internal only data. Only applies to configured subscriptions.";
+    list path-sync {
+      key "subscription-path update-trigger";
+      description
+        "Initial synchronization status for each subscription path for this receiver";
+      leaf subscription-path {
+        type yang:target-node;
+        description
+          "Path specified by the subscriber";
+      }
+      uses update-trigger;
+      leaf sync-complete {
+        type boolean;
+        description
+          "Flag to indicate whether the initial synchronization notification has been sent for this path";
+      }
+    }
+    leaf sync-on-start-done {
+      type boolean;
+      default "false";
+      description
+        "Flag to indicate whether initial synchronization notification sent for this receiver if applicable";
+    }
+  }
+
+  container logging {
+    description
+      "Microservice logging";
+    leaf log-level {
+      type diag:log-level;
+      description
+        "Log level";
+    }
+  }
+  container publishing-options {
+    description
+      "Publishing optimization options";
+    list protocol {
+      key "protocol";
+      description
+        "Options set per protocol";
+      leaf protocol {
+        type identityref {
+          base telemetry:protocol-type;
+        }
+        description
+          "Interface used to publish updates for the subscription";
+      }
+      leaf bundle-duplicates {
+        type boolean;
+        default "false";
+        description
+          "Include any duplicate subscriptions on the same protocol, different session when publishing";
+      }
+    }
+  }
+  container configured-subscriptions {
+    description
+      "Configuration data container for user-configured persistent subscriptions.";
+    list path-groups {
+      key "group-id";
+      description
+        "List of groups of subscription paths to monitor and generate configured subscription updates.";
+      leaf group-id {
+        type string {
+          length "0..128";
+        }
+        description
+          "User-provided unique identifier for a path group.";
+      }
+      list subscription-paths {
+        key "subscription-path";
+        description
+          "List of subscription paths";
+        leaf subscription-path {
+          type yang:target-node;
+          description
+            "Path specified by the subscriber";
+        }
+        list target-defined-path {
+          key "path update-trigger";
+          description
+            "List of paths as defined internally by the target";
+          leaf path {
+            type yang:target-node;
+            description
+              "Internally defined path";
+          }
+          uses update-trigger;
+          leaf filter {
+            type string {
+              length "0..30000";
+            }
+            description
+              "restconf-fields filter to apply on the path for this subscription";
+          }
+        }
+      }
+    }
+  }
+
+  grouping internal-subscription {
+    description
+      "Data required internally for a subscription";
+    leaf id {
+      type telemetry:subscription-id;
+      description
+        "Subscription identifier";
+    }
+    leaf label {
+      type string {
+        length "0..128";
+      }
+      description
+        "User-provisionable label assigned to a subscription. Optional for dynamic
+         subscriptions, required for configured subscriptions.";
+    }
+    leaf type {
+      type telemetry:subscription-type;
+      description
+        "Subscription type";
+    }
+    leaf subscription-path {
+      type yang:target-node;
+      mandatory true;
+      description
+        "Path specified by the subscriber";
+    }
+    leaf session-id {
+      type uint32;
+      description
+        "Session identifier";
+    }
+    leaf filter {
+      type string {
+        length "0..30000";
+      }
+      description
+        "restconf-fields filter to apply on the path for this subscription";
+    }
+    uses update-trigger;
+  }
+
+  container managed-subscriptions {
+    config false;
+    description
+      "Additional internal only data to track for managed subscriptions";
+    list subscription {
+      key "id";
+      description
+        "List of subscriptions by identifier";
+      leaf id {
+        type telemetry:subscription-id;
+        description
+          "Subscription identifier";
+      }
+      leaf label {
+        type string {
+          length "0..128";
+        }
+        description
+          "User-provisionable label assigned to a subscription. Optional for dynamic
+           subscriptions, required for configured subscriptions.";
+      }
+      leaf type {
+        type telemetry:subscription-type;
+        description
+          "Subscription type";
+      }
+      leaf registration-complete {
+        type boolean;
+        default "false";
+        description
+          "Set to true once all paths are registered for the subscription";
+      }
+    }
+    list tracked-session {
+      key "id";
+      description
+        "List of protocol sessions that carry managed subscriptions";
+      leaf id {
+        type uint32;
+        description
+          "Session identifier";
+      }
+      list subscription {
+        key "id";
+        description
+          "List of managed subscriptions on a protocol session";
+        leaf id {
+          type telemetry:subscription-id;
+          description
+            "Subscription identifier";
+        }
+        leaf label {
+          type string {
+            length "0..128";
+          }
+          description
+            "User-provisionable label assigned to a subscription. Optional for dynamic
+             subscriptions, required for configured subscriptions.";
+        }
+      }
+    }
+    list target-defined-path {
+      key "path";
+      description
+        "List of paths as defined internally by the target";
+      leaf path {
+        type yang:target-node;
+        description
+          "Internally defined path";
+      }
+      leaf notify-status {
+        type enumeration {
+          enum READY {
+            description
+              "At least 1 notification from the framework is received";
+          }
+          enum UNPROVISIONED {
+            description
+              "Path is not yet provisioned on the target";
+          }
+        }
+        description
+          "Track whether notify is received by the framework for this path";
+      }
+      list subscription {
+        key "pk";
+        description
+          "List of managed subscriptions for a target defined path";
+        uses internal-subscription;
+        leaf pk {
+          type string {
+            length "0..64";
+          }
+          description
+            "The Primary key for this list, used to reference this entry internally";
+        }
+        list duplicate-subscription {
+          key "id";
+          description
+            "List of subscriptions that are duplicates except for the session used";
+          uses internal-subscription;
+        }
+      }
+    }
+  }
+  container defects {
+    config false;
+    description
+      "The list of defects raised by subscription-manager";
+    list chassis-defects {
+      key "defect-id";
+      description
+        "List of defects raised against the chassis";
+      leaf defect-id {
+        type enumeration {
+          enum TELEMETRY_COLLECTOR_UNREACHABLE {
+            description
+              "At least one configred telemetry collector is unreachable by the target";
+          }
+        }
+        description
+          "Unique identifier for the chassis defect";
+      }
+      leaf defect-state {
+        type boolean;
+        description
+          "Boolean operational state for the chassis defect";
+      }
+    }
+  }
+
+  rpc start-test {
+    description
+      "Start a diagnostic test.";
+    input {
+      leaf test-name {
+        type string;
+        description
+          "The name of the diagnostic test to start.";
+      }
+      leaf duration {
+        type uint32;
+        units "seconds";
+        default "0";
+        description
+          "The duration in seconds for the test to run (default: 0 seconds, to run indefinitely).";
+      }
+      leaf-list args {
+        type string;
+        description
+          "Optional custom arguments, defined as generic strings.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc stop-test {
+    description
+      "Stop a diagnostic test.";
+    input {
+      leaf test-name {
+        type string;
+        description
+          "The name of the diagnostic test to stop.";
+      }
+      leaf-list args {
+        type string;
+        description
+          "Optional custom arguments, defined as generic strings.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  identity publish-type {
+    description
+      "Reason for publishing";
+  }
+
+  identity UPDATE_TRIGGER {
+    base publish-type;
+    description
+      "Update trigger hit";
+  }
+
+  identity STATE_CHANGE_NOTIF {
+    base publish-type;
+    description
+      "Notification for subscription state change";
+  }
+
+  identity state-change-reason {
+    description
+      "Reasons for state change notifications";
+  }
+
+  identity SUBSCRIPTION_DELETED {
+    base state-change-reason;
+    description
+      "Notifying that a subscription is deleted";
+  }
+
+  grouping publish {
+    description
+      "Data required in a publish";
+    leaf timestamp {
+      type yang-types:date-and-time;
+      mandatory true;
+      description
+        "Timestamp in UTC";
+    }
+    leaf timestamp-raw {
+      type uint64;
+      mandatory true;
+      description
+        "Timestamp in nanoseconds since the epoch";
+    }
+    leaf publish-reason {
+      type identityref {
+        base publish-type;
+      }
+      default "UPDATE_TRIGGER";
+      description
+        "Reason publish is generated";
+    }
+    leaf incomplete-update {
+      type boolean;
+      default "false";
+      description
+        "Indicates if any subscription data is missing from the update";
+    }
+    leaf state-change-reason {
+      type identityref {
+        base state-change-reason;
+      }
+      description
+        "Reason state change notification is generated";
+    }
+    leaf encoding {
+      type identityref {
+        base telemetry:encoding-type;
+      }
+      mandatory true;
+      description
+        "Update message encoding format";
+    }
+    list subscription {
+      key "id";
+      config false;
+      description
+        "List of subscriptions to publish";
+      uses telemetry:subscription-data;
+      leaf session-id {
+        type uint32;
+        mandatory true;
+        description
+          "Unique session identifier to identify session to publish update on";
+      }
+      leaf sync-complete-notification {
+        type boolean;
+        default "false";
+        description
+          "Indicates that the synchronization at the start of a subscription is complete";
+      }
+      uses telemetry:subscription-path-data;
+      list path-config {
+        key "subscription-path";
+        description
+          "Subscription configuration for each subscription path in the list";
+        leaf subscription-path {
+          type yang:target-node;
+          mandatory true;
+          description
+            "Path specified by the subscriber";
+        }
+        leaf sync-complete {
+          type boolean;
+          default "false";
+          description
+            "Flag to indicate whether the initial synchronization notification has been sent for this path";
+        }
+        leaf path-omissions {
+          type yang:target-node;
+          description
+            "Path specifies which leaves to omit from the publish";
+        }
+        list path-data {
+          key "path";
+          description
+            "Data to publish for each path in the list";
+          leaf path {
+            type yang:target-node;
+            mandatory true;
+            description
+              "Path as defined by Waveserver";
+          }
+          uses ypatch:yang-patch;
+        }
+      }
+    }
+  }
+
+  notification publish-GNMI {
+    uses publish;
+    description
+      "GNMI publish notification";
+  }
+
+  notification publish-NETCONF {
+    uses publish;
+    description
+      "NETCONF publish notification";
+  }
+
+  notification publish-RESTCONF {
+    uses publish;
+    description
+      "RESTCONF publish notification";
+  }
+
+  notification publish-SNMP {
+    uses publish;
+    description
+      "SNMP publish notification";
+  }
+
+  notification publish-WEBSOCKET {
+    uses publish;
+    description
+      "WebSocket publish notification";
+  }
+
+  notification publish-dialout-GNMI {
+    uses publish;
+    description
+      "GNMI publish notification for configured subscription(s)";
+    list receiver {
+      key "address port";
+      description
+        "List of receivers to broadcast notification";
+      uses telemetry:receiver-id;
+      list session {
+        key "session-id";
+        description
+          "List of associated user sessions";
+        leaf session-id {
+          type uint32;
+          description
+            "Session identifier";
+        }
+      }
+    }
+  }
+
+  notification subscription-started {
+    description
+      "Notification to NBI server that a configured-subscription has started,
+       and associated receiver connection(s) need to be initiated.";
+    leaf timestamp {
+      type yang-types:date-and-time;
+      mandatory true;
+      description
+        "Timestamp in UTC";
+    }
+    leaf timestamp-raw {
+      type uint64;
+      mandatory true;
+      description
+        "Timestamp in nanoseconds since the epoch";
+    }
+    leaf protocol {
+      type identityref {
+        base telemetry:protocol-type;
+      }
+      description
+        "Interface used to publish updates for the subscription";
+    }
+    leaf encoding {
+      type identityref {
+        base telemetry:encoding-type;
+      }
+      description
+        "Encoding format of forthcoming subscription updates";
+    }
+    leaf subscription-id {
+      type telemetry:subscription-id;
+      description
+        "Subscription identifier";
+    }
+    leaf label {
+      type string {
+        length "0..128";
+      }
+      description
+        "Required user-provisionable label assigned to a subscription.";
+    }
+    list receiver {
+      key "address port";
+      description
+        "List of receivers to contact and initiate connection";
+      uses telemetry:receiver-id;
+    }
+  }
+
+  notification subscription-terminated {
+    description
+      "Notification to NBI server that a configured-subscription has terminated,
+       and any associated receiver connections should be terminated.";
+    leaf timestamp {
+      type yang-types:date-and-time;
+      mandatory true;
+      description
+        "Timestamp in UTC";
+    }
+    leaf timestamp-raw {
+      type uint64;
+      mandatory true;
+      description
+        "Timestamp in nanoseconds since the epoch";
+    }
+    leaf protocol {
+      type identityref {
+        base telemetry:protocol-type;
+      }
+      description
+        "Interface used to publish updates for the subscription";
+    }
+    leaf subscription-id {
+      type telemetry:subscription-id;
+      description
+        "Subscription identifier";
+    }
+    leaf label {
+      type string {
+        length "0..128";
+      }
+      description
+        "Required user-provisionable label assigned to a subscription.";
+    }
+    list receiver {
+      key "address port";
+      description
+        "List of receivers to terminate connection";
+      uses telemetry:receiver-id;
+      list session {
+        key "session-id";
+        description
+          "List of user sessions to terminate";
+        leaf session-id {
+          type uint32;
+          description
+            "Session identifier";
+        }
+      }
+    }
+  }
+
+  container subscription-manager-options {
+    description
+      "subscription manager internal options";
+    leaf sample-interval {
+      type uint32;
+      units "ms";
+      default "10000";
+      description
+        "Interval to use for periodic subscriptions.";
+    }
+    leaf disable-dial-in-state {
+      type boolean;
+      description
+        "enable/disable dial in feature in subscription manager";
+      default "false";
+    }
+    leaf enable-events {
+      type boolean;
+      description
+        "flag to enable/disable events";
+      default "true";
+    }
+    leaf enable-usersessions {
+      type boolean;
+      description
+        "flag to enable/disable usersessions based flow";
+      default "true";
+    }
+    leaf db-type {
+      type string;
+      description
+        "type of db to be used";
+      default "ddy-db-proxy";
+    }
+    leaf enable-keep-alive {
+      type boolean;
+      description
+        "flag to enable/disable keep-alive";
+      default "true";
+    }
+    leaf enable-candidate-datastore {
+      type boolean;
+      description
+        "flag to enable/disable candidate datastore";
+      default "true";
+    }
+    leaf enable-templates {
+      type boolean;
+      description
+        "flag to enable/disable templates handling";
+      default "true";
+    }
+    leaf enable-internal-paths-translation {
+      type boolean;
+      description
+        "flag to enable/disable internal path conversion from babel";
+      default "true";
+    }
+    leaf enable-oc-telemetry {
+      type boolean;
+      description
+        "flag to enable/disable openconfig-telemetry support in subscription manager";
+      default "true";
+    }
+    leaf enable-receiver-status {
+      type boolean;
+      description
+        "flag to enable/disable receiver-status container";
+      default "true";
+    }
+    leaf enable-nbi-resources {
+      type boolean;
+      description
+        "if true, resource list needs to be fetched from nbi";
+      default "false";
+    }
+    leaf enable-hostname-support {
+      type boolean;
+      description
+        "flag to enable/disable hostname support for receiver-group";
+      default "true";
+    }
+    leaf resources-domain-name {
+      type string;
+      description
+        "domain to fetch resource list from";
+    }
+    leaf resources-service-name {
+      type string;
+      description
+        "service to fetch resource list from";
+    }
+    leaf-list supported-protocols {
+      type string;
+      description
+        "List of protocols supported for streaming telemetry";
+    }
+    leaf enable-one-sync-response {
+      type boolean;
+      description
+        "Enable/Disable one sync response for one receiver";
+    }
+    leaf enable-one-subscription-notification {
+      type boolean;
+      description
+        "Enable/Disable one 'subscription-started' and 'subscription-terminated' notification per receiver";
+    }
+    leaf terminate-on-disabled-state {
+      type boolean;
+      description
+        "Send 'subscription-terminated' notification to all the connected receviers when admin state is changed from enable to disable";
+    }
+  }
+  container receiver-status {
+    description
+      "Container to set the state of a configured receiver";
+    uses telemetry:receiver-id;
+    leaf state {
+      type enumeration {
+        enum connected {
+          description
+            "When in this state, a receiver is successfully connected and is ready to receive
+             updates for the subscription";
+        }
+        enum disconnected {
+          description
+            "When in this state, a previously connected receiver is not reachable";
+        }
+      }
+      description
+        "State of a receiver";
+    }
+  }
+  list receivers-list {
+    config false;
+    key "id";
+    description
+      "List of unique receivers accross the subscriptions";
+    leaf id {
+      type string {
+        length "1..63";
+      }
+      description
+        "Set to string 'default' in dial in. Set to the ip-address/hostname in dial out.";
+    }
+    leaf sync-on-start-done {
+      type boolean;
+      default "false";
+      description
+        "Flag to indicate whether initial synchronization notification sent for this receiver if applicable";
+    }
+    list path-sync {
+      key "subscription-path update-trigger";
+      description
+        "Initial synchronization status for each subscription path for this receiver";
+      leaf subscription-path {
+        type yang:target-node;
+        description
+          "Path specified by the subscriber";
+      }
+      uses update-trigger;
+      leaf sync-complete {
+        type boolean;
+        description
+          "Flag to indicate whether the initial synchronization notification has been sent for this path";
+      }
+      leaf-list subscriptions {
+        type string;
+        description
+          "List of subscriptions linked with the subscribed paths";
+      }
+    }
+  }
+}

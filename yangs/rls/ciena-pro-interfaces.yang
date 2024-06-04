@@ -1,0 +1,675 @@
+module ciena-pro-interfaces {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-interfaces";
+  prefix pro-if;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ietf-interfaces {
+    prefix ietf-if;
+  }
+  import iana-if-type {
+    prefix iana-if-type;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena Pro interface and sub-interface objects.";
+
+  revision 2020-08-01 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  typedef mac-string {
+    description
+      "MAC address string.";
+    type string {
+      length "1..20";
+    }
+  }
+
+  typedef string-maxl-16 {
+    type string {
+      length "0..16";
+    }
+    description
+      "Standard string that has a max length of 16 characters.";
+  }
+
+  typedef string-maxl-32 {
+    type string {
+      length "0..32";
+    }
+    description
+      "Standard string that has a max length of 32 characters.";
+  }
+
+  typedef string-maxl-64 {
+    type string {
+      length "0..64";
+    }
+    description
+      "Standard string that has a max length of 64 characters.";
+  }
+
+  typedef up-down-enum {
+    type enumeration {
+      enum down {
+        description
+          "Object is down/disabled/failed.";
+      }
+      enum up {
+        description
+          "Object is up/operational.";
+      }
+    }
+    description
+      "Down and Up enum toggle used in Ciena defined modules.";
+  }
+
+  typedef ip-address-origin {
+    type enumeration {
+      enum other {
+        description
+          "None of the following.";
+      }
+      enum static {
+        description
+          "Indicates that the address has been statically
+           configured -- for example, using the Network Configuration
+           Protocol (NETCONF) or a command line interface.";
+      }
+      enum dhcp {
+        description
+          "Indicates an address that has been assigned to this
+           system by a DHCP server.";
+      }
+      enum link-layer {
+        description
+          "Indicates an address created by IPv6 stateless
+           autoconfiguration that embeds a link-layer address in its
+           interface identifier.";
+      }
+      enum random {
+        description
+          "Indicates an address chosen by the system at
+           random, e.g., an IPv4 address within 169.254/16, a
+           temporary address as described in RFC 4941, or a
+           semantically opaque address as described in RFC 7217.";
+        reference
+          "RFC 4941: Privacy Extensions for Stateless Address
+           Autoconfiguration in IPv6
+           RFC 7217: A Method for Generating Semantically Opaque
+           Interface Identifiers with IPv6 Stateless
+           Address Autoconfiguration (SLAAC)";
+      }
+    }
+    description
+      "The origin of an address.";
+  }
+
+  grouping ethernet-if-properties-group {
+    description
+      "Common group of attributes for physical Ethernet interfaces.";
+    leaf mac-address {
+      type mac-string;
+      description
+        "The system-assigned MAC address of the Ethernet interface.";
+    }
+    leaf speed {
+      description
+        "Ethernet port speed. For ports with auto-negotiation enabled, this
+         represents the negotiated port speed.";
+      type enumeration {
+        enum Unknown {
+          description
+            "Unknown port speed.";
+        }
+        enum 10M {
+          value 10;
+          description
+            "10 Mbps Ethernet port speed.";
+        }
+        enum 13M {
+          value 13;
+          description
+            "13 Mbps Ethernet port speed.";
+        }
+        enum 100M {
+          value 100;
+          description
+            "100 Mbps Ethernet port speed.";
+        }
+        enum 1G {
+          value 1000;
+          description
+            "1 Gbps Ethernet port speed.";
+        }
+        enum 2.5G {
+          value 2500;
+          description
+            "2.5 Gbps Ethernet port speed.";
+        }
+        enum 5G {
+          value 5000;
+          description
+            "5 Gbps Ethernet port speed.";
+        }
+        enum 10G {
+          value 10000;
+          description
+            "10 Gbps Ethernet port speed.";
+        }
+        enum 12G {
+          value 12000;
+          description
+            "12 Gbps Ethernet port speed.";
+        }
+      }
+    }
+    leaf duplex {
+      description
+        "Ethernet interface duplex mode. For ports with auto-negotiation
+         enabled, this represents the negotiated duplex mode.";
+      type enumeration {
+        enum Unknown {
+          description
+            "Unknown port duplex.";
+        }
+        enum full {
+          description
+            "Port is full-duplex.";
+        }
+        enum half {
+          description
+            "Port is half-duplex.";
+        }
+      }
+      default "full";
+    }
+    leaf flow-control {
+      description
+        "Specifies whether this interface will participate in Ethernet flow
+         control, via pause frames.";
+      type boolean;
+    }
+    leaf auto-negotiation {
+      default "true";
+      description
+        "Specifies whether the interface should negotiate common transmission
+         parameters, such as speed, duplex, and flow control with its peer.";
+      reference
+        "IEEE 802.3-2012 auto-negotiation transmission parameters";
+      type boolean;
+    }
+  }
+
+  grouping if-counters-group {
+    description
+      "A collection of interface-related statistics objects.";
+    container counters {
+      config false;
+      description
+        "A collection of interface-related statistics objects.";
+      leaf in-octets {
+        type uint64;
+        description
+          "The total number of octets received on the interface,
+           including framing characters.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifHCInOctets";
+      }
+      leaf in-pkts {
+        type uint64;
+        description
+          "The total number of packets received on the interface,
+           including all unicast, multicast, broadcast and bad packets
+           etc.";
+        reference
+          "RFC 2819: Remote Network Monitoring Management Information
+           Base";
+      }
+      leaf in-discards {
+        type uint64;
+        description
+          "The number of inbound packets that were chosen to be
+           discarded even though no errors had been detected to
+           prevent their being deliverable to a higher-layer
+           protocol.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifInDiscards";
+      }
+      leaf in-errors {
+        type uint64;
+        description
+          "For packet-oriented interfaces, the number of inbound
+           packets that contained errors preventing them from being
+           deliverable to a higher-layer protocol.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifInErrors";
+      }
+      leaf out-octets {
+        type uint64;
+        description
+          "The total number of octets transmitted out of the
+           interface, including framing characters.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifHCOutOctets";
+      }
+      leaf out-pkts {
+        type uint64;
+        description
+          "The total number of packets transmitted out of the
+           interface, including all unicast, multicast, broadcast,
+           and bad packets etc.";
+        reference
+          "RFC 2819: Remote Network Monitoring Management Information
+           Base";
+      }
+      leaf out-discards {
+        type uint64;
+        description
+          "The number of outbound packets that were chosen to be
+           discarded even though no errors had been detected to
+           prevent their being transmitted.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifOutDiscards";
+      }
+    }
+  }
+
+  grouping ethernet-if-counters-ext-group {
+    description
+      "An extended collection of interface-related statistics objects.";
+    container counters {
+      config false;
+      description
+        "A collection of interface-related statistics objects.";
+      leaf in-unicast-pkts {
+        type uint64;
+        description
+          "The number of packets that were not addressed to a
+           multicast or broadcast address at this interface.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifHCInUcastPkts";
+      }
+      leaf in-broadcast-pkts {
+        type uint64;
+        description
+          "The number of packets that were addressed to a broadcast
+           address at this interface.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifHCInBroadcastPkts";
+      }
+      leaf in-multicast-pkts {
+        type uint64;
+        description
+          "The number of packets that were addressed to a multicast
+           address at this interface.";
+        reference
+          "RFC 2863: The Interfaces Group MIB - ifHCInMulticastPkts";
+      }
+    }
+  }
+
+  grouping interface-ref-common {
+    description
+      "Common reference to interfaces and sub-interfaces";
+    leaf associated-interface {
+      type leafref {
+        path "/pro-if:interfaces/pro-if:interface/pro-if:name";
+      }
+      description
+        "Reference to a base interface.  If a reference to a
+         sub-interface is required, this leaf must be specified
+         to indicate the base interface.";
+    }
+    leaf associated-sub-interface {
+      type leafref {
+        path "/pro-if:interfaces/pro-if:interface[pro-if:name=current()/../associated-interface]/pro-if:sub-interface/pro-if:name";
+      }
+      description
+        "Reference to a sub-interface -- this requires the base
+         interface to be specified using the interface leaf in
+         this container.  If only a reference to a base interface
+         is required, this leaf should not be set.";
+    }
+  }
+
+  grouping interfaces-unnumbered-top-group {
+    description
+      "Top-level grouping unnumbered sub-interfaces";
+    container unnumbered {
+      description
+        "Top-level container for setting unnumbered interfaces.
+         Includes reference the interface that provides the
+         address information";
+      leaf enabled {
+        type boolean;
+        default "false";
+        description
+          "Indicates that the sub-interface is unnumbered.  By default
+           the sub-interface is numbered, i.e., expected to have an
+           IP address configuration.";
+      }
+      uses interface-ref-common;
+    }
+  }
+
+  grouping router-advertisement-group {
+    description
+      "Configuration parameters for IPv6 router advertisements.";
+    container router-advertisement {
+      description
+        "Configuration and operational state parameters relating to
+         router advertisements.";
+      leaf interval {
+        type uint32;
+        units "seconds";
+        description
+          "The interval between periodic router advertisement neighbor
+           discovery messages sent on this interface expressed in
+           seconds.";
+      }
+      leaf lifetime {
+        type uint32;
+        units "seconds";
+        description
+          "The lifetime advertised in the router advertisement neighbor
+           discovery message on this interface.";
+      }
+      leaf suppress {
+        type boolean;
+        default "false";
+        description
+          "When set to true, router advertisement neighbor discovery
+           messages are not transmitted on this interface.";
+      }
+    }
+  }
+
+  grouping proxy-arp-group {
+    description
+      "Configuration and operational state parameters
+       relating to proxy ARP. This functionality allows a
+       system to respond to ARP requests that are not
+       explicitly destined to the local system.";
+    leaf proxy-arp {
+      type enumeration {
+        enum DISABLE {
+          description
+            "The system should not respond to ARP requests that
+             do not specify an IP address configured on the local
+             sub-interface as the target address.";
+        }
+        enum REMOTE_ONLY {
+          description
+            "The system responds to ARP requests only when the
+             sender and target IP addresses are in different
+             subnets.";
+        }
+        enum ALL {
+          description
+            "The system responds to ARP requests where the sender
+             and target IP addresses are in different subnets, as well
+             as those where they are in the same subnet.";
+        }
+      }
+      default "DISABLE";
+      description
+        "When set to a value other than DISABLE, the local system should
+         respond to ARP requests that are for target addresses other than
+         those that are configured on the local sub-interface using its own
+         MAC address as the target hardware address. If the REMOTE_ONLY
+         value is specified, replies are only sent when the target address
+         falls outside the locally configured subnets on the interface,
+         whereas with the ALL value, all requests, regardless of their
+         target address are replied to.";
+      reference
+        "RFC1027: Using ARP to Implement Transparent Subnet Gateways";
+    }
+  }
+
+  grouping global-ipv4-group {
+    container ipv4 {
+      description
+        "IPv4 provisioning";
+      leaf enabled {
+        type boolean;
+        default "true";
+        description
+          "Controls whether the IPv4 stack on the subinterface is enabled or disabled";
+      }
+      container addresses {
+        description
+          "Enclosing container for address list";
+        list address {
+          key "ip";
+          description
+            "The list of configured IPv4 addresses on the interface.";
+          leaf ip {
+            type inet:ipv4-address;
+            description
+              "The IPv4 address on the interface.";
+          }
+          leaf prefix-length {
+            type uint8 {
+              range "0..32";
+            }
+          }
+        }
+      }
+      uses interfaces-unnumbered-top-group;
+      uses proxy-arp-group;
+    }
+  }
+
+  grouping global-ipv6-group {
+    container ipv6 {
+      description
+        "IPv6 provisioning";
+      leaf enabled {
+        type boolean;
+        default "true";
+        description
+          "Controls whether the IPv6 stack on the subinterface is enabled or disabled";
+      }
+      container addresses {
+        list address {
+          key "ip";
+          description
+            "The list of configured IPv6 addresses on the interface.";
+          leaf ip {
+            type inet:ipv6-address;
+            description
+              "The IPv6 address on the interface.";
+          }
+          leaf prefix-length {
+            type uint8 {
+              range "0..128";
+            }
+            description
+              "The length of the subnet prefix.";
+          }
+        }
+      }
+      uses router-advertisement-group;
+      uses ipv6-autonconf-group;
+    }
+  }
+
+  grouping ipv6-autonconf-group {
+    container autoconf {
+      description
+        "Top-level container for IPv6 autoconf";
+      leaf create-global-addresses {
+        type boolean;
+        default "true";
+        description
+          "[adapted from IETF IP model RFC 7277]
+           If enabled, the host creates global addresses as
+           described in RFC 4862.";
+        reference
+          "RFC 4862: IPv6 Stateless Address Autoconfiguration
+           Section 5.5";
+      }
+      leaf max-addresses {
+        type uint32 {
+          range "1..32";
+        }
+        default "16";
+        description
+          "Max number of the SLAAC addresses.";
+      }
+    }
+  }
+
+  grouping sub-interface-group {
+    description
+      "Sub-interface properties.";
+    leaf name {
+      type string-maxl-32;
+      description
+        "The name of the logical sub-interface";
+    }
+    leaf enabled {
+      type boolean;
+      default "true";
+      description
+        "Controls whether the subinterface is enabled or disabled";
+    }
+    leaf ifindex {
+      type uint32;
+      description
+        "The system-assigned interface index number, corresponding to the
+         ifIndex in SNMP IF-MIB.";
+      reference
+        "RFC 2863 - The Interfaces Group MIB";
+    }
+    uses global-ipv4-group;
+    uses global-ipv6-group;
+  }
+
+  grouping interface-properties-group {
+    description
+      "Interface properties.";
+    leaf name {
+      type string-maxl-64;
+      description
+        "Name of the interface";
+    }
+    leaf enabled {
+      type boolean;
+      default "true";
+      description
+        "Controls whether the interface is enabled or disabled";
+    }
+    leaf type {
+      type identityref {
+        base ietf-if:interface-type;
+      }
+      mandatory true;
+      description
+        "The type of the interface.";
+    }
+    leaf mtu {
+      type uint16;
+      description
+        "Set the max transmission unit size in octets
+         for the physical interface.  If this is not set, the mtu is
+         set to the operational default -- e.g., 1514 bytes on an
+         Ethernet interface.";
+    }
+    leaf ifindex {
+      type uint32;
+      description
+        "The system-assigned interface index number, corresponding to the
+         ifIndex in SNMP IF-MIB.";
+      reference
+        "RFC 2863 - The Interfaces Group MIB";
+    }
+  }
+
+  grouping rpc-ipv6-stack-flush-input-group {
+    leaf interface {
+      type string-maxl-16;
+      description
+        "The name of the logical management interface, e.g. 'local'.";
+    }
+  }
+
+  container interfaces {
+    description
+      "Top level container for interfaces, including configuration
+       and state data.";
+    list interface {
+      key "name";
+      description
+        "List of physical Ethernet management interfaces (or interface ports).";
+      uses interface-properties-group;
+      container ethernet {
+        when "../type = 'iana-if-type:ethernetCsmacd'" {
+          description
+            "Additional interface configuration parameters when the interface type is Ethernet";
+        }
+        uses ethernet-if-properties-group;
+      }
+      list sub-interface {
+        key "name";
+        description
+          "The list of sub-interfaces (logical interfaces) associated
+           with a physical interface.";
+        uses sub-interface-group;
+      }
+    }
+    container state {
+      config false;
+      list interface {
+        key "name";
+        description
+          "List of physical Ethernet management interfaces (or interface ports).";
+        uses interface-properties-group;
+        leaf operational-state {
+          type up-down-enum;
+          description
+            "Operational state of the interface.";
+        }
+        container ethernet {
+          when "../type = 'iana-if-type:ethernetCsmacd'" {
+            description
+              "Additional interface configuration parameters when the interface type is Ethernet";
+          }
+          uses ethernet-if-properties-group;
+          uses ethernet-if-counters-ext-group;
+        }
+        list sub-interface {
+          key "name";
+          description
+            "The list of sub-interfaces (logical interfaces) associated
+             with a physical interface.";
+          uses sub-interface-group;
+          leaf operational-state {
+            type up-down-enum;
+            description
+              "Operational state of the sub-interface.";
+          }
+          uses if-counters-group;
+        }
+        uses if-counters-group;
+      }
+    }
+  }
+}

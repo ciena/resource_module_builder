@@ -1,0 +1,175 @@
+module ciena-pro-nat {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-nat";
+  prefix ciena-pro-nat;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-nat-types {
+    prefix cp-nat;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines configuration and operational state data for NAT rules or entries.
+     Each NAT mapping-entry is assigned a sequence-id that determines the order in which the NAT
+     rules are applied to a packet.  Note that entries are evaluated in ascending order based on
+     the sequence-id (low to high).
+
+     Individual NAT rules specify match criteria based on fields (address, port, protocol) in the
+     internal (entering NAT) packet, along with replacement values (address, port) for the external
+     (leaving NAT) packet";
+
+  revision 2021-10-21 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity nat_TYPE {
+    description
+      "Base identity for types of nat sets";
+  }
+
+  identity SRC_NAT44 {
+    base nat_TYPE;
+    description
+      "Basic Source nat for IPV4";
+  }
+
+  identity SRC_NAT66 {
+    base nat_TYPE;
+    description
+      "Basic Source nat for IPV6";
+  }
+
+  grouping nat-mapping-entries-top {
+    description
+      "Instance list entries";
+    list mapping-entry {
+      key "sequence-id";
+      description
+        "List of mapping entries for the instance";
+      leaf sequence-id {
+        type uint32;
+        description
+          "The sequence id determines the order in which mapping entries
+           are applied.  The sequence id must be unique for each mapping entry
+           in a nat set.  Target devices should apply the mapping entry
+           rules in ascending order determined by sequence id (low to
+           high), rather than the relying only on order in the list.";
+      }
+      leaf internal-src-address {
+        type string;
+        description
+          "Source IP address of the packet coming into NAT, that will be translated to external-src-address
+           The format is IP/netmask, ex 10.10.10.10/32 or 2620:11b:d06d:f228::0001:1108/64
+           The IP address can be IPV4 or IPV6, depending on the nat_type value";
+      }
+      leaf internal-src-port {
+        type cp-nat:port-num-range;
+        description
+          "Source port of the packet coming into NAT, that must match for the translation to take place.";
+      }
+      leaf protocol {
+        type cp-nat:ip-protocol-type;
+        description
+          "Protocol of the packet coming into NAT, that must match for the translation to take place.
+           The format is one of the known types or an int";
+      }
+      leaf internal-dst-address {
+        type string;
+        description
+          "Destination IP address of the packet coming into NAT, that must match for the translation to take place.
+           The format is IP/netmask, ex 10.10.10.10/32 or 2620:11b:d06d:f228::0001:1108/64
+           The IP address can be IPV4 or IPV6, depending on the nat_type value";
+      }
+      leaf internal-dst-port {
+        type cp-nat:port-num-range;
+        description
+          "Destination port of the packet coming into NAT, that must match for the translation to take place.";
+      }
+      leaf external-src-address {
+        type string;
+        mandatory true;
+        description
+          "Source IP address of the packet leaving NAT, that replaces to internal-src-address
+           The format is IP/netmask, ex 10.10.10.10/32
+           The IP address can be IPV4 or IPV6, depending on the nat_type value";
+      }
+      leaf external-src-port {
+        type cp-nat:port-num-range;
+        description
+          "Source port of the packet leaving NAT, that replaces internal-src-port";
+      }
+      leaf matched-packets {
+        config false;
+        type uint64;
+        description
+          "Count of the number of packets matching the current entry.
+           This implementation provides this counter on a per mapping-entry only
+           and not per policy or an aggregate count.";
+      }
+    }
+  }
+
+  grouping instance-top {
+    description
+      "Instance list entries top level container";
+    list instance {
+      key "name";
+      description
+        "List of nat instances, each comprising of a list of mapping entries";
+      unique "nat_type associated-interface associated-sub-interface";
+      leaf name {
+        type string;
+        description
+          "The name of the instance";
+      }
+      leaf nat_type {
+        mandatory true;
+        type identityref {
+          base nat_TYPE;
+        }
+        description
+          "The nat type determines the fields allowed in the nat entries belonging
+           to the nat set (e.g., IPv4, IPv6, etc.) as well as the nat type (SNAT,DNAT)";
+      }
+      leaf description {
+        type string;
+        description
+          "Description, or comment, for the nat instance";
+      }
+      uses cp-nat:interface-ref-universal {
+        refine "associated-interface" {
+          mandatory true;
+        }
+        refine "associated-sub-interface" {
+          mandatory true;
+        }
+      }
+      uses nat-mapping-entries-top;
+    }
+  }
+
+  grouping nat-top {
+    description
+      "Top level grouping for nat data and structure";
+    container nat {
+      description
+        "Top level enclosing container for nat model config and operational state data";
+      uses instance-top;
+    }
+  }
+
+  uses nat-top;
+}

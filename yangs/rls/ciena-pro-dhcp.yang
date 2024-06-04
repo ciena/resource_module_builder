@@ -1,0 +1,172 @@
+module ciena-pro-dhcp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-dhcp";
+  prefix ciena-pro-dhcp;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform dhcp";
+
+  revision 2020-09-16 {
+    description
+      "Add dhcp version type to support both IPv4 and IPv6";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2019-10-08 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping dhcp-version {
+    description
+      "DHCP version";
+    leaf dhcp-ver-type {
+      type enumeration {
+        enum v4 {
+          description
+            "DHCPv4";
+        }
+        enum v6 {
+          description
+            "DHCPv6";
+        }
+      }
+      description
+        "DHCP version type";
+    }
+  }
+
+  container dhcp {
+    uses ciena-6500r-types:admin-state;
+    list client-interfaces {
+      key "interface-name";
+      leaf interface-name {
+        type string;
+        description
+          "interface name";
+      }
+      leaf ztp-mode {
+        type boolean;
+        default "true";
+        description
+          "ztp is enabled by default";
+      }
+      leaf enabled {
+        type boolean;
+        default "true";
+        description
+          "dhcp client is enabled";
+      }
+      leaf config-interface {
+        type boolean;
+        default "true";
+        description
+          "configure interfaces used by dhcp client";
+      }
+      uses dhcp-version;
+    }
+  }
+
+  rpc restart-dhcp-client {
+    input {
+      leaf interface-name {
+        type string;
+        description
+          "interface name";
+      }
+      uses dhcp-version;
+    }
+    output {
+      leaf result {
+        type boolean;
+        description
+          "Did client restart?";
+      }
+    }
+  }
+
+  rpc query-dhcp-client {
+    input {
+      leaf interface-name {
+        type string;
+        description
+          "interface name";
+      }
+      uses dhcp-version;
+    }
+    output {
+      leaf result {
+        type boolean;
+        description
+          "Is the client running";
+      }
+    }
+  }
+
+  rpc stop-dhcp-client {
+    input {
+      leaf interface-name {
+        type string;
+        description
+          "interface name";
+      }
+      uses dhcp-version;
+    }
+    output {
+      leaf result {
+        type boolean;
+        description
+          "Did client stop?";
+      }
+    }
+  }
+
+  rpc update-client-info {
+    input {
+      leaf client-id {
+        type string;
+        description
+          "client identifier";
+      }
+      leaf vendor-class-id {
+        type string;
+        description
+          "vendor class identifier";
+      }
+      leaf user-class {
+        type string;
+        description
+          "user class";
+      }
+      uses dhcp-version;
+    }
+    output {
+      leaf result {
+        type boolean;
+        description
+          "Did info get updated ?";
+      }
+    }
+  }
+}

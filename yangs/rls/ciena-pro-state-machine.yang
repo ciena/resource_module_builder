@@ -1,0 +1,441 @@
+module ciena-pro-state-machine {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-state-machine";
+  prefix csm;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+           Hanover, Maryland 21076
+           U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Generic finite state machine ";
+
+  revision 2024-01-31 {
+    description
+      "Make strings pointers to save memory.";
+    version:version "version" {
+      version:string "0.2.0";
+    }
+  }
+  revision 2020-05-21 {
+    description
+      "Introduce a failure operator to determine resource unavailability";
+    version:version "version" {
+      version:string "0.1.1";
+    }
+  }
+  revision 2020-05-13 {
+    description
+      "Introduce RPC to invoke state entry actions";
+    version:version "version" {
+      version:string "0.1.0";
+    }
+  }
+  revision 2019-06-15 {
+    description
+      "Rework the fsm table to make it more generic";
+    reference
+      "";
+  }
+  revision 2018-12-15 {
+    description
+      "Initial Revision.";
+    reference
+      "";
+  }
+
+  identity event {
+    description
+      "Base FSM event";
+  }
+
+  typedef compare-operator {
+    type enumeration {
+      enum neq {
+        description
+          "Comparision type is 'unequal'.";
+      }
+      enum eq {
+        description
+          "Comparision type is 'equal'.";
+      }
+      enum le {
+        description
+          "Comparision type is 'less'.";
+      }
+      enum leq {
+        description
+          "Comparision type is 'less or equal'.";
+      }
+      enum gt {
+        description
+          "Comparision type is 'greater'.";
+      }
+      enum gteq {
+        description
+          "Comparision type is 'greater or equal'.";
+      }
+      enum fail {
+        description
+          "Resource access failure. The comparison will return failure due to the reachability or
+           accessibility of the resource";
+      }
+    }
+  }
+
+  typedef frequency-type {
+    type enumeration {
+      enum periodic {
+        description
+          "Periodic. ";
+      }
+      enum on-change {
+        description
+          "Trigger on a change";
+      }
+    }
+  }
+
+  typedef filter-type {
+    type enumeration {
+      enum filter-boolean {
+        description
+          "Boolean type filter";
+      }
+      enum filter-custom {
+        description
+          "RPC based filter";
+      }
+    }
+  }
+
+  grouping match {
+    leaf target {
+      type instance-identifier;
+      description
+        "Xpath of the yang instance name";
+    }
+    leaf operator {
+      type compare-operator;
+      description
+        "Binary operator";
+    }
+    leaf target-value {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Value that is compared against";
+    }
+    leaf domain-name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Domain name of the resource";
+    }
+    leaf service-name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Service name of the resource";
+    }
+  }
+
+  grouping filter-entity {
+    leaf type {
+      type filter-type;
+      description
+        "Type of the filter";
+      mandatory true;
+    }
+    container filter-boolean {
+      description
+        "Stateless boolean type filter.";
+      when "../type = 'filter-boolean'";
+      uses match;
+    }
+    container filter-custom {
+      description
+        "RPC based custom filter. Return code of the RPC is used to determine the status of the filter";
+      when "../type = 'filter-custom'";
+      uses rpc-block;
+    }
+  }
+
+  grouping filters {
+    list filters {
+      key "id";
+      leaf id {
+        type uint32;
+      }
+      container frequency {
+        leaf type {
+          type frequency-type;
+        }
+        container periodic {
+          leaf interval {
+            type uint32;
+            units "seconds";
+          }
+        }
+      }
+      uses filter-entity;
+    }
+    leaf filter-logical-expression {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "A logic expression of all filters. The expression support 'AND', 'OR' operator.
+         Eg : (filter_id_1 AND filter_id_2) OR filter_id_2 ";
+    }
+  }
+
+  grouping rpc-block {
+    leaf domain-name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Domain name";
+    }
+    leaf service-name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Service name";
+    }
+    leaf rpc-name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Yang RPC name";
+    }
+    anyxml rpc-data;
+    description
+      "Application  RPC";
+  }
+
+  grouping actions {
+    list actions {
+      yang:alias "fsm-action";
+      key "id";
+      description
+        "Define list of actions for a state transition";
+      leaf id {
+        type uint32;
+      }
+      leaf type {
+        type enumeration {
+          enum CONDITIONAL_OP;
+          enum SIMPLE_OP;
+        }
+        mandatory true;
+      }
+      container simple {
+        when "../type = 'SIMPLE_OP'";
+        uses rpc-block;
+        leaf next-action {
+          type uint32;
+        }
+      }
+      container conditional {
+        when "../type = 'CONDITIONAL_OP'";
+        container statement {
+          description
+            "RPC used to evaluate the condition";
+          uses rpc-block;
+        }
+        container if-true {
+          uses rpc-block;
+          leaf next-action {
+            type uint32;
+          }
+        }
+        container if-false {
+          uses rpc-block;
+          leaf next-action {
+            type uint32;
+          }
+        }
+      }
+    }
+  }
+
+  grouping transitions {
+    list transitions {
+      key "name";
+      leaf name {
+        type identityref {
+          base event;
+        }
+        description
+          "Name of the transition event";
+      }
+      leaf description {
+        type string {
+          yang:stringptr "true";
+        }
+      }
+      uses filters;
+      uses actions;
+      leaf next-state {
+        type identityref {
+          base yang:state-name;
+        }
+      }
+    }
+  }
+
+  grouping states {
+    list states {
+      key "name";
+      leaf name {
+        type identityref {
+          base yang:state-name;
+        }
+      }
+      leaf description {
+        type string {
+          yang:stringptr "true";
+        }
+      }
+      container state-entry {
+        uses actions;
+      }
+      uses transitions;
+    }
+  }
+
+  list fsm {
+    key "name";
+    leaf name {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "Name of the FSM";
+    }
+    uses states;
+  }
+
+  rpc evaluate-fsm-filter {
+    description
+      "Evaluate all filter rules";
+    input {
+      leaf fsm-category {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Fsm category";
+      }
+      leaf fsm-name {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Fsm name";
+      }
+      leaf state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "State name";
+      }
+      leaf event {
+        type identityref {
+          base event;
+        }
+        description
+          "Transition event";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc invoke-fsm-event {
+    description
+      "Invoke actions related to pre state change event";
+    input {
+      leaf fsm-name {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Fsm name";
+      }
+      leaf state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "State name";
+      }
+      leaf event {
+        type identityref {
+          base event;
+        }
+        description
+          "Transition event";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc invoke-state-entry-action {
+    description
+      "Invoke actions related to post state entry";
+    input {
+      leaf fsm-name {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Fsm name";
+      }
+      leaf state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "State name";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+}

@@ -1,0 +1,143 @@
+module ciena-pro-mc {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-mc";
+  prefix pro-mc;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's media channel object.";
+
+  revision 2024-03-25 {
+    description
+      "Add new mc user-label";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+  }
+  revision 2022-02-22 {
+    description
+      "Add new mc-type monitoring";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.1";
+    }
+  }
+  revision 2022-01-27 {
+    description
+      "Add mc mc-type";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+  }
+  revision 2020-08-01 {
+    description
+      "Initial version";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+  }
+
+  typedef ase-replacement-on-fault-enum {
+    type enumeration {
+      enum Enabled {
+        value 1;
+        description
+          "ase replacement is Enabled.";
+      }
+      enum Disabled {
+        value 2;
+        description
+          "ase replacement is Disabled.";
+      }
+    }
+  }
+
+  typedef mc-type-enum {
+    type enumeration {
+      enum traffic {
+        description
+          "Spectrum allocated for optical traffic";
+      }
+      enum allowable-bandwidth {
+        description
+          "Defines spectral constraints within which optical traffic may be configured";
+      }
+      enum monitoring {
+        description
+          "Defines the relevant spectral range for monitoring optical signals.
+           eg. defined on a link optically tapped off of a traffic path link";
+      }
+    }
+  }
+
+  grouping mc {
+    leaf name {
+      type string;
+      description
+        "Media channel name";
+    }
+    leaf owner {
+      type string;
+      description
+        "This identifies the provisioning ownership of this media channel";
+    }
+    leaf auto-created-default {
+      type boolean;
+      description
+        "Identifies if this instance is an auto-created default";
+    }
+    leaf min-freq {
+      type ciena-pro-optical-types:frequency;
+      mandatory true;
+      description
+        "Minimum frequency edge of the media channel";
+    }
+    leaf low-freq-deadband {
+      type ciena-pro-optical-types:frequency;
+      default "6.250";
+      description
+        "Deadband associated with min-freq edge to account for filter roll off. ";
+    }
+    leaf max-freq {
+      type ciena-pro-optical-types:frequency;
+      mandatory true;
+      description
+        "Maximum frequency edge of the media channel";
+    }
+    leaf high-freq-deadband {
+      type ciena-pro-optical-types:frequency;
+      default "6.250";
+      description
+        "Deadband associated with max-freq edge to account for filter roll off. ";
+    }
+    leaf ase-replacement-on-fault {
+      type ase-replacement-on-fault-enum;
+      description
+        "If set to disabled, channel should not be replaced with ASE on fault";
+    }
+    leaf mc-type {
+      type mc-type-enum;
+      default "traffic";
+      description
+        "Describes the intended media channel usage";
+    }
+    leaf user-label {
+      type string;
+      description
+        "User provisioned label";
+    }
+  }
+}

@@ -1,0 +1,274 @@
+module ciena-pro-software-manifest {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-software-manifest";
+  prefix ciena-pro-software-manifest;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "This module contains software upgrade manifest data structure for Ciena's 6500r Platform.";
+
+  revision 2021-08-03 {
+    description
+      "PEC to ciena-pro definition";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2019-07-22 {
+    description
+      "Original commit: Creating yang file with the mapping data";
+  }
+
+  typedef bank-type {
+    type enumeration {
+      enum golden {
+        description
+          "Golden bank.";
+      }
+      enum appl {
+        description
+          "Application bank.";
+      }
+    }
+  }
+
+  typedef load-type {
+    type enumeration {
+      enum flash {
+        description
+          "Flash load type.";
+      }
+      enum "file system" {
+        description
+          "Upgrading file system";
+      }
+      enum file {
+        description
+          "Simply upgrading a file";
+      }
+      enum device {
+        description
+          "Device load type.";
+      }
+      enum image {
+        description
+          "Image load type.";
+      }
+    }
+    description
+      "The boot load type.";
+  }
+
+  typedef component-type {
+    type enumeration {
+      enum boot {
+        value 1;
+        description
+          "Boot load.";
+      }
+      enum app {
+        value 2;
+        description
+          "Application load.";
+      }
+      enum zac {
+        value 3;
+        description
+          "Zac load.";
+      }
+      enum eos {
+        value 4;
+        description
+          "EOS load.";
+      }
+      enum plug {
+        value 5;
+        description
+          "Plug or FW load.";
+      }
+      enum kernel {
+        value 6;
+        description
+          "Kernel load.";
+      }
+      enum ramfs {
+        value 7;
+        description
+          "Ramfs load.";
+      }
+      enum hypervisor {
+        value 8;
+        description
+          "Hypervisor load.";
+      }
+      enum hypervisor-dts {
+        value 9;
+        description
+          "Hypervisor-dts load.";
+      }
+      enum dts {
+        value 10;
+        description
+          "Dts load.";
+      }
+      enum dpaa {
+        value 11;
+        description
+          "Dpaa load.";
+      }
+      enum u-boot {
+        value 12;
+        description
+          "Uboot load.";
+      }
+      enum a9-uboot {
+        value 13;
+        description
+          "A9-uboot load.";
+      }
+      enum a9-uboot-stdapp {
+        value 14;
+        description
+          "A9-uboot-stdapp load.";
+      }
+      enum a9-bct {
+        value 15;
+        description
+          "A9-bct load.";
+      }
+      enum falcon {
+        value 16;
+        description
+          "falcon load.";
+      }
+    }
+    description
+      "The boot load type.";
+  }
+
+  grouping mapping-data {
+    list sw-mgr-mapping {
+      key "pec version";
+      leaf pec {
+        type ciena-pro-types:pec-code;
+        mandatory true;
+        description
+          "Part Number,supporting various formats(e.g. Product equipment code,3-4-3).";
+      }
+      leaf version {
+        type uint16;
+        description
+          "Software version or firmware Id.";
+      }
+      leaf-list supported-shelves {
+        type ciena-6500r-types:shelf-type;
+        description
+          "List of supported shelf types.";
+      }
+      leaf hardware-id {
+        type string;
+        description
+          "Hardware ID.";
+      }
+      leaf min-hw-baseline {
+        type string;
+        mandatory true;
+        description
+          "Minimum hardware baseline.";
+      }
+      leaf min-sw-release {
+        type string;
+        mandatory true;
+        description
+          "Minimum software release supported.";
+      }
+      list load-lineup {
+        key "component";
+        leaf component {
+          type component-type;
+          description
+            "Component.Can be FW, APPL or a file system depending on the load type.";
+        }
+        leaf load-type {
+          type load-type;
+          description
+            "Load type. Can be flash, filesystem, device, ...";
+        }
+        leaf restart-type {
+          type enumeration {
+            enum cold;
+            enum warm;
+          }
+          description
+            "Restart type.";
+        }
+        list component-info {
+          key "bank";
+          leaf bank {
+            type bank-type;
+            description
+              "Golden or application bank.";
+          }
+          leaf name {
+            type string;
+            description
+              "For swmg-ctmp this is the name the base code uses in their table.";
+          }
+          leaf upgradable {
+            type boolean;
+            description
+              "If the component is upgradable.";
+          }
+          leaf supported {
+            type boolean;
+            description
+              "If the component is supported by sw-mgr microservice.";
+          }
+          leaf file-pattern-type {
+            type enumeration {
+              enum partial-prefix;
+              enum partial-suffix;
+              enum fullname;
+            }
+            description
+              "File pattern type, either pre, suffix or fullname.";
+          }
+          leaf file-pattern {
+            type string;
+            description
+              "File pattern that should be looked for.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping sw-notifications {
+    container sw-notif {
+      leaf sw-activate-in-prog {
+        type boolean;
+        mandatory true;
+        description
+          "Activate in progress notification";
+      }
+    }
+  }
+
+  container software-data {
+    config false;
+    description
+      "Software upgrade info used only internally between microservices";
+    uses sw-notifications;
+    uses mapping-data;
+  }
+}

@@ -1,0 +1,242 @@
+module ciena-6500r-photonic-algorithms {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-photonic-algorithms";
+  prefix photonic-algorithms;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-6500r-card-api-types {
+    prefix card-api-types;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's card apis data model for the RLS platform, first introduced in RLS 3.1";
+
+  revision 2023-01-18 {
+    description
+      "Add slot name to spectrum-target-control-data-ready notification.";
+    reference
+      "RLS 3.1.0";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2023-01-12 {
+    description
+      "Initial Revision.";
+    reference
+      "RLS 3.1.0";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping ciena-6500r-photonic-algorithms-mount-data {
+    container photonic-algorithms {
+      list algo-mode {
+        key "grouping-identifier";
+        leaf grouping-identifier {
+          type uint32;
+          description
+            "Usually represents optical direction.";
+        }
+        leaf mode {
+          type card-api-types:mode-enum;
+          description
+            "Mode identifying whether the card should be using slot-mgr data base or card api data base";
+        }
+      }
+      list users {
+        config false;
+        key "application-name application-instance";
+        leaf application-name {
+          type string;
+          description
+            "Name of the application/ microservice which is managing card/direction using card APIs";
+        }
+        leaf application-instance {
+          type string;
+          description
+            "Indicates application instance for wich autonomous mode is invoked.";
+        }
+        list operations {
+          key "operation-instance";
+          leaf operation-instance {
+            type uint32;
+            description
+              "Indicates instance of the operation, since there could be multiple concurrent operation running on the same slot/direction.";
+          }
+          leaf grouping-identifier {
+            type uint32;
+            description
+              "Usually represents optical direction.";
+          }
+          leaf current-operation {
+            type string;
+            description
+              "Application current Card API operation.";
+          }
+          leaf transaction {
+            type uint32;
+            description
+              "Indicates transaction number of the current operation or last executed operation.";
+          }
+          leaf status {
+            type card-api-types:api-status-enum;
+            default "na";
+            description
+              "Status of application current action.";
+          }
+        }
+      }
+      action spectrum-target-control {
+        input {
+          uses card-api-types:stc-api-inputs-group;
+        }
+        output {
+          leaf status {
+            type card-api-types:stc-status-enum;
+            description
+              "Status of spectrum target control action.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-photonic-algorithms-mount-actions-notifs {
+    notification spectrum-target-control-data-ready {
+      description
+        "Indicates that API has completed and status data is provided.";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "Slot name sending the notification";
+      }
+      uses card-api-types:stc-api-inputs-group;
+      uses card-api-types:stc-api-outputs;
+    }
+  }
+
+  grouping ciena-6500r-photonic-algorithms-mount-actions-notifs-as-cont {
+    container spectrum-target-control-data-ready {
+      ciena-common-yang:containerptr "true";
+      description
+        "Indicates that API has completed and status data is provided.";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "Slot name sending the notification";
+      }
+      uses card-api-types:stc-api-inputs-group;
+      uses card-api-types:stc-api-outputs;
+    }
+  }
+
+  grouping ciena-6500r-photonic-algorithms-mount-data-actions-notifs-as-cont {
+    container photonic-algorithms {
+      list algo-mode {
+        key "grouping-identifier";
+        leaf grouping-identifier {
+          type uint32;
+          description
+            "Usually represents optical direction.";
+        }
+        leaf mode {
+          type card-api-types:mode-enum;
+          description
+            "Mode identifying whether the card should be using slot-mgr data base or card api data base";
+        }
+      }
+      list users {
+        config false;
+        key "application-name application-instance";
+        leaf application-name {
+          type string;
+          description
+            "Name of the application/ microservice which is managing card/direction using card APIs";
+        }
+        leaf application-instance {
+          type string;
+          description
+            "Indicates application instance for wich autonomous mode is invoked.";
+        }
+        list operations {
+          key "operation-instance";
+          leaf operation-instance {
+            type uint32;
+            description
+              "Indicates instance of the operation, since there could be multiple concurrent operation running on the same slot/direction.";
+          }
+          leaf grouping-identifier {
+            type uint32;
+            description
+              "Usually represents optical direction.";
+          }
+          leaf current-operation {
+            type string;
+            description
+              "Application current Card API operation.";
+          }
+          leaf transaction {
+            type uint32;
+            description
+              "Indicates transaction number of the current operation or last executed operation.";
+          }
+          leaf status {
+            type card-api-types:api-status-enum;
+            default "na";
+            description
+              "Status of application current action.";
+          }
+        }
+      }
+      container spectrum-target-control {
+        container input {
+          ciena-common-yang:containerptr "true";
+        }
+        container output {
+          ciena-common-yang:containerptr "true";
+        }
+      }
+    }
+    container spectrum-target-control-data-ready {
+      ciena-common-yang:containerptr "true";
+      description
+        "Indicates that API has completed and status data is provided.";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "Slot name sending the notification";
+      }
+      uses card-api-types:stc-api-inputs-group;
+      uses card-api-types:stc-api-outputs;
+    }
+  }
+
+  uses ciena-6500r-photonic-algorithms-mount-data;
+
+  notification spectrum-target-control-data-ready {
+    description
+      "Indicates that API has completed and status data is provided.";
+    leaf name {
+      type ciena-6500r-types:object-name;
+      description
+        "Slot name sending the notification";
+    }
+    uses card-api-types:stc-api-inputs-group;
+    uses card-api-types:stc-api-outputs;
+  }
+}

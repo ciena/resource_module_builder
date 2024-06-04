@@ -1,0 +1,219 @@
+module ciena-pro-ztp-commands {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-ztp-commands";
+  prefix ciena-pro-ztp-commands;
+
+  import openconfig-inet-types {
+    prefix oc-inet;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import openconfig-ospf-types {
+    prefix oc-ospf-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "This module defines internal commands required by zero touch provisioning for Ciena's 6500r Platform.";
+
+  revision 2019-10-08 {
+    description
+      "Initial version";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping ciena-pro-ztp-interfaces-top {
+    description
+      "Top-level grouping for interface configuration and
+       operational state data";
+    container ifs {
+      description
+        "Top level container for interfaces, including configuration
+         and state data.";
+      list if {
+        key "id";
+        description
+          "The list of named interfaces on the device.";
+        leaf id {
+          type string;
+          description
+            "The name of the interface.";
+        }
+        leaf an {
+          type boolean;
+          default "true";
+          description
+            "Set to TRUE to request the interface to auto-negotiate
+             transmission parameters with its peer interface.  When
+             set to FALSE, the transmission parameters are specified
+             manually.";
+          reference
+            "IEEE 802.3-2012 auto-negotiation transmission parameters";
+        }
+        leaf dup {
+          type enumeration {
+            enum FULL {
+              description
+                "Full duplex mode";
+            }
+            enum HALF {
+              description
+                "Half duplex mode";
+            }
+          }
+          description
+            "When auto-negotiate is TRUE, this optionally sets the
+             duplex mode that will be advertised to the peer.  If
+             unspecified, the interface should negotiate the duplex mode
+             directly (typically full-duplex).  When auto-negotiate is
+             FALSE, this sets the duplex mode on the interface directly.";
+        }
+        leaf sp {
+          type string;
+          description
+            "When auto-negotiate is TRUE, this optionally sets the
+             port-speed mode that will be advertised to the peer for
+             negotiation.  If unspecified, it is expected that the
+             interface will select the highest speed available based on
+             negotiation.  When auto-negotiate is set to FALSE, sets the
+             link speed to a fixed value -- supported values are based on MB
+             such as 10, 100, 1000";
+        }
+        leaf ip4 {
+          type string;
+          description
+            "The IPv4 address/prefix on the interface.";
+        }
+        leaf ref-if4 {
+          type leafref {
+            path "../ciena-pro-ztp-commands:id";
+          }
+          description
+            "Reference to an interface.";
+        }
+        leaf ip6 {
+          type string;
+          description
+            "The IPv6 address/prefix on the interface.";
+        }
+        leaf ref-if6 {
+          type leafref {
+            path "../ciena-pro-ztp-commands:id";
+          }
+          description
+            "Reference to an interface.";
+        }
+      }
+    }
+  }
+
+  grouping ciena-pro-ztp-local-static-top {
+    description
+      "Top-level grouping for the list of static route definitions";
+    container static {
+      description
+        "Enclosing container for the list of static routes";
+      list rt {
+        key "prefix";
+        description
+          "List of locally configured static routes";
+        leaf prefix {
+          type string;
+          description
+            "Reference to the destination prefix list key.";
+        }
+        list next {
+          key "id";
+          description
+            "A list of next-hops to be utilised for the static
+             route being specified.";
+          leaf id {
+            type string;
+            description
+              "The nexthop index.";
+          }
+          leaf addr {
+            type oc-inet:ip-address;
+            description
+              "The next-hop that is to be used for the static route";
+          }
+          leaf if {
+            type string;
+            description
+              "The name of the interface.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-pro-ztp-ospfv2-top {
+    description
+      "Top-level OSPF configuration and operational state";
+    container ospfv2 {
+      description
+        "Top-level configuration and operational state for
+         Open Shortest Path First (OSPF) v2";
+      leaf rid {
+        type yang:dotted-quad;
+        description
+          "A 32-bit number represented as a dotted quad assigned to
+           each router running the OSPFv2 protocol. This number should
+           be unique within the autonomous system";
+        reference
+          "rfc2828";
+      }
+      list area {
+        key "id";
+        description
+          "The OSPFv2 areas within which the local system exists";
+        leaf id {
+          type oc-ospf-types:ospf-area-identifier;
+          description
+            "An identifier for the OSPFv2 area - described as either a
+             32-bit unsigned integer, or a dotted-quad";
+        }
+        list if {
+          key "id";
+          description
+            "The list of named interfaces on the device.";
+          leaf id {
+            type string;
+            description
+              "The name of the interface.";
+          }
+          leaf d-invl {
+            type uint32;
+            units "seconds";
+            description
+              "The number of seconds that the local system should let
+               elapse before declaring a silent router down";
+            reference
+              "RFC2328";
+          }
+          leaf h-invl {
+            type uint32;
+            units "seconds";
+            description
+              "The number of seconds the local system waits between the
+               transmission of subsequent Hello packets";
+          }
+        }
+      }
+    }
+  }
+
+  container ciena-pro-ztp-cmds {
+    description
+      "Top-level grouping containing a list of ZTP commands";
+    uses ciena-pro-ztp-interfaces-top;
+    uses ciena-pro-ztp-local-static-top;
+    uses ciena-pro-ztp-ospfv2-top;
+  }
+}

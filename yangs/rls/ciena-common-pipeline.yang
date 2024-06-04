@@ -1,0 +1,105 @@
+module ciena-common-pipeline {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-pipeline";
+  prefix pipeline;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-exceptions {
+    prefix exceptions;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Holds defintions to support pipeline.  Used internally for now.
+
+     Pipelines allow construction of ordered linked lists of domain/service
+     combinations and a service to execute those calls in order for a
+     given desc / rpc / action.
+
+     Pipeline processing is aborted via exception handling";
+
+  revision 2021-03-30 {
+    description
+      "Create the pipeline done exception for flow control in success
+       paths.";
+    reference
+      "";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-06-02 {
+    description
+      "Initial revision. Creates the pipeline abort exception.";
+    reference
+      "";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef order {
+    type enumeration {
+      enum first;
+      enum before;
+      enum after;
+      enum last;
+    }
+  }
+
+  identity pipeline-abort {
+    base exceptions:exception;
+    description
+      "Exception used to report a pipeline break.  Do not
+       proceed to next stage in the pipe";
+  }
+
+  identity pipeline-done {
+    base exceptions:exception;
+    description
+      "Exception used to report a pipeline completion.  Do not
+       proceed to next stage in the pipe, but not an error to
+       be reported.";
+  }
+
+  container pipelines {
+    list pipeline {
+      key "name";
+      config false;
+      leaf name {
+        type string;
+        description
+          "Name of this pipeline.";
+      }
+      list entry {
+        key "class";
+        leaf class {
+          type string;
+        }
+        leaf domain {
+          type string;
+        }
+        leaf service {
+          type string;
+        }
+        leaf order {
+          type order;
+        }
+        leaf reference {
+          type leafref {
+            path "../class";
+          }
+        }
+      }
+    }
+  }
+}

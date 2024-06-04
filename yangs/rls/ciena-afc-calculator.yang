@@ -1,0 +1,398 @@
+module ciena-afc-calculator {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-afc-calculator";
+  prefix afc-calculator;
+
+  import ietf-yang-types {
+    prefix yang-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "dicksonw";
+  description
+    "afc-calculator";
+
+  revision 2023-07-14 {
+    description
+      "Add yang version; algo version to afc-calculator";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2023-03-03 {
+    description
+      "Reduced length of container names";
+    reference
+      "None";
+  }
+  revision 2023-02-27 {
+    description
+      "Add latest-status for each span";
+    reference
+      "None";
+  }
+  revision 2023-02-07 {
+    description
+      "Add effective parameters 1 and 2, along with new RPC";
+    reference
+      "None";
+  }
+  revision 2022-12-12 {
+    description
+      "Add timestamps to each level of results";
+    reference
+      "None";
+  }
+  revision 2022-11-22 {
+    description
+      "Add job level results and states at each level";
+    reference
+      "None";
+  }
+  revision 2022-09-13 {
+    description
+      "Add distributed capability.";
+    reference
+      "None";
+  }
+  revision 2022-03-08 {
+    description
+      "Add incarnation number.";
+    reference
+      "None";
+  }
+
+  container afc-calculator {
+    config true;
+    description
+      "sections and their states";
+    container compatibility {
+      config false;
+      container algo-version {
+        uses ciena-common-version:version;
+        description
+          "local afc-calculator algorithm version of this local instance";
+      }
+    }
+    list instance {
+      key "node-name section-name";
+      description
+        "list of instances ran";
+      leaf node-name {
+        type string;
+        description
+          "name of the node for which the section is associated to";
+      }
+      leaf section-name {
+        type string;
+        description
+          "name of the section";
+      }
+      container state {
+        config false;
+        description
+          "state for each calculation";
+        container data-proc-state {
+          config false;
+          description
+            "state of data processing";
+          uses sw-state;
+        }
+        container update-state {
+          config false;
+          description
+            "state of parameter update";
+          uses sw-state;
+        }
+      }
+      list spans {
+        key "idx";
+        config false;
+        description
+          "list of spans in this section";
+        leaf idx {
+          type uint16;
+          description
+            "index of span";
+        }
+        leaf name {
+          type string;
+          description
+            "name of span";
+        }
+        leaf from {
+          type string;
+          description
+            "describes upstream output port";
+        }
+        leaf to {
+          type string;
+          description
+            "describes downstream input port";
+        }
+        container result-0 {
+          config false;
+          description
+            "afc result 0";
+          uses sw-state;
+          leaf val-0 {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "value 0 of this result";
+          }
+          leaf val-1 {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "val 1 of this result";
+          }
+          container latest-status {
+            config false;
+            description
+              "status of the latest call for each method of calculating this result";
+            container data-proc {
+              description
+                "status of latest call to data-proc";
+              uses sw-state;
+            }
+          }
+        }
+        container result-1 {
+          config false;
+          description
+            "afc result 1";
+          uses sw-state;
+          leaf val {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "val of this result";
+          }
+          leaf source {
+            type string;
+            description
+              "source of this result";
+          }
+          container latest-status {
+            config false;
+            description
+              "status of the latest call for each method of calculating this result";
+            container data-proc {
+              description
+                "status of latest call to data-proc";
+              uses sw-state;
+            }
+            container update {
+              description
+                "status of latest call to update";
+              uses sw-state;
+            }
+          }
+        }
+        container result-2 {
+          config false;
+          description
+            "afc result 2";
+          uses sw-state;
+          leaf val {
+            type decimal64 {
+              fraction-digits 2;
+            }
+            description
+              "val of this result";
+          }
+          container latest-status {
+            config false;
+            description
+              "status of the latest call for each method of calculating this result";
+            container data-proc {
+              description
+                "status of latest call to data-proc";
+              uses sw-state;
+            }
+            container update {
+              description
+                "status of latest call to update";
+              uses sw-state;
+            }
+          }
+        }
+        list job-results {
+          key "idx";
+          description
+            "results associated to span";
+          leaf idx {
+            type uint8;
+            description
+              "index of job";
+          }
+          container state {
+            description
+              "state of job";
+            uses sw-state;
+          }
+          uses meas-result;
+        }
+      }
+      action initiate-data-processing-job {
+        input {
+          leaf freq-idx {
+            type uint32;
+            description
+              "freq index of job";
+          }
+          leaf span-idx {
+            type uint32;
+            description
+              "span index of job";
+          }
+          leaf get-new-topology-data {
+            type boolean;
+            description
+              "indicates if new data needs to be collected for topology data";
+          }
+        }
+        output {
+          uses ciena-common:rpc-result-common;
+          leaf out {
+            type string {
+              length "1..100";
+            }
+            description
+              "response";
+          }
+        }
+      }
+      action initiate-update-job {
+        output {
+          uses ciena-common:rpc-result-common;
+          leaf out {
+            type string {
+              length "1..100";
+            }
+            description
+              "response";
+          }
+        }
+      }
+    }
+  }
+
+  grouping meas-result {
+    description
+      "describes meas result";
+    leaf meas-result-0 {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      description
+        "meas result 0";
+    }
+    leaf meas-result-1 {
+      type decimal64 {
+        fraction-digits 3;
+      }
+      description
+        "meas result 1";
+    }
+  }
+
+  grouping sw-state {
+    description
+      "state";
+    leaf status {
+      type string;
+      description
+        "status of the run for this instance";
+    }
+    leaf reason {
+      type string;
+      description
+        "reason for failure";
+    }
+    leaf start-timestamp {
+      type yang-types:date-and-time;
+      description
+        "Timestamp when this instance has been created";
+    }
+    leaf end-timestamp {
+      type yang-types:date-and-time;
+      description
+        "Timestamp when this instance finishes";
+    }
+  }
+
+  rpc initiate-data-processing {
+    description
+      "call the service to indicate data is ready to be collected and initiate the data processing";
+    input {
+      leaf node-name {
+        type string;
+        description
+          "Indicates node that the section is associated to";
+      }
+      leaf section-name {
+        type string;
+        description
+          "Indicates name of section for given section";
+      }
+      leaf freq-idx {
+        type uint32;
+        description
+          "optional freq index of job; if left empty, will perform centralized processing";
+      }
+      leaf span-idx {
+        type uint32;
+        description
+          "optional span index of job; if left empty, will perform centralized processing";
+      }
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+      leaf out {
+        type string {
+          length "1..100";
+        }
+        description
+          "response";
+      }
+    }
+  }
+
+  rpc initiate-update {
+    description
+      "call the service to indicate data is ready to be collected and initiate the update";
+    input {
+      leaf node-name {
+        type string;
+        description
+          "Indicates node that the section is associated to";
+      }
+      leaf section-name {
+        type string;
+        description
+          "Indicates name of section for given section";
+      }
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+      leaf out {
+        type string {
+          length "1..100";
+        }
+        description
+          "response";
+      }
+    }
+  }
+}

@@ -1,0 +1,144 @@
+module ciena-waveserver-application-link-data-collection {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-application-link-data-collection";
+  prefix app-ldc;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Link Data Collection
+     application support.";
+
+  revision 2019-02-18 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the Link Data Collection Application external
+       data model.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  grouping link-data-collection-configs-group {
+    description
+      "Input parameters from the last Link data Collection Test.";
+    leaf interval {
+      type uint16 {
+        range "10..60000";
+      }
+      units "ms";
+      default 60000;
+      ui:ui-name "Interval";
+      description
+        "Interval in Milliseconds <10-60000>";
+    }
+    leaf num-records {
+      type uint16 {
+        range "100..50000";
+      }
+      default 100;
+      ui:ui-name "Numrecords";
+      description
+        "Record count <100-50000>";
+    }
+  }
+
+  rpc waveserver-application-link-data-start {
+    description
+      "Start the Link Data Collection on a line port.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "Ptp ID";
+        description
+          "The line port slot/ptp";
+      }
+      uses link-data-collection-configs-group;
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-link-data-stop {
+    description
+      "Stop the Link Data Collection on a line port.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "Ptp ID";
+        description
+          "The line port slot/ptp";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-link-data-show {
+    description
+      "Show the Optical Link Data collection statistics for a line port.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "Ptp ID";
+        description
+          "The line port slot/ptp";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+      uses cienawstypes:rpc-oper-status-group;
+      uses link-data-collection-configs-group;
+    }
+  }
+
+  rpc waveserver-application-link-data-upload {
+    description
+      "Upload the optical link statistics for a line port from the link data collector to an server.";
+    input {
+      uses cienawstypes:rpc-log-upload-group;
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "Ptp ID";
+        description
+          "The line port slot/ptp";
+      }
+      leaf scp-server {
+        type cienawstypes:ipaddr-or-hostname ;
+        ui:ui-name "Remote scp Server";
+        description
+          "The remote scp server to where the logfile will be copied.";
+      }
+      leaf file-name {
+        type cienawstypes:string-maxl-254;
+        ui:ui-name "File Name";
+        description
+          "The full path name of the file on the remote server.";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+}

@@ -1,0 +1,631 @@
+module ciena-6500-cct-decoder-template {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500-cct-decoder-template";
+  prefix cctdecoder;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's 6500 platform (CCT) Service SN.BIN file decoding structure";
+
+  revision 2023-10-13 {
+    description
+      "Add secondary-offset to wdl-data.";
+    version:version "version" {
+      version:string "0.9.0";
+    }
+  }
+  revision 2023-05-19 {
+    description
+      "Add hard-coded-frequency leaf to iloss-measurements.";
+    version:version "version" {
+      version:string "0.8.0";
+    }
+  }
+  revision 2022-11-04 {
+    description
+      "Add a scaling factor to insertion loss decoding. Support decoding pump wavelengths";
+    version:version "version" {
+      version:string "0.7.0";
+    }
+  }
+  revision 2021-10-26 {
+    description
+      "Add a boolean flag to adjust offsets for FIM cards.";
+    version:version "version" {
+      version:string "0.6.0";
+    }
+  }
+  revision 2021-05-28 {
+    description
+      "Support decoding FWM data.";
+    version:version "version" {
+      version:string "0.5.0";
+    }
+  }
+  revision 2021-05-14 {
+    description
+      "Support decoding partitioning coefficients.";
+    version:version "version" {
+      version:string "0.4.0";
+    }
+  }
+  revision 2021-03-26 {
+    description
+      "Remove center-frequency from the template and read it from the card instead.";
+    version:version "version" {
+      version:string "0.3.1";
+    }
+  }
+  revision 2021-03-17 {
+    description
+      "Support decoding Wavelength Dependent Loss (WDL) coefficients.";
+    version:version "version" {
+      version:string "0.3.0";
+    }
+  }
+  revision 2021-01-28 {
+    description
+      "Support multi-stage AMPs.";
+    version:version "version" {
+      version:string "0.2.0";
+    }
+  }
+  revision 2020-11-09 {
+    description
+      "Support passive cards.";
+    version:version "version" {
+      version:string "0.1.0";
+    }
+  }
+  revision 2019-07-09 {
+    description
+      "Initial revision";
+  }
+
+  typedef type-decoder-name {
+    type string {
+      pattern '[a-zA-Z][a-zA-Z0-9_]*';
+    }
+    description
+      "Name of the decoder.";
+  }
+
+  typedef type-uint32 {
+    type string;
+    description
+      "uint32 that can be formatted in decimal or hex";
+  }
+
+  typedef type-offset {
+    type uint32;
+    units "bytes";
+    description
+      "SN.BIN file byte offset to start decoding
+       Always mandatory and is not part of the type-decoder-name";
+  }
+
+  typedef type-frequency {
+    type common-types:frequency;
+    description
+      "Frequency
+       if this parameter is required by the decoder,
+       the type-decoder-name will include the string \"_freq\".";
+  }
+
+  list cct-decoder {
+    key "hardware-id";
+    leaf hardware-id {
+      type uint32;
+      description
+        "The hardware identifier of the cct decoder
+         The hardware-id-str gets mapped into this hardware-id when left at value zero";
+    }
+    leaf hardware-id-string {
+      type type-uint32;
+      description
+        "The hardware identifier of the cct decoder as string
+         The identifier can be in hexadecimal or decimal";
+    }
+    leaf description {
+      type string;
+      description
+        "The description of this cct decoder";
+    }
+    list identification {
+      key "decoder-name offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+        description
+          "offset here is the address of the address of the data in the SN.BIN file";
+      }
+      leaf direct-offset {
+        type type-offset;
+        description
+          "direct-offset is the direct address of the data";
+      }
+      leaf isFim {
+        type boolean;
+        default "false";
+        description
+          "isFim is TRUE if this card is a FIM or CFIM. This is used to adjust the offset for these cards.";
+      }
+    }
+    list frequency {
+      key "decoder-name offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+        description
+          "offset here is the address of the address of the data in the SN.BIN file";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "When multiple iloss-measurements are provided,
+           each subsequent insertion loss is located by incrementing
+           the secondary offset by this value.";
+      }
+      leaf enum-name {
+        type string;
+        description
+          "Frequency enum name prefix";
+      }
+      leaf enum-start {
+        type uint32;
+        default "1";
+        description
+          "Frequency enum name numeric suffix";
+      }
+      leaf table-name {
+        type string;
+        description
+          "Frequency table name";
+      }
+      leaf size {
+        type uint32;
+        description
+          "Frequency table size";
+      }
+    }
+    list insertion-loss {
+      key "decoder-name offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+        description
+          "offset here is the address of the address of the data in the SN.BIN file";
+      }
+      leaf direct-offset {
+        type type-offset;
+        description
+          "direct-offset is the direct address of the data";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        units "bytes";
+        description
+          "When multiple iloss-measurements are provided,
+           each subsequent insertion loss is located by incrementing
+           the secondary offset by this value.";
+      }
+      leaf lambda_at_offset {
+        type uint32;
+        units "bytes";
+        description
+          "When multiple iloss-measurements are provided,
+           each with a lambda value, this is the offset
+           where the lambda value is stored.";
+      }
+      leaf scaling {
+        type uint32;
+        default "1";
+        description
+          "Insertion loss scaling factor.";
+      }
+      leaf iloss-encoding {
+        type enumeration {
+          enum float {
+            description
+              "32 bit float insertion loss type in dB.";
+          }
+          enum uint32 {
+            description
+              "SRA cards use uint32 insertion loss type in mdB.";
+          }
+          enum uint8 {
+            description
+              "Passive cards use uint8 insertion loss type in dB/10.";
+          }
+        }
+        default "float";
+        description
+          "Insertion loss encoding format.";
+      }
+      list iloss-measurements {
+        key "name frequency";
+        leaf name {
+          type string;
+          description
+            "Link name";
+        }
+        leaf frequency {
+          type string;
+          default "0";
+          description
+            "Insertion loss reference frequency.
+             This references an enum from the frequency section.";
+        }
+        leaf hard-coded-frequency {
+          type common-types:frequency;
+          description
+            "Insertion loss reference frequency.
+             This is hard coded into the decoder template.";
+        }
+      }
+    }
+    list wdl-data {
+      key "decoder-name offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+        description
+          "offset here is the address of the address of the data in the SN.BIN file";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        units "bytes";
+        description
+          "The step used by the decoder to decode the next set of WDL coefficients.";
+      }
+      list wdl-coeffs {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Link name";
+        }
+      }
+    }
+    list edfa-gain-mode {
+      key "decoder-name edfa-name gain-mode offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+      }
+      leaf edfa-name {
+        type string;
+        description
+          "EDFA name";
+      }
+      leaf gain-mode {
+        type string;
+        description
+          "Gain mode (high, low...)";
+      }
+      leaf stage {
+        type uint32;
+        description
+          "Identifies the stage index, if data applies to a single stage of a multi-stage amp.
+           If data is not stage specific, this leaf is not populated.";
+      }
+    }
+    list edfa-dgt {
+      key "decoder-name edfa-name gain-mode offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf edfa-name {
+        type string;
+        description
+          "EDFA name";
+      }
+      leaf gain-mode {
+        type string;
+        default "low";
+        description
+          "Gain mode (high, low...)";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "When multiple gain measurements are provided,
+           each subsequent gain is located by incrementing
+           the secondary offset by this value.";
+      }
+      leaf dgt-reference-frequency {
+        type common-types:frequency;
+        description
+          "Dynamic Gain Tilt (DGT) reference frequency";
+      }
+      leaf freq-table-name {
+        type string;
+        description
+          "Frequency Table Name,
+           The size of the frequency table dictates the number of DGT values to extract";
+      }
+    }
+    list edfa-gain-ripple {
+      key "decoder-name edfa-name gain-mode offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf part-coeff-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file gain-ripple offset to start decoding partitioning coefficients.";
+      }
+      leaf edfa-name {
+        type string;
+        description
+          "EDFA name";
+      }
+      leaf gain-mode {
+        type string;
+        description
+          "Gain mode (high, low...)";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "When multiple gain measurements are provided,
+           each subsequent gain is located by incrementing
+           the secondary offset by this value.";
+      }
+      leaf freq-table-name {
+        type string;
+        description
+          "Frequency Table Name,
+           The size of the frequency table dictates the number of DFG values to extract";
+      }
+    }
+    list edfa-noise-figure {
+      key "decoder-name edfa-name gain-mode offset secondary-offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+      }
+      leaf edfa-name {
+        type string;
+        description
+          "EDFA name";
+      }
+      leaf gain-mode {
+        type string;
+        description
+          "Gain mode (high, low...)";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "When multiple noise figures are provided,
+           each subsequent noise figure is located by incrementing
+           the secondary offset by this value.";
+      }
+      list test-conditions {
+        key "gain-tilt input-power output-power";
+        leaf gain-tilt {
+          type common-types:loss;
+          units "dB";
+          description
+            "Gain tilt";
+        }
+        leaf input-power {
+          type common-types:power;
+          units "dBm";
+          description
+            "Input power";
+        }
+        leaf output-power {
+          type common-types:power;
+          units "dBm";
+          description
+            "Output power";
+        }
+      }
+      leaf freq-table-name {
+        type string;
+        description
+          "Frequency Table Name,
+           The size of the frequency table dictates the number of noise figure values to extract.
+           The frequency table decoding gets repeated for each test condition in the conditions list";
+      }
+    }
+    list edfa-fwm {
+      key "decoder-name edfa-name gain-mode offset secondary-offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf offset {
+        type type-offset;
+      }
+      leaf edfa-name {
+        type string;
+        description
+          "EDFA name";
+      }
+      leaf gain-mode {
+        type string;
+        description
+          "Gain mode (high, low...)";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "Step between FWM values.";
+      }
+      list test-conditions {
+        key "gain-tilt input-power-tilt input-power gain";
+        leaf gain-tilt {
+          type common-types:loss;
+          units "dB";
+          description
+            "Gain tilt";
+        }
+        leaf input-power {
+          type common-types:power;
+          units "dBm";
+          description
+            "Input power. This is not represented in the cct-pro yang model.
+             Instead, output-power is calculated as input-power + gain.
+             This is because DLE cards have the input-power defined in cct data and not output-power.";
+        }
+        leaf input-power-tilt {
+          type common-types:gain;
+          units "dB";
+          description
+            "Input Power Tilt";
+        }
+        leaf gain {
+          type common-types:gain;
+          units "dB";
+          description
+            "Gain";
+        }
+      }
+      leaf freq-table-name {
+        type string;
+        description
+          "Frequency Table Name,
+           The size of the frequency table dictates the number of FWM values to extract.
+           The frequency table decoding gets repeated for each test condition in the conditions list";
+      }
+    }
+    list raman-pump-wavelengths {
+      key "decoder-name raman-name offset";
+      leaf decoder-name {
+        type type-decoder-name;
+      }
+      leaf raman-name {
+        type string;
+        description
+          "Raman name";
+      }
+      leaf offset {
+        type type-offset;
+        description
+          "offset here is the address of the address of the data in the SN.BIN file";
+      }
+      leaf secondary-offset {
+        type uint32;
+        default "0";
+        units "bytes";
+        description
+          "SN.BIN file secondary offset to start decoding";
+      }
+      leaf step {
+        type uint32;
+        default "4";
+        units "bytes";
+        description
+          "When multiple pump wavelengths are provided,
+           each subsequent pump wavelength is located by incrementing
+           the secondary offset by this value.";
+      }
+      list wavelengths {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Pump name";
+        }
+        description
+          "List of pump names that will have wavelength measurements decoded from cct.
+           The size of the list indicate how many wavelengths to decode.";
+      }
+    }
+  }
+}

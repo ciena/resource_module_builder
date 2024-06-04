@@ -1,0 +1,202 @@
+module ciena-6500r-wss-controller {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-wss-controller";
+  prefix wss-controller;
+
+  import ciena-6500r-chc {
+    prefix ciena-6500r-chc;
+  }
+  import ciena-6500r-chc {
+    prefix chcimp;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's P-series platform slot model";
+
+  revision 2017-02-13 {
+    description
+      "Initial revision";
+  }
+
+  typedef channel-active {
+    type enumeration {
+      enum ACTIVE {
+        description
+          "Channel is active";
+      }
+      enum INACTIVE {
+        description
+          "Channel is in-active";
+      }
+    }
+    description
+      "Channel active state.";
+  }
+
+  typedef channel-state {
+    type enumeration {
+      enum OPAQUE {
+        description
+          "Channel is opaque";
+      }
+      enum WAITINGFORPOWER {
+        description
+          "Channel is waiting for power";
+      }
+      enum ADDPENDING {
+        description
+          "Channel will be added";
+      }
+      enum OPENLOOPLOSSMODE {
+        description
+          "Channel is in-service with an Open Loop Loss Set";
+      }
+      enum CONVERGINGPOWERMODE {
+        description
+          "Channel is adding in power mode";
+      }
+      enum CONVERGEDPOWERMODE {
+        description
+          "Channel is added in power mode";
+      }
+    }
+    description
+      "Channel active state.";
+  }
+
+  container wss-controller-channels {
+    list slot {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "The name of the slot.";
+      }
+      leaf controller-active {
+        type boolean;
+        description
+          "Indicates if controller is running on this slot.";
+      }
+      list port {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "The port name.";
+        }
+        list channels {
+          key "nmcc-name";
+          leaf name {
+            type string;
+            description
+              "The name of the channel, it could be something like 1-1-1 or Bob.";
+          }
+          leaf nmcc-name {
+            type leafref {
+              path "/chcimp:channel-control/chcimp:nmcc/chcimp:name";
+            }
+            description
+              "NMCC For this channel";
+          }
+          leaf slot-name {
+            type string;
+            description
+              "The name of the slot";
+          }
+          leaf chc-name {
+            type leafref {
+              path "/chcimp:channel-control/chcimp:chc/chcimp:name";
+            }
+            description
+              "CHC Parent";
+          }
+          leaf active {
+            type channel-active;
+            description
+              "Channel active state";
+          }
+          leaf state {
+            type channel-state;
+            description
+              "Channel state";
+          }
+          container control-data {
+            leaf measured-error {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              units "dB";
+              config false;
+              description
+                "Difference between the measured power and target power";
+            }
+            leaf previous-measured-error {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              units "dB";
+              config false;
+              description
+                "Difference between the measured power and target power from last control iteration";
+            }
+            leaf previous-state {
+              type channel-state;
+              config false;
+              description
+                "Channel state from last control iteration";
+            }
+            leaf i-m {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              config false;
+              description
+                "i_m";
+            }
+            leaf pid {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              config false;
+              description
+                "pid_m";
+            }
+            leaf channel-drive {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              config false;
+              description
+                "Channel Drive";
+            }
+            leaf previous-channel-drive {
+              type decimal64 {
+                fraction-digits 2;
+              }
+              config false;
+              description
+                "Channel Drive from previous controller iteration";
+            }
+          }
+          container fac-data {
+            yang:mount-start "ciena-6500r-chc";
+            uses ciena-6500r-chc:ciena-6500r-chc-mount-data;
+            uses ciena-6500r-chc:ciena-6500r-chc-mount-actions-notifs;
+            yang:mount-end "ciena-6500r-chc";
+          }
+        }
+      }
+    }
+  }
+}

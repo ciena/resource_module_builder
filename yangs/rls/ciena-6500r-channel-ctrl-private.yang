@@ -1,0 +1,251 @@
+module ciena-6500r-channel-ctrl-private {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-channel-ctrl-private";
+  prefix ccs;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-6500r-channel-ctrl-types {
+    prefix ccs-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes the private interface for Ciena's channel control objects for the 6500r-Series platform";
+
+  revision 2022-07-12 {
+    description
+      "Added media-channels list";
+    ciena-common-version:string "1.0.3";
+  }
+  revision 2021-05-11 {
+    description
+      "Added edit-ccp-hold-off-msec leaf";
+    ciena-common-version:string "1.0.2";
+  }
+  revision 2020-09-01 {
+    description
+      "Added edit-nmc-hold-off-msec and edit-max-nmc-hold-off-msec leaves";
+    ciena-common-version:string "1.0.2";
+  }
+  revision 2020-06-14 {
+    description
+      "Added edit-loss-mode-pwr-collection-cadence-msec leaf";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2019-09-23 {
+    description
+      "Initial Creation";
+    reference
+      "0.1.0";
+  }
+
+  rpc ccs-debug {
+    input {
+      leaf dump-ccs-instance {
+        type common-types:object-name;
+        description
+          "Name of internal ccs-instance to dump, can be empty string to dump all";
+      }
+      leaf show-channels {
+        type string;
+        description
+          "Type of channels to show. Possible values: traffic, to show all Traffic channels; ase, to show all ASE channels; objectives, to show all channels with objectives set; all, to show all channels";
+      }
+      leaf edit-ccs-instance {
+        type common-types:object-name;
+        description
+          "Name of internal ccs-instance to edit";
+      }
+      leaf edit-channel-center-freq {
+        type uint32;
+        description
+          "Center frequency of the ccs channel to edit";
+        units "MHz";
+      }
+      leaf edit-channel-link {
+        type string;
+        description
+          "Link of the ccs channel to edit";
+      }
+      leaf set-channel-health {
+        type string;
+        description
+          "Channel health value to set";
+      }
+      leaf clear-channel-health {
+        type string;
+        description
+          "Channel health value to clear";
+      }
+      leaf edit-bundle-wait-time-msec {
+        type uint32;
+        description
+          "Wait time in milliseconds between processing bundles. Not applied to last bundle.";
+      }
+      leaf sequenced-delete {
+        type boolean;
+        description
+          "True to enable sequenced deletes, False to disable.";
+      }
+      leaf precheck-add-pwr-enabled {
+        type boolean;
+        description
+          "True to enable add power threshold checking. False to disable.";
+      }
+      leaf edit-channel-hold-off-msec {
+        type uint32;
+        description
+          "Wait time in milliseconds between checking for additional channels for capacity change.";
+      }
+      leaf edit-max-channel-hold-off-msec {
+        type uint32;
+        description
+          "Maximum wait time in milliseconds for checking for additional channels for capacity change.";
+      }
+      leaf edit-nmc-hold-off-msec {
+        type uint32;
+        description
+          "Wait time in milliseconds to allow nmc notification accumulation for capacity change.";
+      }
+      leaf edit-max-nmc-hold-off-msec {
+        type uint32;
+        description
+          "Maximum wait time in milliseconds to allow nmc notification accumulation for capacity change.";
+      }
+      leaf edit-fault-detection-cadence-msec {
+        type uint32;
+        description
+          "Edit fault detection polling cadence.";
+      }
+      leaf edit-pwr-collection-cadence-msec {
+        type uint32;
+        description
+          "Edit power collection cadence.";
+      }
+      leaf edit-loss-mode-pwr-collection-cadence-msec {
+        type uint32;
+        description
+          "Edit power collection cadence for loss mode.";
+      }
+      leaf pwr-collection-enabled {
+        type boolean;
+        description
+          "True to enable power collection. False to disable.";
+      }
+      leaf edit-atten-calculation-cadence-msec {
+        type uint32;
+        description
+          "Edit attenuation calculation cadence.";
+      }
+      leaf atten-calculation-enabled {
+        type boolean;
+        description
+          "True to enable attenuation calculation. False to disable.";
+      }
+      leaf peeking-retry-msec {
+        type uint32;
+        description
+          "Time between consecutive peeking retries.";
+      }
+      leaf edit-port-source {
+        type enumeration {
+          enum local {
+            description
+              "local source";
+          }
+          enum foreign {
+            description
+              "foreign source";
+          }
+        }
+        description
+          "Source to set for a switch port";
+      }
+      leaf edit-ccp-hold-off-msec {
+        type uint32;
+        description
+          "Hold-off time before capacity-change-pending diag point is set.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:rpc-result-common;
+      }
+      list ccs-instances {
+        key "name";
+        leaf name {
+          type common-types:object-name;
+          description
+            "Name of the ccs instance";
+        }
+        leaf data {
+          type string {
+            length "1..5000";
+          }
+          description
+            "Dump of internal ccs-instance data";
+        }
+        list media-channels {
+          key "identifier";
+          leaf identifier {
+            type string;
+            description
+              "Media channel name, min freq, max freq, and deadband";
+          }
+        }
+        list channels {
+          key "identifier";
+          leaf identifier {
+            type string;
+            description
+              "Center frequency of the channel in MHz and the Link";
+          }
+          leaf data {
+            type string {
+              length "1..5000";
+            }
+            description
+              "Dump of internal channel data";
+          }
+        }
+      }
+    }
+  }
+
+  rpc ccs-set-audit {
+    description
+      "Set CCS audit parameters";
+    input {
+      leaf enabled {
+        type boolean;
+        description
+          "True to enable the CCS audit, False to disable it";
+      }
+      leaf timeout {
+        type uint32;
+        units "second";
+        description
+          "Frequency of the CCS audit";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

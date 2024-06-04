@@ -1,0 +1,177 @@
+module ciena-6500r-otdr-shelf-config {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-otdr-shelf-config";
+  prefix otdr-shelf;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-6500r-otdr {
+    prefix ciena-6500r-otdr;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's 6500 platform
+     Optical Time Domain Reflectometer (OTDR) shelf level types and objects";
+
+  revision 2023-05-10 {
+    description
+      "Created new `otdr-shelf-config` global container, renamed `otdr-auto-upload-config` to `auto-upload`
+       and moved under `otdr-shelf-config`";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    reference
+      "RLS 3.1";
+  }
+  revision 2023-02-06 {
+    description
+      "Added http and https in protocol";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2022-11-15 {
+    description
+      "Added protocol";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-10-04 {
+    description
+      "Updated otdr-auto-upload-config description";
+    version:version "version" {
+      version:string "1.0.1";
+    }
+  }
+  revision 2022-07-07 {
+    description
+      "Initial revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  container otdr-shelf-config {
+    description
+      "OTDR configuration for the shelf.";
+    uses auto-upload-group;
+    leaf long-trace-alarms {
+      type boolean;
+      description
+        "If set to True, allows alarms to be raised for OTDR long trace.";
+    }
+  }
+
+  grouping auto-upload-group {
+    container auto-upload-config {
+      description
+        "The configuration settings used in the otdr-auto-upload feature.
+
+         The file-name and directory-path leaves can be configured to include template variables. These get replaced with context specific values during file upload.
+         For example, {date-time} would become 2022-06-03T00-07-00Z (or whatever the timestamp was when the trace started running).
+
+         The supported template variables are:
+         {site}               - Name of the site
+         {shelf}              - Name of the shelf
+         {member}             - Name of the member
+         {slot}               - Slot Name
+         {port}               - Port Name
+         {type}               - Type (long, short or office) of the trace
+         {tag}                - Describes whether a trace is current or baseline
+         {requestor}          - The reason the trace was initiated
+         {date-time}          - UTC date and time of the trace (format: YYYY-MM-DDThh-mm-ssZ)
+         {date}               - UTC date of the trace (format: YYYY-MM-DD)
+         {time}               - UTC time of the trace (format: hh-mm-ss)
+         {iso-8601-date-time} - ISO 8601 compliant UTC date and time of the trace (format: YYYY-MM-DDThh:mm:ssZ)
+         {iso-8601-time}      - ISO 8601 compliant UTC time of the trace (format: hh:mm:ss)
+
+         The combined length of the file-name and directory-path must be 505 or less characters in order for the overall upload URL length
+         to fit within the limit set by the xftp RPC.";
+      leaf authority {
+        type string;
+        description
+          "The name of the authority configuration that will be used for file uploads. This must be the name of an existing and valid authority.
+           If not explicitly set, the default configured authority will be used (if it exists).";
+      }
+      leaf auto-upload {
+        type enumeration {
+          enum Disabled {
+            value 0;
+          }
+          enum Enabled {
+            value 1;
+          }
+        }
+        default "Disabled";
+        description
+          "Whether the feature is enabled or not. Set to 'Enabled' for the feature to be active.";
+      }
+      leaf file-name {
+        type string {
+          length "1..504";
+        }
+        default "RLS-{site}-{shelf}-{member}-{slot}-{port}-{type}-{tag}-{date-time}-{requestor}.SOR";
+        description
+          "File name of the uploaded SOR file. See otdr-auto-upload-config for more details.";
+      }
+      leaf directory-path {
+        type string {
+          length "1..504";
+        }
+        default "/otdr/";
+        description
+          "Full path of the remote location the uploaded SOR file will be saved in. See otdr-auto-upload-config for more details.";
+      }
+      leaf include-baselines {
+        type boolean;
+        default "false";
+        description
+          "Whether to also upload baseline trace SOR files. Set to true to upload baseline SOR files.";
+      }
+      leaf protocol {
+        type enumeration {
+          enum sftp {
+            description
+              "SSH (Secure Shell Protocol) File Transfer Protocol";
+          }
+          enum scp {
+            description
+              "Secure Copy Protocol";
+          }
+          enum http {
+            description
+              "Hypertext Transfer Protocol";
+          }
+          enum https {
+            description
+              "Hypertext Transfer Protocol Secure";
+          }
+        }
+        default "sftp";
+        description
+          "Protocol to use for auto-uploading the OTDR files";
+      }
+    }
+  }
+
+  rpc otdr-upload-sor-files {
+    description
+      "If auto upload is enabled, all SOR files (including baselines if configured) that are not currently queued for
+       upload get added to the queue of pending uploads.";
+    output {
+      list output {
+        uses ciena-6500r-otdr:otdr-rpc-response-group;
+      }
+    }
+  }
+}
