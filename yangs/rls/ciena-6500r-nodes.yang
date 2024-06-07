@@ -1,0 +1,338 @@
+module ciena-6500r-nodes {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-nodes";
+  prefix ciena-6500r-nodes;
+
+  import ciena-6500r-slots {
+    prefix ciena-6500r-slots;
+  }
+
+  import ciena-6500r-links {
+    prefix ciena-6500r-links;
+  }
+
+  import ciena-pro-data-collector {
+    prefix ciena-pro-data-collector;
+  }
+
+  import ciena-6500r-span-calibr-orch {
+    prefix ciena-6500r-span-calibr-orch;
+  }
+
+  import ciena-6500r-network-fault {
+    prefix ciena-6500r-network-fault;
+  }
+
+  import ciena-6500r-fg {
+    prefix ciena-6500r-fg;
+  }
+
+  import ciena-6500-cct {
+    prefix ciena-6500-cct;
+  }
+
+  import ciena-6500r-remote-data {
+    prefix ciena-6500r-remote-data;
+  }
+
+  import ciena-6500r-otdr-svc {
+    prefix ciena-6500r-otdr-svc;
+  }
+
+  import ciena-6500r-channel-ctrl {
+    prefix ciena-6500r-channel-ctrl;
+  }
+
+  import ciena-pro-device-controller {
+    prefix ciena-pro-device-controller;
+  }
+
+  import ciena-6500r-cv-shelf-config {
+    prefix ciena-6500r-cv-shelf-config;
+  }
+
+  import ciena-pro-graph-vertex {
+    prefix ciena-pro-graph-vertex;
+  }
+
+  import ciena-6500r-osrp-rls-ra-osrp-comms-link {
+    prefix ciena-6500r-osrp-rls-ra-osrp-comms-link;
+  }
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r nodes, and provides local access to data on remote nodes.";
+
+  revision 2021-02-04 {
+    version:version "version" {
+      version:string "1.7.0";
+    }
+    description
+      "Remove snmp-ra from nodes/data - RLS 2.3";
+  }
+  revision 2021-02-01 {
+    version:version "version" {
+      version:string "1.6.0";
+    }
+    description
+      "Make nodes/diagnostic container config false - RLS 2.3";
+  }
+  revision 2020-12-21 {
+    version:version "version" {
+      version:string "1.5.0";
+    }
+    description
+      "Add software version to nodes/data - RLS 2.3";
+  }
+  revision 2020-12-04 {
+    version:version "version" {
+      version:string "1.4.0";
+    }
+    description
+      "Add snmp-ra to nodes/data - RLS 2.3";
+  }
+  revision 2020-10-30 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "Add On-Since value RLS 2.2";
+  }
+  revision 2020-09-25 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "-Add osrp-comms-link to nodes mounted data";
+  }
+  revision 2020-08-20 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "RLS 2.1
+       - Add device-controller, cv-shelf-config and graph-vertex to nodes mounted data
+       - Import ietf-inet-types for the purposes of IP addresses";
+  }
+  revision 2019-03-19 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial revision RLS 2.0/2.0.60";
+  }
+
+  grouping node-data {
+    leaf ip-address {
+      type inet:ip-address;
+      description
+        "Node IP address";
+    }
+
+    leaf node-type {
+      type enumeration {
+        enum "local" {
+          value 1;
+          description
+            "Indicates local node.";
+        }
+        enum "site" {
+          value 2;
+          description
+            "Indicates site node, which is a CV neighbour connected to a different RLS device.";
+        }
+        enum "section" {
+          value 3;
+          description
+            "Indicates section node.";
+        }
+      }
+    }
+
+    leaf local-id {
+      type string;
+      description
+        "An unique identifier to logically group a set of micro-services";
+    }
+  }
+
+  grouping ciena-6500r-nodes-mount {
+    list nodes {
+      key "node-name";
+      leaf node-name {
+        type string;
+        description
+          "The name of the node.";
+      }
+
+      leaf ip-address {
+        type inet:ip-address;
+        description
+          "Node IP address";
+      }
+
+      leaf node-type {
+        type enumeration {
+          enum "local" {
+            value 1;
+            description
+              "Indicates local node.";
+          }
+          enum "site" {
+            value 2;
+            description
+              "Indicates site node, which is a CV neighbour connected to a different RLS device.";
+          }
+          enum "section" {
+            value 3;
+            description
+              "Indicates section node.";
+          }
+        }
+      }
+
+      container config {
+        uses node-data;
+      }
+
+      container diagnostic {
+        config false;
+        leaf is-up {
+          type boolean;
+          default "true";
+          description
+            "Indicates if the node is up";
+        }
+
+        leaf heartbeat-failure-count {
+          type uint16;
+          description
+            "The counter which indicates the number of times a remote node went down.";
+        }
+
+        leaf on-since {
+          type uint64;
+          description
+            "Time when this domain was last started, in nanoseconds.";
+        }
+
+        leaf software-version {
+          type string;
+          description
+            "Actual software release version that is currently running and is expected to match active-version after an upgrade is completed.
+             Format: RLS-xx.yy.zz.bbbb";
+        }
+      }
+
+      container data {
+        yang:mount-start "ciena-6500r-slots";
+        yang:mount-end "ciena-6500r-slots";
+        yang:mount-start "ciena-6500r-links";
+        yang:mount-end "ciena-6500r-links";
+        yang:mount-start "ciena-pro-data-collector";
+        yang:mount-end "ciena-pro-data-collector";
+        yang:mount-start "ciena-6500r-span-calibr-orch";
+        yang:mount-end "ciena-6500r-span-calibr-orch";
+        yang:mount-start "ciena-6500r-network-fault";
+        yang:mount-end "ciena-6500r-network-fault";
+        yang:mount-start "ciena-6500r-fg";
+        yang:mount-end "ciena-6500r-fg";
+        yang:mount-start "ciena-6500-cct";
+        yang:mount-end "ciena-6500-cct";
+        yang:mount-start "ciena-6500r-remote-data";
+        yang:mount-end "ciena-6500r-remote-data";
+        yang:mount-start "ciena-6500r-otdr-svc";
+        yang:mount-end "ciena-6500r-otdr-svc";
+        yang:mount-start "ciena-6500r-channel-ctrl";
+        yang:mount-end "ciena-6500r-channel-ctrl";
+        yang:mount-start "ciena-pro-device-controller";
+        yang:mount-end "ciena-pro-device-controller";
+        yang:mount-start "ciena-6500r-cv-shelf-config";
+        yang:mount-end "ciena-6500r-cv-shelf-config";
+        yang:mount-start "ciena-pro-graph-vertex";
+        yang:mount-end "ciena-pro-graph-vertex";
+        yang:mount-start "ciena-6500r-osrp-rls-ra-osrp-comms-link";
+        yang:mount-end "ciena-6500r-osrp-rls-ra-osrp-comms-link";
+        uses ciena-6500r-slots:ciena-6500r-slots-mount-actions;
+
+        uses ciena-6500r-slots:ciena-6500r-slots-mount;
+
+        uses ciena-6500r-links:ciena-6500r-links-mount-actions;
+
+        uses ciena-6500r-links:ciena-6500r-links-mount;
+
+        uses ciena-pro-data-collector:ciena-pro-data-collector-mount-actions;
+
+        uses ciena-pro-data-collector:ciena-pro-data-collector-mount;
+
+        uses ciena-6500r-span-calibr-orch:ciena-6500r-span-calibr-orch-mount-actions;
+
+        uses ciena-6500r-span-calibr-orch:ciena-6500r-span-calibr-orch-mount;
+
+        uses ciena-6500r-network-fault:ciena-6500r-network-fault-mount-actions;
+
+        uses ciena-6500r-network-fault:ciena-6500r-network-fault-mount;
+
+        uses ciena-6500r-fg:ciena-6500r-fg-mount-actions;
+
+        uses ciena-6500r-fg:ciena-6500r-fg-mount;
+
+        uses ciena-6500-cct:ciena-6500-cct-mount-actions;
+
+        uses ciena-6500-cct:ciena-6500-cct-mount;
+
+        uses ciena-6500r-remote-data:ciena-6500r-remote-data-mount-actions;
+
+        uses ciena-6500r-remote-data:ciena-6500r-remote-data-mount;
+
+        uses ciena-6500r-otdr-svc:ciena-6500r-otdr-svc-mount-actions;
+
+        uses ciena-6500r-otdr-svc:ciena-6500r-otdr-svc-mount;
+
+        uses ciena-6500r-channel-ctrl:ciena-6500r-channel-ctrl-mount-actions;
+
+        uses ciena-6500r-channel-ctrl:ciena-6500r-channel-ctrl-mount;
+
+        uses ciena-pro-device-controller:ciena-pro-device-controller-mount-actions;
+
+        uses ciena-pro-device-controller:ciena-pro-device-controller-mount;
+
+        uses ciena-6500r-cv-shelf-config:ciena-6500r-cv-shelf-config-mount-actions;
+
+        uses ciena-6500r-cv-shelf-config:ciena-6500r-cv-shelf-config-mount;
+
+        uses ciena-pro-graph-vertex:ciena-pro-graph-vertex-mount-actions;
+
+        uses ciena-pro-graph-vertex:ciena-pro-graph-vertex-mount;
+
+        uses ciena-6500r-osrp-rls-ra-osrp-comms-link:ciena-6500r-osrp-rls-ra-osrp-comms-link-mount-actions;
+
+        uses ciena-6500r-osrp-rls-ra-osrp-comms-link:ciena-6500r-osrp-rls-ra-osrp-comms-link-mount;
+      }
+    }
+  }
+
+  grouping ciena-6500r-nodes-mount-actions;
+
+  uses ciena-6500r-nodes-mount;
+}

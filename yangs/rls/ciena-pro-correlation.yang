@@ -1,0 +1,1595 @@
+module ciena-pro-correlation {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-correlation";
+  prefix corrsvc;
+
+  import ciena-common-yang {
+    prefix ciena-yang;
+  }
+  import ciena-pro-diag {
+    prefix diag;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-alarm-control {
+    prefix alarm;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's correlation model objects for the
+     correlation-service engine";
+
+  revision 2022-11-10 {
+    description
+      "Add a new control field to set-diagnostic-point-values.
+       Add control option to provide batch mode processing of points.
+       Extend the equation modifier field to include additional equation
+       options.";
+    version:version "version" {
+      version:string "2.4.0";
+    }
+  }
+  revision 2022-11-04 {
+    description
+      "Add structures and RPC to provide an in-depth report of the state(s)
+       of any active diagnostic point or active model.";
+    version:version "version" {
+      version:string "2.3.0";
+    }
+  }
+  revision 2022-10-24 {
+    description
+      "Change correlation-service-deployment-configuration to
+       deployment-config.
+       Add eligible-hold-offs-disabled flag to deployment-config.";
+    version:version "version" {
+      version:string "2.2.2";
+    }
+  }
+  revision 2022-10-02 {
+    description
+      "Add hold-off-disable-eligible flag to support the user ability to disable
+       alarm holdoffs.";
+    version:version "version" {
+      version:string "2.2.1";
+    }
+  }
+  revision 2022-08-31 {
+    description
+      "Add RPC to generate a model object from templates";
+    version:version "version" {
+      version:string "2.2.0";
+    }
+  }
+  revision 2022-03-24 {
+    description
+      "Correlation-model-template enhancements.
+       - add template variables
+       - add lists of source models to the activate rpc
+       - add new rpc option to edit/extend active models with template data
+       - add leaf-list of models to the active model (to record the
+         list of source models used in the active models' activation).";
+    version:version "version" {
+      version:string "2.1.6";
+    }
+  }
+  revision 2021-11-22 {
+    description
+      "Add registration policies for notify registrations and point updates to
+       control how registrations are made.
+
+       Add deployment container to control and configure operational aspects
+       of the correlation service.";
+    version:version "version" {
+      version:string "2.1.5";
+    }
+  }
+  revision 2021-10-05 {
+    description
+      "Add a comparison operator to the notify registration active and idle
+       value tests.  Tests can now be done on ranges of values and not just
+       matching and/or not matching.  Comparisons are provided for both
+       mathematical and string comparisons.
+
+       Add a new category of notify-registration that updates fields of the
+       diagnostic point from notifications.  Only a subset of diagnostic point
+       fields are supported.";
+    version:version "version" {
+      version:string "2.1.4";
+    }
+  }
+  revision 2021-06-17 {
+    description
+      "Add point log objects for extracting flare engine debugging data.";
+    version:version "version" {
+      version:string "2.1.3";
+    }
+  }
+  revision 2020-11-28 {
+    description
+      "Add an optional initial state to the diagnostic point template that
+       will be applied to the point in the active model when the point is
+       cloned into an active model.";
+    version:version "version" {
+      version:string "2.1.2";
+    }
+  }
+  revision 2020-08-13 {
+    description
+      "RLS Release 2.1
+       Increased the length of the correlation-model-name to 127 characters
+       from the previous 64.
+       Reduce the size of the notify registration key field string by one
+       character for improved performance.";
+    version:version "version" {
+      version:string "2.1.1";
+    }
+  }
+  revision 2020-06-16 {
+    description
+      "Add the raise-alarm grouping to be both the template and active model
+       diagnostic points.
+       Add a user-accessible version to the model template and active correlation
+       model.";
+    version:version "version" {
+      version:string "2.1.0";
+    }
+  }
+  revision 2019-11-20 {
+    description
+      "6500r Release 2.00
+       Introduced notify-registration as a diagnostic point type.";
+  }
+  revision 2019-10-01 {
+    description
+      "6500r Release 1.01
+       Added some characters - : ; @ - to the pattern for correlation-model-name_t";
+  }
+  revision 2019-09-24 {
+    description
+      "6500r Release 1.01
+       Fixed the pattern for correlation-model-name_t to allow repeats of
+       characters (it was missing the asterisk)";
+  }
+  revision 2018-09-15 {
+    description
+      "6500r Release 1.0-
+       Added container: correlation-service";
+  }
+
+  typedef diagnostic-point-publish_t {
+    type enumeration {
+      enum "not published" {
+        value 0;
+      }
+      enum published {
+        value 1;
+      }
+    }
+  }
+
+  typedef correlation-model-name_t {
+    type string {
+      length "1..127";
+      pattern '[0-9a-zA-Z_\-:;@]*';
+    }
+    description
+      "The assigned unique identifier for a correlation model.";
+  }
+
+  typedef correlation-model-name-ptr_t {
+    type string {
+      ciena-yang:stringptr "true";
+      pattern '[0-9a-zA-Z_\-:;@]*';
+    }
+    description
+      "The assigned unique identifier for a correlation model.";
+  }
+
+  typedef correlation-model-version-string_t {
+    type string {
+      length "1..22";
+    }
+  }
+
+  typedef short-string {
+    description
+      "Very short string for various purposes";
+    type string {
+      length "1..15";
+    }
+  }
+
+  grouping correlation-model-version_t {
+    description
+      "Normally, this version type is used for semantic versioning for a
+       yang module.  In the correlation-service, this type/format is
+       adapted for use as a user-settable version for a model.  The
+       correlation-service isn't going to use this data; it is strictly
+       a field for the application that sets/owns any given template or
+       active model to use as it choooses.
+
+       Based on the established criteria, for a major.minor.patch format,
+       if  the major number has increased, this is a non-backwards-
+       API change.  If a minor number has increased, this is a
+       backwards compatible change, extension, or deprecation.  If
+       the patch number has increased there is no API change but
+       an implementation change may exist.";
+    leaf string {
+      type correlation-model-version-string_t;
+      description
+        "String represenation of version field.  Must be in M.m.p
+         format, which M = major, m = minor, and p = patch version";
+    }
+    leaf major {
+      type uint32;
+      description
+        "Major revision for the model.  Changes to this are intended to
+         indicate a non-backwards compatible change.  Changes must be
+         incremental.";
+    }
+    leaf minor {
+      type uint32;
+      description
+        "Minor revision for the model.  Changes to this are intended to
+         indicate a backwards compatible change.  Changes must be
+         incremental.";
+    }
+    leaf patch {
+      type uint32;
+      description
+        "Patch revision for the model.  Changes to this are intended to
+         indicate an internal change to implementation and no API change.
+         Changes must be incremental.";
+    }
+  }
+
+  typedef notify_registration_string_t {
+    type string {
+      length "1..79";
+    }
+    description
+      "Used for update/notify diagnostic point identifier strings";
+  }
+
+  typedef notify_registration_path_t {
+    type string;
+    description
+      "Used for the source object path name in an update/notify diagnostic point";
+  }
+
+  typedef diagnostic-point-field-comparison_t {
+    description
+      "Model representation of diadic string and mathematical comparisons.
+
+       Comparisons are always from the perspective of the item or status
+       being compared, i.e. dynamic input data is on the left and the
+       comparison value is on the right of a diadic comparision.";
+    type enumeration {
+      enum equal {
+        value 0;
+      }
+      enum not-equal {
+        value 1;
+      }
+      enum less-than {
+        value 2;
+      }
+      enum less-than-or-equal-to {
+        value 3;
+      }
+      enum greater-than {
+        value 4;
+      }
+      enum greater-than-or-equal-to {
+        value 5;
+      }
+      enum multiple {
+        value 6;
+      }
+      enum divisible {
+        value 7;
+      }
+      enum substring {
+        value 8;
+      }
+      enum contains {
+        value 9;
+      }
+    }
+  }
+
+  typedef diagnostic-point-modifier_t {
+    type enumeration {
+      enum NOT {
+        value 1;
+      }
+      enum NOT-and-no-delay {
+        value 2;
+      }
+      enum NOT-and-no-delay-hold-on {
+        value 3;
+      }
+      enum NOT-and-no-delay-hold-off {
+        value 4;
+      }
+      enum no-delay {
+        value 5;
+      }
+      enum no-delay-hold-on {
+        value 6;
+      }
+      enum no-delay-hold-off {
+        value 7;
+      }
+    }
+  }
+
+  typedef diagnostic-point-relationship_t {
+    type enumeration {
+      enum OR {
+        value 1;
+      }
+      enum NOR {
+        value 2;
+      }
+      enum AND {
+        value 3;
+      }
+      enum NAND {
+        value 4;
+      }
+      enum EQUAL {
+        value 5;
+      }
+      enum XOR {
+        value 6;
+      }
+    }
+  }
+
+  typedef diagnostic-point-updatable-fields_t {
+    type enumeration {
+      enum hold-off {
+        value 1;
+      }
+      enum hold-on {
+        value 2;
+      }
+      enum resource {
+        value 3;
+      }
+      enum template-name {
+        value 4;
+      }
+      enum additional-info {
+        value 5;
+      }
+      enum physical-reference {
+        value 6;
+      }
+      enum active-value {
+        value 7;
+      }
+      enum idle-value {
+        value 8;
+      }
+    }
+  }
+
+  typedef point-log-list-order {
+    description
+      "Identify the ordering of an list of point logs.";
+    type enumeration {
+      enum ascending {
+        value 0;
+      }
+      enum descending {
+        value 1;
+      }
+    }
+  }
+
+  typedef point-log-arrangement {
+    description
+      "Specify the arrangement of data for multiple point logs.";
+    type enumeration {
+      enum model {
+        value 0;
+      }
+      enum time {
+        value 1;
+      }
+    }
+  }
+
+  typedef order {
+    description
+      "Specify the order in which the requested items will be returned.
+       Default is 'ascending' (oldest to newest).";
+    type enumeration {
+      enum ascending {
+        value 0;
+      }
+      enum descending {
+        value 1;
+      }
+    }
+  }
+
+  typedef registration-policy_t {
+    description
+      "A control value to identify how notification registrations are made
+       for diagnostic points in the scope of the specification.
+
+       This allows for higher-order registrations to be made that can encompass
+       a larger set of object instances within a single registration.";
+    type enumeration {
+      enum as-defined {
+        description
+          "All key values are retained so the registration is against the
+           specfied object.";
+        value 0;
+      }
+      enum best-effort {
+        description
+          "The service will attempt to identify the level of commonality for
+           the specified notifications and will apply that policy at time of
+           registration.  This will generally result in either as-defined for
+           registrations with no commonality with any other registrations
+           and parent-named for registrations of the same object type.";
+        value 1;
+      }
+      enum wildcard-parent-named {
+        description
+          "The least significant key value is dropped, so the registration
+           is a wildcard against the specified parent object.";
+        value 2;
+      }
+      enum wildcard-all-but-top-level {
+        description
+          "The inverse of parent-named.  Every naming parameter *except* the
+           top-level is dropped.";
+        value 3;
+      }
+      enum wildcard-all {
+        description
+          "All key values are dropped, and the registration is an unspecified
+           object registration against the object type with no object instance
+           qualifiers retained.";
+        value 4;
+      }
+    }
+  }
+
+  typedef activate-options_t {
+    description
+      "Options when activating a model via RPC.";
+    type enumeration {
+      enum activate {
+        description
+          "Activate a new model using specified criteria.  Fails if model
+           already exists or if the activated model is invalid.";
+        value 0;
+      }
+      enum extend {
+        description
+          "Superset command that performs the same as 'activate' if the
+           specified active-model does not exist, but will not fail if the
+           model exists and will instead extend the existing model by adding
+           the specified template information to the existing model.";
+        value 1;
+      }
+      enum remove {
+        description
+          "Removes the template-specified parameters and/or options.  Will
+           only delete parameters if all fields of the parameter are specified.";
+        value 2;
+      }
+      enum remove-by-name {
+        description
+          "Removes the template-specified parameters by name regardless of whether
+           the active-model contains additional features for thos parameters.'
+           only delete parameters if all fields of the parameter are specified.";
+        value 3;
+      }
+    }
+  }
+
+  typedef epoch-time-string {
+    type string {
+      length "1..23";
+    }
+    description
+      "Storage for an epoch-time formatted string formatted as
+           seconds-since-1970.0-padded-micro-seconds
+       The micro-seconds field will always be six digits long to
+       make timestamp comparisons easier.";
+  }
+
+  typedef text-point-display_line {
+    type string {
+      length "1..160";
+    }
+  }
+
+  grouping diagnostic-point-id {
+    description
+      "The identifier of a diagnostic point within a given model.
+
+       This id is not sufficiently precise to report status for a diagnostic point
+       outside of the scope of the containing model.  The active-diagnostic-
+       point-id must be used to provide notifications for individual diagnostic
+       points.";
+    leaf diagnostic-point-name {
+      type diag:diagnostic-point-name_t;
+      description
+        "Diagnostic point identifying name.";
+    }
+  }
+
+  typedef transaction-control-code_t {
+    description
+      "control options for setting diagnostic points via RPC";
+    type enumeration {
+      enum none {
+        description
+          "Provide a do-nothing option for transaction control.";
+        value 0;
+      }
+      enum batch-send {
+        description
+          "All diagnostic points in the set will be processed as a batch.
+           The points will be processed to completion, excluding any hold
+           on/off values, before any notifications will be generated so that
+           only the final results from all changes generated by the batch
+           will be reported.
+           The caller will return after the batch has been injected.  If
+           the caller prefers to block until all of the points have changed
+           and notifications generated, use batch-invoke.";
+        value 1;
+      }
+      enum batch-invoke {
+        description
+          "All diagnostic points in the set will be processed as a batch.
+           The points will be processed to completion, excluding any hold
+           on/off values, before any notifications will be generated so that
+           only the final results from all changes generated by the batch
+           will be reported.
+           The caller will block until all points are processed and all
+           changes have been applied to the affected active model(s).  If
+           the caller does not which to block any longer than required to
+           inject the point values, use batch-send.";
+        value 2;
+      }
+    }
+  }
+
+  typedef latch-control-operation_t {
+    description
+      "control options for latched diagnostic points";
+    type enumeration {
+      enum none {
+        description
+          "Provide a do-nothing option for latching.";
+        value 0;
+      }
+      enum disable-latch {
+        description
+          "The current latching state will be cleared and the latch capability
+           will be disabled (the point will not latch ACTIVE) until an enable
+           or reset operation is performed.
+           This operation may also be referred to as unlatching a point.";
+        value 1;
+      }
+      enum enable-latch {
+        description
+          "(Re)Enable latching for the point.  The current latch state will
+           remain unchanged.";
+        value 2;
+      }
+      enum reset-latch {
+        description
+          "Clear any current latch state, which will allow a point being held
+           ACTIVE to revert to IDLE, and reset the latching capability for the
+           next ACTIVE to IDLE transition.
+           Has no effect if the point is currently IDLE.";
+        value 3;
+      }
+    }
+  }
+
+  grouping diagnostic-point-equation-id {
+    description
+      "The identifier of a diagnostic point within a model equation.
+       The identifier can be used to identify point within a given a model
+       (active-model-name is not present) or to identify a point with any
+       model in the correlation service (active-model-name is present).
+       It is used to report the configuration information about a model
+       rather than the active status of a given diagnostic point.
+
+       This id is not used to report status for a diagnostic point
+       outside of the scope of the containing model.  The active-diagnostic-
+       point-id must be used to provide notifications for individual diagnostic
+       points.";
+    leaf active-model-name {
+      type diag:active-model-name_t;
+      mandatory false;
+      description
+        "Refers to the active model in which the diagnostic point value is to be taken.
+
+         Most equations refer to diagnostic points in their own model, in which case
+         no active-model-name value is needed.  In some cases, though, an equation may
+         refer to the diagnostic point data from a different model.
+
+         For example, the equation for slot <n> may refer to an diagnostic point, let's
+         say circuit-pack-missing or some such, for slot <m>.  In this case, the
+         circuit-pack-missing diagnostic point in the model that is active for slot <n>
+         would have as the active-model-name of <m> to refer to the instance of that
+         diagnostic point for that slot.
+
+         The active-model-name is not validated when used in a correlation model or
+         active correlation model definition.  Therefore, it is possible to refer to
+         an inactive or even non-existent active model, in which case the value for
+         that diagnostic point will always be FALSE.  This allows models to include
+         points that are be pre-defined to refer to specific slots and only go active
+         when a model is activated for that slot.  Similarly, it prevents a model
+         from instantly being invalidated if the active-model to which it refers is
+         suddenly deleted.";
+    }
+    leaf diagnostic-point-name {
+      type diag:diagnostic-point-name_t;
+      description
+        "Diagnostic point identifying name.";
+    }
+  }
+
+  grouping equation-component {
+    description
+      "A grouping to identify diagnostic points as equation components within a
+       model.  Since no active alarm model is specified, all points must be
+       within the model in which the point is specified.
+
+       Since simple-equation diagnostic points are contained within a model and
+       do not reference data in other models, the diagnostic-point-id is
+       used to identify the diagnostic points in the equation.";
+    leaf item {
+      type uint8;
+      mandatory true;
+      description
+        "The identifying key value for the equation component.  This is necessary
+         because there is no other item you can guarantee to be unique in an
+         equation; the diagnostic-point-name is not good enough because it is
+         possible to use the same diagnostic point many times in an equation
+         (e.g. (a & b) | (!a & c) )";
+    }
+    leaf precedence {
+      type uint8;
+      mandatory false;
+      description
+        "The precedence field provides precedence of component groups in an equation.
+         Items with a higher precedence are processed before items of a lower
+         precedence.  Items with equal precedence are processed in a first-come-first-
+         served basis.  Keep in mind that each item has both the item and it's
+         relationship so the precedence actually applies to the relationship rather
+         than the diagnostic point itself.
+
+         For example, to express the following equation (A & B) || (C & D), both A
+         and B should have a precedence higher than D which should be higher than C.
+         This will give A and B's relationships (<none> and & respectively) highest
+         precedence, then D's relationship with C (&), and finally C's relationship
+         (||).  This will have the effect of processing the equation as an RPN equation
+         that looks like this:  A B & D C & ||.  D must have higher precedence than
+         C to give D's relationship (the &) a higher precedence than C's relationship
+         (the ||).  If items D and C were of the same precedence, then it would result
+         in an RPN equation like this:  A B & C || D &, or regular equation like this:
+         (A & B) || C & D.";
+    }
+    leaf relationship {
+      type diagnostic-point-relationship_t;
+      mandatory false;
+      description
+        "Logical boolean equation operation (AND, OR, etc.) for this diagnostic
+         point component";
+    }
+    leaf modifier {
+      type diagnostic-point-modifier_t;
+      mandatory false;
+      description
+        "The modifier field includes the logical NOT for an item plus options to
+         control the application of the hold-on and hold-off values. The no-delay
+         options mean that either or both of the hold-offs are skipped and the
+         point changes state immediately rather than on the expiration of the
+         applicable hold-off  when the specific equation item with the no-delay
+         option changes state and triggers a point change.";
+    }
+    uses diagnostic-point-equation-id;
+  }
+
+  grouping field-data-choice {
+    choice format {
+      case text {
+        leaf name {
+          type notify_registration_string_t;
+        }
+      }
+      case number {
+        leaf value {
+          type uint32;
+        }
+      }
+    }
+  }
+
+  grouping key-grouping {
+    leaf key-id {
+      description
+        "A value to identify each key item in a key-list.  This is not necessary
+         if the key grouping is used in a leaf node rather than a list.";
+      type uint16;
+    }
+    container key-field {
+      description
+        "Identify the field in a structure to use as a key item.  Can be identified
+         using either a text value or an index value (integer).";
+      uses field-data-choice;
+    }
+    container key-value {
+      description
+        "Identify the value in the key field against which the notification will
+         be tested for match.  Can be specified using either a text value or an
+         integer value.";
+      uses field-data-choice;
+    }
+  }
+
+  grouping foreign-object-id {
+    leaf domain {
+      description
+        "The domain of the service supplying the notification for which the
+         registration is being made.  Will be treated as NULL if not specified.";
+      type notify_registration_string_t;
+    }
+    leaf service {
+      description
+        "The service supplying the notification for which the registration is being
+         made.  This is vital for update notications but somewhat irrelevant for
+         notifies (since notify-notifications don't have service and domain
+         identifiers in their published events).";
+      type notify_registration_string_t;
+      mandatory true;
+    }
+    leaf path {
+      description
+        "The path name of the object being registered for a notification.";
+      type notify_registration_path_t;
+    }
+    container data-field {
+      description
+        "The name of the field in the received notification that identifies the value that
+         is to be used to update the diagnostic point.  The user can specify the field by
+         using the name of the field in the source data type or by specifying the field
+         index in the source data structure.
+
+         Depending on the object, the path may identify the field of the object in question,
+         which may make the data-field redundant.
+
+         Specifying a named data field but supplying an empty string will not be accepted.";
+      uses field-data-choice;
+    }
+  }
+
+  grouping data-comparison {
+    leaf comparison {
+      type diagnostic-point-field-comparison_t;
+      mandatory false;
+      description
+        "Comparison operator used between two components.
+         Default should alway be equal if unspecified.";
+    }
+    uses field-data-choice;
+  }
+
+  grouping foreign-object-values {
+    description
+      "Grouping for providing translation values between the diagnostic point state
+       values and foreign object values.";
+    container active-value {
+      description
+        "If the notification has a specific value that is to be understood
+         to mean 'ACTIVE', then the value needs to be provided.  Options are
+         a string-value or a specific numerical value.
+
+         If the active-value is not specified, the default behaviour is to
+         assume that any non-zero/NULL value in the specified field will be
+         taken to mean 'ACTIVE' by the correlation-service.";
+      uses field-data-choice;
+    }
+    container idle-value {
+      description
+        "If the notification has a specific value that is to be understood to mean
+         'IDLE', then the value needs to be provided.  Options are a string-value
+         or a specific numerical value.
+
+         If the idle-value is not specified, the default behaviour is to assume that
+         any zero/NULL value in the specified field will be taken to mean 'IDLE' by
+         the correlation-service.";
+      uses field-data-choice;
+    }
+  }
+
+  grouping foreign-object-tests {
+    container active-value {
+      description
+        "If the notification has a specific value that is to be understood
+         to mean 'ACTIVE', then the value needs to be provided.  Options are
+         a string-value or a specific numerical value.
+
+         If the active-value is not specified, the default behaviour is to
+         assume that any non-zero/NULL value in the specified field will be
+         taken to mean 'ACTIVE' by the correlation-service.";
+      uses data-comparison;
+    }
+    container idle-value {
+      description
+        "If the notification has a specific value that is to be understood to mean
+         'IDLE', then the value needs to be provided.  Options are a string-value
+         or a specific numerical value.
+
+         If the idle-value is not specified, the default behaviour is to assume that
+         any zero/NULL value in the specified field will be taken to mean 'IDLE' by
+         the correlation-service.";
+      uses data-comparison;
+    }
+  }
+
+  grouping notify-registration-grouping {
+    uses foreign-object-id;
+    leaf registration-policy {
+      type registration-policy_t;
+      description
+        "The wildcard level to use when making this registration with the framework.";
+    }
+    list key-fields {
+      description
+        "Used for notification registrations for items that are not objects in the tree.
+
+         If the same notification structure is (or can be) used for different outputs,
+         this list of id+value items identify the 'key' information that will isolate
+         exactly which notifications of the indicated type are to be used to trigger the
+         diagnostic point.  This information cannot be identified from the path since
+         a notification path does not contain any identifying information regarding a
+         specific instance.
+
+         A key field specification is not necessary for an object notification and will
+         be ignored if present (the path must contain the necessary key information).";
+      min-elements 1;
+      max-elements 5;
+      key "key-id";
+      uses key-grouping;
+    }
+    uses foreign-object-tests;
+  }
+
+  grouping diagnostic-point-update-list {
+    list point-updates {
+      description
+        "List of name-identified fields of the diagnostic point that are
+         updated from foreign object data";
+      key "point-field-name";
+      leaf point-field-name {
+        description
+          "Identified field of the diagnostic point that is updated from
+           the identified object.";
+        type diagnostic-point-updatable-fields_t;
+      }
+      uses foreign-object-id;
+      leaf registration-policy {
+        type registration-policy_t;
+        description
+          "The wildcard level to use when making this registration with the framework.";
+      }
+    }
+  }
+
+  grouping diagnostic-point-config {
+    leaf publish {
+      type diagnostic-point-publish_t;
+      mandatory false;
+      description
+        "Indicates whether the point is published and generates status updates
+         for which external applications can register and receive notifications.
+         Items without a publish field default to 'false' and are not published.";
+    }
+    leaf hold-off {
+      type uint32;
+      description
+        "Hold off delay (time between detection and reporting/raising) of the diagnositic point in milliseconds.";
+    }
+    leaf hold-off-disable-eligible {
+      type boolean;
+      description
+        "A value to indicate that the given diagnostic point may have its hold-off value disabled (ignored)
+         when the user specifies that they want alarm holdoffs to be disable.  This value should be set/used
+         for all points that generate facility alarms or whose notifications are used by external services
+         to raise facility alarms.";
+    }
+    leaf hold-on {
+      type uint32;
+      description
+        "Hold on delay (time between when a point drops and when the report is promulgated) of the diagnositic point in milliseconds.";
+    }
+    leaf latching {
+      type diag:latching_t;
+      mandatory false;
+      description
+        "A behavioural detail of diagnostic points.  A point that supports
+         latching (=latched) is a point that will stay ACTIVE until specifically
+         cleared (set to IDLE) by a user action regardless of what the
+         current equation value may be.  It can be thought of as a point with
+         a 'hold-on' value of infinity, except that the user can clear it
+         themselves.  The default is 'not latched'.  Points without a latching
+         field are equivalent to points that are 'not latched'.";
+    }
+    list equation {
+      description
+        "Equation for derived diagnostic points.  Not used for points that
+         are only set by user action (aka 'firmware point').
+
+         The equation is optional in that 'firmware' points (points that do
+         not have an equation) can be specified with no equation.  In yang
+         terms it is interpreted as benig a list of 0 length, but lists with
+         no elements are not stored or reported, so it's the same outcome as
+         if the equation was optional.";
+      key "item";
+      uses equation-component;
+      ordered-by user;
+    }
+    container notify-registration {
+      description
+        "Instead of an equation, allow the model to indicate a source that will
+         generate/provide notifications that are to be captured and applied to a
+         diagnostic point.  This is essentially a 'special case' firmware point
+         where the correlation service registers for the data and will update the
+         point when the source notification changes rather than waiting for an
+         external caller to update the data via set or rpc invocation.";
+      uses notify-registration-grouping;
+    }
+    list set-list {
+      description
+        "A list of targets upon which to perform a set either instead of
+         or in addition to publishing a notification.";
+      key "set-list-id";
+      leaf set-list-id {
+        description
+          "Identifier attached to each item in a set-object list to provide a key item
+           for addressing it.";
+        type uint16;
+        mandatory true;
+      }
+      uses foreign-object-id;
+      uses foreign-object-values;
+    }
+    uses alarm:raise-alarm-grouping;
+    uses diagnostic-point-update-list;
+  }
+
+  grouping point-log-entry {
+    leaf index {
+      type uint32;
+      description
+        "The index value of the entry in the point-log.";
+    }
+    leaf time {
+      type diag:diag-date-and-time_t;
+      mandatory true;
+      description
+        "The time the point-log was generated.  The timestamp format follows the
+         yy-mm-ddThh:mm:ssZ format of the diagnostic points, with the exception
+         that the time zone (Z) is optional.";
+    }
+    leaf epoch-time {
+      type epoch-time-string;
+      description
+        "The epoch-time (seconds.micro-seconds) format for the point-log time";
+    }
+    uses diagnostic-point-id;
+    leaf state {
+      type diag:diagnostic-point-state_t;
+      mandatory true;
+      description
+        "Current state of the point - ACTIVE if currently active, IDLE if not.";
+    }
+  }
+
+  grouping time-range {
+    description
+      "A type for specifing time ranges.  Specifying both start and end times
+       will match time values including the endpoints and all time values
+       between them.
+
+       Specifying only a start will match times from that starting point to
+       an unbounded end time.  Useful for querying 'everything since <this>
+       time' until now.
+
+       Similarly specifying only an end time will match all time values up
+       to and including that end time.";
+    leaf start {
+      type diag:diag-date-and-time_t;
+      description
+        "Start of the time range";
+    }
+    leaf end {
+      type diag:diag-date-and-time_t;
+      description
+        "End of the time range";
+    }
+  }
+
+  grouping index-range {
+    description
+      "A type for specifing point log index ranges both start and end index
+       values to include in a point log retrieval.
+
+       Specifying only a start will make it dump all records starting from that
+       point and progressing tothe most recent.
+
+       Similarly specifying only an end time will dump all records up to that
+       and including that record.";
+    leaf start {
+      type uint32;
+      description
+        "Start of the index range";
+    }
+    leaf end {
+      type uint32;
+      description
+        "End of the index range";
+    }
+  }
+
+  grouping point-log-filter {
+    leaf index {
+      type uint32;
+      description
+        "Retrieve point logs starting from a specific index/entry.";
+    }
+    container index-range {
+      uses index-range;
+      description
+        "Retrieve point within a range defined by start and end.";
+    }
+    leaf arrange {
+      type point-log-arrangement;
+      description
+        "The way point log data will be arranged when retrieving/displaying
+         data from multiple-models at a time.
+
+         The default option changes depending on the parameter set.
+
+         time arrangement will interleave data from multiple point logs
+              based on the time of the point log.  This is the default
+              arrangement when reporting data for a list of models.
+
+         model arrangement will dump point-logs based on the model.
+              This is the default when reporting data for all models
+              (i.e. an unspecified model list.)";
+    }
+    leaf order {
+      type order;
+      description
+        "The order in which  point log data will be returned, ascending
+         order (oldest to newest, default) ord descending (newest to
+         oldest).";
+    }
+    leaf-list active-model-list {
+      type diag:active-model-name_t;
+      description
+        "The list of active-models whose point logs are to be filtered for
+         retrieval.";
+    }
+    leaf active-model-name {
+      type diag:active-model-name_t;
+      description
+        "Easy way to specify a single source model for retrieving point-logs";
+    }
+    uses diagnostic-point-id;
+    leaf count {
+      type uint32;
+      description
+        "Maximum number of alarms that will be returned.";
+    }
+    leaf last {
+      type short-string;
+      description
+        "Quick-and-easy way to specify a short, relative time range value.
+         Retrieves all alarms between the current time and the specified
+         relative time value.
+
+         Value is specified as x[d|h|m|s] where (x) is a postive integer value
+         followed by a single character for the units of that integer value,
+         where d = days, h = hours, m = minutes, s = seconds.
+
+         The values are limited to 366 (days), 72 (hours), 300 (minutes) and
+         900 (seconds).";
+    }
+    leaf time {
+      type diag:diag-date-and-time_t;
+      description
+        "Single time for any timestamp in the alarm record.  In the case of
+         history alarms, this will match the history-time.  In the
+         case of active-alarms, this will match either the raise or the clear
+         time.";
+    }
+    container time-range {
+      uses time-range;
+      description
+        "Range of time values within the list of alarm records.  As with the
+         time parameter, this will match the history-time for historical
+         alarms, and for active-alarms this will match either the raise or
+         clear time, so basically including every alarm with any timestamp in
+         the given range.";
+    }
+    leaf state {
+      type diag:diagnostic-point-state_t;
+      description
+        "The state of the flare point at the time the point log was generated
+         - ACTIVE if it was active, IDLE otherwise.";
+    }
+  }
+
+  grouping template-variable {
+    leaf name {
+      type short-string;
+      mandatory true;
+      description
+        "Text name of a variable that is, or may be, found in the fields of
+         a correlation-model-template.  Variable names are limited to a
+         length of 15 characters.";
+    }
+    leaf value {
+      type short-string;
+      mandatory true;
+      description
+        "Value to insert in the active model in place of variable $name.
+         Like the name itself, the value is limited to 15 characters.";
+    }
+  }
+
+  grouping source-model-list-entry {
+    leaf name {
+      type correlation-model-name_t;
+      mandatory true;
+      description
+        "The name of a correlation-model-template to be used in activating
+         a new active model.";
+    }
+    list model-specific-variables {
+      key "name";
+      uses template-variable;
+      description
+        "Custom settings/values for the template variables within a specific
+         source-model.";
+    }
+    leaf repeats {
+      type uint16;
+      description
+        "If a model is to be included more than once, the repeats field
+         specifies the number of times the same model can be cloned
+         consecutively.  This pretty much requires that template variables
+         be used to control the naming of points within the template or
+         else it will fail with duplicate point names.";
+    }
+  }
+
+  list correlation-model-template {
+    description
+      "The definition of a correlation model.  The model can be thought of as
+       a collection of diagnostic points that can be monitored.  However, the
+       Correlation Model form is strictly the definition of a model and is not
+       an actual active instance and therefore the defined diagnostic points
+       are not monitored and contain no status information.
+
+       A model must be activated in order to have its points monitored and/or
+       published. An active model is cloned from the correlation model, much
+       like an alarm is a clone of the alarm template when an alarm is raised.";
+    key "model-name";
+    leaf model-name {
+      type correlation-model-name_t;
+      mandatory true;
+      description
+        "Correlation model identifying name.";
+    }
+    container model-version {
+      description
+        "An optional, user controlled version field.  It is essentially a kind of
+         a notes field that allows the user to (easily?) identify or compare
+         models.";
+      uses correlation-model-version_t;
+    }
+    leaf model-notification-registration-policy {
+      type registration-policy_t;
+      description
+        "The default wildcard level to apply to notification registrations in
+         the model.";
+    }
+    leaf model-point-update-registration-policy {
+      type registration-policy_t;
+      description
+        "The default wildcard level to apply to point update registrations in
+         the model.";
+    }
+    list diagnostic-points {
+      key "diagnostic-point-name";
+      uses diagnostic-point-id;
+      uses diagnostic-point-config;
+      leaf initial-state {
+        type diag:diagnostic-point-state_t;
+        mandatory false;
+        description
+          "The initial state of the diagnostic point when an active model is
+           activated from a source template.
+           This value is optional.  If absent, the initial state of the
+           point in an active model will be IDLE.";
+      }
+      ordered-by user;
+      description
+        "List of diagnostic point configuration data that make up the model.
+         The model does not contain status, only the equations and parameters
+         that make up the model itself.";
+    }
+  }
+
+  grouping display-options {
+    leaf max_depth {
+      type uint32;
+    }
+    leaf state {
+      description
+        "Only valid with an active-model display, will limit the output to
+         those points with the indicated state.
+         Not used (ignored) when displaying an individual diagnostic point.";
+      type diag:diagnostic-point-state_t;
+    }
+    leaf include-state-time {
+      description
+        "Boolean flag (default false) whether the state change timestamps are
+         included in the output.";
+      type boolean;
+    }
+  }
+
+  grouping display-output {
+    leaf-list lines {
+      type text-point-display_line;
+    }
+  }
+
+  grouping active-correlation-model-defn {
+    leaf active-model-name {
+      type diag:active-model-name_t;
+      mandatory true;
+      description
+        "Assigned name for the active correlation model.  The name is part
+         of the key for addressing individual diagnostic points within the
+         list of points included in the model.";
+    }
+    leaf model-name {
+      type correlation-model-name-ptr_t;
+      mandatory true;
+      description
+        "The name of the correlation model template that was used to initialize
+         the active model.";
+    }
+    container model-version {
+      description
+        "An optional, user controlled version field.  It essentialy is a kind of
+         a notes field that allows the user to (easily?) identify or compare
+         models.";
+      uses correlation-model-version_t;
+    }
+    leaf model-notification-registration-policy {
+      type registration-policy_t;
+      description
+        "The default wildcard level to apply to notification registrations in
+         the model.";
+    }
+    leaf model-point-update-registration-policy {
+      type registration-policy_t;
+      description
+        "The default wildcard level to apply to point update registrations in
+         the model.";
+    }
+    list diagnostic-points {
+      key "diagnostic-point-name";
+      uses diagnostic-point-id;
+      uses diag:diagnostic-point-state;
+      uses diagnostic-point-config;
+      ordered-by user;
+      description
+        "List of diagnostic points that make up the active model, including
+         both the model equation definition and the diagnostic point status
+         information.";
+    }
+  }
+
+  list active-correlation-model {
+    key "active-model-name";
+    uses active-correlation-model-defn;
+  }
+
+  grouping generate-active-model-grouping {
+    leaf active-model-name {
+      type diag:active-model-name_t;
+      mandatory true;
+      description
+        "Assigned name for the active correlation model.  The name is the
+         key for addressing the active model and is also used as part of
+         the key for addressing individual diagnostic points within the
+         active model.";
+    }
+    leaf source-model {
+      type correlation-model-name_t;
+      mandatory true;
+      description
+        "The name of the correlation model template that was used to initialize
+         the active model.  This can be used instead of or in addition to a
+         source-model-list.";
+    }
+    list source-model-list {
+      uses source-model-list-entry;
+      ordered-by user;
+      description
+        "A list of correlation-model-templates with (optional) model specific
+         template variables that are included in the creation of the active model.
+         Order is important if model variable adjustments (e.g. increments) are
+         applied.";
+    }
+    container configure {
+      description
+        "A container to hold configuration data for the activate model rpc call.
+         For now, the only configuration data is model-wide template variables.";
+      list variables {
+        key "name";
+        uses template-variable;
+        description
+          "List of variable name = value substitutions for creating the active
+           model from the template.";
+      }
+    }
+    leaf options {
+      type activate-options_t;
+      description
+        "An optional parameter to allow extensions to an existing model, using
+         templates as the source, rather than enforcing creation of a new model.
+         Extend is essentially a superset of the basic activation.
+         If 'extend' is not present or is present and has a value of false then
+         activate will fail if the specifed active-model exists.
+         If 'extend' is present and true, then the model being activated may (or
+         may not) exist and the command will only fail if the final product of
+         any existing model and the additional template data produces an invalid
+         model.";
+    }
+  }
+
+  rpc activate-model {
+    input {
+      uses generate-active-model-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc generate-active-model {
+    description
+      "A command to generate a valid active model from a list of source
+       templates and variable values.  Useful for staging active models.";
+    input {
+      uses generate-active-model-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+      list active-correlation-model {
+        key "active-model-name";
+        uses active-correlation-model-defn;
+      }
+    }
+  }
+
+  rpc control-latch {
+    input {
+      list active-model {
+        description
+          "Hierarchical list of diagnostic point state values";
+        key "active-model-name";
+        leaf active-model-name {
+          type diag:active-model-name_t;
+          mandatory true;
+          description
+            "Assigned name for owning active correlation model.  The name is part
+             of the key for addressing individual diagnostic points within the
+             list of points included in the model.";
+        }
+        list diagnostic-points {
+          key "diagnostic-point-name";
+          uses diagnostic-point-id;
+          leaf latch-op {
+            type latch-control-operation_t;
+            description
+              "Latch control operation to be performed on the given point.
+               If not specified, the default will be _reset.";
+          }
+        }
+      }
+      list active-diagnostic-points {
+        description
+          "List of individual diagnostic points, each of which is fully specified
+           with the active model name and diagnostic point name.";
+        key "active-model-name diagnostic-point-name";
+        uses diag:active-diagnostic-point-id;
+        leaf latch-op {
+          type latch-control-operation_t;
+          description
+            "Latch control operation to be performed on the given point.
+             If not specified, the default will be _reset.";
+        }
+      }
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc set-diagnostic-point-values {
+    description
+      "Accepts lists of active diagnostic points specified either as a list of
+       independent points identified by model and point id's, or as a hierarchical
+       list of points specified by containing model and then point id within model.
+       Both methods may be used at the same time if the caller chooses.";
+    input {
+      list active-model {
+        description
+          "List of active models containing list of diagnostic points belonging
+           to that model and the state values to be edited for each point.";
+        key "active-model-name";
+        leaf active-model-name {
+          type diag:active-model-name_t;
+          mandatory true;
+          description
+            "Assigned name for owning active correlation model.  The name is part
+             of the key for addressing individual diagnostic points within the
+             list of points included in the model.";
+        }
+        list diagnostic-points {
+          key "diagnostic-point-name";
+          uses diagnostic-point-id;
+          leaf state {
+            type diag:diagnostic-point-state_t;
+            mandatory false;
+            description
+              "The new state value of the point - ACTIVE to set active and IDLE if not.";
+          }
+        }
+      }
+      list active-diagnostic-points {
+        description
+          "List of individual diagnostic points, each of which is fully specified
+           with the active model name and diagnostic point name.";
+        key "active-model-name diagnostic-point-name";
+        uses diag:active-diagnostic-point-id;
+        leaf state {
+          type diag:diagnostic-point-state_t;
+          mandatory false;
+          description
+            "The new state value of the point - ACTIVE to set active and IDLE if not.";
+        }
+      }
+      container transaction-control {
+        description
+          "Additional instructions to treat the RPC as a transaction.";
+        leaf code {
+          type transaction-control-code_t;
+          description
+            "Specifies the type of transaction.";
+        }
+        leaf wait-time {
+          type uint16;
+          description
+            "Maximum number of seconds to wait for the transaction to complete.
+             This only controls the time *after* the transaction has been
+             performed and not the entire time from when the transaction was
+             sent by the user.
+             If set to 0, that means it will wait/block FOREVER.
+             If unspecified, the maximum transaction wait time is 60 seconds";
+        }
+      }
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc point-log {
+    description
+      "Accepts an active-model name and (optionally) a selection of filtering
+       criteria for reporting and displaying diagnostic point logs.";
+    input {
+      uses point-log-filter;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+      list point-logs {
+        key "index";
+        leaf active-model-name {
+          type diag:active-model-name_t;
+          description
+            "Active model identifier for each point; only present if
+             the response includes point-logs from multiple models.";
+        }
+        uses point-log-entry;
+      }
+    }
+  }
+
+  rpc display {
+    description
+      "Accepts an active-model or active diagnostic point and displays a full
+       report of the equation value leading to the current state for the point.";
+    input {
+      uses diag:active-diagnostic-point-id;
+      uses display-options;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+      uses display-output;
+    }
+  }
+
+  notification diagnostic-point-notif {
+    description
+      "Notification of the current state of a diagnostic point.
+       Generated as a result of an audit or as a result of a change
+       of state.";
+    uses diag:active-diagnostic-point-id;
+    uses diag:diagnostic-point-state;
+  }
+
+  container deployment-config {
+    leaf default-notification-registration-policy {
+      type registration-policy_t;
+      description
+        "The policy for specifying notification registration context
+         data when registering for object updates with the framework.
+         That's a fancy way of saying whether wildcards are used
+         and to what extent.
+
+         This policy affects notifications that are used to set
+         diagnostic point state values and is the default for all
+         models.";
+    }
+    leaf default-point-update-registration-policy {
+      type registration-policy_t;
+      description
+        "The policy for specifying point update registration context
+         data when registering them with the framework.
+         That's a fancy way of saying whether wildcards are used
+         and to what extent.
+
+         This policy affects notifications that are used to set
+         diagnostic point state values and is the default for all
+         models.";
+    }
+    leaf eligible-hold-offs-disabled {
+      type boolean;
+      description
+        "Indicate whether the hold-offs will be disabled for any diagnostic points
+         designated as hold-off-disable-eligible.";
+    }
+  }
+}

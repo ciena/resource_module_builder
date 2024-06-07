@@ -1,0 +1,99 @@
+module ciena-underlay-binding {
+  namespace "http://ciena.com/ns/yang/ciena-underlay-binding";
+  prefix cn-ub;
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  import ciena-mef-fd { prefix "mef-fd"; }
+  import ciena-openconfig-interfaces { prefix cn-if; }
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the Ciena proprietary YANG augmentation
+     of the underlay binding YANG module.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision "2021-08-03" {
+    description
+      "Add evpn vpls as a valid interface fd mode type.";
+  }
+
+  revision "2021-03-16" {
+    description
+      "Added IP point-to-point feature.
+      Added support for point-to-point interface.";
+  }
+
+  revision "2020-02-17" {
+    description
+      "Added IP unnumbered feature.
+       Added support to restrict FD mode to vpls.";
+  }
+  
+  revision "2018-02-28" {
+    description
+      "Initial version";
+    reference
+     "";
+  }
+
+  augment /oc-if:interfaces/oc-if:interface/oc-if:config {
+    when "cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+    container underlay-binding {
+      description
+        "Top-level container for underlay binding interfaces. This
+         provides the ability to map to the lower layer objects (like fd) ";
+
+      container config {
+        description
+          "Configuration data for underlay binding interfaces";
+
+        uses underlay-binding-config;
+      }
+    }
+  }
+
+  grouping underlay-binding-config {
+    description
+      "Configuration data for underlay binding";
+    choice type {
+      case fd {
+        leaf fd {
+          ncx:user-write "create delete";
+          type leafref {
+            path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+          }
+          must "/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode = 'vpls' or " +
+               "/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode = 'evpn-vpls'"{
+             error-message "Referenced mode is not supported.";
+          }
+        }
+      }
+    }
+  }
+}

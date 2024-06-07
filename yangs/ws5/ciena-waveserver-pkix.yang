@@ -1,0 +1,460 @@
+module ciena-waveserver-pkix {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-pkix";
+  prefix pkix;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-waveserver-system {
+    prefix system;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Public Key Infrastructure 
+     and X.509 representation.";
+
+  revision 2019-03-27 {
+    description
+      "Updated 'certificate-name' range in RPCs."; 
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-09-11 {
+    description
+      "Waveserver Platform Data Model
+       Waveserver Public Key Infrastructure and X.509 configuration."; 
+    reference "Waveserver Ai R1.3 user's guide.";
+  }
+
+  typedef csr-key-type-enum {
+    type enumeration {
+      enum "rsa2048" {
+        value 1;
+        description
+          "RSA with 2048 bits key length.";
+      }
+      enum "rsa3072" {
+        value 2;
+        description
+          "RSA with 3072 bits key length.";
+      }
+      enum "rsa4096" {
+        value 3;
+        description
+          "RSA with 4096 bits key length.";
+      }
+      enum "secp256r1" {
+        value 8;
+        description
+          "256-bit Elliptic Curve Domain Parameters recommended by NIST.";
+      }
+      enum "secp384r1" {
+        value 9;
+        description
+          "384-bit Elliptic Curve Domain Parameters recommended by NIST.";
+      }
+      enum "secp521r1" {
+        value 10;
+        description
+          "521-bit Elliptic Curve Domain Parameters recommended by NIST.";
+      }
+    }
+    description
+      "Enum for the type of key supported in generation of 
+       certificate signing request(CSR).";
+  }
+
+  grouping certificate-information-group {
+    description
+      "Grouping of common attributes for a certificate.";
+
+    leaf subject-common-name {
+      type cienawstypes:string-maxl-64;
+      description
+        "Identification of the entity associated with the public key stored 
+        in the subject public key field.";
+      ui:ui-name "Subject Common Name";
+    }
+    leaf issuer-common-name {
+      type cienawstypes:string-maxl-64;
+      description
+        "Identification of the entity that has signed and issued the certificate.";
+      ui:ui-name "Issuer Common Name";
+    }
+    leaf valid-from {
+      type string {
+        length "0..45";
+      }
+      description
+          "The date that the certificate is valid from and the passed validity time.";
+      ui:ui-name "Valid From";
+    }
+    leaf valid-to {
+      type string {
+        length "0..45";
+      }
+      description
+        "The date that the certificate is valid to and the remaining time.";
+      ui:ui-name "Valid To";
+    }
+    leaf signature-algorithm {
+      type cienawstypes:string-maxl-64;
+      description
+        "Algorithm used by the CA to sign the certificate.";
+      ui:ui-name "Signature Algorithm";
+    }
+    leaf serial-number {
+      type string {
+        length "0..20";
+      }
+      description
+        "The certificate's serial number.";
+      ui:ui-name "Serial Number";
+    }
+    leaf extended-key-usage {
+      type string {
+        length "0..255";
+      }
+      description
+        "Indicates purposes for which the certified public key may be used, 
+         in addition to or in place of the basic purposes.";
+      ui:ui-name "Extended Key Usage";
+    }
+  }
+
+  container waveserver-pkix {
+    description
+      "Waveserver Public-Key Infrastructure and X.509 configuration data and
+       operational data.";
+    ui:ui-name "pkix";
+
+    container support-rsa2048 {
+      description
+        "A backward compatibility option to re-enable 2048bit RSA key length support.";
+      ui:ui-name "Support RSA2048";
+    
+      leaf admin-state {
+        type cienawstypes:enabled-disabled-enum;
+        description
+            "Indicate whether backward compatibility to support 2048bit RSA key length
+             is enabled.";
+        ui:ui-name "Admin State";
+      }
+    }
+    list ca-certificates {
+      ui:ui-name "CA Certificate";
+      key "certificate-hash";
+      config false;
+      description
+        "Certificate Authority (CA) certificates list.";
+      leaf certificate-hash {
+        type cienawstypes:string-maxl-8;
+        description
+          "A string to uniquely identify a certificate.";
+        ui:ui-name "Certificate Hash";
+      }
+      leaf status {
+        type enumeration {
+          enum "ok" {
+            value 0;
+            description
+              "The certificate file is valid.";
+          }
+          enum "certificate-file-read-error" {
+            value 1;
+            description
+              "The certificate file cannot be read.";
+          }
+        }         
+        description
+          "The status of the CA certificate file.";
+        ui:ui-name "Status";
+      }
+      leaf key-type {
+        type cienawstypes:string-maxl-64;
+        description
+          "Name of the public key.";
+        ui:ui-name "Key Type";
+      }
+      leaf signature-algorithm {
+        type cienawstypes:string-maxl-64;
+        description
+          "Algorithm used by the CA to sign the certificate.";
+        ui:ui-name "Signature Algorithm";
+      }
+      leaf subject-common-name {
+        type cienawstypes:string-maxl-64;
+        description
+          "Identification of the entity associated with the public key stored 
+           in the subject public key field.";
+        ui:ui-name "Subject Common Name";
+      }
+      leaf issuer-common-name {
+        type cienawstypes:string-maxl-64;
+        description
+          "Identification of the entity that has signed and issued the certificate.";
+        ui:ui-name "Issuer Common Name";
+      }
+      leaf valid-from {
+        type string {
+          length "0..45";
+        }
+        description
+          "The date that the certificate is valid from and the passed validity time.";
+        ui:ui-name "Valid From";
+      }
+      leaf valid-to {
+        type string {
+          length "0..45";
+        }
+        description
+          "The date that the certificate is valid to and the remaining time.";
+        ui:ui-name "Valid To";
+      }
+    }
+
+    list device-certificates {
+      ui:ui-name "Device Certificates list";
+      key "certificate-name";
+      config false;
+      description
+        "Waveserver device certificates list.";
+      leaf certificate-name {
+        type cienawstypes:string-maxl-32;
+        description
+          "The device certificate name.";
+        ui:ui-name "Certificate Name";
+      }
+      leaf private-key {
+        type enumeration {
+          enum "not-present" {
+            value 0;
+            description
+              "The private key is not present.";
+          }
+          enum "present" {
+            value 1;
+            description
+              "The private key is present.";
+          }
+        }         
+        description
+          "The status of the private-key, indicating whether a private key is present.";
+        ui:ui-name "Private Key";
+      }
+      leaf key-type {
+        type cienawstypes:string-maxl-64;
+        description
+          "The key type.";
+        ui:ui-name "Key Type";
+      }
+
+      container device-certificate {
+        config false;
+        description
+          "Device certificate attributes.";
+        ui:ui-name "Device Certificate";
+        uses certificate-information-group;
+      }
+
+      list additional-certificates {
+          key "index";
+          config false;
+          description
+            "List of additional certificates.";
+          ui:ui-name "Additional Certificates";
+          leaf index {
+            type uint8;
+            description
+              "Index of the additional certificates. The index should be 1 or higher.";
+            ui:ui-name "Index";
+          }
+          uses certificate-information-group;
+      }
+    }
+  }
+  rpc waveserver-pkix-install-ca-certificate {
+    description
+      "Install a CA certificate.";
+    input {
+      leaf file-name {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The file name for the CA certificate.";
+        ui:ui-name "File Name";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pkix-uninstall-ca-certificate {
+    description
+      "Uninstall a CA certificate.";
+    input {
+      leaf ca-certificate-hash {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The hash value for an installed CA certificate.";
+        ui:ui-name "CA Certificate Hash";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pkix-install-device-certificate {
+    description
+      "Install a device certificate.";
+    input {
+      leaf certificate-name {
+        type string {
+          length "1..32";
+          pattern '[^!%,"\?\*]*';
+        }
+        mandatory true;
+        description
+          "The device certificate name.";
+        ui:ui-name "Certificate Name";
+      }
+      leaf file-name {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The file name for the device certificate.";
+        ui:ui-name "File Name";
+      }
+      leaf certificate-only {
+        type boolean;
+        description
+          "Indicate whether the installation is for certificate only. 
+           E.g. a signed CSR.";
+        ui:ui-name "Certificate Only";
+      }
+      leaf cert-passphrase {
+        type cienawstypes:string-maxl-128;
+        description
+          "The passphrase. It should be none-zero string when 'certificate-only'
+           is set to false.";
+        ui:ui-name "Cert-Passphrase";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pkix-uninstall-device-certificate {
+    description
+      "Uninstall a device certificate.";
+    input {
+      leaf certificate-name {
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "The device certificate name.";
+        ui:ui-name "Certificate Name";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+  rpc waveserver-pkix-generate-csr {
+    description
+      "Generate a new certificate signing request (CSR).";
+    input {
+      leaf certificate-name {
+        type string {
+          length "1..32";
+          pattern '[^!%,"\?\*]*';
+        }
+        mandatory true;
+        description
+          "The certificate name.";
+        ui:ui-name "Certificate Name";
+      }
+      leaf key-type {
+        type csr-key-type-enum;
+        mandatory true;
+        description
+          "The type of the key supported for CSR.";
+        ui:ui-name "Key Type";
+      }
+      leaf file-name {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "The file name for the CSR.";
+        ui:ui-name "File Name";
+      }
+      uses system:server-settings-group;
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

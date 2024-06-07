@@ -1,0 +1,286 @@
+module ciena-file-mgmt {
+   namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-file-mgmt";
+
+   prefix "file-mgmt";
+
+   import ietf-inet-types { 
+      prefix "inet"; 
+   }
+
+   import yuma-ncx {
+      prefix ncx;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's data definition for file management
+       Copyright (c) 2017  Ciena Corporation.  All rights 
+       reserved. 
+
+       All information contained herein is, and remains the
+       property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained
+       from Ciena Corporation.";
+
+   revision "2021-09-02" {
+       description
+           "Add kube-config file-type";
+   }
+
+   revision "2021-03-16" {
+       description
+           "Added NCX password to password leaf.";
+   }
+
+   revision "2019-10-03" {
+       description
+           "Add cloud-init-iso file-type";
+   }
+
+   revision "2019-03-20" {
+      description
+         "Added file-type";
+   }
+
+   revision "2017-03-31" {
+      description
+         "1.0";
+   }
+
+   /*
+    * Configuration model.
+    */
+   grouping authentication-group {
+      description
+         "Authentication details";
+
+      leaf username {
+         type string {
+            length "1..255";
+         }
+         description
+            "Username for authentication";
+      }
+
+      leaf password {
+         ncx:password;
+         type string {
+            length "1..255";
+         }
+         description
+            "Password for authentication";
+      }
+   }
+
+   container files {
+      description
+         "Image related parameters";
+
+      list file {
+         key "file-name";
+         description
+            "List of files on the device";
+
+         leaf file-name {
+            type string {
+               length "1..200";
+            }
+            description
+               "Name of the file";
+         }
+
+         container file-mgmt {
+            description 
+               "File management related parameters";
+
+            leaf file-type {
+               type enumeration {
+                  enum cloud-init-user-data {
+                     description
+                        "Cloud init user data configuration file";
+                  }
+                  enum cloud-init-meta-data {
+                     description
+                        "Cloud init meta data configuration file";
+                  }
+                  enum cloud-init-iso {
+                     description
+                        "Cloud init ISO file containing user-data & meta-data";
+                  }
+                  enum kube-config {
+                     description
+                        "Kubernetes kubelet configuration file";
+                  }
+                  enum any {
+                     description
+                        "Any other supported file type";
+                  }
+               }
+               description
+                  "Type of file";
+            }
+
+            leaf file-identifier {
+               type string {
+                  length "1..1024";
+               }
+               description
+                  "Identifier for the file";
+            }
+
+            leaf file-download-uri {
+               type inet:uri;
+               description
+                  "Complete URI location of the file to be downloaded";
+            }
+
+            leaf local-file-location {
+               type string;
+               description
+                  "Complete path of the local location of the file to be uploaded";
+            }
+
+            leaf file-upload-uri {
+               type inet:uri;
+               description
+                  "Complete URI location of the file to be uploaded";
+            }
+
+            leaf file-download-size {
+               type uint32;
+               description
+                  "File size in MB.";
+            }
+
+            leaf file-max-size {
+               type uint32;
+               description
+                  "Size (in MB) that this file can grow to if it is an image";
+            }
+
+            leaf checksum-uri {
+               type inet:uri;
+               description
+                  "Complete URI location of the checksum to be downloaded";
+            }
+
+            leaf checksum-type {
+               type enumeration {
+                  enum md5;
+               }
+               description
+                  "Checksum algorithm:
+                  md5 - MD5 algorithm";
+            }
+
+            uses authentication-group;
+         }
+
+         container file-status {
+            config false;
+            description
+               "Status of file management";
+
+            leaf download-status {
+               type enumeration {
+                  enum downloading;
+                  enum downloadfailed;
+                  enum downloaded;
+                  enum maxsizereached;
+               }
+               description
+                  "status of file download operation:
+                  downloading: File download in progress
+                  downloadfailed: File download failed
+                  downloaded: File download completed
+                  maxsizereached: File max size reached";
+            }
+
+            leaf download-progress {
+               type uint8;
+               units "percentage";
+               description
+                  "Progress of file download";
+            }
+
+            leaf downloaded-bytes {
+               type uint64;
+               description
+                  "Bytes downloaded";
+            }
+
+            leaf upload-status {
+               type enumeration {
+                  enum uploading;
+                  enum uploadfailed;
+                  enum uploaded;
+               }
+               description
+                  "status of file upload operation:
+                  uploading: File upload in progress
+                  uploadfailed: File upload failed
+                  uploaded: File upload completed";
+            }
+
+            leaf upload-progress {
+               type uint8;
+               units "percentage";
+               description
+                  "Progress of file upload";
+            }
+
+            leaf uploaded-bytes {
+               type uint64;
+               description
+                  "Bytes uploaded";
+            }
+
+            leaf status {
+               type string;
+               description
+                  "string describing the status of upload/download";
+            }
+         }
+      }
+   }
+
+   rpc file-action {
+      description
+         "Start a file download/upload";
+
+      input {
+         leaf file-name {
+            mandatory true;
+            type leafref {
+               path "/file-mgmt:files/file-mgmt:file/file-mgmt:file-name";
+            }
+            description
+               "Name of file";
+         }
+
+         leaf action {
+            mandatory true;
+            type enumeration {
+               enum download;
+               enum upload;
+            }
+            description
+               "Action to be performed on file:
+               download: Download operation
+               upload: Upload operation";
+         }
+      }
+   }
+}

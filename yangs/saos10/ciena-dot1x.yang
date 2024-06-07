@@ -1,0 +1,1183 @@
+module ciena-dot1x {
+    namespace "http://www.ciena.com/ns/yang/ciena-dot1x";
+    prefix "cn-dot1x";
+  
+    import openconfig-interfaces {
+       prefix "oc-if";
+    }
+
+    import openconfig-system {
+       prefix "oc-sys";
+    }
+
+    import openconfig-inet-types { 
+       prefix oc-inet; 
+    }
+
+    import ciena-openconfig-interfaces { 
+        prefix "cn-oc-if"; 
+    }
+
+    import openconfig-yang-types { 
+       prefix "oc-yang"; 
+    }
+    import openconfig-types { 
+       prefix "oc-types"; 
+    }
+    import yuma-ncx {
+       prefix "ncx";
+    }
+
+    import ciena-types {
+       prefix "cn-type";
+    }
+
+    import ciena-tls-service-profile {
+       prefix ciena-tsp;
+    }
+
+   organization
+      "Ciena Corporation";
+ 
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module contains the schema definition for 802.1x port
+       level security.";
+
+   revision "2020-01-20" {
+     description
+        "Type of password in supplicant container, has been changed from
+         derived type password-type to base type string.";
+     reference
+        "No specific reference or standard available.";
+   }
+
+   revision "2018-11-20" {
+     description
+        "Initial Version.";
+     reference
+        "IEEE Std 802.1X-2004.";
+   }
+
+   typedef pae-control-status {
+     type enumeration {
+       enum authorized {
+         description
+            "Port is authorized.";
+       }
+       enum unauthorized {
+         description
+            "Port is unauthorized.";
+       }
+     }
+     description
+        "The status values of the PAE controlled
+         Port.";
+   }
+ 
+   typedef pae-auth-control-direction {
+     type enumeration {
+       enum both {
+         description
+            "Bi-directional authentication";
+       }
+     }
+     default "both";
+     description
+        "The control mode values for the Authenticator PAE.";
+   }
+
+   typedef eap-capabilities {
+     type bits {
+        bit md5 {
+          position 0;
+          description
+            "EAP MD5 authentication";
+        }
+        bit tls {
+          position 1;
+          description
+            "EAP TLS authentication";
+        }
+     }
+     description
+       "EAP authentication methods.";
+   }
+
+   typedef name-type {
+     type string {
+       length "1..32";
+       pattern '[0-9a-zA-Z\-_.]*';
+     }
+     description
+       "Supplicant user-name type";
+   }
+
+   typedef password-type {
+     type string {
+       length "1..128";
+     }
+     description
+       "Supplicant Password type";
+   }
+   grouping port-capabilities {
+     description
+        "Per port PAE feature capabilities.";
+
+     leaf supplicant {
+        type boolean;
+        default "false";
+        description
+           "Indicates if Supplicant is supported.";
+        reference
+           "IEEE 802.1X Clause 9.6.1.";
+     }
+
+     leaf authenticator {
+       type boolean;
+       default "false";
+       description
+          "Indicates if Authenticator is supported.";
+       reference
+         "IEEE 802.1X Clause 9.6.1.";
+     }
+   }
+
+   grouping server-statistics {
+     description
+       "RADIUS server statistics.";
+ 
+     leaf server-address {
+       type oc-inet:ip-address;
+       description
+         "Specifies the resolved IP address if a hostname is given.";
+     }
+    leaf access-requests {
+       type oc-yang:counter64;
+       description
+         "The number of Access-Request packets sent to this server.
+         This does not include retransmissions.";
+     }
+     leaf access-accepts {
+       type oc-yang:counter64;
+       description
+         "The number of Access-Accept packets received from this server.";
+     }
+     leaf access-rejects {
+       type oc-yang:counter64;
+       description
+         "The number of Access-Reject packets received from this server.";
+     }
+     leaf access-retransmissions {
+       type oc-yang:counter64;
+        description
+         "The number of Access-Reject packets Retransmitted from this server.";
+     }
+     leaf access-challenges {
+       type oc-yang:counter64;
+       description
+         "The number of RADIUS Access-Challenge packets (valid or invalid) received
+         from this server.";
+     }
+     leaf accounting-responses {
+       type oc-yang:counter64;
+       description
+         "The number of RADIUS Accounting-Response packets (valid or invalid) received
+         from this server.";
+     }
+     leaf malformed-responses {
+       type oc-yang:counter64;
+       description
+         "The number of Malformed-Response packets received from this server.
+         Malformed packets include packets with an invalid length.
+         Bad authenticators or signature attributes or unknown types are not included
+         as malformed access responses.";
+     }
+     leaf bad-authenticators {
+       type oc-yang:counter64;
+       description
+         "The number of packets containing invalid authenticators
+         or signature attributes received from this server.";
+     }
+     leaf unknown-types {
+       type oc-yang:counter64;
+       description
+         "The number of RADIUS packets of unknown type which were received from this server
+         on the authentication port.";
+     }
+     leaf packets-dropped {
+       type oc-yang:counter64;
+       description
+         "The number of RADIUS packets which were received from this server on the authentication
+         port and dropped for some other reason.";
+     }
+     leaf round-trip-time {
+       type oc-types:timeticks64;
+       description
+         "The time interval (in hundredths of a second) between the most
+         recent Access-Reply/Access-Challenge and the Access-Request that
+         matched it from this RADIUS server.";
+     }
+   }
+
+   augment "/oc-sys:system" {
+     description
+       "Augment system with 802.1X specific configuration";
+
+     container dot1x {
+       description
+         "Contains all 802.1X System specific
+          configuration and state.";
+
+       container config {
+         description
+           "Contains all 802.1X System specific
+            configuration.";
+         leaf system-auth-control {
+           type cn-type:admin-state;
+           default "disabled";
+           description
+             "The administrative state for
+              Port Access Control in a System.";
+           reference
+              "IEEE 802.1X Clause 9.6.1";
+         }
+
+         leaf-list authentication-method {
+           type leafref {
+             path "/oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:config/oc-sys:name";
+           }
+           description
+              "Server from list of AAA server group 
+               to be used for dot1x authentication.";
+         }
+         leaf-list accounting-method {
+           type leafref {
+           path "/oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:config/oc-sys:name";
+           }
+           description
+              "Server from list of AAA server group 
+               to be used for dot1x accounting.";
+         }
+       }
+       container state {
+         config false;
+         description
+           "Contains all 802.1X System specific state.";
+         leaf operational-status {
+           type cn-type:state;
+           description
+             "Operational status of dot1x.";
+         }
+         list radius-statistics {
+           key server-group-name;
+           leaf server-group-name {
+             type string;
+             description
+               "The name of server-group.";
+            }
+            list server-statistics {
+              key server-address;
+              description
+                "RADIUS 802.1x authentication statistics.";
+              uses server-statistics;
+            }
+         }
+       }
+     }
+   }
+    
+   augment "/oc-if:interfaces/"
+         + "oc-if:interface/"
+         + "oc-if:config" {
+       when "cn-oc-if:type = 'ettp'";
+
+       description
+         "Augmenting 802.1x to interfaces.";
+   
+     container dot1x {
+       description
+         "Indicates dot1x configurational parameters.";
+
+       container port-capabilities {
+          description
+            "Per port feature capabilities.";
+             uses port-capabilities;
+       }
+
+       container authenticator {
+         //when "../port-capabilities/supplicant = 'false' and
+         //      ../port-capabilities/authenticator = 'true'" {
+         //description
+         //  "Applies to Ports when the supplicant is
+         //   disabled and Authenticator port capabilities are
+         //   supported.";
+         //}
+  
+         description
+            "Contains the configuration nodes for the Authenticator PAE
+             associated with each port.";
+
+           leaf eapol-protocol-version {
+             type uint8 {
+               range "1..2";
+             }
+             default "2";
+             description
+               "Specifies the eapol-version - 1 or 2 (2 is the default).
+                This value is set to 1 to work around issues with client
+                implementations that drop EAPOL frames that use version 2.";
+           }
+
+           leaf admin-status {
+             type cn-type:admin-state;
+             default "disabled";
+             description
+               "The administrative state for
+                authenticator control on Port.";
+           }
+
+           leaf control-direction {
+             type pae-auth-control-direction;
+             description
+               "The current value of the administrative controlled
+                directions parameter for the Port.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+
+           leaf port-control {
+             type enumeration {
+               enum auto {
+                  description
+                    "Port is authorized or unauthorized based on the
+                     outcome of the authentication process on the port.";
+               }
+               enum force-authorized {
+                  description
+                    "Port is forcibly marked as authorized and will 
+                     allow supplicant access.";
+               }
+               enum force-unauthorized {
+                  description
+                    "Port is forcibly marked as unauthorized and will 
+                     unconditional block access to the supplicant.";
+               }
+             }
+             default "auto";
+             description
+               "Sets the port authorization mode.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+        
+           leaf reauth-enabled {
+             type boolean;
+             default "false";
+             description
+               "This object is set true if PACP should initiate
+                reauthentication periodically, false otherwise.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+  
+           leaf quiet-period {
+             type uint32 {
+               range "1..65535";
+             }
+             units seconds;
+             default "60";
+             description
+               "Number of seconds that the switch remains in the 
+                quiet state following a failed authentication exchange with 
+                the client.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+
+           leaf reauth-max {
+             type uint8 {
+               range "1..10";
+             }
+             default "2";
+             description
+               "Specifies the maximum number of re-authentication attempts on an
+                authenticator port before port is unauthorized.";
+             reference
+               "IEEE 802.1X Clause 8.2.4.1.2.";
+           }
+            
+           leaf reauth-period {
+             type uint32 {
+               range "1..65535";
+             }
+             units seconds;
+             default "3600";
+             description
+               "This object indicates the time period of the 
+                reauthentication to the supplicant.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+
+           leaf server-timeout {
+             type uint32 {
+               range "1..180";
+             }
+             units seconds;
+             default "30";
+             description
+                "Specifies the timeout value for an authenticator on a port connecting 
+                 to a backend authentication server.";
+             reference
+               "IEEE 802.1X Clause 9.4.1.";
+           }
+       } //end of authenticator config parameters 
+       
+       container supplicant {
+         //when "../port-capabilities/supplicant = 'true' and
+         //      ../port-capabilities/authenticator = 'false'" {
+         //description
+         //   "Applies to Ports when the Authenticator is
+         //    disabled and supplicant port capabilities are
+         //    supported.";
+         //}
+         description
+           "Contains the configuration nodes for the Supplicant PAE
+            associated with each port.";
+  
+         leaf auth-period {
+           type uint32 {
+             range "1..65535";
+           }
+           units seconds;
+           default "30";
+           description
+             "Specifies the amount of time a supplicant will wait for a (EAP) 
+              request from an authenticator before timing out.";
+           reference
+             "IEEE 802.1X Clause 9.5.1.";
+         }
+
+         leaf held-period {
+           type uint32 {
+             range "1..65535";
+           }
+           units seconds;
+           default "60";
+           description
+             "Specifies the held period for a port in the supplicant role. 
+              The held period is the time period for which the supplicant stops 
+              trying to authenticate itself to the authenticator after an 
+              authentication failure.";
+           reference
+             "IEEE 802.1X Clause 9.5.1.";
+         }
+
+         leaf start-period {
+           type uint32 {
+             range "1..65535";
+           }
+           units seconds;
+           default "30";
+           description
+             "Specifies the amount of time a supplicant will wait for a response 
+              from an authenticator on a connection request. If the authenticator 
+              has not responded after this time interval, the supplicant assumes 
+              that there is no valid authenticator on the other side.";
+           reference
+             "IEEE 802.1X Clause 9.5.1.";
+         }
+
+         leaf max-start {
+           type uint32 {
+             range "1..65535";
+           }
+           default "3";
+           description
+             "Specifies the maximum number of times a supplicant will try connecting 
+              to an authenticator before concluding that there is no authenticator 
+              present.";
+           reference
+             "IEEE 802.1X Clause 9.5.1.";
+         }
+
+         leaf admin-status {
+           type cn-type:admin-state;
+           default "disabled";
+           description
+             "The administrative state for
+              supplicant control on Port.";
+         }
+
+         leaf identity {
+           type name-type;
+           description
+             "Specifies the username that the supplicant will use as the identity
+              in the authentication process.";
+         }
+
+         leaf password {
+           ncx:password;
+           type string;
+           description
+             "Specifies the password that the supplicant will use for EAP-MD5 in
+              the authentication process. Length of Password must not exceed more than 128.
+              Due to security reasons password will be displayed as ****.";
+         }
+
+         leaf eapol-protocol-version {
+           type uint8 {
+             range "1..2";
+           }
+           default "2";
+           description
+             "Specifies the eapol-version - 1 or 2 (2 is the default).
+              This value is set to 1 to work around issues with client
+              implementations that drop EAPOL frames that use version 2.";
+         }
+
+         leaf eap-method {
+           type eap-capabilities;
+           default "md5";
+           description
+             "Selects the EAP-Method(s). eap MD5 or eap TLS.
+              Using eap TLS requires a supplicant device certificate.
+              This certificate must already be installed.";
+         }
+
+         leaf tls-service-profile {
+           type leafref {
+             path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+           }
+           description
+             "The TLS Service Profile to be used when eap-method is TLS.";
+         }
+      } //end of supplicant config parameters 
+    } //end of dot1x container
+  } // end of augment oc-if:config
+
+  augment "/oc-if:interfaces/"
+       + "oc-if:interface/"
+       + "oc-if:state"  {
+       when "../oc-if:config/cn-oc-if:type = 'ettp'";
+
+       description
+         "Augmenting 802.1x state to interfaces state."; 
+
+    container dot1x {
+      description
+        "Indicates dot1x operation parameters.";
+
+     container authenticator {
+       when "/oc-if:interfaces/oc-if:interface/oc-if:config/"
+         + "dot1x/port-capabilities/authenticator ='true'"
+         + "and /oc-if:interfaces/oc-if:interface/oc-if:config/dot1x/"
+         + "port-capabilities/supplicant ='false'" {
+        description
+          "Applies to Ports when the supplicant is
+           disabled and Authenticator port capabilities are
+           supported.";
+        }
+        description
+           "Contains the operational nodes for the Authenticator PAE
+            associated with each port.";
+
+         leaf operational-status {
+           type cn-type:state;
+           description
+             "Indicates the current operational state of the port as an authenticator.
+              This considers all config that might impact this including per port
+              authenticator configuration, over all dot1x admin state,  presence of
+              required licenses, etc.";
+         }
+ 
+         leaf oper-controlled-directions {
+           type pae-auth-control-direction;
+           description
+             "The current value of the administrative controlled
+              directions parameter for the Port.";
+           reference
+             "IEEE 802.1X Clause 9.4.1.";
+         }
+
+         leaf controlled-port-status {
+           type pae-control-status;
+           description
+              "The current value of the controlled Port
+               status parameter for the Port.";
+           reference
+             "IEEE 802.1X Clause 9.4.1.";
+         }
+
+         leaf reauth-count {
+           type uint8;
+           description
+             "Specifies the number of re-authentication attempts on an
+              authenticator port before port is unauthorized.";
+           reference
+             "IEEE 802.1X Clause 8.2.4.1.1.";
+         }
+
+         leaf auth-pae-state {
+           type enumeration {
+             enum initialize {
+                description
+                   "Initialize state.";
+             }
+             enum disconnected {
+                description
+                   "Disconnected state.";
+             }
+             enum  connecting {
+                description
+                   "Connecting state.";
+             }
+             enum  authenticating {
+                description
+                   "Authenticating state.";
+             }
+             enum  authenticated {
+                description
+                   "Authenticated state.";
+             }
+             enum  aborting {
+                description
+                   "Aborting state.";
+             }
+             enum  held {
+                description
+                   "Held state.";
+             }
+             enum  forceAuth {
+                description
+                   "ForceAuth state.";
+             }
+             enum  forceUnauth {
+                description
+                   "ForceUnauth state.";
+             }
+             enum  restart {
+                description
+                   "Restart state.";
+             }
+           }
+           description
+             "This object will provide the current value of the Authenticator PAE state
+              machine.";
+           reference
+             "IEEE 802.1X Clause 9.4.1.";
+        }
+         
+        leaf eapol-frames-tx {
+          type oc-yang:counter64;
+          description
+             "The number of EAPOL frames of any type that have been transmitted by this 
+              Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+
+        leaf eapol-frames-rx {
+          type oc-yang:counter64;
+          description
+             "The number of EAPOL frames of any type that have been received by this 
+              Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+
+        leaf eapol-start-frames-rx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL-start frames  that have
+              been received by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+
+        leaf eapol-logoff-frames-rx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL- logoff frames  that have
+              been received by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        } 
+
+        leaf eapol-response-id-rx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL- Resp/Id frames  that have
+              been received by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        } 
+
+        leaf eapol-response-rx {
+          type oc-yang:counter32;
+          description
+             "The number of valid EAPOL Response frames
+              (other than Resp/Id frames) that have been
+              received by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+
+        leaf eapol-request-tx {
+          type oc-yang:counter32;
+          description
+             "The number of valid EAPOL request frames
+              (other than Resp/Id frames) that have been
+              transmitted by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+ 
+        leaf invalid-eapol-frame-rx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL frames that have been
+              received by this Authenticator in which the
+              frame type is not recognized.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        } 
+
+        leaf eapol-request-id-tx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL Req/Id frames that have been 
+              transmitted by this Authenticator.";
+          reference
+             "IEEE 802.1X Clause 9.4.2";
+        }
+
+        leaf eap-length-error-frames {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL frames that have been received
+              by this Authenticator in which the Packet Body
+              Length field is invalid.";
+          reference
+             "IEEE 802.1X Clause 9.4.2.";
+        }
+
+        leaf last-eapol-frame-version {
+          type oc-yang:counter32;
+          description
+            "The protocol version number carried in the
+             most recently received EAPOL frame.";
+          reference
+             "IEEE 802.1X Clause 9.4.2.";
+        }
+
+        leaf last-eapol-frame-source {
+          type oc-yang:mac-address;
+          description
+             "The source MAC address carried in the
+              most recently received EAPOL frame.";
+          reference
+             "IEEE 802.1X Clause 9.4.2.";
+        }
+     }//end of authenticator state params
+
+     container supplicant {
+        when "/oc-if:interfaces/oc-if:interface/oc-if:config/"
+          + "dot1x/port-capabilities/authenticator ='false'"
+          + "and /oc-if:interfaces/oc-if:interface/oc-if:config/dot1x/"
+          + "port-capabilities/supplicant ='true'" {
+           description
+             "Applies to Ports when the Authenticator is
+              disabled and supplicant port capabilities are
+              supported.";
+        }
+        description
+           "Contains the operational nodes for the Supplicant PAE
+            associated with each port.";
+
+        leaf operational-status {
+          type cn-type:state;
+          description
+            "Operational status of supplicant.";
+        }
+
+        leaf supp-control-status {
+          type pae-control-status;
+          description
+             "The current value of the controlled Port
+              status parameter for the Port.";
+          reference
+            "IEEE 802.1X Clause 9.5.1.";
+        }
+ 
+        leaf supp-pae-state {
+         type enumeration {
+          enum disconnected {
+              description
+                 "Disconnected state.";
+           }
+           enum logoff {
+              description
+                 "Logoff state.";
+           }
+           enum  connecting {
+              description
+                 "Connecting state.";
+           }
+           enum  authenticating {
+              description
+                 "Authenticating state.";
+           }
+           enum  authenticated {
+              description
+                 "Authenticated state.";
+           }
+           enum  held {
+              description
+                 "Held state.";
+           }
+           enum  restart {
+              description
+                 "Restart state.";
+           }
+           enum  sforceAuth {
+              description
+                 "SforceAuth state.";
+           }
+           enum  sforceUnauth {
+              description
+                 "SforceUnauth state.";
+           }
+         }
+         description
+             "This object will provide the current value of the Supplicant PAE state
+              machine.";
+          reference
+            "IEEE 802.1X Clause 9.5.1.";
+        }
+
+        leaf eapol-frames-tx {
+          type oc-yang:counter64;
+          description
+             "The number of EAPOL frames of any type that have been transmitted by this 
+              Supplicant.";
+           reference
+             "IEEE 802.1X Clause 9.5.2.";
+        }
+
+        leaf eapol-frames-rx {
+          type oc-yang:counter64;
+          description
+             "The number of EAPOL frames of any type that have been received by this 
+              Supplicant.";
+           reference
+             "IEEE 802.1X Clause 9.5.2.";
+        }
+
+        leaf eapol-start-frames-tx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL-start frames  that have
+              been transmitted by this Supplicant.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        }
+
+        leaf eapol-logoff-frames-tx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL- logoff frames  that have
+              been transmitted by this Supplicant.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        } 
+
+        leaf invalid-eapol-frame-rx {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL frames that have been
+              received by this Supplicant in which the
+              frame type is not recognized.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        } 
+
+        leaf eap-length-error-frames {
+          type oc-yang:counter32;
+          description
+             "The number of EAPOL frames that have been received
+              by this Supplicant in which the Packet Body
+              Length field is invalid.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        }
+
+        leaf last-eapol-frame-version {
+          type oc-yang:counter32;
+          description
+            "The protocol version number carried in the
+             most recently received EAPOL frame.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        }
+
+        leaf last-eapol-frame-source {
+          type oc-yang:mac-address;
+          description
+             "The source MAC address carried in the
+              most recently received EAPOL frame.";
+          reference
+             "IEEE 802.1X Clause 9.5.2";
+        }
+     }//end of supplicant state params
+      
+     container authenticator-session {
+       when "/oc-if:interfaces/oc-if:interface/oc-if:config/"
+         + "dot1x/port-capabilities/authenticator ='true'"
+         + "and /oc-if:interfaces/oc-if:interface/oc-if:config/dot1x/"
+         + "port-capabilities/supplicant ='false'" {
+        description
+          "Applies to Ports when the supplicant is
+           disabled and Authenticator port capabilities are
+           supported.";
+        }
+ 
+       description
+          "Authenticator session statistics details.";
+
+       leaf session-authentic-method {
+         type enumeration {
+           enum remote-auth-server {
+              description
+                 "remote authentication server.";
+           }
+           enum local-auth-server {
+              description
+                 "local authentication server.";
+           }
+         }
+         description
+           "The authentication method used to establish the
+             session.";
+         reference
+            "802.1X  Clause 9.4.4.";
+       }
+ 
+       leaf session-id {
+         type string;
+         description
+            "A unique identifier for the session, in the form of a printable 
+             ASCII string of at least three characters.";
+         reference
+            "802.1X  Clause 9.4.4, Session Identifier.";
+       }
+
+       leaf time {
+         type uint32;
+         units seconds;
+         description
+            "The duration of the session in seconds";
+         reference
+            "802.1X Clause 9.4.4, Session Time.";
+       }
+
+       leaf terminate-cause {
+         type enumeration {
+           enum supplicant-log-off {
+              description
+                 "Supplicant log off from system.";
+           }
+           enum port-failure {
+              description
+                 "Port goes down.";
+           }
+           enum supplicant-restart {
+              description
+                 "Supplicant restarted.";
+           }
+           enum reauth-failed {
+              description
+                 "Re-authentication failure.";
+           }
+           enum auth-control-force-unauth {
+              description
+                 "Control changed to force unauthorized.";
+           }
+           enum port-reinit {
+              description
+                 "Port is re-initiated.";
+           }
+           enum port-admin-disabled {
+              description
+                 "Port admin disabled.";
+           }
+           enum not-terminated-yet {
+              description
+                 "Session not terminated yet.";
+           }
+        }
+        description
+          "The reason for the session termination.";
+        reference
+           "802.1X Clause 9.4.4, Session Terminate Cause.";
+      }
+
+      leaf user-name {
+        type string;
+        description
+           "The User-Name representing the identity of the Supplicant PAE.";
+        reference
+           "802.1X Clause 9.4.4, Session User Name.";
+        }
+      } // end of authenticator-session
+    }// end of dot1x state container
+  } // end of augment oc-if:state
+
+
+  // RPCs
+  rpc dot1x-port-initialize {
+    description
+      "The initialization control for this Port.Sending this
+        RPC will causes the Port to be initialized.";
+    reference
+      "802.1X Clause 9.6.1.";
+    input {
+        leaf port-name {
+          type leafref {
+            path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          mandatory true;
+          description
+            "Initalize control for this port.";
+        }
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status of port initialize operation.";
+      }
+    }
+  }
+
+  rpc dot1x-port-reauthenticate {
+    description
+      "The reauthentication control for this port. Sending this 
+       RPC will causes the Authenticator PAE state machine
+       for the Port to reauthenticate the Supplicant";  
+    reference
+      "802.1X Clause 9.6.1.";
+    input {
+        leaf port-name {
+          type leafref {
+            path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          mandatory true;
+          description
+            "Re-authentication for this port.";
+        }
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status of port re-reauthenticate operation.";
+      }
+    }
+  }
+
+  rpc clear-dot1x-statistics {
+    description
+      "RPC to clear the 802.1x statistics of a specific or all
+      ports.";
+
+    input {
+      choice clear-scope {
+        mandatory true;
+        description
+          "Clear statistics for all or for a specific port.";
+        case port {
+          leaf port-name {
+            type leafref {
+              path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+            }
+            description
+              "Clear statistics for this port.";
+          }
+        }
+
+        case all {
+          leaf all {
+            type empty;
+            description
+              "Clear statistics for all ports.";
+          }
+        }
+      }
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status of the clear statistics operation.";
+      }
+    }
+  } // end rpc clear-statistics
+
+  notification dot1x-authentication-status {
+    description
+       "Notification for authentication status change.";
+    leaf port-name {
+      type leafref {
+         path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+      }
+      description
+        "Port on the switch.";
+    }
+
+    leaf port-capabilty {
+      type enumeration {
+        enum supplicant {
+          description
+            "Indicates if Supplicant is supported.";
+        }
+        enum authenticator {
+          description
+            "Indicates if Authenticator is supported.";
+        }
+      }
+      description
+        "Indicate port capability as Supplicant or Authenticator";
+    }
+
+    leaf authentication-status {
+      type enumeration {
+        enum auth-success {
+          description
+            "Authentication is success.";
+        }
+        enum auth-failure {
+          description
+            "Authentication failed.";
+         }
+         enum reauth-failure {
+           description
+             "Re-authentication failed.";
+         }
+      }
+      description
+        "This object store
+         authentication-status of port.";
+    }
+  }
+
+}

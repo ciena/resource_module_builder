@@ -1,0 +1,709 @@
+module ciena-software-mgmt {
+  namespace "http://www.ciena.com/ns/yang/ciena-software-mgmt";
+  prefix ciena-software-mgmt;
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ciena-file-transfer-types {
+    prefix ciena-ftt;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines the nodes for
+     Software Licensing and Upgrade Management
+     for the NETCONF protocol.
+
+     Copyright (c) 2017 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains the property of
+     Ciena Corporation. Dissemination of this information or
+     reproduction of this material is strictly forbidden unless prior
+     written permission is obtained from Ciena Corporation.";
+
+  revision 2023-06-07 {
+     description "Added default value false to software-install rpc defer-activation attribute.";
+  }
+
+  revision 2020-12-22 {
+    description
+      "Added enum revert-pending to typedef software-status.";
+  }
+
+  revision 2020-02-17 {
+    description
+      "Updated description clause of software-install rpc, defer-activation
+       leaf to remove wording that activation occurs at next reboot.
+       Added enum auditing to typedef software-status.
+       Added enum uninstalling to typedef software-status.";
+  }
+
+  revision 2017-03-10 {
+    description
+      "Initial version";
+    reference
+      "39XX/51XX Service Delivery, Aggregation and Virtualization
+       Switches, Software Management and Licensing (009-3273-018)
+       (Ciena Corporation, December 2016);
+       RFC 6020: YANG - A Data Modeling Language for the Network
+       Configuration Protocol (NETCONF).";
+  }
+
+  feature rolling-upgrade {
+    description
+      "On systems with multiple line modules, this feature allows groups
+       of one or more line modules to be upgraded.  Each group is
+       upgraded in sequence.  This avoids having all the the line
+       modules out of service at one time.";
+  }
+
+  typedef software-status {
+    type enumeration {
+      enum good {
+        description
+          "Good";
+      }
+      enum valid {
+        description
+          "Valid";
+      }
+      enum invalid {
+        description
+          "Invalid";
+      }
+      enum not-validated {
+        description
+          "Not validated";
+      }
+      enum empty {
+        description
+          "Empty";
+      }
+      enum running {
+        description
+          "Running";
+      }
+      enum burning {
+        description
+          "Burning";
+      }
+      enum syncing {
+        description
+          "Syncing";
+      }
+      enum loading {
+        description
+          "Loading";
+      }
+      enum waiting {
+        description
+          "Waiting";
+      }
+      enum upgrading {
+        description
+          "Upgrading";
+      }
+      enum idle {
+        description
+          "Idle";
+      }
+      enum auditing {
+        description
+          "Auditing";
+      }
+      enum uninstalling {
+        description
+          "Uninstalling";
+      }
+      enum revert-pending {
+        description
+          "Revert pending";
+      }
+    }
+    description
+      "Software state";
+  }
+
+  typedef rpc-status {
+    type enumeration {
+      enum idle {
+        description
+          "No NETCONF software operation is currently in progress.";
+      }
+      enum busy {
+        description
+          "A NETCONF software operation is currently in progress.";
+      }
+    }
+    description
+      "Status values for a software operation intiated through a
+       NETCONF RPC.";
+  }
+
+  container software {
+    description
+      "Software configuration";
+
+    container rolling-upgrade {
+      if-feature rolling-upgrade;        
+      description
+        "Rolling upgrade configuration";
+
+      leaf admin-state {
+        type ciena:admin-state;
+        description
+          "The rolling upgrade administrative state.";
+      }
+
+      list group-table {
+        key slot;
+        description
+          "Table of slots and rolling upgrade groups to which they
+           belong.";
+        leaf slot {
+          type string;
+          description
+            "Slot name";
+        }
+      }
+
+      leaf group {
+        type uint8 {
+          range 1..255;
+        }
+        description
+          "The group number of the rolling upgrade group to which this
+           slot belongs.";
+      }
+    }
+  }
+
+  container software-state {
+    config false;
+    description
+      "Software operational state.  On success, returns the contained
+       data.  On failure, returns an error message describing the reason
+       for the failure.";
+
+    leaf operation {
+      type software-status;
+      description
+        "The software management operation currently being performed
+         (SAS only)";
+      }
+
+    leaf rpc-status {
+      type rpc-status;
+      description
+        "Status of the latest software operation initiated through
+         a NETCONF RPC. This does not apply to software operations
+         initiated by other sources.";
+    }
+
+    leaf auto-revert-timer {
+      type uint32;
+      units seconds;
+      description
+        "Auto-revert timer  (SAS only)";
+    }
+
+    leaf user-revert-timer {
+      type uint32;
+      units seconds;
+      description
+        "User-revert timer  (SAS only)";
+    }
+
+    container running-package {
+      description
+        "Running software package information";
+
+      leaf package-version {
+        type string;
+        description
+          "Package version";
+      }
+
+      leaf package-info {
+        type string;
+        description
+          "Additional package information";
+      }
+
+      leaf package-status {
+        type string;
+        description
+          "Status of the running software package";
+      }
+
+      leaf release-status {
+        type string;
+        description
+          "Release status of the running software package";
+      }
+
+      list component {
+        key component-name;
+
+        leaf component-name {
+          type string;
+          description
+            "Component name";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Component version";
+        }
+
+        description
+          "Software component information";
+      }
+
+      container active-bootchain {
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+        leaf status {
+          type software-status;
+          description
+            "Status";
+        }
+        description
+          "Active bootchain software information";
+      }
+
+      container standby-bootchain {
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+        leaf status {
+          type software-status;
+          description
+            "Status";
+        }
+        description
+          "Standby bootchain software information";
+      }
+
+      list release-package {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Location";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf status {
+          type software-status;
+          description
+            "Status";
+        }
+
+        leaf validation-status {
+          type string;
+          description
+            "Validation Status";
+        }
+
+        container bootloader {
+          leaf version {
+            type string;
+            description
+              "Version";
+          }
+
+          leaf status {
+            type software-status;
+            description
+              "Status";
+          }
+
+          description
+            "Bootloader";
+        }
+
+        description
+          "Release package software information";
+      }
+
+      list kernel {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Location";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf timestamp {
+          type string;
+          description
+            "Timestamp";
+        }
+
+        description
+          "Kernel software information";
+      }
+
+      list uboot {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Location:  UBOOT bank 0, 1 or gold";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf timestamp {
+          type string;
+          description
+            "Timestamp";
+        }
+
+        description
+          "UBOOT software information";
+      }
+    }
+
+    list package {
+      key module;
+
+      leaf module {
+        type string;
+        description
+          "Module identifier";
+      }
+
+      leaf package-version {
+        type string;
+        description
+          "Software package version";
+      }
+
+      leaf package-status {
+        type string;
+        description
+          "Software package status";
+      }
+
+      container active-bootchain {
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf status {
+          type software-status;
+          description
+            "Status";
+        }
+
+        description
+          "Active bootchain software information";
+      }
+
+      container standby-bootchain {
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf status {
+          type software-status;
+          description
+            "Status";
+        }
+
+        description
+          "Standby bootchain software information";
+      }
+
+      list release-package {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Software package location.  For SDS the locations are
+             banks A and B.  For SAS, the locations are partitions
+             0, 1 or 2.";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Software package version";
+        }
+
+        leaf status {
+          type software-status;
+          description
+            "Software package status.";
+        }
+
+        container bootloader {
+          leaf version {
+            type string;
+            description
+              "Version";
+          }
+
+          leaf status {
+            type software-status;
+            description
+              "Status";
+          }
+
+          description
+            "Bootloader";
+        }
+
+        description
+          "Software release package information for this location.";
+      }
+
+      list kernel {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Location";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf timestamp {
+          type string;
+          description
+            "Timestamp";
+        }
+        description
+          "Kernel software information";
+      }
+
+      list uboot {
+        key location;
+
+        leaf location {
+          type string;
+          description
+            "Location:  UBOOT bank 0, 1 or gold";
+        }
+
+        leaf version {
+          type string;
+          description
+            "Version";
+        }
+
+        leaf timestamp {
+          type string;
+          description
+            "Timestamp";
+        }
+
+        description
+          "UBOOT software information";
+      }
+
+      description
+        "Software information for this processor";
+    }
+  }
+
+  rpc software-activate {
+    description
+      "Activate the software installed in the release directory.  On
+       success, returns <ok/>.  On failure, returns an <rpc-error>
+       containing an <error-message> describing the reason for the
+       failure.";
+
+    input {
+      leaf package {
+        type string;
+        description
+          "Package name.";
+      }
+
+      leaf allow-service-disruption {
+        type boolean;
+        description
+          "Determines whether or not this software activation is allowed
+           to disrupt service.";
+      }
+
+      leaf force-standby {
+        type boolean;
+        description
+          "When true, forces the activation of the standby software
+           bank.";
+      }
+
+      leaf revert-timeout {
+        type uint32;
+        units seconds;
+        description
+          "The time interval between the completion of the software
+           activate command and the automatic reversion of the software
+           to the previous running version.  The user must issue the
+           software-cancel revert-timer command before the end of this
+           interval to prevent the reversion of the software.";
+      }
+    }
+  }
+
+  rpc software-cancel {
+    description
+      "Cancel the specified software operation.  On success, returns
+       <ok/>.  On failure, returns an <rpc-error> containing an
+       <error-message> describing the reason for the failure.  (SAS
+       only)";
+
+    input {
+      leaf operation {
+        type enumeration {
+          enum revert-timer {
+            description
+              "Cancel the revert timer.";
+          }
+        }
+        description
+          "The software operation to be canceled.";
+      }
+    }
+  }
+
+  rpc software-download {
+    description
+      "Download a software release package to a specified destination.
+       On success, returns <ok/>.  On failure, returns an <rpc-error>
+       containing an <error-message> describing the reason for the
+       failure.";
+
+    input {
+      uses ciena-ftt:file-transfer-parameters; 
+
+      leaf destination-path {
+        type string;
+        description
+          "The destination path.";
+      }
+    }
+  }
+
+  rpc software-install {
+    description
+      "Install the new software package into flash.  On success, returns
+       <ok/>.  On failure, returns an <rpc-error> containing an
+       <error-message> describing the reason for the failure.";
+
+    input {
+      leaf package {
+        type string;
+        description
+          "The package release name.";
+      }
+
+      leaf package-path {
+        type string;
+        description
+          "The path to the package files.";
+      }
+
+      uses ciena-ftt:file-transfer-parameters; 
+
+      leaf defer-activation {
+        type boolean;
+        default false;
+        description
+          "When true, activation is deferred.";
+      }
+    }
+  }
+
+  rpc software-protect {
+    description
+      "Back up the new software image.  On success, returns <ok/>.  On
+       failure, returns an <rpc-error> containing an <error-message>
+       describing the reason for the failure.  (SAS only)";
+  }
+
+  rpc software-remove {
+    description
+      "Remove a specific release package from the system.  On success,
+       returns <ok/>.  On failure, returns an <rpc-error> containing an
+       <error-message> describing the reason for the failure.  (SAS
+       only)";
+
+    input {
+      leaf package {
+        type string;
+        description
+          "The package release name or partition number.";
+      }
+    }
+  }
+
+  rpc software-validate {
+    description
+      "Validate the software.  The input may include an optional
+       package-path (SAS only).  On success, returns <ok/>.  On failure,
+       returns an <rpc-error> containing an <error-message> describing
+       the reason for the failure.";
+
+    input {
+      leaf package-path {
+        type string;
+        description
+          "The path to the package files.  When empty or not present,
+           validate the currently running version (which is the same as
+           specifying the system-software attribute in SAS).";
+      }
+    }
+  }
+}

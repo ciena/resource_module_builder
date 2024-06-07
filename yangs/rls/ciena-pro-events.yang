@@ -1,0 +1,108 @@
+module ciena-pro-events {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-events";
+  prefix ciena-pro-events;
+
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes information about events";
+
+  revision 2019-04-11 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Initial revision.";
+  }
+
+  grouping events-group {
+    list events {
+      config false;
+      leaf event-time {
+        type ietf-yang:date-and-time;
+        description
+          "The timestamp of event.";
+      }
+
+      anyxml event {
+        description
+          "This object stores the notification event.";
+      }
+    }
+  }
+
+  container events-info {
+    config false;
+    description
+      "Show events log information.";
+    leaf creation-time {
+      type ietf-yang:date-and-time;
+      description
+        "The timestamp of the creation of the log used to
+         store events. Note that this might be earlier then
+         the earliest available notification in the log.";
+    }
+
+    leaf aged-time {
+      type ietf-yang:date-and-time;
+      description
+        "The timestamp of the last event aged out of the log.";
+    }
+  }
+
+  rpc events-show {
+    description
+      "Show events stored in logs.";
+    input {
+      leaf start-time {
+        type ietf-yang:date-and-time;
+        description
+          "Show events starting from this time.";
+      }
+
+      leaf stop-time {
+        type ietf-yang:date-and-time;
+        description
+          "Show events until this time.";
+      }
+
+      leaf last-count {
+        type uint32;
+        description
+          "Show these many number of events.";
+      }
+
+      leaf interval {
+        type enumeration {
+          enum "hour";
+          enum "day";
+        }
+        description
+          "Show events occured in last hour/day.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+
+      uses events-group;
+    }
+  }
+}

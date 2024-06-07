@@ -1,0 +1,179 @@
+module ciena-6500r-cv-shelf-config {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-cv-shelf-config";
+  prefix cv-shelf-config;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform connection validation service shelf config";
+
+  revision 2021-03-15 {
+    version:version "version" {
+      version:string "2.1.0";
+    }
+    description
+      "added links-under-maintenance and local-cards-states in focus-mode container";
+  }
+  revision 2020-09-08 {
+    version:version "version" {
+      version:string "2.0.0";
+    }
+    description
+      "cv-shelf-cache moved to a separate yang file";
+  }
+  revision 2020-07-22 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Added mode and focus container";
+  }
+  revision 2019-08-08 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial revision";
+  }
+
+  typedef cv-mode {
+    type enumeration {
+      enum "full" {
+        description
+          "CV running in full mode, testing all ports in provisioned port-sequences";
+      }
+      enum "focus" {
+        description
+          "CV running in focus mode, a target-port is set. All slots connected to the target-port
+           will have their active-port-sequence updated to use only ports connected to the target-port.";
+      }
+    }
+  }
+
+  typedef card-cv-state {
+    type enumeration {
+      enum "full" {
+        description
+          "CV running in full mode for this card, testing all ports in provisioned port-sequences";
+      }
+      enum "focus" {
+        description
+          "CV running in focus mode for this card, testing only the ports under the target-port set.";
+      }
+      enum "focus-remote" {
+        description
+          "CV running in focus mode for this card, testing only the ports connected to the target-port.";
+      }
+      enum "full-impacted" {
+        description
+          "CV running in full mode for this card, testing all ports. But test on some ports are impacted
+           as those are connected to slots in focus or focus-remote state.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-cv-shelf-config-mount {
+    container cv-shelf-config {
+      leaf mode {
+        type cv-mode;
+        default "full";
+        description
+          "Locally provisioned CV Mode";
+      }
+
+      leaf state {
+        type cv-mode;
+        description
+          "CV state is controlled by the local mode and the mode of any neighbours. If a neighbour is in focus mode,
+           the state of this shelf will also be in focus mode.";
+      }
+
+      leaf target-port {
+        type instance-identifier;
+        description
+          "Target-port for the provisioned cv-mode.";
+      }
+
+      container focus-mode {
+        leaf port-under-maintenance {
+          type instance-identifier;
+          description
+            "The port that is under maintenance, could be local or remote";
+        }
+
+        list far-end-tx-ports {
+          key "port";
+          description
+            "Far end tx ports being validated";
+          leaf port {
+            type instance-identifier;
+          }
+        }
+
+        list far-end-rx-ports {
+          key "port";
+          description
+            "Far end rx ports being validated";
+          leaf port {
+            type instance-identifier;
+          }
+        }
+
+        list local-slots-under-maintenance {
+          key "slot";
+          description
+            "Slots in focus mode";
+          leaf slot {
+            type instance-identifier;
+          }
+        }
+
+        list links-under-maintenance {
+          key "link";
+          description
+            "Links involved in focus mode";
+          leaf link {
+            type string;
+          }
+
+          leaf from {
+            type instance-identifier;
+          }
+
+          leaf to {
+            type instance-identifier;
+          }
+        }
+
+        list local-cards-states {
+          key "slot";
+          description
+            "State of the local cards during focus mode";
+          leaf slot {
+            type instance-identifier;
+          }
+
+          leaf state {
+            type card-cv-state;
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-cv-shelf-config-mount-actions;
+
+  uses ciena-6500r-cv-shelf-config-mount;
+}

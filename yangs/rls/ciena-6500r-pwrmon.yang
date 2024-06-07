@@ -1,0 +1,255 @@
+module ciena-6500r-pwrmon {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-pwrmon";
+  prefix pwrmon;
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-6500r-types {
+    prefix types;
+  }
+
+  import ciena-pro-frequencies {
+    prefix frequencies;
+  }
+
+  import ciena-pro-pwrmon {
+    prefix ciena-pro-pwrmon;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform pwrmon model";
+
+  revision 2021-01-06 {
+    version:version "version" {
+      version:string "1.5.0";
+    }
+    description
+      "Add expected power in nmcmon";
+  }
+  revision 2020-12-08 {
+    version:version "version" {
+      version:string "1.4.0";
+    }
+    description
+      "Remove config false for sdmon parms that are set in config sdmon";
+  }
+  revision 2020-09-08 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "Use ciena-pro-pwrmon";
+  }
+  revision 2020-08-11 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Added SDMON and NMCMON groups";
+  }
+  revision 2020-07-17 {
+    version:version "version" {
+      version:string "1.1.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-07-17 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Added los-threshold-hysteresis field";
+  }
+  revision 2020-02-26 {
+    version:version "version" {
+      version:string "1.0.8";
+    }
+    description
+      "Added ORL-state, orl-threshold  and low-orl-hysteresis";
+  }
+  revision 2020-02-14 {
+    version:version "version" {
+      version:string "1.0.7";
+    }
+    description
+      "Added C-band, L-band, C+L-band to signal-type enum";
+  }
+  revision 2020-01-22 {
+    version:version "version" {
+      version:string "1.0.6";
+    }
+    description
+      "Added parent-plug-slot leaf";
+  }
+  revision 2020-01-21 {
+    version:version "version" {
+      version:string "1.0.5";
+    }
+    description
+      "Added Low Optical Return Loss in diagnostic container";
+  }
+  revision 2020-01-15 {
+    version:version "version" {
+      version:string "1.0.4";
+    }
+    description
+      "Added Total Power to signal-type enum";
+  }
+  revision 2019-12-11 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Added ORL";
+  }
+  revision 2019-11-11 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Added a diagnostic container.";
+  }
+  revision 2019-09-03 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Added parameter ranges, signal-type, center-freq and spectral-width.";
+  }
+  revision 2018-11-07 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Initial revision";
+  }
+
+  grouping nmcmon {
+    list nmcmon {
+      key "center-frequency";
+      config false;
+      leaf center-frequency {
+        type types:frequency;
+        config false;
+        description
+          "Center frequency";
+      }
+
+      leaf spectral-width {
+        type types:frequency;
+        config false;
+        description
+          "Spectral width.";
+      }
+
+      leaf power {
+        type types:power-dBm-1-precision;
+        config false;
+        description
+          "Optical measured power for the channel";
+      }
+
+      leaf expected-power {
+        type types:power-dBm-1-precision;
+        config false;
+        description
+          "Expected power for the channel";
+      }
+    }
+  }
+
+  grouping sdmon {
+    leaf bin-size {
+      type types:frequency;
+      description
+        "Bin size of the spectrum";
+    }
+
+    leaf bin-spacing {
+      type types:frequency;
+      description
+        "Bin spacing of the spectrum";
+    }
+
+    leaf min-freq {
+      type types:frequency;
+      description
+        "Minimum starting frequency for the measured range.";
+    }
+
+    leaf max-freq {
+      type types:frequency;
+      description
+        "Maximum ending frequency for the measured range.";
+    }
+
+    list bins {
+      key "frequency";
+      config false;
+      leaf frequency {
+        type types:frequency;
+        config false;
+        description
+          "Frequency";
+      }
+
+      leaf power {
+        type types:power-dBm-1-precision;
+        config false;
+        description
+          "Power measured of a slice in dBm.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-pwrmon-mount {
+    list pwrmon {
+      key "name";
+      uses ciena-pro-pwrmon:pwrmon;
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        mandatory true;
+        description
+          "Pwrmon Parent, effectively the physical location on the card where we want to monitor powers from";
+      }
+
+      leaf frequency {
+        type leafref {
+          path "/frequencies:freq-group/frequencies:name";
+        }
+      }
+
+      uses sdmon {
+        when "./signal-type = SDMON";
+      }
+
+      uses nmcmon {
+        when "./signal-type = NMCMON";
+      }
+    }
+  }
+
+  grouping ciena-6500r-pwrmon-mount-actions;
+
+  uses ciena-6500r-pwrmon-mount;
+}

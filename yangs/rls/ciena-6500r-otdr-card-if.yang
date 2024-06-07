@@ -1,0 +1,385 @@
+module ciena-6500r-otdr-card-if {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-otdr-card-if";
+  prefix otdr-card-if;
+
+  import ciena-6500r-otdr {
+    prefix otdr;
+  }
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-pro-fiber-types {
+    prefix fiber-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's otdr card interface object for the 6500 RLS platform";
+
+  revision 2021-02-22 {
+    version:version "version" {
+      version:string "1.2.1";
+    }
+    description
+      "Removed ignored explicit config statement for trace-ready notification. Fixed formatting.";
+  }
+  revision 2020-11-12 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Add event-status.
+       No migration escapes are required. New values will migrate without a checklist.";
+  }
+  revision 2020-10-23 {
+    version:version "version" {
+      version:string "1.1.1";
+    }
+    description
+      "Add trace-type leaf to trace-ready";
+  }
+  revision 2020-08-27 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Add slot field to trace-ready";
+  }
+  revision 2020-08-25 {
+    version:version "version" {
+      version:string "1.0.4";
+    }
+    description
+      "Change comment leaf to a list";
+  }
+  revision 2020-08-17 {
+    version:version "version" {
+      version:string "1.0.4";
+    }
+    description
+      "Add comment leaf to event-group";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Fix config false parameters. Fix version numbering.";
+  }
+  revision 2019-11-28 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "OTDR trace type and card interface trace type restructuring";
+  }
+  revision 2019-09-19 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Manual Go/No-Go support";
+  }
+  revision 2019-02-07 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "RLS Release 1.0";
+  }
+
+  grouping response-group {
+    list trace-response {
+      key "name";
+      config false;
+      description
+        "List of trace responses.";
+      leaf name {
+        type string;
+        config false;
+        description
+          "otdr facility name";
+      }
+
+      leaf trace-type {
+        type otdr:card-if-trace-type_t;
+        config false;
+        description
+          "Type of trace.";
+      }
+
+      leaf file-size {
+        type uint32;
+        units "byte";
+        config false;
+        description
+          "Size of the SOR file";
+      }
+
+      leaf discovered-fiber-type {
+        type leafref {
+          path "/fiber-types:fiber-type/fiber-types:fiber-type";
+        }
+        config false;
+        description
+          "Discovered fiber type. TODO: need a translation between yang and SNMP...";
+      }
+
+      leaf average-loss {
+        type ciena-6500r-types:loss;
+        units "dB/km";
+        config false;
+        description
+          "Average Fiber loss for OTDR Trace (dB/km)";
+      }
+
+      leaf num-event {
+        type uint32;
+        config false;
+        description
+          "Number of event reported by the card for this trace";
+      }
+
+      leaf trace-status {
+        type otdr:resp-trace-status_t;
+        config false;
+        description
+          "Status of the trace.";
+      }
+
+      leaf file-time-stamp {
+        type string;
+        config false;
+        description
+          "File time stamp";
+      }
+
+      leaf total-loss {
+        type ciena-6500r-types:loss;
+        units "dB";
+        config false;
+        description
+          "Total loss";
+      }
+
+      leaf total-reflection {
+        type otdr:reflection_t;
+        units "dB";
+        config false;
+        description
+          "Total reflection";
+      }
+
+      leaf go-nogo-status {
+        type otdr:gonogo_t;
+        config false;
+        description
+          "Go Nogo status indicator";
+      }
+
+      leaf-list event-status {
+        type otdr:event-status_t;
+        config false;
+        description
+          "Reported event statuses.";
+      }
+
+      leaf fiber-length-valid {
+        type boolean;
+        config false;
+        description
+          "The fiber length validity";
+      }
+
+      leaf fiber-length {
+        type int32;
+        units "m";
+        config false;
+        description
+          "The fiber length";
+      }
+    }
+  }
+
+  grouping event-group {
+    list trace-event {
+      key "name";
+      config false;
+      description
+        "Structure of the interface with SNMP to get events of a trace.Will be removed once otdr service use snmp-ra
+         directly";
+      leaf name {
+        type string;
+        config false;
+        description
+          "otdr facility name";
+      }
+
+      leaf trace-type {
+        type otdr:card-if-trace-type_t;
+        config false;
+        description
+          "Type of trace.";
+      }
+
+      list type-list {
+        key "id";
+        config false;
+        description
+          " List of type of event in the trace.";
+        leaf id {
+          type int8;
+          description
+            "id of the event";
+        }
+
+        leaf type-value {
+          type otdr:event-type_t;
+        }
+      }
+
+      list distance-list {
+        key "id";
+        config false;
+        description
+          " List of distance value of the trace.";
+        leaf id {
+          type int8;
+          description
+            "id of the event";
+        }
+
+        leaf distance-value {
+          type otdr:distance_t;
+        }
+      }
+
+      list reflection-list {
+        key "id";
+        config false;
+        description
+          " List of reflection value of the trace.";
+        leaf id {
+          type int8;
+          description
+            "id of the event";
+        }
+
+        leaf reflection-value {
+          type otdr:reflection_t;
+        }
+      }
+
+      list loss-list {
+        key "id";
+        config false;
+        description
+          " List of loss value of the trace.";
+        leaf id {
+          type int8;
+          description
+            "id of the event";
+        }
+
+        leaf loss-value {
+          type ciena-6500r-types:loss;
+        }
+      }
+
+      list comment-list {
+        key "id";
+        config false;
+        description
+          "List of comment fields for each OTDR event";
+        leaf id {
+          type int8;
+          description
+            "id of the event";
+        }
+
+        leaf comment {
+          type string {
+            length "1..51";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-otdr-card-if-mount {
+    container otdr-card-if {
+      list opr {
+        key "name";
+        config false;
+        description
+          "Structure of the interface with SNMP to start/stop a trace. Actually, we can't use opr from this model because it
+           is not mounted as config in slot-mgr. We'll delete it.";
+        leaf name {
+          type string;
+          config false;
+          description
+            "otdr facility name";
+        }
+
+        leaf start {
+          type boolean;
+          config false;
+          description
+            "True to start a trace, false to cancel(stop) a trace.";
+        }
+
+        leaf trace-type {
+          type otdr:card-if-trace-type_t;
+          config false;
+          description
+            "Type of trace.";
+        }
+      }
+
+      uses otdr-card-if:response-group;
+
+      uses otdr-card-if:event-group;
+    }
+
+    notification trace-ready {
+      description
+        "Used to indicate a trace is ready for a given slot and port.";
+      leaf name {
+        type string;
+        description
+          "otdr facility name (aka port)";
+      }
+
+      leaf slot {
+        type string;
+        description
+          "otdr facility slot number";
+      }
+
+      leaf trace-type {
+        type otdr:card-if-trace-type_t;
+        description
+          "Type of trace.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-otdr-card-if-mount-actions;
+
+  uses ciena-6500r-otdr-card-if-mount;
+}

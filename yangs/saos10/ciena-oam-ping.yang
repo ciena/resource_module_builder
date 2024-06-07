@@ -1,0 +1,857 @@
+module ciena-oam-ping {
+  yang-version 1.1;
+  namespace
+    "http://ciena.com/ns/yang/ciena-oam-ping";
+  prefix
+    "oam-ping";
+
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ietf-sr-policy-types {
+     prefix "policy-types";
+  }
+
+  import ciena-oam-options {
+    prefix oam-options;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-inet-types {
+     prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's specific
+     implementation for ping. It includes IP ping,
+     LSP ping and Pseudowire ping.
+
+     Copyright (c) 2020-2023  Ciena Corporation.  All rights
+     reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-04-27" {
+    description
+      "Added Ping support for SRv6 FEC.
+       Added validation of color leaf for SRv6 Ping.
+       Removed leafref for sr-policy parameters to support ping on ANR SR-Policy.
+       Modified pattern match for ethernet-tag-id.";
+  }
+
+  revision "2022-12-05" {
+    description
+      "Added Ping support for RSVP-TE FEC.
+       Added do-not-fragment parameter for IP Ping.";
+  }
+
+  revision "2022-02-03" {
+    description
+      "Added support of FEC validation and Reverse FEC validation.
+       Removed ip FEC validation check from interface leaf.
+       Added echo-dest-ip parameter to support ECMP MPLS explicit path ping.
+       Changed minimum value of range of echo-packet-size.
+       Added condition for fec-stack-validation leaf.
+       Added support for ping on SRTE candidate-path, segment-list.";
+  }
+
+  revision "2021-08-16" {
+    description
+      "Updated description of destination-ip leaf.
+       Added LDP and BGP-LU FEC in backup leaf.";
+  }
+
+  revision "2020-12-04" {
+    description
+      "Added segment parameters for MSPW ping.
+       Updated target-fec for SR policy ping.
+       Description change for ethernet-segment-identifier.";
+  }
+
+  revision "2020-01-31" {
+    description
+      "Initial Version of ping data model.";
+  }
+
+  /* Groupings */
+  grouping mspw-segment-config-params {
+    leaf segment {
+      when "../target-fec-type = 'pseudowire-fec'";
+      type uint8 {
+        range "1..255";
+      }
+      default 1;
+      description
+        "Segment number corresponding to the target PW hop
+        in the MSPW path. This value is filled in TTL of 
+        PW label header and in TTL-TLV value of echo 
+        request.";
+    }
+    leaf segment-pseudowire-id {
+      when "../target-fec-type = 'pseudowire-fec'";
+      type uint32 {
+        range "1..4294967295";
+      }
+      description
+        "PW-ID of target node to be pinged.";
+    }
+    leaf segment-source-ip {
+      when "../target-fec-type = 'pseudowire-fec'";
+      type inet:ip-address;
+      description
+        "Loopback IP of PW hop immediately before the 
+        target node.";
+    }
+    leaf segment-destination-ip {
+      when "../target-fec-type = 'pseudowire-fec'";
+      type inet:ip-address;
+      description
+        "Loopback IP of target node to be pinged.";
+    }
+  }
+
+  grouping oam-mpls-config-params {
+    leaf fec-stack-validation {
+      when "../target-fec-type = 'pseudowire-fec' or
+            ../target-fec-type = 'evpn-fec' or
+            ../target-fec-type = 'scrt-fec'";
+      type oam-options:fec-verification-state;
+      default off; 
+      description
+        "To validate the downstream FEC path.";
+    }
+    leaf reverse-fec-stack-validation {
+      when "../target-fec-type = 'pseudowire-fec' or
+            ../target-fec-type = 'scrt-fec'";
+      type oam-options:fec-verification-state;
+      default off; 
+      description
+        "To validate upstream FEC path.";
+    }
+    leaf encap {
+      type oam-options:encap-ip-udp;
+      description
+        "Encapsulation: ip/udp, if ip/udp needs to be used in frame.
+         non-ip/udp, when it does not need ip/udp in frame.";
+    }
+    description
+      "Advanced parameters for MPLS Ping";
+  }
+
+  grouping oam-ping-session-data{
+    leaf target-fec-type  {
+      type oam-options:oam-target-fec-type;
+      description
+        "Target fec type";
+    }
+    leaf vrf-name {
+      when "../target-fec-type = 'vrf-fec'";
+      type string;
+      description
+         "VRF name";
+    }
+    leaf pseudo-wire {
+      when "../target-fec-type = 'pseudowire-fec'";
+      type string;
+      description
+        "Pseudowire Name";
+    }
+    leaf tunnel-name {
+      when "../target-fec-type = 'scrt-fec' or
+            ../target-fec-type = 'rsvp-te-fec'";
+      type string;
+      description
+        "Tunnel name";
+    }
+    leaf tunnel-src {
+      when "../target-fec-type = 'scrt-fec' or
+            ../target-fec-type = 'rsvp-te-fec'";
+      type inet:ip-address;
+      description
+         "Tunnel Source Ip Address";
+    }
+    leaf tunnel-dst {
+      when "../target-fec-type = 'scrt-fec' or
+            ../target-fec-type = 'rsvp-te-fec'";
+      type inet:ip-address;
+      description
+        "Tunnel Destintion Ip Address";
+    }
+    leaf evpn-inst-id {
+      when "../target-fec-type = 'evpn-fec'";
+      type uint32 {
+        range "1..65536";
+      }
+      description
+        "Evpn Instance ID";
+    }
+    leaf ethernet-tag-id {
+      when "../target-fec-type = 'evpn-fec'";
+      type string {
+        pattern '[1-9][0-9]{0,7}([.][0-9][0-9]{0,3})?';
+      }
+      description
+        "Ethernet Tag Identifier.
+         For EVPN FXC VPWS mode:
+           -Remote Single VID format: <vid> eg. 111
+           -Remote Double VID format: <vid>.<vid> eg. 111.222
+           -Range of VID 1-4094
+         For EVPN VPWS:
+           -Remote ServiceId format: <Service-Id> eg. 627654
+           -Range of Service Id 1-16777216";
+    }
+    leaf evpn-dst {
+      when "../target-fec-type = 'evpn-fec'";
+      type inet:ip-address;
+      description
+        "Evpn Destination Prefix";
+    }
+    leaf ethernet-segment-identifier {
+      when "../target-fec-type = 'evpn-fec'";
+      type yang:hex-string {
+        length "29";
+      }
+      description
+        "10-octet Ethernet segment identifier (esi) of remote node,
+        format: XX:XX:XX:XX:XX:XX:XX:XX:XX:XX
+        This is remote ESI required only for ping to multihomed device";
+    }
+    leaf destination-ip {
+      when "../target-fec-type = 'ip-fec' or 
+            ../target-fec-type = 'vrf-fec'"; 
+       type inet:ip-address;
+       description
+         "IP address of the destination host. For IPv6, when doing ping 
+          to a link-local scope address, source interface is required.";
+    }
+    leaf destination-ip-prefix {
+      when "../target-fec-type != 'ip-fec' or
+            ../target-fec-type != 'vrf-fec' or 
+            ../target-fec-type != 'scrt-fec' or
+            ../target-fec-type != 'evpn-fec' or
+            ../target-fec-type != 'rsvp-te-fec'"; 
+      type inet:ip-prefix;
+      description
+        "Destination Ip prefix for ldp/sr-isis/sr-ospf/bgp-lu lsp";
+    }
+    leaf backup {
+      when "../target-fec-type = 'sr-ospf-fec' or
+            ../target-fec-type = 'sr-isis-fec' or 
+            ../target-fec-type = 'bgp-lu-fec' or 
+            ../target-fec-type = 'ldp-fec' ";
+      type boolean;
+      description
+        "It will be used to ping backup LSP path";
+    }
+
+    uses oam-options:oam-base-config-params;
+    uses oam-mpls-config-params {
+      when "target-fec-type != 'ip-fec' or
+            target-fec-type != 'vrf-fec'";
+    }
+    leaf interface {
+      type leafref {
+         path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+      }
+      description
+        "Source interface name";
+    }
+    leaf echo-packet-size{
+      when "../target-fec-type != 'ip-fec' and 
+            ../target-fec-type != 'vrf-fec'";
+      type uint16 {
+            range "32..1452";
+          }
+      units bytes;
+      description
+          "Specifies the size of the echo payload to be 
+           transmitted in each MPLS ping request. Actual 
+           echo payload shall be larger than specified 
+           value if it is smaller than minimum size needed 
+           to hold the TLVs of ping request.";
+    }
+    uses mspw-segment-config-params;
+
+    leaf policy-name {
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type string {
+        length "0..255";
+      }
+      description
+        "SR policy name.";
+    }
+    leaf color {
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type uint32 {
+        range "1..4294967295";
+      }
+      description
+        "Color associated with the SR policy.";
+    }
+    leaf endpoint {
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type inet:ip-address;
+      description
+        "SR policy end point IP address.";
+    }
+    leaf echo-dest-ip { 
+      when "../target-fec-type != 'ip-fec' and 
+            ../target-fec-type != 'vrf-fec'";
+      type inet:ip-address;
+      description
+        "Echo destination IP of address range 127/8 is used to exercise
+        specific ECMP path in the network.";
+    }
+    leaf path-name {
+      when "../target-fec-type = 'sr-policy-fec'";
+      type string {
+        length "0..255";
+      }
+      description
+        "Candidate path name.";
+    }
+    leaf protocol-origin {
+      when "../target-fec-type = 'sr-policy-fec'";
+      type policy-types:protocol-origin-type;
+      description
+        "Protocol-origin of candidate path.";
+    }
+    leaf originator {
+      when "../target-fec-type = 'sr-policy-fec'";
+      type string;
+      description
+        "Originator of candidate path.";
+    }
+    leaf discriminator {
+      when "../target-fec-type = 'sr-policy-fec'";
+      type uint32 {
+        range "1..65535";
+      }
+      description
+        "Discriminator of candidate path.";
+    }
+    leaf segment-list {
+      when "../target-fec-type = 'sr-policy-fec' or
+            ../target-fec-type = 'srv6-policy-fec'";
+      type string;
+      description
+        "Segment list name.";
+    }
+    leaf do-not-fragment {
+      when "../target-fec-type = 'ip-fec' or
+            ../target-fec-type = 'vrf-fec'";
+      type boolean;
+      description
+        "Flag to allow/disallow fragmentation.";
+    }
+
+    description
+      "Oam Ping Session data";
+  }
+
+  grouping oam-ping-config {
+    leaf target-fec-type  {
+      type oam-options:oam-target-fec-type;
+      description
+        "Target fec type";
+    }
+    /* MPLS Ping config */
+    choice target-fec {
+      case vrf-fec {
+        leaf vrf-name {
+          when "../target-fec-type = 'vrf-fec'";
+          type string;
+          description
+            "VRF name";
+        }
+        leaf vrf-dst {
+          when "../target-fec-type = 'vrf-fec'";
+          type inet:ip-address;
+          description
+            "VRF Destination IP";
+        }
+      }
+      case target-ip {
+        leaf ip-address {
+          when "../target-fec-type = 'ip-fec'";
+          type inet:ip-address;
+          description
+            "Destination IP";
+        }
+      }
+      case ldp-fec {
+        leaf ldp {
+          when "../target-fec-type = 'ldp-fec'";
+          type inet:ip-prefix;
+          description
+            "LDP FEC";
+        }
+      }
+      case bgp-lu-fec {
+        leaf bgp-lu {
+          when "../target-fec-type = 'bgp-lu-fec'";
+          type inet:ip-prefix;
+          description
+            "BGP LU FEC";
+        }
+      }
+      case sr-isis-fec {
+        leaf sr-isis {
+          when "../target-fec-type = 'sr-isis-fec'";
+          type inet:ip-prefix;
+          description
+            "SR ISIS FEC";
+        }
+      }
+      case sr-ospf-fec {
+        leaf sr-ospf {
+        when "../target-fec-type = 'sr-ospf-fec'";
+          type inet:ip-prefix;
+          description
+            "SR OSPF FEC";
+        }
+      }
+      case tunnel-fec {
+        leaf tunnel-name {
+          when "../target-fec-type = 'scrt-fec' or
+                ../target-fec-type = 'rsvp-te-fec'";
+          type string;
+          mandatory true;
+          description
+            "Tunnel Name";
+        }
+        leaf tunnel-src {
+          when "../target-fec-type = 'scrt-fec' or
+                ../target-fec-type = 'rsvp-te-fec'";
+          type inet:ip-address;
+          mandatory true;
+          description
+            "Tunnel Source Address";
+        }
+        leaf tunnel-dst {
+          when "../target-fec-type = 'scrt-fec' or
+                ../target-fec-type = 'rsvp-te-fec'";
+          type inet:ip-address;
+          mandatory true;
+          description
+            "Tunnel Destination Address";
+        }
+      }
+      case pw {
+        leaf pseudo-wire {
+          when "../target-fec-type = 'pseudowire-fec'";
+          type string;
+          description
+            "Pseudowire Name";
+        }
+      }
+      case evpn-fec {
+        leaf evpn-inst-id {
+          when "../target-fec-type = 'evpn-fec'";
+          type uint32 {
+            range "1..65536";
+          }
+          mandatory true;
+          description
+            "Evpn Instance ID";
+        }
+        leaf ethernet-tag-id {
+          when "../target-fec-type = 'evpn-fec'";
+          type string {
+            pattern '[1-9][0-9]{0,7}([.][0-9][0-9]{0,3})?';
+          }
+          mandatory true;
+          description
+            "Ethernet Tag Identifier.
+             For EVPN FXC VPWS mode:
+               -Remote Single VID format: <vid> eg. 111
+               -Remote Double VID format: <vid>.<vid> eg. 111.222
+               -Range of VID 1-4094
+             For EVPN VPWS:
+               -Remote ServiceId format: <Service-Id> eg. 627654
+               -Range of Service Id 1-16777216";
+        }
+        leaf evpn-dst {
+          when "../target-fec-type = 'evpn-fec'";
+          type inet:ip-address;
+          mandatory true;
+          description
+            "Evpn Destination Prefix";
+        }
+        leaf ethernet-segment-identifier {
+          when "../target-fec-type = 'evpn-fec'";
+          type yang:hex-string {
+            length "29";
+          }
+          description 
+            "10-octet Ethernet segment identifier (esi),
+            format: XX:XX:XX:XX:XX:XX:XX:XX:XX:XX
+            This is remote ESI required only for ping to multihomed device";
+        }
+      }
+      case sr-policy-fec {
+        leaf policy-name {
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                not(../color or ../endpoint)";
+          type string {
+            length "0..255";
+          }
+          description
+            "SR policy name.
+             Policy name is mutually exclusive with color and endpoint.";
+        }
+        leaf color {
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                (../endpoint) and not(../policy-name)";
+          type uint32 {
+            range "1..4294967295";
+          }
+          description
+            "Color associated with the SR policy.
+            Color and endpoint are mutually exclusive with policy name.";
+        }
+        leaf endpoint {
+          when "(../target-fec-type = 'sr-policy-fec' or ../target-fec-type = 'srv6-policy-fec') and
+                (../color) and not(../policy-name)";
+          type inet:ip-address;
+          description
+            "SR policy end point IP address.
+            Endpoint and color are mutually exclusive with policy name.";
+        }
+        container candidate-path {
+          when "../target-fec-type = 'sr-policy-fec' and (../policy-name or ../color or ../endpoint)";
+          description
+            "Candidate path in policy.";
+          leaf path-name {
+            when "not(../protocol-origin or ../originator or ../discriminator)";
+            type string {
+              length "0..255";
+            }
+            description
+              "Candidate path name.";
+          }
+          leaf protocol-origin {
+            when "not(../path-name)";
+            type policy-types:protocol-origin-type;
+            description
+              "Protocol-origin of candidate path.";
+          }
+          leaf originator {
+            when "not(../path-name)";
+            type string;
+            description
+              "Originator of candidate path.";
+          }
+          leaf discriminator {
+            when "not(../path-name)";
+            type uint32 {
+              range "1..65535";
+            }
+            description
+              "Discriminator of candidate path.";
+          }
+        }
+        leaf segment-list {
+          when "../target-fec-type = 'sr-policy-fec' or
+                ../target-fec-type = 'srv6-policy-fec'";
+          type string;
+          description
+            "Segment list name.";
+        }
+      }
+      description
+        "Choice for FEC type in MPLS ping";
+    }
+
+    leaf backup {
+      when "../target-fec-type = 'sr-ospf-fec' or 
+            ../target-fec-type = 'sr-isis-fec' or 
+            ../target-fec-type = 'bgp-lu-fec' or 
+            ../target-fec-type = 'ldp-fec' ";
+      type boolean;
+      default false;
+      description
+        "It will be used to ping backup LSP path";
+    }
+
+    //Ping base parameters
+    uses oam-options:oam-base-config-params;
+
+    //MPLS ping parameters
+    uses oam-mpls-config-params {
+      when "target-fec-type != 'ip-fec' or 
+            target-fec-type != 'vrf-fec'";
+    }
+    leaf interface {
+      type leafref {
+         path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+      }
+      description
+        "Source interface name";
+    }
+    leaf echo-packet-size{
+      when "../target-fec-type != 'ip-fec' and 
+            ../target-fec-type != 'vrf-fec'";
+      type uint16 {
+            range "32..1452";
+          }
+      units bytes;
+      description
+          "Specifies the size of the echo payload to be 
+           transmitted in each MPLS ping request. Actual 
+           echo payload shall be larger than specified 
+           value if it is smaller than minimum size needed 
+           to hold the TLVs of ping request.";
+    }
+    uses mspw-segment-config-params;
+    leaf echo-dest-ip {      
+      when "../target-fec-type != 'ip-fec' and 
+            ../target-fec-type != 'vrf-fec'";
+       type inet:ip-address;
+       description
+          "Echo destination IP of address range 127/8 is used to exercise
+           specific ECMP path in the network.";
+    }
+    leaf do-not-fragment {
+      when "../target-fec-type = 'ip-fec' or
+            ../target-fec-type = 'vrf-fec'";
+      type boolean;
+      description
+        "Flag to allow/disallow fragmentation.";
+    }
+
+    description
+      "Ping Configuration";
+  }
+
+  grouping oam-ping-results {
+    leaf operational-state {
+      type oam-options:operational-state;
+      description
+        "Operational state of the Ping test.";
+    }
+
+    leaf min-rtt {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units milliseconds;
+      description
+        "The minimum Ping round-trip-time(RTT) received.";
+    }
+
+    leaf max-rtt {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units milliseconds;
+      description
+        "The maximum Ping round-trip-time(RTT) received.";
+    }
+
+    leaf average-rtt {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units milliseconds;
+      description
+        "The current average Ping round-trip-time(RTT).";
+    }
+
+    leaf echo-requests-sent {
+      type uint8;
+      description
+        "Number of echo request sent for the Ping test.";
+    }
+
+    leaf echo-replies-received {
+      type uint8;
+      description
+        "Number of echo replies received for corresponding Ping test.";
+    }
+
+    leaf last-good-reply {
+      type yang:date-and-time;
+      description
+        "Date and time when the last response was received for
+         an echo request.";
+    }
+    description
+      "Ping Results Information";
+  }
+
+  grouping oam-ping-probe-results {
+    leaf probe-index {
+      type uint8;
+      description
+        "Probe index.";
+    }
+    leaf return-code {
+      type oam-options:oam-return-code;
+      description
+        "The Return Code set in the echo reply. This is as per IANA defined error codes.";
+    }
+    leaf return-sub-code {
+      type uint8;
+      description
+        "The Return Sub-code set in the echo reply.";
+    }
+    leaf rtt {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units milliseconds;
+      description
+        "The round-trip-time (RTT) received.";
+    }
+    leaf result-type {
+      type oam-options:oam-result-type;
+      description
+        "The probe result success/failure or any other error.";
+    }
+    description
+      "Ping Probe's Result Information";
+  }
+
+  container oam-ping-sessions {
+    config false;
+    description
+      "Multiple instances of ping tests.";
+    list oam-ping-session {
+      key "ping-session-id";
+      description
+        "Ping test";
+
+      leaf ping-session-id {
+        type uint16;
+        description
+          "Auto-generated session id for a ping session.";
+      }
+
+      container oam-ping-config-params {
+        uses oam-ping-session-data;
+        description
+          "Configures Ping type and its parameters";
+      }
+
+      container ping-results {
+        description
+          "Ping test result information.";
+
+        uses oam-ping-results;
+
+        container ping-probe-results {
+          description
+            "Result information of each test probe.";
+
+          list ping-probe-result {
+            key "probe-index";
+            description
+              "Result info of each test probe.";
+
+            uses oam-ping-probe-results;
+          }
+        }
+      }
+    }
+  }
+
+
+  //rpc to start ping session
+  rpc start-ping {
+    description
+      "RPC to start ping";
+    input {
+      uses oam-ping-config;
+    }
+    output {
+      leaf ping-session-id {
+        type uint16;
+        description
+          "Auto-generated ping-session-id on
+           the basis of input options.";
+      }
+      leaf response {
+        type oam-options:oam-response-type;
+        description
+          "Status of the executed rpc. Success/Failure Message.";
+      }
+    }
+  }
+
+  //rpc to delete ping session
+  rpc delete-ping {
+    description
+      "RPC to delete ping";
+    input {
+      leaf ping-session-id {
+        type uint16;
+        description
+          "Auto-generated session id.";
+      }
+    }
+    output {
+      leaf response {
+        type oam-options:oam-response-type;
+        description
+          "Status of the executed rpc. Success/Failure Message.";
+      }
+    }
+  }
+
+  //rpc to cancel the running ping session and delete it.
+  rpc cancel-ping {
+    description
+      "RPC to cancel ping";
+    input {
+      leaf ping-session-id {
+        type uint16;
+        description
+          "Auto-generated session id.";
+      }
+    }
+    output {
+      leaf response {
+        type oam-options:oam-response-type;
+        description
+          "Status of the executed rpc. Success/Failure Message.";
+      }
+    }
+  }
+}

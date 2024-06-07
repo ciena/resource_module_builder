@@ -1,0 +1,146 @@
+module ciena-pro-pwr-profile-manager {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pwr-profile-manager";
+  prefix pwr-profile-manager;
+
+  import ciena-6500r-types {
+    prefix types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's power profile manager";
+
+  revision 2021-04-12 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "6500r-series Release 2.4
+       Add new action enums to handle lband augmentation";
+  }
+  revision 2020-01-11 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "6500r-series Release 2.0";
+  }
+
+  typedef actions {
+    type enumeration {
+      enum "none" {
+        description
+          "no action";
+      }
+      enum "derive-launch-profile" {
+        description
+          "derive the launch profile at line";
+      }
+      enum "derive-input-profile" {
+        description
+          "derive the input profile at line";
+      }
+      enum "derive-launch-profile-augment-lband" {
+        description
+          "derive the launch profile at augmented l-band line";
+      }
+      enum "derive-input-profile-augment-lband" {
+        description
+          "derive the input profile at augmented l-band line";
+      }
+    }
+  }
+
+  typedef states {
+    type enumeration {
+      enum "ready" {
+        description
+          "manager is ready to take actions";
+      }
+      enum "in-progress" {
+        description
+          "action is in-progress";
+      }
+      enum "complete" {
+        description
+          "action is completed";
+      }
+    }
+  }
+
+  list pwr-profile-manager {
+    key "name";
+    leaf name {
+      type instance-identifier;
+      description
+        "name of the power profile manager";
+    }
+
+    leaf current-action {
+      type actions;
+      config false;
+      description
+        "The action that the manager is currently working on";
+    }
+
+    leaf info {
+      type string;
+      config false;
+      description
+        "additional information related to current action";
+    }
+
+    leaf state {
+      type states;
+      config false;
+      description
+        "Current state of the manager";
+    }
+
+    uses types:admin-state;
+  }
+
+  rpc operate-pwr-profile {
+    description
+      "derive power profiles based on given action";
+    input {
+      leaf instance {
+        type instance-identifier;
+        description
+          "instance Id of the PFG";
+      }
+
+      leaf action {
+        type actions;
+        description
+          "action to take";
+      }
+    }
+
+    output {
+      leaf action-in-progress {
+        type actions;
+        description
+          "curent action in progress";
+      }
+
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

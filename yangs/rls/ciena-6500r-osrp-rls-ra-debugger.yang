@@ -1,0 +1,368 @@
+module ciena-6500r-osrp-rls-ra-debugger {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-osrp-rls-ra-debugger";
+  prefix osrp-rls-ra-debugger;
+
+  import ciena-6500r-slots {
+    prefix ciena-6500r-slots;
+  }
+  import ciena-6500r-links {
+    prefix ciena-6500r-links;
+  }
+  import ciena-6500r-nodes {
+    prefix ciena-6500r-nodes;
+  }
+  import ciena-pro-data-collector {
+    prefix ciena-pro-data-collector;
+  }
+  import ciena-6500r-osrp-rls-ra-types {
+    prefix osrp-rls-ra-types;
+  }
+  import ciena-6500r-osrp-rls-ra-link-relation {
+    prefix link-relation-common-types;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module provides debugger interface for osrp-rls-ra";
+
+  revision 2022-11-17 {
+    description
+      "Added 'ignore-faults' as feature-set.";
+    ciena-common-version:string "1.13.0";
+  }
+  revision 2022-11-12 {
+    description
+      "Added rpc update-loopback-ip to update new loopback-ip address.";
+    ciena-common-version:string "1.12.0";
+  }
+  revision 2022-04-01 {
+    description
+      "Added 'disable-comms-link-processing' as feature-set.";
+    ciena-common-version:string "1.11.0";
+  }
+  revision 2021-10-12 {
+    description
+      "Added debug/feature-set.";
+    ciena-common-version:string "1.10.0";
+  }
+  revision 2021-03-18 {
+    description
+      "Added RPC 'clear-all-faults' and 'dump-faults'.";
+    ciena-common-version:string "1.9.0";
+  }
+  revision 2021-02-22 {
+    description
+      "Added osp-rls-ra-assistant RPC.";
+    ciena-common-version:string "1.8.0";
+  }
+  revision 2021-02-03 {
+    description
+      "Added data-collector to RPC 'simulate-fault' input and
+       introduced RPC 'clear-all-faults-for-osrp-port'.";
+    ciena-common-version:string "1.7.0";
+  }
+  revision 2021-01-07 {
+    description
+      "Added nodes to simulate-fault input.";
+    ciena-common-version:string "1.6.1";
+  }
+  revision 2021-01-05 {
+    description
+      "added RPC 'invoke-inventory-upgrade'.";
+    ciena-common-version:string "1.6.0";
+  }
+  revision 2020-11-30 {
+    description
+      "Added RPC to simulate various faults.";
+    ciena-common-version:string "1.5.0";
+  }
+  revision 2020-11-21 {
+    description
+      "simulate-ila-fault extended.";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2020-10-22 {
+    description
+      "added RPC simulate-ila-flt";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2020-09-25 {
+    description
+      "6500r-series Release 2.0
+       added RPC edit-bidirectional-map and dump-bidirectional-map.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-08-05 {
+    description
+      "6500r-series Release 2.0
+       added RPC rtrv-log & reset-osrp.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-07-13 {
+    description
+      "6500r-series Release 2.0
+       added RPC resync-osrp-data.";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2020-01-15 {
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  container debug {
+    leaf feature-set {
+      description
+        "Specifies active features.";
+      type bits {
+        bit channel-diagnostics {
+          position 0;
+        }
+        bit disable-comms-link-processing {
+          position 1;
+        }
+        bit ignore-faults {
+          position 2;
+        }
+      }
+    }
+  }
+
+  rpc checkpoints {
+    description
+      "Checkpoints status.";
+    output {
+      leaf-list checkpoints-status {
+        type string;
+        description
+          "Status of checkpoints.";
+      }
+      leaf-list checkpoints-criteria {
+        type string;
+        description
+          "Criteria of checkpoints.";
+      }
+    }
+  }
+
+  rpc stats {
+    description
+      "Debugger for osrp-rls-ra";
+    output {
+      leaf-list messaging-stats {
+        type string;
+        description
+          "Messaging Stats";
+      }
+    }
+  }
+
+  rpc resync-osrp-data {
+    description
+      "Triggers the rebuild of osrp-rls-ra Data";
+  }
+
+  rpc rtrv-log {
+    description
+      "Triggers the log collection";
+    output {
+      leaf result {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Status of rtrv-log.";
+      }
+    }
+  }
+
+  rpc reset-osrp {
+    description
+      "Osrp cleanup utility";
+    input {
+      leaf service-cleanup {
+        type osrp-rls-ra-types:yes-no;
+        description
+          "Service cleanup required.";
+      }
+      leaf osrp-cleanup {
+        type osrp-rls-ra-types:yes-no;
+        description
+          "Osrp cleanup required.";
+      }
+    }
+    output {
+      leaf result {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Status of cleanup.";
+      }
+    }
+  }
+
+  rpc dump-bidirectional-map {
+    description
+      "Dumps bi-directional provisioning map data in logs.";
+  }
+
+  rpc edit-bidirectional-map {
+    description
+      "Edit entry in Bi-Directional Map forcefully.";
+    input {
+      uses link-relation-common-types:link-relation-grouping;
+    }
+  }
+
+  rpc simulate-ila-fault {
+    description
+      "Simulate ILA fault trigger.";
+    input {
+      leaf fault-status {
+        type uint32;
+        description
+          "Fault status.";
+        mandatory true;
+      }
+      leaf fault-source {
+        type string {
+          length "0..512";
+        }
+        description
+          "Source of fault.";
+      }
+      leaf fault-additional-info {
+        type string {
+          length "0..512";
+        }
+        description
+          "Additional information with fault.";
+      }
+    }
+  }
+
+  rpc simulate-fault {
+    description
+      "Simulate fault.";
+    input {
+      container data {
+        yang:mount-start "ciena-6500r-slots";
+        uses ciena-6500r-slots:ciena-6500r-slots-mount-data-actions-notifs-as-cont-no-actions;
+        yang:mount-end "ciena-6500r-slots";
+        yang:mount-start "ciena-6500r-links";
+        uses ciena-6500r-links:ciena-6500r-links-mount-data-actions-notifs-as-cont;
+        yang:mount-end "ciena-6500r-links";
+        yang:mount-start "ciena-6500r-nodes";
+        uses ciena-6500r-nodes:ciena-6500r-nodes-mount-data-actions-notifs-as-cont-no-actions;
+        yang:mount-end "ciena-6500r-nodes";
+        yang:mount-start "ciena-pro-data-collector";
+        uses ciena-pro-data-collector:ciena-pro-data-collector-mount-data-actions-notifs-as-cont;
+        yang:mount-end "ciena-pro-data-collector";
+      }
+    }
+  }
+
+  rpc clear-all-faults-for-osrp-port {
+    description
+      "Clear all faults in OSRP-RA cache and NVS databases for the specified slot-port.";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the slot.";
+      }
+      leaf port {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the port.";
+      }
+    }
+  }
+
+  rpc clear-all-faults {
+    description
+      "Clear all faults in OSRP-RA cache and NVS databases.
+       Warning: this should only be used for design testing on SIM.";
+  }
+
+  rpc dump-faults {
+    description
+      "Dump all faults in OSRP-RA cache database.";
+  }
+
+  rpc invoke-inventory-upgrade {
+    description
+      "Forces osrp-rls-ra to go through inventory upgrade handling.";
+  }
+
+  rpc osrp-rls-ra-assistant {
+    description
+      "OSRP-RLS-RA assistant.";
+    input {
+      leaf module {
+        mandatory false;
+        description
+          "Module to perform operation on.";
+        type string {
+          length "0..512";
+        }
+      }
+      leaf command {
+        mandatory false;
+        description
+          "Operation to perform.";
+        type string {
+          length "0..512";
+        }
+      }
+    }
+    output {
+      leaf result {
+        description
+          "Output result message.";
+        type string {
+          length "0..100";
+        }
+      }
+      leaf-list response {
+        description
+          "Output response message.";
+        type string {
+          length "0..1024";
+        }
+      }
+    }
+  }
+
+  rpc update-loopback-ip {
+    description
+      "Update osrp with newly provisioned loopback ip-address. Also, recommended for ipv4 to ipv6 osrp migration.";
+    output {
+      leaf result {
+        type string {
+          length "0..250";
+        }
+        description
+          "Output result message.";
+      }
+    }
+  }
+}

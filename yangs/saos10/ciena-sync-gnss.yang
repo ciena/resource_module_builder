@@ -1,0 +1,1054 @@
+module ciena-sync-gnss {
+  namespace "http://www.ciena.com/ns/yang/ciena-sync-gnss";
+  prefix "gnss";
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-sync {
+    prefix sync;
+  }
+
+  import ciena-types {
+    prefix ciena-types;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data model for the management of clock
+     synchronization in packet networks specific to integrated GNSS receiver.
+
+     Copyright (c) 2020 Ciena Corporation. All rights reserved.
+
+     All information contained herein is, and remains the property of Ciena
+     Corporation. Dissemination of this information or reproduction of this
+     material is strictly forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+ revision "2023-06-08" {
+    description
+      "Added reason field in GNSS Input Ref state data and GNSS Input Ref Oper State change notification.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
+
+ revision "2022-11-25" {
+    description
+      "Increase satellite-visibility-threshold to 32.
+      Add support for new parameters -firmware-upgrade-status,pps-offset,clock-offset,self-survey-status in show sync gnss.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
+
+  revision "2021-04-16" {
+    description
+      "Remove yang ranges from GNSS Input Ref state data.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
+
+  revision "2020-02-18" {
+    description
+      "Add yang support for integrated GNSS receiver configuration and state.";
+    reference
+      "IS-GPS-200: GPS Interface Specification";
+  }
+
+  /*
+   * Identities
+   */
+
+  identity sync-gnss-oper-state-identity {
+    description
+      "Base identity from which specific GNSS antenna input operational
+       state types are derived.";
+  }
+
+  identity acquiring-satellites {
+    base gnss:sync-gnss-oper-state-identity;
+    description
+      "GNSS antenna input is configured and currently acquiring satellites.";
+  }
+
+  identity acquiring-lock {
+    base gnss:sync-gnss-oper-state-identity;
+    description
+      "GNSS has finished acquiring satellites and currently building the almanac of all acquired satellites. A timing and position fix are also being acquired.";
+  }
+
+  identity locked {
+    base gnss:sync-gnss-oper-state-identity;
+    description
+      "GNSS alamanc is now completly built and a timing and position fix are now available.";
+  }
+
+  /*
+   * Typedefs
+   */
+
+  typedef string-type {
+    type string {
+      length "1..32";
+    }
+    description
+      "String type.";
+  }
+
+  typedef gnss-oper-state-type {
+    type identityref {
+      base gnss:sync-gnss-oper-state-identity;
+    }
+    description
+      "GNSS operational state identityref type.";
+  }
+
+  typedef gnss-antenna-input-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:input-references" +
+           "/gnss:gnss-antenna-input" +
+           "/gnss:name";
+    }
+    description
+      "GNSS antenna input leafref type.";
+  }
+
+
+  typedef gnss-input-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:input-references" +
+           "/gnss:gnss-antenna-input" +
+           "/gnss:oper-state";
+    }
+    description
+      "GNSS input operational state leafref type.";
+  }
+
+  typedef almanac-status-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/gnss:gnss-global" +
+           "/gnss:almanac-status";
+    }
+    description
+      "GNSS almanac status leafref type.";
+  }
+
+  typedef antenna-cable-status-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/gnss:gnss-global" +
+           "/gnss:antenna-status";
+    }
+    description
+      "GNSS antenna cable status leafref type.";
+  }
+
+  typedef antenna-signal-condition-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+          "/sync:input-references" +
+          "/gnss:gnss-antenna-input" +
+           "/gnss:antenna-signal-condition";
+    }
+    description
+      "GNSS antenna signal condition leafref type.";
+  }
+
+  typedef time-standard-type {
+    type enumeration {
+      enum utc {
+        description
+          "Coordinated Universal Time (UTC).";
+      }
+    }
+    description
+      "Time standard type used when displaying the current time.";
+  }
+
+  typedef constellation-type {
+    type enumeration {
+      enum gps {
+        description
+          "Global Positioning System (GPS)";
+      }
+      enum galileo {
+        description
+          "GNSS constellation";
+      }
+    }
+    description
+      "Satellite constellation type used by configuration.";
+  }
+
+  typedef antenna-cable-status-type {
+    type enumeration {
+      enum detected {
+        description
+          "Antenna cable is plugged and detected.";
+      }
+      enum not-detected {
+        description
+          "Antenna cable is either not plugged or not detected.";
+      }
+    }
+    description
+      "Antenna cable status.";
+  }
+
+  typedef antenna-signal-condition-type {
+    type enumeration {
+      enum normal {
+        description
+          "Antenna signal is normal when more satellites than the satellite visibility threshold are visible.";
+      }
+      enum degrade {
+        description
+          "Antenna signal is degraded when less satellites than the satellite visibility threshold are visible.";
+      }
+      enum fault {
+        description
+          "Antenna signal is faulted when no satellites are visible.";
+      }
+    }
+    description
+      "Antenna signal condition.";
+  }
+
+  typedef almanac-status-type {
+    type enumeration {
+      enum not-available {
+        description
+          "Almanac is not available. This can occur during initial configuration or non-configuration of GNSS antenna-input.";
+      }
+      enum acquiring {
+        description
+          "GNSS antenna input is configured and is reciving a signal. Almanac is currently being built.";
+      }
+      enum complete {
+        description
+          "GNSS almanac is now complete after all satellites are acquired.";
+      }
+    }
+    description
+      "Almanac status.";
+  }
+
+  typedef firmware-upgrade-status-type {
+    type enumeration {
+      enum not-enabled {
+        description 
+          "GNSS firmware upgrade not enabled.";
+      }
+      enum not-supported {
+        description
+          "GNSS Firmware upgrade not supported.";
+      }
+      enum latest {
+        description
+          "GNSS firmware already on latest.";
+      }
+      enum in-progress {
+        description
+          "GNSS firmware upgrade in progress.";
+      }
+      enum completed {
+        description
+          "GNSS Firmware upgrade completed.";
+      }
+    }
+    description 
+      "Firmware upgrade status.";
+  }
+
+  typedef sv-type {
+    type enumeration {
+      enum gps {
+        description
+          "Global Positioning System (GPS).";
+      }
+      enum galileo {
+        description
+          "GNSS constellation.";
+      }
+      enum glonass {
+        description
+          "GLObal NAvigation Satellite System (GLONASS).";
+      }
+      enum beidou {
+        description
+          "GNSS constellation.";
+      }
+      enum qzss {
+        description
+          "Quasi-Zenith Satellite System (QZSS).";
+      }
+    }
+    description
+      "GNSS constellation type used in sync-state.";
+  }
+
+  typedef acquired-type {
+    type enumeration {
+      enum never-acquired {
+        description
+          "GNSS satellite signal was never acquired.";
+      }
+      enum acquired {
+        description
+          "GNSS satellite signal is acquired.";
+      }
+      enum reopened-search {
+        description
+          "GNSS satellite signal was lost and signal search has commenced.";
+      }
+    }
+    description
+      "Satellite acquisition status.";
+  }
+
+  typedef reason-type {
+    type enumeration {
+      enum GNSS_NO_FAULT {
+        description
+          "GNSS not at fault.";
+      }
+      enum GNSS_INTERNAL_ERR {
+        description
+          "GNSS module failure.";
+      }
+      enum GNSS_NO_USABLE_SAT {
+        description
+          "GNSS no usable satellites are yet available.";
+      }
+      enum GNSS_EXTERNAL_ERR {
+        description
+          "GNSS error due to environmental reasons.";
+      }
+      enum GNSS_SAT_COUNT_LOW {
+        description
+          "GNSS satellite count below threshold.";
+      }
+      enum GNSS_SURVEY_IN_PROG {
+        description
+          "GNSS survey in progress.";
+      }
+      enum GNSS_POWERING_UP {
+        description
+          "GNSS power up.";
+      }
+      enum GNSS_TIME_ERROR {
+        description
+          "GNSS time error.";
+      }
+    }
+    description
+      "GNSS loss of lock reasons type.";
+  }
+
+  typedef float {
+    type decimal64 {
+      fraction-digits 7;
+    }
+    description
+      "Float type with 7 decimal places";
+  }
+
+  typedef float-2dp {
+    type decimal64 {
+      fraction-digits 2;
+    }
+    description
+      "Float type with 2 decimal place";
+  }
+
+  typedef float-3dp {
+    type decimal64 {
+      fraction-digits 3;
+    }
+    description
+      "Float type with 3 decimal places";
+  }
+
+  /*
+   * Groupings
+   */
+
+  grouping gnss-antenna-input-config-grouping {
+    description
+      "GNSS antenna input configuration attributes.";
+    leaf antenna-cable-length {
+      type uint32 {
+        range "1..1000";
+      }
+      units "meters";
+      default 2;
+      description
+        "Antenna cable length in meters.";
+    }
+    leaf-list constellations {
+      type gnss:constellation-type;
+      min-elements 1;
+      max-elements 1;
+      description
+        "Configure constellations monitored by GNSS receiver";
+    }
+    uses sync:sync-input-reference-config-grouping;
+
+    leaf forced-quality-level {
+      type sync:quality-level-type;
+      description
+        "Configuration to override the RX quality-level of an input.";
+    }
+  }
+
+  /*
+   * Configuration data
+   */
+
+  augment "/sync:sync" {
+    description
+      "GNSS configuration.";
+    container gnss-global {
+      description
+        "GNSS global configuration.";
+      leaf elevation-mask {
+        type uint32 {
+          range "0..90";
+        }
+        units "degree";
+        default 10;
+        description
+          "Elevation mask in degrees.";
+      }
+      leaf cnr {
+        type uint32 {
+          range "0..100";
+        }
+        units "dB-Hz";
+        default 35;
+        description
+          "Carrier-to-noise ratio (dB-Hz).";
+      }
+      leaf pdop-mask {
+        type uint32 {
+          range "0..50";
+        }
+        default 6;
+        description
+          "Position Dilution of Precision (PDOP) mask.";
+      }
+      leaf anti-jamming {
+        type ciena-types:state;
+        default enabled;
+        description
+          "GNSS anti-jamming capability.";
+      }
+      leaf time-standard {
+        type gnss:time-standard-type;
+        default utc;
+        description
+          "Time standard.";
+      }
+      leaf antenna-cable-delay-rate {
+        type gnss:float-2dp {
+          range "1..100";
+        }
+        units "ns/m";
+        default "5.05";
+        description
+          "Antenna cable delay rate in ns/m.";
+      }
+      leaf satellite-visibility-threshold {
+        type uint32 {
+          range "1..32";
+        }
+        default 2;
+        description
+          "Satellite visibility threshold.";
+      }
+    }
+  }
+
+  augment "/sync:sync" +
+          "/sync:input-references" {
+    description
+      "GNSS antenna input configuration.";
+    list gnss-antenna-input {
+      key "name";
+      max-elements 1;
+      description
+        "A list of all GNSS input configuration entries.";
+      leaf name {
+        type sync:name-string-type;
+        description
+          "Name of GNSS antenna input.";
+      }
+      uses gnss:gnss-antenna-input-config-grouping;
+    }
+  }
+
+  augment "/sync:sync" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "GNSS antenna input configuration in frequency protection-group.";
+    leaf-list gnss-antenna-input {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "List of GNSS antenna inputs that shall be considered as candidates
+         for clock selection in frequency protection-group.";
+    }
+  }
+  
+  augment "/sync:sync" +
+          "/sync:protection-groups" +
+          "/sync:phase-protection-group" {
+    description
+      "GNSS antenna input configuration in phase protection-group.";
+    leaf-list gnss-antenna-input {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "List of GNSS inputs that shall be considered as candidates
+         for clock selection in phase protection-group.";
+    }
+  }
+
+  augment "/sync:sync" +
+          "/sync:protection-groups" +
+          "/sync:tod-protection-group" {
+    description
+      "GNSS antenna input configuration in time-of-day protection-group.";
+    leaf-list gnss-antenna-input {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "List of GNSS inputs that shall be considered as candidates
+         for selection in time-of-day protection-group.";
+    }
+    leaf threshold-quality-level {
+      type sync:quality-level-type;
+      description
+        "Threshold quality-level configuration of time-of-day protection-group.
+         Forced quality-level of input added to this
+         protection-group must satisfy the configured threshold quality-level
+         in order to be considered selectable.";
+    }
+  }
+  /*
+   * State data
+   */
+
+  augment "/sync:sync-state" {
+    description
+      "GNSS global state.";
+    container gnss-global {
+      description
+        "GNSS global state container.";
+      leaf serial-number {
+        type gnss:string-type;
+        description
+          "Serial number of GNSS device.";
+      }
+      leaf firmware-version {
+        type gnss:string-type;
+        description
+          "Firmware version of GNSS device.";
+      }
+      leaf antenna-status {
+        type gnss:antenna-cable-status-type;
+        description
+          "GNSS antenna status.";
+      }
+      leaf almanac-status {
+        type gnss:almanac-status-type;
+        description
+          "Almanac status.";
+      }
+      leaf firmware-upgrade-status {
+        type gnss:firmware-upgrade-status-type;
+        description
+          "Fimrware upgrade status.";
+      }
+      leaf self-survey-status {
+        type uint8; 
+        description
+          "Gnss self survey progress.";
+      }
+      leaf pps-offset {
+        type float;
+        description
+          "GNSS pps offset.";
+      }
+      leaf clock-offset {
+        type float;
+        description
+          "GNSS clock offset.";
+      }
+    }
+  }
+
+  augment "/sync:sync-state" {
+    description
+      "Almanac data.";
+    container almanac {
+      description
+        "Almanac data.";
+      list satellite {
+        key "prn";
+        description
+          "A list of all satellites available in the almanac.";
+        leaf prn {
+           type uint8;
+           description
+             "Satellite unique Pseudo-Random Noise number.";
+        }
+        leaf t_oa_raw {
+          type uint8;
+          description
+            "Raw almanac reference time. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf sv_health {
+          type uint8;
+          description
+            "Satellite Vehicle health word. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf e {
+          type float;
+          description
+            "Eccentricity. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf t_oa {
+          type float;
+          description
+            "Almanac reference time. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf i_o {
+          type float;
+          description
+            "Inclination angle at reference time. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf omegadot {
+          type float;
+          description
+            "Rate of right ascension. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf sqrt_a {
+          type float;
+          description
+            "Square root of the semi-major axis. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf omega_0 {
+          type float;
+          description
+            "Longitude of ascending node of orbit plane at weekly epoch. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf omega {
+          type float;
+          description
+            "Argument of perigee. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf m_0 {
+          type float;
+          description
+            "Mean anomaly at reference time. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf a_f0 {
+          type float;
+          description
+            "Satellite Vehicle clock bias correction coefficient. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf a_f1 {
+          type float;
+          description
+            "Satellite vehicle clock drift correction coefficient. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf axis {
+          type float;
+          description
+            "Semi-major axis. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf n {
+          type float;
+          description
+            "Corrected mean motion. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf omega_n {
+          type float;
+          description
+            "Corrected longitude of ascending node. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf odot_n {
+          type float;
+          description
+            "Rate of inclination angle. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf t_zc {
+          type float;
+          description
+            "Time from almanac reference time. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf week-number {
+          type uint16;
+          description
+            "Week number. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+        leaf wn_oa {
+          type uint16;
+          description
+            "Almanac week number. ";
+          reference
+            "IS-GPS-200: GPS Interface Specification";
+        }
+      }
+    }
+  }
+
+  augment "/sync:sync-state" {
+    description
+      "Satellite ephemeris data.";
+    container ephemeris {
+      description
+        "Satellite ephemeris data container.";
+      list satellite {
+        key "prn";
+        description
+          "A list of all visible satellites per configured constellation.";
+        leaf prn {
+           type uint8;
+           description
+             "Satellite unique Pseudo-Random Noise number.";
+        }
+        leaf channel {
+          type uint8;
+          description
+            "Channel number.";
+        }
+        leaf acquired {
+          type gnss:acquired-type;
+          description
+            "Satellite acquired or not.";
+        }
+        leaf sv-type {
+          type gnss:sv-type;
+          description
+            "Satellite Vehicle type.";
+        }
+        leaf signal-level {
+          type float;
+          units "db-Hz";
+          description
+            "Signal level in db-Hz.";
+        }
+        leaf time-of-last-measurement {
+          type float;
+          units "seconds";
+          description
+            "Time of last measurement.";
+        }
+        leaf elevation-angle {
+          type float;
+          units "degree";
+          description
+            "Elevation angle.";
+        }
+        leaf azimuth-angle {
+          type float;
+          units "degree";
+          description
+            "Azimuth angle.";
+        }
+        leaf timing-fix {
+          type boolean;
+          description
+            "Used in timing fix.";
+        }
+        leaf position-fix {
+          type boolean;
+          description
+            "Used in position fix.";
+        }
+      }
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:input-references" {
+    description
+      "GNSS antenna input state.";
+    list gnss-antenna-input {
+      key "name";
+      description
+        "A list of all GNSS antenna input state entries.";
+      leaf name {
+        type gnss:gnss-antenna-input-leafref-type;
+        description
+          "Name of GNSS antenna input.";
+      }
+      leaf antenna-signal-condition {
+        type gnss:antenna-signal-condition-type;
+        description
+          "GNSS antenna signal condition.";
+      }
+      leaf oper-state {
+        type gnss:gnss-oper-state-type;
+        description
+          "Current GNSS state.";
+      }
+      container time-and-position {
+        description
+          "Current time and location of GNSS antenna.";
+        leaf current-time {
+          type yang:date-and-time;
+          description
+            "Current GNSS time.";
+        }
+        leaf latitude {
+          type gnss:float {
+          }
+          units "degree";
+          description
+            "Antenna latitude in degrees.";
+        }
+        leaf longitude {
+          type gnss:float {
+          }
+          units "degree";
+          description
+            "Antenna longitude in degrees.";
+        }
+        leaf altitude {
+          type gnss:float {
+          }
+          units "meters";
+          description
+            "Antenna altitude in meters.";
+        }
+      }
+      leaf reason {
+        type gnss:reason-type;
+        description
+          "GNSS loss of lock reasons.";
+      }
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "GNSS antenna input selected in frequency protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:phase-protection-group" {
+    description
+      "GNSS antenna input selected in phase protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:tod-protection-group" {
+    description
+      "GNSS antenna input selected in time-of-day protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+
+  /*
+   * RPC Operations
+   */
+
+  rpc sync-gnss-force-re-acquisition {
+    description
+      "Force re-acquisition of position by GNSS.";
+    input {
+      leaf gnss-antenna-input-name {
+        type gnss:gnss-antenna-input-leafref-type;
+        description
+          "Name of GNSS antenna input.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  rpc sync-gnss-almanac-clear {
+    description
+      "Clear the GNSS receiver's almanc and force a new startup sequence.";
+    output {
+      leaf status {
+        type string;
+        description
+          "Status indicating if the operation has succeeded or not.";
+      }
+    }
+  }
+
+  augment "/sync:sync-protection-group-selection-force-switch" +
+          "/sync:input" {
+    description
+      "Force-switch a GNSS antenna input selection on protection-group.";
+    leaf gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "Name of GNSS antenna input.";
+    }
+  }
+
+  /*
+   * Notifications
+   */
+
+  notification gnss-antenna-input-oper-state-change {
+    description
+      "Generated when the operational state of a GNSS antenna input changes.";
+    leaf gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "Name of GNSS input reference.";
+    }
+    leaf oper-state {
+      type gnss:gnss-input-oper-state-leafref-type;
+      description
+        "Operational state of GNSS input reference.";
+    }
+    leaf reason {
+      type gnss:reason-type;
+      description
+        "GNSS loss of lock reasons.";
+    }
+  }
+
+  notification gnss-antenna-input-signal-condition-change {
+    description
+      "Generated when the GNSS antenna signal condition changes.";
+    leaf gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "Name of GNSS input reference.";
+    }
+    leaf antenna-signal-condition {
+      type gnss:antenna-signal-condition-leafref-type;
+      description
+        "Antenna signal condition.";
+    }
+  }
+
+  notification gnss-almanac-status-change {
+    description
+      "Generated when the GNSS almanac status changes (available/not available).";
+    leaf almanac-status {
+      type gnss:almanac-status-leafref-type;
+      description
+        "Almanac status.";
+    }
+  }
+
+  notification gnss-antenna-cable-status-change {
+    description
+      "Generated when the GNSS antenna cable statusichanges (detected/not detected).";
+    leaf antenna-status {
+      type gnss:antenna-cable-status-leafref-type;
+      description
+        "Antenna cable status.";
+    }
+  }
+
+  augment "/sync:frequency-protection-group-oper-state-change" {
+    description
+      "GNSS antenna input selected in frequency protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+
+  augment "/sync:phase-protection-group-oper-state-change" {
+    description
+      "GNSS antenna input selected in phase protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+
+  augment "/sync:tod-protection-group-oper-state-change" {
+    description
+      "GNSS antenna input selected in time-of-day protection-group.";
+    leaf selected-gnss-antenna-input-name {
+      type gnss:gnss-antenna-input-leafref-type;
+      description
+        "GNSS antenna input name.";
+    }
+  }
+}

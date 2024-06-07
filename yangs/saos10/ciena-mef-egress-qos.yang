@@ -1,0 +1,868 @@
+module ciena-mef-egress-qos {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-egress-qos";
+    prefix "mef-egress-qos";
+
+    import ciena-mef-logical-port {
+          prefix "mef-logical-port";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's configuration of
+         queues and schedulers for Egress QoS.";
+
+    revision "2022-05-01" {
+        description
+            "Fixed spelling for description of shaper-compensation";
+    }
+
+    revision "2020-11-30" {
+        description
+            "1) Added low-latency-optimized to max-queue-depth. Added min-elements to queue-group-profile and scheduler-profile.
+             2) Added descriptions";
+    }
+
+    revision "2019-10-29" {
+        description 
+            "Removing when statement from max-queue-depth";
+    }
+
+    revision "2019-09-12" {
+        description 
+            "Added a new container for cos-to-queue-map-associations.";
+    }
+
+    revision "2018-01-09" {
+        description
+            "10.0 version";
+    }
+
+    typedef cos-queue-map-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:cos-queue-map/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             configured CoS queue maps.";
+    }
+
+    typedef congestion-avoidance-profile-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:congestion-avoidance-profile/mef-egress-qos:name";
+        }
+ 
+        description
+            "This type is used by the data models that needs to reference
+             configured congestion avoidance profiles.";
+    }
+
+    typedef queue-group-profile-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:queue-group-profile/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             configured queue group profiles.";
+    }
+
+    typedef queue-group-indirection-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:queue-group-indirection/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             queue-group-instances indirectly (e.g. where the root port changes dynamically).";
+    }
+
+    typedef scheduler-profile-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:scheduler-profile/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             configured scheduler-profiles.";
+    }
+
+    typedef scheduler-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:scheduler/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             configured scheduler-instances.";
+    }
+
+    typedef queue-group-ref {
+        type leafref {
+            path "/mef-egress-qos:egress-qos/mef-egress-qos:queue-group/mef-egress-qos:name";
+        }
+
+        description
+            "This type is used by the data models that needs to reference
+             queue-group-instances directly (e.g. where the root port changes dynamically).";
+    }
+
+    typedef congestion-avoidance-form {
+        type enumeration {
+            enum yellow-drop-aggressive {
+                description
+                    "This allows a congestion-avoidance profile to have a default behaviour of a yellow wred curve that
+                     will drop more aggressively than a green wred curve, without any other assocated config.
+                     e.g. yellow wred curve would drop under congestion at 75% while the green wred curve would drop
+                     under congestion at 25%";
+            }
+            enum no-green-drop {
+                description
+                    "This allows a congestion-avoidance profile to have a default behaviour of a yellow wred curve that
+                     will drop aggressively while green traffic will not be subject to wred, without any other assocated config.
+                     e.g. yellow wred curve would drop under congestion at 75% while green traffic does not drop";
+            }
+            enum custom {
+                description
+                    "This allows custom configuration of the congestion avoidance profile using the set of parameters in this
+                     model to specify exact parameters for wred-curves that are not met by the other choices above
+                     e.g. configuring exact drop-thresholds for green and yellow wred curves.";
+            }
+        }
+    }
+
+    grouping eqos-parameters-group {
+        description
+            "Egress QoS parameters used for queue group profiles and scheduler profiles.";
+
+        leaf cir {
+            type uint32;
+
+            description
+                "Committed information rate for aggregate shaping in kilobits per second.";
+        }
+
+        leaf cir-percent {
+             type uint32;
+
+             description
+                "Committed information rate for aggregate shaping on a percentage basis <0..100>.";
+        }
+
+        leaf cbs {
+            type uint32;
+
+            description
+                "Committed burst size in kilobytes.";
+        }
+
+        leaf eir {
+            type uint32;
+
+            description
+                "Maximum rate for aggregate shaping in kilobits per second.";
+        }
+
+        leaf eir-percent {
+            type uint32;
+
+            description
+                "Maximum rate for aggregate shaping on a percentage basis <0..100>.";
+        }
+
+        leaf ebs {
+            type uint32;
+
+            description
+                "Maximum burst size in kilobytes.";
+        }
+    }
+
+    container egress-qos {
+
+        description
+            "Configuration for egress traffic quality of service.";
+
+        list cos-queue-map {
+            description
+                "List of cos-to-queue-map templates. COS to queue maps can be referenced by various entities (queue-groups/logical ports)
+                 to determine mapping to a given queue of a queue group.";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the CoS queue map.";
+            } 
+
+            leaf cos-count {
+                type uint32;
+
+                description
+                     "Number of CoS values supported (e.g. 8 or 64)";
+            }
+
+            leaf queue-count {
+               type uint32;
+
+                description
+                     "Number of queue range supported";
+            }
+
+            list map-entry {
+                description
+                    "List of map-entries.Each map-entry for a given cos-to-queue map gives the mapping of internal-cos to a queue,
+                     and optionally a green-wred-curve and yellow-wred curve.";
+                key "cos";
+
+                leaf cos {
+                    type uint32 {
+                        range "0..63";
+                    }
+                    description
+                         "Internal CoS to use for mapping to a Queue, green-wred-curve and yellow-wred curve.";
+                }
+
+                leaf queue {
+                    type uint32;
+
+                    description
+                         "Queue mapped to by internal CoS";
+                }
+
+                leaf green-wred-curve {
+                    type uint32;
+
+                    description
+                         "WRED curve relative to a Queue to use for traffic whose internal color is Green";
+                }
+
+                leaf yellow-wred-curve {
+                    type uint32;
+
+                    description
+                         "WRED curve relative to a Queue to use for traffic whose internal color is Yellow";
+                }
+            }
+        }
+
+        list congestion-avoidance-profile {
+            description
+                "List of congestion-avoidance-profile templates.
+                 Congestion Avoidance Profile can be referenced by Queues to instantiate WRED curves for the Queue.";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the profile.";
+            } 
+
+            leaf type {
+                type enumeration {
+                    enum wred;
+                    enum red;
+                }
+                description
+                    "Types of congestion-avoidance-profile.";
+            }
+
+            leaf config-form {
+                type congestion-avoidance-form;
+                description
+                    "The form of configuration parameters for congestion avoidance, custom or default";
+            }
+               
+            leaf drop-rate-exponent {
+               when "../mef-egress-qos:config-form[.='custom']";
+               type uint32;
+               description
+                  "Drop rate exponent Value";
+            }
+
+            list curve {
+               key "curve-number";
+               when "../mef-egress-qos:config-form[.='custom']";
+               description
+                   "List of curves for congestion avoidance.";
+               leaf curve-number {
+                  type uint32 {
+                     range "1..2";
+                  }
+                  description
+                     "Curve Number for Congestion Avoidance. By default: 1 => Green Curve, 2 => Yellow Curve.";
+               }
+
+               leaf lower-threshold {
+                  type uint32 {
+                     range "1..100";
+                  }
+                  description
+                     "Lower Threshold value in percentage to begin dropping for this WRED curve";
+               }
+
+               leaf upper-threshold {
+                  type uint32 {
+                     range "1..100";
+                  }
+                  description
+                     "Upper Threshold value in percentage,beyond which all frames will be dropped for this WRED curve";
+               }
+
+               leaf min-drop-probability {
+                  type uint32 {
+                     range "1..100";
+                  }
+                  description
+                     "Minimum drop Probability value in percentage used when Average Queue Size reaches the lower_threshold";
+               }
+
+               leaf max-drop-probability {
+                  type uint32 {
+                     range "1..100";
+                  }
+                  description
+                     "Maximum drop Probability in percentage when Average Queue Size reaches the upper_threshold";
+               }
+            }
+
+            leaf max-queue-depth {
+               type enumeration {
+                  enum 1ms;
+                  enum 10ms;
+                  enum 120ms;
+                  enum 200ms;
+                  enum low-latency-optimized;
+               }
+               description
+                  "Maximum queue depth in milliseconds. If 'low-latency-optimized' is chosen it means that the queue is in a mode
+                   that is optimized for very low latency with an indeterminate max-queue-depth.";
+            }
+        }
+
+        list queue-group-profile {
+            description
+                "List of queue-group-profile templates. Queue Group Profiles contain the config parameters 
+                 for queue-groups of queue-group-instances which would reference the given queue-group-profile.";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the profile.";
+            } 
+
+            leaf queue-count {
+                type uint32;
+
+                description
+                    "Number of queues in the associated queue-group instances.";
+            }
+
+            leaf cos-queue-map {
+                type cos-queue-map-ref;
+
+                description
+                    "COS queue map to use for mapping COS to a queue.";
+            }
+
+            leaf shaper-compensation {
+                type int32;
+
+                description
+                    "Shaper-compensation to apply to each frame on a queue positive/negative to account for
+                     any frame-transform (tag push/pop or encap/decap) that occurs on frames post dequeue.";
+            }
+
+            list queue {
+                description
+                    "List of queues for queue-group-profile.";
+                key "queue-number";
+
+                min-elements 1;
+
+                leaf queue-number {
+                    type uint32;
+                    mandatory true;
+
+                    description
+                        "The queue-number for this queue. The priority and weight for this queue are determined via 
+                         the mapping of queue-number to tap-point number (typically 1:1) from the associated scheduler-profile
+                         of the parent scheduler-instance.";
+                }
+
+                leaf congestion-avoidance-profile {
+                    type congestion-avoidance-profile-ref;
+
+                    description
+                        "Optional congestion avoidance algorithm for this queue.";
+                }
+
+                uses eqos-parameters-group;
+
+            }
+        }
+
+        list scheduler-profile {
+            description
+            "List of scheduler-profile templates. Scheduler Profiles contain the config parameters 
+             for schedulers of scheduler-instances which would reference the given scheduler-profile.";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the profile.";
+            } 
+
+            leaf tap-point-count {
+                type uint32;
+
+                description
+                    "The number of tap-points in corresponding scheduler-instances that queues
+                     or child schedulers can uniquely use to attach to the scheduler.";
+            }
+
+            leaf scheduling-algorithm {
+                type enumeration {
+                    enum sp {
+                        description "Strict priority";
+                    }
+                    enum rr {
+                        description "Round-robin";
+                    }
+                    enum wrr {
+                        description "Weighted round-robin";
+                    }
+                    enum wfq {
+                        description "Weighted fair queueing";
+                    }
+                    enum wdrr {
+                        description "Weighted deficit round-robin";
+                    }
+                }
+
+                description
+                    "The scheduling algorithm used to service the tap-points of
+                     the scheduler instances";
+            }
+
+            uses eqos-parameters-group;
+
+            leaf cir-policy {
+                description
+                    "Types of CIR policy.";
+                type enumeration {
+                    enum auto-adjust-disabled {
+                        description
+                        "CIR policy of auto-adjust-disabled determines that CIR (not cir-percent) is used for the scheduler instance associated
+                            with this scheduler-profile and also the child queues/scheduler-instances use CIR.";
+                    }
+                    enum cir-as-percent {
+                        description
+                        "CIR policy of cir-as-percent determines that CIR in percentage values are used for the scheduler instance associated
+                            with this scheduler-profile and also the child queues/scheduler-instances use cir-percent";
+                    }
+                    enum child-cir-as-percent {
+                        description
+                        "CIR policy of child-cir-as-percent determines that CIR (not cir-percent) is used for the scheduler instance associated
+                            with this scheduler-profile, but CIR in percentage values are used for the child queues/scheduler-instances";
+                    }
+                    enum child-cir-sum {
+                        description
+                        "CIR policy of child-cir-sum determines that CIR for the scheduler instance associated
+                            with this scheduler-profile is calculated based on the sum of CIR of the child queues/scheduler-instances";
+                    }
+                }
+            }
+
+            leaf eir-policy {
+                description
+                    "Types of EIR policy.";
+                type enumeration {
+                    enum auto-adjust-disabled {
+                        description
+                        "EIR policy of auto-adjust-disabled determines that EIR (not eir-percent) is used for the scheduler instance associated
+                            with this scheduler-profile and also the child queues/scheduler-instances use EIR.";
+                    }
+                    enum eir-as-percent {
+                        description
+                        "EIR policy of eir-as-percent determines that EIR in percentage values are used for the scheduler instance associated
+                            with this scheduler-profile and also the child queues/scheduler-instances use eir-percent";
+                    }
+                    enum child-eir-as-percent {
+                        description
+                        "EIR policy of child-eir-as-percent determines that EIR (not eir-percent) is used for the scheduler instance associated
+                            with this scheduler-profile, but EIR in percentage values are used for the child queues/scheduler-instances";
+                    }
+                }
+            }
+
+            list tap-point {
+                description
+                    "Defines priority and weight for each tap-point of the associated scheduler instances.
+                     Either Queues or Schedulers map to the tap points and their priority and weight is obtained
+                     from this tap-point configuration.";
+
+                key "number";
+
+                min-elements 1;
+
+                leaf number {
+                    type uint32;
+
+                    description
+                    "tap-point identifier within a scheduler-instance";
+                }
+
+                leaf priority {
+                    type uint32;
+
+                    description
+                    "Priority of this tap-point relative to other tap-points in a scheduler-instance. Used when scheduling algorithm is strict-priority";
+                }
+
+                leaf weight {
+                    type uint32;
+
+                    description
+                    "Weight of this tap-point relative to other tap-points in a scheduler-instance. Used when scheduling algorithm is 
+                    weighted-round-robin, weighted-fair-queuing, weighted-deficit-round-robin";
+                }
+            }
+        }
+
+        list queue-group {
+            description
+                "The queue-group is an instance of a group of queues as described by the associated queue-group-profile. The queue-group
+                 instance has a parent scheduler instance which is part of a scheduling hierarchy rooted to a port.
+                 Additionally, the queue-group instance may be mapped to both directly (e.g. from flow-points) and indirectly via the
+                 queue-group-indirection (e.g. via MPLS PWs/MPLS Tunnels)";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the queue group instance.";
+            }
+
+            leaf queue-group-profile {
+                type queue-group-profile-ref;
+                mandatory true;
+
+                description
+                    "The queue-group-profile describing the attributes of this queue-group instance.";
+            }
+
+            leaf instance-id
+            {
+                type uint32;
+
+                description
+                    "Identifier for the queue-group-instance.";
+            }
+
+            leaf queue-group-indirection {
+                type queue-group-indirection-ref;
+
+                description
+                    "The queue-group-indirection that this queue-group instance is assigned to. Multiple different queue-groups
+                     on different ports can be assigned to the same queue-group-indirection";
+            }
+
+            leaf parent-scheduler {
+                type scheduler-ref;
+                mandatory true;
+
+                description
+                    "The parent-scheduler instance for this queue group.";
+            }
+
+            leaf stats-collection {
+               type enumeration {
+                  enum on;
+                  enum off;
+               }
+               description
+                  "Determines whether stats collection will be turned on or not for a queue-group-instance";
+            }
+        }
+
+        list scheduler {
+            description
+               "List of scheduler-instance entries. Scheduler Instances define an instance of 
+                a Scheduler on a logical port or as part of a hierarchical EQoS scheduler tree.";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the scheduler instance.";
+            }
+
+            leaf scheduler-profile {
+                type scheduler-profile-ref;
+                mandatory true;
+
+                description
+                    "The scheduler-profile describing the attributes of this scheduler instance.";
+            }
+
+            leaf instance-id
+            {
+                type uint32;
+
+                description
+                    "Identifier for the scheduler-instance.";
+            }
+
+            leaf parent-scheduler {
+                type scheduler-ref;
+
+                description
+                    "Optional reference to parent-scheduler instance if this scheduler instance is not the root scheduler instance
+                     in the egress QoS hierarchy of a port.";
+            }
+
+            leaf parent-tap-point {
+                type uint32;
+
+                description
+                    "The tap point that this scheduler instance in a parent scheduler-instance. Determines the priority and weight
+                     for this scheduler instance relative to its parent from the scheduler-profile.";
+            }
+
+            leaf parent-port {
+                type mef-logical-port:logical-port-ref;
+
+                description
+                    "Optional reference to a logical-port if this scheduler instance is the root scheduler instance
+                     in the egress QoS hierarchy of a port";
+            }
+
+            leaf stats-collection {
+               type enumeration {
+                  enum on;
+                  enum off;
+               }
+               description
+                  "Determines whether stats collection will be turned on or not for a scheduler-instance";
+            }
+        }
+
+        list queue-group-indirection {
+            description
+                "This is an indirected identification of a queue group that would be used by entities
+                 which do not resolve directly to the root of the egress-qos hierarchy (a port).
+                 An example of this is an MPLS PW which maps to a queue-group-indirection for service-based queuing and scheduling.
+                 Dependent on the state of the underlying transport (e.g. MPLS Tunnels to next-hops to port), the actual queue-group instance
+                 being used may change dynamically, however the queue-group-indirection allows";
+
+            key "name";
+                
+            leaf name {
+                type string;
+
+                description
+                    "Name for the queue group indirection.";
+            }
+
+            leaf indirection-id
+            {
+                type uint32;
+
+                description
+                    "Identifier for the queue group indirection.";
+            }
+        }
+    }
+    
+    container cos-to-queue-map-associations {
+       description
+        "List of COS-to-queue-map associations. COS to queue map associations configure a binding of a COS to queue map 
+         to a logical port determining the Ingress COS to queue map used for Egress COS to queue mapping";
+
+       list cos-to-queue-map-association {
+          key "name";
+
+          description
+             "A mapping from a logical-port to a cos-to-queue-map.";
+            
+          leaf name {
+             type string;
+             description
+                "This object indicates the identifier and is a 
+                 text string that is used to identify a cos-to-queue-map-association. 
+                 Unique string values are chosen to uniquely identify cos-to-queue-map-association.
+                 This object should only be used for interfaces where it is not possible
+                 to import ciena-mef-egress-qos module (e.g. logical-port)";
+            }
+
+            leaf ingress-cos-to-queue-map {
+               type mef-egress-qos:cos-queue-map-ref;
+               description
+                  "A reference to a Cos To Queue Map specific to an Interface (e.g. logical-port)";
+            }
+
+            leaf logical-port {
+               type mef-logical-port:logical-port-ref;
+
+               description
+                  "Reference to the logical-port that is associated to an ingress-cos-to-queue-map";
+            }
+        }
+    }
+    
+
+    container egress-qos-state {
+        description
+            "List of queue-group-instance entries. Queue Group Instances define an instance of a Queue-Group associated with a Scheduler Instance.";
+
+       config false;
+
+       list queue-group {
+          description
+             "For egress-qos-state container, the queue-group is an instance of queue-group-state for a queue-group-instance.
+              Queue Group Instance statistics are within the queue-group state.";
+
+          key "name";
+                
+          leaf name {
+             type string;
+
+             description
+                "Name for the queue group instance.";
+          }
+
+          list queue {
+             key "queue-number";
+
+             leaf queue-number {
+                type uint32;
+                mandatory true;
+
+                description
+                   "The queue-number for this queue of the queue-group-instance.";
+             }
+
+             leaf enqueueBytes {
+                type uint64;
+                description
+                   "Frames that were enqueued to a queue, byte count";
+             }
+
+             leaf enqueueFrames {
+                type uint64;
+                description
+                   "Frames that were enqueued to a queue, frame count";
+             }
+
+             leaf wredDropBytes {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a WRED drop, byte count";
+             }
+
+             leaf wredDropFrames {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a WRED drop, frame count";
+             }
+
+             leaf dropThresholdBytes {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a Threshold Exceed drop, byte count";
+             }
+
+             leaf dropThresholdFrames {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a Threshold Exceed drop, frame count";
+             }
+
+             leaf dropResourceBytes {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a buffer/resource Threshold Exceed drop, byte count";
+             }
+
+             leaf dropResourceFrames {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue due to a buffer/resource Threshold Exceed drop, frame count";
+             }
+
+             leaf dropOtherBytes {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue for other reasons, byte count";
+             }
+
+             leaf dropOtherFrames {
+                type uint64;
+                description
+                   "Frames that were not enqueued to a queue for other reasons, frame count";
+             }
+          }
+       }
+    } // end egress-qos-state
+    
+   /*
+    * RPC
+    */
+   rpc egress-qos-clear-statistics {
+      description "An RPC operation to clear the statistics for one or all Queue-Groups.";
+
+      input {
+         choice clear-scope {
+
+            case queue-group {
+               leaf queue-group {
+                  type mef-egress-qos:queue-group-ref;
+               }
+               description
+                  "Clear stats for this queue-group.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all queue-groups.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string; 
+            description 
+               "Status of the clear statistics operation.";
+         }
+      }
+   } // end rpc clear-statistics    
+}

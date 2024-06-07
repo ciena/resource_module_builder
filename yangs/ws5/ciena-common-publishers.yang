@@ -1,0 +1,149 @@
+module ciena-common-publishers {
+ namespace "urn:ciena:params:xml:ns:yang:ciena-common-publishers";
+  prefix publishers;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com";
+
+  description
+    "This modules describes Ciena's publishers for the 6500";
+
+  revision 2015-01-01 {
+    description
+      "Initial revision.";
+    reference
+      "";
+  }
+
+
+  typedef data-format-type {
+    type enumeration {
+      enum "XML" {
+        value 1;
+        description
+          "XML Format";
+      }
+      enum "JSON" {
+        description
+          "JSON Format";
+      }
+      enum "OpenConfig" {
+        description
+          "OpenConfig Format";
+      }
+    }
+    description
+      "Serialized format for subscription data.";
+  }
+
+  typedef publisher-type {
+    type enumeration {
+      enum "event" {
+        description
+          "Publish asynchronous messages on events.";
+      }
+      enum "poller" {
+        description
+          "Publish data on fixed intervals.";
+      }
+    }
+    description
+      "Type of publisher events: asynchronous or polled.";
+  }
+
+  typedef publisher-path {
+    type string {
+      length "1..64";
+    }
+    description
+      "Publisher Path";
+  }
+
+  typedef publisher-frequency {
+    type uint32;
+    units "ns";
+    description
+      "Publisher Frequency in nano seconds";
+  }
+
+
+  container publishers {
+    description
+      "Top-level container for publisher data.";
+
+    list publisher {
+      yang:handler "pubserv";
+      key "name";
+      config false;
+      description
+        "List of publishers and their configuration.";
+
+      leaf name {
+        type string {
+          length "1..64";
+        }
+        mandatory true;
+        description
+          "The name of the publisher.";
+      }
+
+      leaf path {
+        type publisher-path;
+        description
+          "Path subscribed to by the publisher";
+      }
+
+      leaf type {
+        type publisher-type;
+        description
+          "Publisher response type.";
+      }
+
+      leaf frequency {
+        type publisher-frequency;
+        description
+          "Frequency that the publisher will publish data.";
+      }
+
+      leaf-list formats {
+        type data-format-type;
+        description
+          "Output data format for the publisher.";
+      }
+
+      leaf numsubs {
+        type uint32;
+        description
+          "Number of registered subscibers";
+      }
+    }
+  }
+
+  rpc subscribe-by-path
+  {
+    input
+    {
+      leaf path { 
+        type publisher-path; 
+      }
+      leaf frequency {
+         type publisher-frequency;
+      }
+      leaf format {
+         type data-format-type;
+      }
+    }
+    output
+    {
+      leaf result {
+         type boolean; 
+      }
+    }
+  }
+}

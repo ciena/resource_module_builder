@@ -1,0 +1,756 @@
+module ciena-system-telemetry {
+   namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-system-telemetry";
+
+   prefix "ciena-sys-tmet";
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's global configuration for system settings.
+
+      Copyright (c) 2016 Ciena Corporation.  All rights 
+      reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this 
+      information or reproduction of this material is strictly 
+      forbidden unless prior written permission is obtained from 
+      Ciena Corporation.";
+
+   revision 2023-08-29 {
+      description
+         "Added new leaf total-saos.
+          Added new leaf used-saos.
+          Added new leaf used-percent-saos.
+          Added new leaf total-hugepage.
+          Added new leaf used-percent-hugepage.";
+      reference
+         "RFC 6020: YANG - A Data Modeling Language for
+         the Network Configuration Protocol (NETCONF).
+         No specific reference; standard not available.";
+   }
+
+   revision 2021-04-01 {
+      description
+         "Added new leaf cpu-max and cpu-total under cpu-percent.
+          Added new leaf max under memory, disk and partition.";
+      reference
+         "RFC 6020: YANG - A Data Modeling Language for
+         the Network Configuration Protocol (NETCONF).
+         No specific reference; standard not available.";
+   }
+
+   revision 2020-04-30 {
+      description
+         "Added new enum type health-state to define health state(Normal/Warning/Degraded/Fault).
+          Added new leaf state under container cpu-percent and memory for reporting health state.
+          Added new list partition for reporting partition utilization statistics.
+          Added notification objects for reporting CPU, partition and memory utilization events(threshold exceeded/recovered).";
+      reference
+         "RFC 6020: YANG - A Data Modeling Language for
+         the Network Configuration Protocol (NETCONF).
+         No specific reference; standard not available.";
+   }
+
+   revision 2016-10-10 {
+      description 
+         "Initial version";
+      reference
+         "RFC 6020: YANG - A Data Modeling Language for
+         the Network Configuration Protocol (NETCONF).
+         No specific reference; standard not available.";
+   }
+
+   /*
+    * typedefs
+    */
+   typedef ciena-system-decimal2 {
+      type decimal64 {
+         fraction-digits 2;
+      }
+   }
+
+   typedef ciena-system-decimal2-percent {
+      type decimal64 {
+         fraction-digits 2;
+      }
+   }
+
+   typedef health-state {
+      type enumeration {
+         enum normal {
+            description
+                "The Normal health state";
+         }
+         enum warning {
+            description
+                "The Warning health state";
+         }
+         enum degraded {
+            description
+                "The Degraded health state";
+         }
+         enum fault {
+            description
+                "The Fault health state";
+         }
+      }
+   }
+
+   /*
+    * Identities
+    */
+
+   /*
+    * Features
+    */
+
+   /*
+    * Groupings
+    */
+
+   /*
+    * Operational state data nodes
+    */
+   container system-state {
+      config false;
+
+      description
+         "System group operational state.";
+
+      container sys-info {
+         config false;
+
+         description
+            "Individual units of system information.";
+
+            leaf logical-core-count {
+               type uint32;
+               description
+                  "Number of logical cores in the system";
+            }
+
+         leaf physical-core-count {
+            type uint32;
+            description
+               "Number of physical cores in the system";
+         }
+
+         leaf advertised-cpu-speed {
+            type string;
+            description
+               "Vendor advertised CPU speed in GigaHertz";
+         }
+
+         leaf core-temperature {
+            type ciena-system-decimal2;
+            units "centigrade";
+            description
+               "CPU core temperature";
+         }
+      }
+
+      list process {
+         config false;
+
+         key "pid";
+
+         description
+            "List of processes on the system.";
+
+         leaf name {
+            type string;
+            description
+               "System process name.";
+         }
+
+         leaf pid {
+            type string;
+            description
+               "Process identifier.";
+         }
+
+         leaf state {
+            type string;
+            description
+               "The state the process is in.";
+         }
+
+         leaf cpu-percent {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Process CPU utilization as a percentage of the total CPU utilization.";
+         }
+
+         leaf cpu-time-user {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "The amount of time this process spent in user-space.";
+         }
+
+         leaf cpu-time-system {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "The amount of time this process spent in kernel-space.";
+         }
+      }
+
+      container cpu-time {
+         config false;
+
+         description
+            "The amount of time the CPUs have spent in each CPU mode.";
+
+         leaf cpu-idle {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU was idle";
+         }
+
+         leaf cpu-interrupt {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU spent in servicing system interrupts.";
+         }
+
+         leaf cpu-nice {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU spent in running processes that have been niced.";
+         }
+
+         leaf cpu-softirq {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU spent in servicing softirqs (Linux-only).";
+         }
+
+         leaf cpu-steal {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU was idle.";
+         }
+
+         leaf cpu-system {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU spent in running the kernel.";
+         }
+
+         leaf cpu-user {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU spent in running user-space processes.";
+         }
+
+         leaf cpu-wait {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the CPU was idle because of pending I/O operations.";
+         }
+      }
+
+      container cpu-percent {
+         config false;
+
+         description
+            "System CPU statistics.";
+
+         leaf cpu-idle {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU was idle";
+         }
+
+         leaf cpu-interrupt {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU spent in servicing system interrupts.";
+         }
+
+         leaf cpu-nice {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU spent in running processes that have been niced.";
+         }
+
+         leaf cpu-softirq {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU spent in servicing softirqs (Linux-only).";
+         }
+
+         leaf cpu-steal {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU was idle.";
+         }
+
+         leaf cpu-system {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU spent in running the kernel.";
+         }
+
+         leaf cpu-user {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU spent in running user-space processes.";
+         }
+
+         leaf cpu-wait {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the CPU was idle because of pending I/O operations.";
+         }
+
+         leaf state {
+            type health-state;
+            description
+               "CPU utilization state based on defined thresholds limits.";
+         }
+
+         leaf cpu-max {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Maximum recorded CPU utilization";
+         }
+
+         leaf cpu-total {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            default 100;
+            description
+               "Maximum possible value for CPU utilization";
+         }
+      }
+
+      container memory {
+         config false;
+
+         description
+            "System memory statistics";
+
+         leaf total {
+            type uint64;
+            units "bytes";
+            description
+               "System physical memory size";
+         }
+
+         leaf available {
+            type uint64;
+            units "bytes";
+            description
+               "Memory available to processes without system using the swap space";
+         }
+
+         leaf used-percent {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Physical memory used in percentage";
+         }
+
+         leaf used {
+            type uint64;
+            units "bytes";
+            description
+               "System physical memory used";
+         }
+
+         leaf free {
+            type uint64;
+            units "bytes";
+            description
+               "System memory not it in use";
+         }
+
+         leaf active {
+            type uint64;
+            units "bytes";
+            description
+               "Memory current in use or used very recently";
+         }
+
+         leaf inactive {
+            type uint64;
+            units "bytes";
+            description
+               "Memory marked as not used";
+         }
+
+         leaf buffers {
+            type uint64;
+            units "bytes";
+            description
+               "Physical memory used for file buffers";
+         }
+
+         leaf cached {
+            type uint64;
+            units "bytes";
+            description
+               "Physical memory used for cache memory";
+         }
+
+         leaf state {
+            type health-state;
+            description
+               "Memory utilization state based on defined thresholds limits.";
+         }
+
+         leaf max {
+            type uint64;
+            units "bytes";
+            description
+               "Maximum recorded memory usage";
+         }
+
+         leaf total-saos {
+            type uint64;
+            units "bytes";
+            description
+               "System SAOS memory size";
+         }
+
+         leaf total-percent-saos {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "System SAOS memory total in percentage";
+         }
+
+         leaf used-saos {
+            type uint64;
+            units "bytes";
+            description
+               "System SAOS memory used";
+         }
+
+         leaf used-percent-saos {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "System SAOS memory used in percentage";
+         }
+
+         leaf total-hugepage {
+            type uint64;
+            units "bytes";
+            description
+               "System hugepage memory size";
+         }
+
+         leaf total-percent-hugepage {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "System memory percentange that is hugepage";
+         }
+      }
+
+      container disk {
+         config false;
+
+         description
+            "System disk statistics";
+
+         leaf total {
+            type uint64;
+            units "bytes";
+            description 
+               "System disk size";
+         }
+
+         leaf used {
+            type uint64;
+            units "bytes";
+            description
+               "Used capacity of the system disk";
+         }
+
+         leaf free {
+            type uint64;
+            units "bytes";
+            description
+               "Free/unused capacity of the system disk";
+         }
+
+         leaf percentage {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Proportion of the disk in use.";
+         }
+
+         leaf max {
+            type uint64;
+            units "bytes";
+            description 
+               "Maximum recorded disk usage";
+         }
+      }
+
+      list partition {
+         key "name";
+
+         description
+            "List of different partition utilization statistics on the system.";
+
+         leaf name {
+            type string;
+            description
+               "Partition name.";
+         }
+
+         leaf total {
+            type uint64;
+            units "bytes";
+            description
+               "Total allocated partition size.";
+         }
+
+         leaf used {
+            type uint64;
+            units "bytes";
+            description
+               "Used capacity of the partition.";
+         }
+
+         leaf free {
+            type uint64;
+            units "bytes";
+            description
+               "Free/unused capacity of the partition.";
+         }
+
+         leaf percentage {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Proportion of the total partition in use.";
+         }
+
+         leaf state {
+            type health-state;
+            description
+               "Partition utilization state based on defined thresholds limits.";
+         }
+
+         leaf max {
+            type uint64;
+            units "bytes";
+            description 
+               "Maximum recorded usage of partition";
+         }
+      }
+
+      list logical-core-times {
+         config false;
+
+         key "cpu-id";
+
+         description
+            "Logical cores statistics.";
+
+         leaf "cpu-id" {
+            type string;
+            description
+               "logical core identifier";
+         }
+
+         leaf cpu-idle {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the logical core was idle";
+         }
+
+         leaf cpu-interrupt {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the logical core spent in servicing system interrupts.";
+         }
+
+         leaf cpu-nice {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the logical core spent in running processes that have been niced.";
+         }
+
+         leaf cpu-softirq {
+            type ciena-system-decimal2;
+            units "seconds";
+            description
+               "Amount of the time the logical core spent in servicing softirqs (Linux-only).";
+         }
+
+         leaf cpu-steal {
+            type ciena-system-decimal2;
+            units "secondsage";
+            description
+               "Amount of the time the logical core was idle.";
+         }
+
+         leaf cpu-system {
+            type ciena-system-decimal2;
+            units "secondsage";
+            description
+               "Amount of the time the logical core spent in running the kernel.";
+         }
+
+         leaf cpu-user {
+            type ciena-system-decimal2;
+            units "secondsage";
+            description
+               "Amount of the time the logical core spent in running user-space processes.";
+         }
+
+         leaf cpu-wait {
+            type ciena-system-decimal2;
+            units "secondsage";
+            description
+               "Amount of the time the logical core was idle because of pending I/O operations.";
+         }
+      }
+
+      list logical-core-percent {
+         config false;
+
+         key "cpu-id";
+
+         description
+            "Proportion of time the logical cores have spent in each logical core mode.";
+
+         leaf "cpu-id" {
+            type string;
+            description
+               "logical core identifier";
+         }
+
+         leaf cpu-idle {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core was idle";
+         }
+
+         leaf cpu-interrupt {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core spent in servicing system interrupts.";
+         }
+
+         leaf cpu-nice {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core spent in running processes that have been niced.";
+         }
+
+         leaf cpu-softirq {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core spent in servicing softirqs (Linux-only).";
+         }
+
+         leaf cpu-steal {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core was idle.";
+         }
+
+         leaf cpu-system {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core spent in running the kernel.";
+         }
+
+         leaf cpu-user {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core spent in running user-space processes.";
+         }
+
+         leaf cpu-wait {
+            type ciena-system-decimal2-percent;
+            units "percent";
+            description
+               "Amount of the time the logical core was idle because of pending I/O operations.";
+         }
+      }
+   }
+
+   notification cpu-utilization-event {
+     description
+        "Event notifications for CPU utilization exceeded/recovered from defined threshold limits.";
+     leaf state {
+        type health-state;
+        description
+           "CPU utilization state based on defined thresholds limits.";
+     }
+   }
+
+   notification memory-utilization-event {
+     description
+        "Event notifications for memory utilization exceeded/recovered from defined threshold limits.";
+     leaf state {
+        type health-state;
+        description
+           "Memory utilization state based on defined thresholds.";
+     }
+   }
+
+   notification partition-utilization-event {
+     description
+        "Event notifications for partition utilization exceeded/recovered from defined threshold limits.";
+     leaf state {
+        type health-state;
+        description
+           "Partition utilization state based on defined thresholds.";
+     }
+     leaf partition-name {
+        type string;
+        description
+           "The Partition name.";
+      }
+   }
+}

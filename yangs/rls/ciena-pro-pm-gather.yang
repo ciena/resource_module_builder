@@ -1,0 +1,261 @@
+module ciena-pro-pm-gather {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pm-gather";
+  prefix pm-gather;
+
+  import ciena-pro-pm-types {
+    prefix pm-types;
+  }
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's pm runtime objects for the Bifrost platform";
+
+  revision 2022-03-25 {
+    description
+      "Add value-previous list for nmcmon average calculation";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-02-18 {
+    description
+      "remove 6500 dependency";
+    ciena-common-version:string "1.3.1";
+  }
+  revision 2021-10-05 {
+    description
+      "Add pro-services changes for driver interface";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2021-03-29 {
+    description
+      "Add custom options and facilities";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-12-02 {
+    description
+      "Add custom and custom config";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-08-18 {
+    description
+      "Add signal type for sdmon nmcmon support";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2020-04-28 {
+    description
+      "Initial revision";
+  }
+
+  container gather {
+    leaf read-and-roll-trigger-count {
+      type uint32;
+      default "0";
+      description
+        "trigger read and roll handling by platform";
+    }
+    leaf dynamic-update-frequency-seconds {
+      type uint32;
+      default "0";
+      description
+        "set dynamic update frequency seconds";
+    }
+    leaf index-range-update-trigger-count {
+      type uint32;
+      default "0";
+      description
+        "trigger index-range update handling by platform";
+    }
+    list index-range {
+      key "name";
+      leaf name {
+        type string;
+      }
+      leaf low-index {
+        type uint32;
+        default "0";
+        description
+          "index of the first raw pm instance for the key";
+      }
+      leaf high-index {
+        type uint32;
+        default "0";
+        description
+          "index of the last raw pm instance for the key";
+      }
+      leaf primary-instance {
+        type instance-identifier;
+        config false;
+        mandatory false;
+        description
+          "holds the slot/config instance";
+      }
+    }
+    list raw-pm {
+      key "pm-resource-instance";
+      config false;
+      leaf pm-resource-instance {
+        type instance-identifier;
+        config false;
+        mandatory true;
+      }
+      leaf data-resource-instance {
+        type instance-identifier;
+        config false;
+        mandatory false;
+        description
+          "path to where data read from";
+      }
+      leaf secondary-data-resource-instance {
+        type instance-identifier;
+        config false;
+        mandatory false;
+        description
+          "secondary path to where data read from";
+      }
+      leaf last-sample-counter {
+        type uint32;
+        default "0";
+        description
+          "last sample counter";
+      }
+      leaf sample-count-untimed {
+        type uint32;
+        default "0";
+        description
+          "sample count untimed";
+      }
+      leaf sample-count-15min {
+        type uint32;
+        default "0";
+        description
+          "sample count 15min";
+      }
+      leaf sample-count-1day {
+        type uint32;
+        default "0";
+        description
+          "sample count 1day";
+      }
+      leaf parent-port {
+        type string;
+        mandatory false;
+      }
+      leaf signal-type {
+        type pm-types:signal-type;
+        mandatory false;
+      }
+      leaf from {
+        type instance-identifier;
+        description
+          "From port identifier";
+      }
+      leaf to {
+        type instance-identifier;
+        description
+          "To port identifier";
+      }
+      leaf link-type {
+        type ciena-pro-link:link-type;
+      }
+      leaf update-time {
+        type pm-types:pm-date-and-time_t;
+        description
+          "montype reset time for MIN/MAX";
+      }
+      leaf integration-bandwidth {
+        type ciena-pro-optical-types:frequency;
+        units "GHz";
+        config false;
+        description
+          "How wide each measurement slice is";
+      }
+      leaf slice-spacing {
+        type ciena-pro-optical-types:frequency;
+        units "GHz";
+        config false;
+        description
+          "The offset between the center frequencies of neighboring measurement slices, the slices may overlap each other";
+      }
+      leaf min-freq {
+        type ciena-pro-optical-types:frequency;
+        config false;
+        description
+          "Minimum frequency limit of the OCM module (start frequency index converted to a frequency)";
+      }
+      leaf max-freq {
+        type ciena-pro-optical-types:frequency;
+        config false;
+        description
+          "Maximum frequency limit of the OCM module (calculated using start frequency index and the number of slices returned via SNMP)";
+      }
+      list raw-pm-val {
+        key "measid";
+        leaf measid {
+          type string;
+        }
+        uses pm-types:pm-measurement;
+        leaf power-value-previous {
+          type decimal64 {
+            fraction-digits 1;
+            range "-150.. 150";
+          }
+          units "dBm";
+          description
+            "analog power";
+        }
+        list value-previous {
+          key "power";
+          leaf power {
+            type decimal64 {
+              fraction-digits 1;
+              range "-150.. 150";
+            }
+            units "dBm";
+            description
+              "analog power";
+          }
+        }
+        list montypes {
+          key "montype";
+          leaf montype {
+            type pm-types:montype;
+            description
+              "pm monitoring types";
+          }
+          leaf qualifier {
+            type pm-types:qualifier;
+          }
+          leaf sample-count {
+            type uint32;
+            default "0";
+            description
+              "sample count";
+          }
+        }
+      }
+      list snapshot-val {
+        key "montype";
+        leaf montype {
+          type pm-types:montype;
+          description
+            "pm monitoring types";
+        }
+        uses pm-types:pm-measurement;
+      }
+    }
+  }
+}

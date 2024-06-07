@@ -1,0 +1,103 @@
+module ciena-6500r-pc {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-pc";
+  prefix pc;
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform port controller model";
+
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Added additional info for alarms";
+  }
+  revision 2018-01-01 {
+    description
+      "Initial revision";
+  }
+
+  grouping ciena-6500r-pc-mount {
+    list pc {
+      key "name";
+      leaf name {
+        type string {
+          length "1..63";
+        }
+        description
+          "PC facility identification/name";
+      }
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        mandatory true;
+        description
+          "PC Parent";
+      }
+
+      leaf port-select {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        description
+          "The provisioned port of the CP to direct traffic towards";
+      }
+
+      uses ciena-6500r-types:admin-state;
+
+      container diagnostic {
+        config false;
+        description
+          "Facility diagnostic state.";
+        leaf parent-failed {
+          type boolean;
+          description
+            "Parent Object Failed";
+        }
+      }
+
+      leaf alarm-additional-info {
+        type string {
+          length "1..80";
+        }
+        description
+          "Additional info associated to a raised alarm.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-pc-mount-actions;
+
+  uses ciena-6500r-pc-mount;
+}

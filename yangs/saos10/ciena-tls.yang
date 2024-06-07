@@ -1,0 +1,301 @@
+module ciena-tls {
+  namespace "http://www.ciena.com/tls/yang/ciena-tls";
+  prefix "ciena-tls";
+
+  import openconfig-yang-types { 
+    prefix oc-yang; 
+  }
+
+  import ietf-tls-common {
+    prefix ietf-tls;
+  }
+
+  import ciena-tls-types {
+    prefix ciena-tls-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  
+  import ciena-types {
+    prefix cn-types;
+  }
+
+  organization "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines a TLS profile.
+
+     Copyright (c) 2018 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2023-06-20 {
+    description
+      "Adding client source port";
+    reference
+      "No specific reference";
+  }
+
+  revision 2022-12-08 {
+    description
+      "Adding the telemetry server connection source port";
+    reference
+      "Telemetry server needs to identify its (telemetry server)session with which tls server session it belongs";
+  }
+
+  revision 2022-03-25 {
+    description
+      "Adding Maximum number of concurrent TLS connections allowed";
+    reference
+      "No specific reference";
+  }
+
+  revision 2021-08-23 {
+    description
+      "Adding TLS server status notificaton";
+    reference
+      "No specific reference";
+  }
+
+  revision 2020-03-23 {
+    description
+      "Adding TLS server session";
+    reference
+      "No specific reference";
+  }
+  
+  revision 2019-12-20 {
+    description
+      "Updating description text for list hello-params";
+    reference
+      "No specific reference";
+  }
+
+  revision 2019-07-03 {
+    description 
+      "1)Adding enable/disable nonce feature
+       2)Adding enable and disable OCSP feature
+       3)Adding default OCSP server URL";
+    reference
+      "No specific reference";
+  }
+
+  revision 2018-02-15 {
+    description
+      "Initial revision.";
+    reference
+      "RFC XXXX: YANG Groupings for TLS Clients and TLS Servers";
+
+  }
+
+  grouping tls-profile {
+    description
+      "Parameters regarding TLS versions.";
+    uses ietf-tls:hello-params-grouping;
+    container elliptic-curves {
+      description
+        "Parameters regarding elliptic curves.";
+      leaf-list elliptic-curve {
+        type identityref {
+          base ciena-tls-types:elliptic-curve-base;
+
+        }
+        ordered-by user;
+        description
+          "Acceptable elliptic curves in order of descending
+           preference.
+           If this leaf-list is not configured (has zero elements)
+           the acceptable elliptic curves are implementation-
+           defined.";
+
+      }
+    }  // container elliptic-curve
+    leaf session-resumption-timeout {
+      type ciena-tls-types:timeout {
+        range "0 | 60..86400";
+      }
+      default 3600;
+      description
+        "Longest time allowed for performing 
+         session resumption, an unutilized 
+         value or a value of 0 will disable 
+         session resumption.  If a service does
+         not support session resumption this value 
+         will be ignored.";
+      
+    }
+    leaf ocsp-state {
+      type cn-types:state;
+         default disabled;
+      description
+        "Enables quering ocsp server for Certificate Status(revoked or not)";
+    }
+    leaf default-ocsp-responder-url {
+      type inet:uri;
+      description
+        "Default OCSP server URL";
+    }
+    leaf nonce-state {
+      type cn-types:state;
+         default enabled;
+      description
+        "Enables or disable nonce";
+    }
+  }  // grouping tls profile
+
+  list hello-params {
+    key profile-name;
+    leaf profile-name {
+      type string;
+      description
+        "Unique string name of hello-params list.";
+    }
+    uses tls-profile;
+    description
+      "List of hello parameters for TLS handshake.";
+  }
+
+  grouping tls-session-attributes {
+    description
+      "Parameters regarding TLS server session";
+
+    leaf client-cert-serial-number {
+      type int64;
+      description 
+        "The client certificate serial number";
+    }
+
+    leaf client-ip {
+      type inet:ip-address;
+      description 
+        "The client IP of the TLS session";
+    }
+
+    leaf client-certificate-expiry {
+      type oc-yang:date-and-time;
+      description 
+        "The end of the client certificates validity period";
+    }
+
+    leaf client-application-name {
+      type string; 
+      description
+        "The application name which uses this TLS session";
+    }
+
+    leaf cipher-suite {
+      type string;
+      description
+        "The ciphersuite negotiated for this TLS session";
+    }
+
+    leaf elliptic-curve {
+      type string;
+      description
+        "The elliptic curve used for this TLS session";
+    }
+
+    leaf tls-version {
+      type string; 
+      description
+        "The TLS version negotiated for this TLS session";
+    }
+
+    leaf ocsp-oper-state {
+      type cn-types:state;
+      description
+        "Quering OCSP server for Certificate Status(revoked or not). The value is either enabled or disabled";
+    }
+    
+    leaf ocsp-responder-url {
+      type inet:uri;
+      description
+        "OCSP response received from OCSP server URL";
+    }
+
+    leaf client-subject-common-name {
+      type string;
+      description
+        "Client subject common name retrieved from the client certificate";
+    }
+
+    leaf server-subject-common-name {
+      type string; 
+      description
+        "Server subject common name retrieved from the server certificate";
+    }
+
+    leaf tls-service-profile-name {
+      type string; 
+      description
+        "TLS service profile name";
+    }
+
+    leaf max-number-of-tls-connections {
+      type int64;
+      description
+        "The maximum number of concurrent tls connections";
+    }
+
+    leaf tel-server-conn-src-port {
+      type int64;
+      description 
+        "The telemetry server connection source port";
+    }
+
+    leaf client-src-port {
+      type int64;
+      description 
+        "The client source port of the TLS session";
+    }
+
+  }
+
+  container tls-server-sessions {
+    config false;
+    list tls-server-session {
+      key unique-id;
+      leaf unique-id {
+          type int32; 
+          description 
+            "The unique id of the TLS session";
+      }
+      uses tls-session-attributes;
+      description 
+        "A list of TLS sessions.";
+    }
+  }
+
+  notification tls-status-notification {
+     description
+        "TLS status notification";
+
+     leaf status {
+        type string;
+        description
+           "TLS status information";
+     }
+
+     leaf server-url {
+        type string;
+        description
+           "Server URL information";
+     }
+  }
+}

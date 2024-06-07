@@ -1,0 +1,716 @@
+module ciena-pro-amp {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-amp";
+  prefix pro-amp;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's photonic amplifier object.";
+
+  revision 2021-02-11 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.2";
+    }
+    description
+      "Added new gain-tilt parameter.";
+  }
+  revision 2021-01-21 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.1";
+    }
+    description
+      "Added the list of stages.";
+  }
+  revision 2020-11-17 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+    description
+      "Added out-current-power-baseline.";
+  }
+  revision 2020-10-26 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.1";
+    }
+    description
+      "Add ALSO disabled diagnostic point and rpc to disable ALSO.";
+  }
+  revision 2020-10-16 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+    description
+      "Add a new amp-mode value called gain-tilt and a new leaf
+       called auto-shutoff-disabled.";
+  }
+  revision 2020-08-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Initial version";
+  }
+
+  grouping amp-base {
+    leaf name {
+      type string;
+      description
+        "Amplifier name";
+    }
+
+    leaf amp-mode {
+      type enumeration {
+        enum "power" {
+          value 1;
+          description
+            "Control to a Power Mode.";
+        }
+        enum "gain" {
+          value 2;
+          description
+            "Control to a Gain Mode. (Default) ";
+        }
+        enum "gainclamp" {
+          value 3;
+          description
+            "Control to a Gainclamp Mode.";
+        }
+        enum "gain-tilt" {
+          value 4;
+          description
+            "Control seeks to achieve the specified target-gain-tilt.";
+        }
+      }
+      default "gain";
+      description
+        "Control Mode of the AMP.";
+    }
+
+    leaf state {
+      type enumeration {
+        enum "unknown" {
+          description
+            "Amp is in unknown operational state.";
+        }
+        enum "shutoff" {
+          description
+            "Amp is in shutoff, because of insufficient input power.";
+        }
+        enum "apr" {
+          description
+            "Amp is in Automatic Power Reduction, happens when the amp detects too much reflected power.";
+        }
+        enum "normal" {
+          description
+            "Amp is in normal operational state.";
+        }
+        enum "clamped" {
+          description
+            "Your amp is clamped, with the gain provisioned you will exceed your target power, this
+             could be due to a number of things, possibly you have a fixed gain amp and your input
+             is too high, causing you to exceed your target for example";
+        }
+      }
+      config false;
+      description
+        "State the amp is in reported by the card";
+    }
+
+    leaf gain-mode {
+      type enumeration {
+        enum "low" {
+          value 1;
+          description
+            "Gain Mode is Low.";
+        }
+        enum "high" {
+          value 2;
+          description
+            "Gain Mode is High.";
+        }
+      }
+      default "high";
+      description
+        "Gain Mode of the AMP.";
+    }
+
+    leaf forced-shutoff {
+      type enumeration {
+        enum "Enabled" {
+          value 2;
+          description
+            "Peak Clamp Enabled";
+        }
+        enum "Disabled" {
+          value 1;
+          description
+            "Peak Clamp not Enabled.";
+        }
+      }
+      default "Enabled";
+      description
+        "Forced EDFA Shutoff State";
+    }
+
+    leaf target-gain {
+      type ciena-pro-optical-types:gain-dB-1-precision;
+      description
+        "Target Gain in dB.";
+    }
+
+    leaf baseline-target-gain {
+      type ciena-pro-optical-types:gain-dB-1-precision;
+      description
+        "Target Gain baseline in dB.";
+    }
+
+    leaf baseline-time-stamp {
+      type string;
+      description
+        "Time stamp for target gain baseline.";
+    }
+
+    container target-gain-ranges {
+      leaf low-min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf low-max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf high-min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf high-max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf target-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Target Total Power in dBm.";
+    }
+
+    container target-power-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf target-gain-tilt {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Gain tilt in dB.";
+    }
+
+    container target-gain-tilt-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf shutoff-threshold {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Shutoff Threshold in dBm.";
+    }
+
+    container shutoff-threshold-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf auto-shutoff-disabled {
+      type boolean;
+      default "false";
+      description
+        "When the auto-shutoff-disabled is true, the amplifier shall remain in
+         the current operating mode despite the absence of input. When the
+         auto-shutoff-disabled is false, the amplifier shall assume
+         shutoff behaviour as configured in other leaves of this container.";
+    }
+
+    leaf shutoff-hysteresis {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Shutoff Hysteresis in dBm.";
+    }
+
+    leaf input-los-threshold {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Threshold at which to declare input loss of signal";
+    }
+
+    container input-los-threshold-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf input-los-hysteresis {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      default "3.0";
+      description
+        "Hysteresis at which to declare of clear the input loss of signal of signal alarm";
+    }
+
+    leaf orl-threshold {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      default "22.0";
+      description
+        "Threshold at which to declare the optical return loss alarm";
+    }
+
+    container orl-threshold-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf low-orl-hysteresis {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      default "3.0";
+      description
+        "Hysteresis at which to declare low optical return loss alarm";
+    }
+
+    leaf orl-state {
+      type ciena-pro-optical-types:orl-state;
+      config false;
+      description
+        "The ORL State";
+    }
+
+    leaf gain-offset {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Gain Offset of the AMP";
+    }
+
+    container gain-offset-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf gain {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      config false;
+      description
+        "The current gain of the amplifier.";
+    }
+
+    leaf gain-tilt {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      config false;
+      description
+        "The current gain tilt of the amplifier.";
+    }
+
+    leaf max-target-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Maximum Target Power in dBm.";
+    }
+
+    container max-target-power-ranges {
+      leaf min {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+
+      leaf max {
+        type decimal64 {
+          fraction-digits 1;
+        }
+      }
+    }
+
+    leaf apr-threshold {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Threshold at which the amplifier enters reduced power mode";
+    }
+
+    leaf apr-hysteresis {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Hysteresis at which the amplifier enters reduced power mode";
+    }
+
+    leaf force-apr {
+      type boolean;
+      description
+        "Forced APR";
+    }
+
+    leaf apr-power-level {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      description
+        "Power level of the amplifier when the EDFA is in Automatic Power Reduction mode";
+    }
+
+    container overload-thresholds {
+      leaf input-psd-low-gain {
+        type ciena-pro-optical-types:psd;
+      }
+
+      leaf input-psd-high-gain {
+        type ciena-pro-optical-types:psd;
+      }
+    }
+
+    uses ciena-pro-types:admin-state;
+
+    leaf service-state {
+      type enumeration {
+        enum "active" {
+          value 1;
+          description
+            "Amp is in active state.";
+        }
+        enum "idle" {
+          value 2;
+          description
+            "Amp is in idle state";
+        }
+      }
+      description
+        "Service state of the amp";
+    }
+
+    leaf in-current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Input power to the AMP in dBm.";
+    }
+
+    leaf in-min-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+    }
+
+    leaf in-max-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+    }
+
+    leaf out-current-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Output power from the AMP in dBm.";
+    }
+
+    container out-current-power-baseline {
+      description
+        "Output power baseline in dBm.";
+      uses ciena-pro-types:baseline;
+    }
+
+    leaf out-min-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+    }
+
+    leaf out-max-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+    }
+
+    leaf optical-return-loss {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      config false;
+      description
+        "Optical return loss (ORL) is the amount of light that is reflected back up the fiber toward the source by
+         light reflections off the interface of the polished end surface of the mated connectors and air, you should
+         probably check you connection.";
+    }
+
+    list stages {
+      key "stage-index";
+      leaf stage-index {
+        type uint8;
+        description
+          "The logical and physical ordering of the stage elements in the list of stages.";
+      }
+
+      leaf obj-reference {
+        type instance-identifier;
+        description
+          "The stage element instance modelled in the stage.";
+      }
+    }
+  }
+
+  grouping amp-diagnostic {
+    leaf input-loss-signal {
+      type boolean;
+      description
+        "Input Loss of Signal: indicates input power is less than input-los-threshold and amplifier is in shutoff.";
+    }
+
+    leaf shutoff-threshold-crossed {
+      type boolean;
+      description
+        "Shutoff Threshold Crossed: indicates when input power is less than shutoff-threshold.";
+    }
+
+    leaf automatic-shutoff {
+      type boolean;
+      description
+        "Automatic Shutoff: indicates when card is in ALSO forcing the AMP to shutoff.";
+    }
+
+    leaf automatic-power-reduction-active {
+      type boolean;
+      description
+        "Automatic Power Reduction Active: indicates when optical-return-loss is less than apr-threshold and the
+         amplifier is operating with reduced output power.";
+    }
+
+    leaf parent-failed {
+      type boolean;
+      description
+        "Parent Object Failed";
+    }
+
+    leaf optical-line-failed {
+      type boolean;
+      description
+        "Optical Line Failed: indicates when card is in ALSO.";
+    }
+
+    leaf low-optical-return-loss {
+      type boolean;
+      description
+        "Low Optical Return Loss: indicates when optical-return-loss is less than orl-threshold.";
+    }
+
+    leaf loss-of-signal {
+      type boolean;
+      description
+        "Loss of Signal";
+    }
+
+    leaf input-optical-overload {
+      type boolean;
+      description
+        "Input Optical Overload: indicates the input power is too high.";
+    }
+
+    leaf also-disabled {
+      type boolean;
+      description
+        "ALSO Disabled: indicates when card is in ALSO Disabled forcing the AMP to turn on.";
+    }
+  }
+
+  grouping amp {
+    uses amp-base;
+
+    container diagnostic {
+      config false;
+      description
+        "Facility diagnostic state.";
+      uses amp-diagnostic;
+    }
+  }
+
+  rpc disable-also {
+    description
+      "The user will be providing an amp instance-identifier which is the mandatory parameter in the input. Other
+       input are also-disabled flag and timer. On receiving the disable-also request with also-disabled is set to true
+       or not specified, the specified amp of the card will be put into ALSO Disabled state.  The card tries to recover
+       from ALSO condition and will clear ALSO Disabled state when ALSO condition clears or after a timer expires.
+       The default timer value is 5 minutes if it is not specified in the request. User can cancel disable-also
+       request before timer is expired by send the request with also-disabled set to false.";
+    input {
+      leaf resource {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Instance of an amp object.";
+      }
+
+      leaf also-disabled {
+        type boolean;
+        description
+          "ALSO disabled state true or false";
+      }
+
+      leaf timer {
+        type uint32;
+        units "minutes";
+        default "5";
+        description
+          "Maximum duration for card to be put into ALSO Disabled state if ALSO condition does not clear within the timeframe
+           (optional - Default is 5 minutes).";
+      }
+    }
+
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+}

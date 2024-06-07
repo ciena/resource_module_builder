@@ -1,0 +1,600 @@
+module ciena-mef-logical-port {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-logical-port";
+    prefix "mef-logical-port";
+        
+    import openconfig-interfaces {
+          prefix "oc-if";
+    }
+
+    import ietf-yang-types {
+        prefix "yt";
+    }
+
+    import ciena-mef-frame-to-cos-map {
+        prefix "ftc";
+    }
+
+    import ciena-mef-cos-to-frame-map {
+        prefix "ctf";
+    }
+    
+    import ciena-mef-meter-profile {
+        prefix "meter";
+    }
+
+    import ciena-mef-flood-containment-profile {
+	prefix "mef-fc";
+    }
+
+    import ciena-mef-pfg-profile {
+       prefix "mef-pfg";
+    }
+
+    organization
+        "Ciena Corporation";
+    
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                     U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+    
+    description
+        "This YANG module defines Ciena's management data definition for the
+         management of a Logical Port.";
+
+    revision "2022-10-13" {
+        description
+            "Increased max value of mtu range to 9800 for logical ports.";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+    revision "2021-09-27" {
+        description
+            "1) Added statistics container in logical-ports 
+             2) Added stats-collection leaf in logical-port";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+    revision "2021-01-24" {
+        description
+            "1) Added description for leaf frame-to-cos-map-policy
+             2) Added descriptions";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+    revision "2021-01-04" {
+        description
+            "Added cfm-up-mep-frame-rx leaf in logical-ports container";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+    revision "2019-10-07" {
+        description
+            "Logical port events are now part of a list";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+    revision "2019-09-13" {
+        description
+          "Removed ingress-cos-to-queue-map leaf from logical-ports container.";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+    
+    revision "2018-01-09" {
+        description
+          "10.0 Version.";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+
+/*
+ * typedefs
+ */
+    typedef logical-port-ref {
+        type leafref {
+            path "/mef-logical-port:logical-ports/mef-logical-port:logical-port/mef-logical-port:name";
+        }
+        description
+            "This type is used by the data models that needs to reference
+             configured logical ports.";
+    }
+
+   typedef lp-admin-state 
+   {
+      type enumeration 
+      {
+         enum disable;
+         enum enable;
+      }
+   }
+
+   typedef lp-oper-state 
+   {
+      type enumeration 
+      {
+         enum up;
+         enum down;
+      }
+   }
+
+   typedef logical-port-event-type {
+      type enumeration {
+         enum operational-state {
+            description
+               "Logical Port operational state change (link state, error state).";
+         }
+         enum any {
+             description
+                "Any of the events in this enum";
+         }
+      }
+      description
+         "A generic event type describing the type of events/notifications triggered by logical-port.";
+   }
+
+/*
+ * features
+ */
+
+  feature cfm-up-mep-frame-rx {
+    description
+      "Support for cfm up mep frames rx when logical port operational status is down";
+  }
+
+  feature logical-port-statistics {
+    description
+      "Support for statistics on logical port";
+  }
+
+/*
+ * Configuration model.
+ */
+
+   grouping pfg-config {
+
+      leaf pfg-profile {
+         type mef-pfg:pfg-profile-ref;
+            description
+               "Reference to a Private Forwarding Group Profile.";
+      }
+
+      choice traffic-type {
+         case all {
+            leaf pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that all traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+         }
+         case subset {
+            leaf broadcast-pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that the broadcast traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+
+            leaf unknown-unicast-pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that the unknown-unicast traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+
+            leaf unknown-multicast-pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that the unknown-multicast traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+
+            leaf known-multicast-pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that the known-multicast traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+
+            leaf known-unicast-pfg-group {
+               type mef-pfg:pfg-group-enum;
+
+               description
+                  "The Private-Forwarding-Group that the known-unicast traffic ingressing a logical-port belongs to for the scope of a
+                   Private-Forwarding-Group-Profile.";
+            }
+         }
+      }
+   }
+
+    container logical-ports {
+        description
+            "List of logical-ports.";
+        
+        list logical-port {
+            key "name";
+
+            description
+                "List of logical-ports. A Logical-Port can be mapped to an ETTP for a physical faceplate port,
+                 virtual-port etc. or it may map to multiple ETTPs in support of Agg Ports.";
+            
+            leaf name {
+                type string;
+                description
+                    "This object indicates the identifier and is a 
+                     text string that is used to identify a logical port. 
+                     Unique string values are chosen to uniquely identify
+                     the port.
+
+                     Octet values of 0x00 through 0x1f are illegal.
+         
+                     MEF 26.1 restricts the maximum size identifiers to 
+                     45 octets.";
+                 reference
+                   "[MEF 7.2] 6.2.1.4";
+            }
+            
+            leaf admin-state {
+            	type lp-admin-state;
+            	default enable;
+            	description "Enable or disable this logical-port";
+            }
+            
+            leaf binding {
+                type leafref {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                }
+                description
+                    "Bind the logical-port to an interface.";
+            }
+            
+            leaf mtu {
+                type uint32 {
+                    range "64..9800";
+                }
+                default 1526;
+                description
+                    "The size in bytes of the maximum transmission unit.";
+            }
+            
+            leaf meter-profile {
+                type meter:meter-ref;
+                description
+                    "A reference to a Meter Profile.";
+            }
+            
+            choice frame-to-cos-policy {
+                case map {
+                    leaf frame-to-cos-map-policy {
+                        type enumeration {
+                            enum outer-tag {
+                               description
+                                  "Map to internal cos and color based on outer vlan tag of vlan-tagged frame (one or more tags present).
+                                   Any L2 frame which does not have at least 1 vlan tag is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum inner-tag {
+                               description
+                                  "Map to internal cos and color based on inner vlan tag of vlan-tagged frame (at least 2 tags present).
+                                   Any L2 frame which does not have at least 2 vlan tags is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum dscp {
+                               description
+                                  "Map to internal cos and color based on dscp field of IP of L2-frame (if IP present).
+                                   Any L2 frame which is non-IP (after vlan tags) is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum outer-mpls-tc {
+                               description
+                                  "Map to internal cos and color based on mpls-tc of outer MPLS Label of L2-frame (if MPLS Label present).
+                                   Any L2 frame which is non-MPLS (after vlan tags) is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                        }
+                        description
+                            "Frame-to-cos-map policy on this logical-port.";
+                    }
+                    
+                    leaf frame-to-cos-map {
+                        type ftc:frame-to-cos-ref;
+                        description
+                            "External frame to internal cos/color mapping associated with this logical-port.";
+                    }
+
+                }
+                case fixed {
+                    leaf fixed-cos {
+                        type uint8 {
+                            range "0..63";
+                        }
+                        description
+                            "The internal-COS value to use for an incoming frame when there is no mapping through a frame-to-cos-map.";
+                    }
+                    
+                    leaf fixed-color {
+                        type enumeration {
+                            enum green;
+                            enum yellow;
+                            enum red;
+                        }
+                        description
+                            "The internal-color value to use for an incoming frame when there is no mapping through a frame-to-cos-map.";
+                    }
+                }  
+            }
+
+            leaf cos-to-frame-map {
+                type ctf:cos-to-frame-ref;
+                description
+                    "Internal cos/color to external frame mapping associated with this logical-port.";
+            }
+
+            leaf flood-containment-profile {
+                type mef-fc:flood-containment-profile-ref;
+                description
+                    "Flood-containment-profiles referenced by this logical-port.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                      "List of logical ports.";
+            }      
+
+            leaf-list outer-tpid {
+                 type enumeration {
+                     enum tpid-8100;
+                     enum tpid-88a8;
+                     enum tpid-9100;
+                 }
+                 description
+                     "A list of valid outer-vlan-tag TPIDs for the port.";
+            }
+
+            leaf-list inner-tpid {
+                 type enumeration {
+                     enum tpid-8100;
+                     enum tpid-88a8;
+                     enum tpid-9100;
+                 }
+                 description
+                     "A list of valid inner-vlan-tag TPIDs for the port.";
+            }
+
+            leaf egress-qos {
+                type enumeration {
+                    enum off;
+                    enum on;
+                }
+                description
+                    "Egress traffic quality of service of this logical-port.";
+            }
+
+            leaf cfm-up-mep-frame-rx {
+               if-feature cfm-up-mep-frame-rx;
+               type enumeration {
+                  enum  always-on {
+                     description
+                        "Enable cfm up mep frame rx even when logical port operational status is down";
+                  }
+                  enum logical-port-oper-up-only {
+                     description
+                        "Disable cfm up mep frame rx when logical port operational status is down";
+                  }
+               }
+               default always-on;
+               description
+                  "Specifies if cfm up mep frame rx is enabled or disabled when logical port operational status is down";
+
+            }
+
+            uses pfg-config;
+
+            leaf logical-port-event-type {
+               config false;
+               type logical-port-event-type;
+               description
+                  "Description of the logical port interface event types";
+            }
+            leaf stats-collection {
+               if-feature logical-port-statistics;
+               type enumeration {
+                   enum on;
+                   enum off;
+               }
+               default on;
+               description
+                  "Determines whether stats collection will be turned on or not for a logical-port";
+            }
+        }
+    }
+
+    container logical-port-oper-status {
+        config false;
+	
+		list logical-port-status
+		{
+		      key "name";
+	
+		      leaf name {
+		          type string;
+		      }
+		
+		      leaf index {
+		          type uint32;
+		      }
+	
+		      leaf mac-address {
+		          type yt:mac-address;
+		      }
+		
+		      leaf oper-state {
+		          type lp-oper-state;
+			  description "Operational state of this logical port";
+		      }
+		}
+    }
+    container logical-ports-statistics {
+        config false;
+        if-feature logical-port-statistics;
+		list logical-port-statistics {
+		      key "name";
+		      leaf name {
+		          type string;
+		          description 
+                     "A string that identifies the logical port.";
+		      }
+		      leaf flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped Rx packets due to attached flood containment profile";
+		      }
+		      leaf flood-containment-drop-bytes {
+		          type yt:counter64;
+		          description 
+                     "Total dropped Rx bytes due to attached flood containment profile";
+		      }
+		      leaf broadcast-flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped broadcast packets due to attached flood containment profile";
+		      }
+		      leaf broadcast-flood-containment-drop-bytes {
+		          type yt:counter64;
+		          description 
+                     "Total dropped broadcast bytes due to attached flood containment profile";
+		      }
+		      leaf unknown-unicast-flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown unicast packets due to attached flood containment profile";
+		      }
+		      leaf unknown-unicast-flood-containment-drop-bytes{
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown unicast bytes due to attached flood containment profile";
+		      }
+		      leaf unknown-l2-multicast-flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown L2 multicast packets due to attached flood containment profile";
+		      }
+		      leaf unknown-l2-multicast-flood-containment-drop-bytes {
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown L2 multicast bytes due to attached flood containment profile";
+		      }
+		      leaf unknown-ip-multicast-flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown IP multicast packets due to attached flood containment profile";
+		      }
+		      leaf unknown-ip-multicast-flood-containment-drop-bytes {
+		          type yt:counter64;
+		          description 
+                     "Total dropped unknown IP multicast bytes due to attached flood containment profile";
+		      }
+		      leaf known-multicast-flood-containment-drop-packets {
+		          type yt:counter64;
+		          description 
+                     "Total dropped known multicast packets due to attached flood containment profile";
+		      }
+		      leaf known-multicast-flood-containment-drop-bytes {
+		          type yt:counter64;
+		          description 
+                     "Total dropped known multicast bytes due to attached flood containment profile";
+		      }
+		}
+    }
+
+   rpc logical-ports-clear-statistics {
+      description "An RPC operation to clear the statistics for one or all Logical-Ports.";
+
+       input {
+         choice clear-scope {
+
+            case logical-port {
+               leaf logical-port {
+                  type mef-logical-port:logical-port-ref;
+               }
+               description
+                  "Clear stats for this logical-port.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all logical-ports.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string; 
+            description 
+               "Status of the clear statistics operation.";
+         }
+      }
+   } // end rpc clear-statistics
+
+   notification logical-port-events {
+      list logical-port-event {
+         leaf logical-port-name {
+            type leafref {
+               path "/mef-logical-port:logical-ports/mef-logical-port:logical-port/mef-logical-port:name";
+            }
+            description
+              "The logical-port-name for the notification. '*' means any logical-port-name";
+         }
+
+         list event-list {
+            leaf logical-port-event-type {
+               type leafref {
+                  path "/mef-logical-port:logical-ports/mef-logical-port:logical-port/mef-logical-port:logical-port-event-type";
+               }
+               description
+                  "The logical-port event-type for the notification. 'any' means any event-type";
+            }
+         }
+
+         leaf oper-state {
+            type leafref {
+               path "/mef-logical-port:logical-port-oper-status/mef-logical-port:logical-port-status/mef-logical-port:oper-state";
+            }
+            description "logical-port operational state change (link state)";
+         }
+      }
+   }
+}

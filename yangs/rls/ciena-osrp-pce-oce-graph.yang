@@ -1,0 +1,228 @@
+module ciena-osrp-pce-oce-graph {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-pce-oce-graph";
+  prefix oce-graph;
+
+  import ciena-osrp-pce-types {
+    prefix ciena-osrp-pce-types;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's PCE Graph object for the 6500r platform";
+
+  revision 2019-09-06 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+
+  grouping oce-graph-node-group {
+    leaf node-id {
+      type ciena-osrp-pce-types:node-id-type;
+      mandatory true;
+      description
+        "Node id.";
+    }
+
+    leaf node-name {
+      type string;
+      mandatory true;
+      description
+        "Node name.";
+    }
+
+    leaf version {
+      type uint32;
+      mandatory true;
+      description
+        "Node version.";
+    }
+
+    leaf type {
+      type string;
+      mandatory false;
+      description
+        "Node type.";
+    }
+
+    leaf state {
+      type ciena-osrp-pce-types:state;
+      description
+        "Specifies whether the node is blocked or not.";
+    }
+
+    leaf regens-avail {
+      type uint16;
+      mandatory false;
+      description
+        "Number of regen banks available.";
+    }
+
+    leaf assigned-color {
+      type ciena-osrp-pce-types:hex-triplet;
+      mandatory false;
+      description
+        "Color assigned to node (in hex-triplet format, e.g, #f4c430)";
+    }
+  }
+
+  grouping oce-graph-link-group {
+    leaf from-node-id {
+      type ciena-osrp-pce-types:node-id-type;
+      mandatory true;
+      description
+        "From Node id.";
+    }
+
+    leaf from-port {
+      type uint32;
+      mandatory true;
+      description
+        "From port Id.";
+    }
+
+    leaf to-node-id {
+      type ciena-osrp-pce-types:node-id-type;
+      mandatory true;
+      description
+        "To Node id.";
+    }
+
+    leaf to-port {
+      type uint32;
+      mandatory true;
+      description
+        "To port Id.";
+    }
+
+    leaf admin-weight {
+      type uint32;
+      default "5040";
+      description
+        "Administrative weight which specifies the level of importance given to the link.";
+    }
+
+    leaf grid-type {
+      type ciena-osrp-pce-types:link-type;
+      description
+        "Grid type of link.";
+    }
+
+    leaf advertised-bandwidth {
+      type uint16;
+      description
+        "Advertised bandwidth (number of bits set = number of 6.25 slots available). Max. 1536.";
+    }
+
+    leaf maximum-bandwidth {
+      type uint16;
+      description
+        "Maximum bandwidth (number of bits set = number of 6.25 slots available). Max. 1536.";
+    }
+
+    leaf spectrum-metrics {
+      type yang:hex-string {
+        length "0..384";
+      }
+      description
+        "Spectrum available on link.";
+    }
+
+    leaf state {
+      type ciena-osrp-pce-types:state;
+      description
+        "Specifies whether the link is blocked or not.";
+    }
+  }
+
+  list oce-graph-node {
+    key "node-id";
+    description
+      "OCE Graph Node.";
+    uses oce-graph-node-group;
+  }
+
+  list oce-graph-link {
+    key "from-node-id from-port";
+    description
+      "OCE Graph Link.";
+    uses oce-graph-link-group;
+  }
+
+  rpc show-oce-graph {
+    description
+      "Show OCE graph node.";
+    input {
+      leaf-list node-id {
+        type ciena-osrp-pce-types:node-id-type;
+        description
+          "From Node id.";
+      }
+
+      leaf complete-topology {
+        type ciena-osrp-pce-types:yes-no;
+        default "yes";
+        description
+          "Indicates if oce-links to be shown or not.";
+      }
+    }
+
+    output {
+      list oce-graph-node {
+        key "node-id";
+        description
+          "OCE Graph Node.";
+        uses oce-graph-node-group;
+
+        list oce-graph-link {
+          key "from-node-id from-port";
+          description
+            "OCE Graph Link.";
+          uses oce-graph-link-group;
+        }
+      }
+    }
+  }
+
+  rpc simulate-network {
+    description
+      "Simulate large network";
+    input {
+      leaf rows {
+        type uint32;
+        mandatory true;
+        description
+          "Number of rows in adjacency matrix.";
+      }
+
+      leaf columns {
+        type uint32;
+        mandatory true;
+        description
+          "Number of columns in adjacency matrix.";
+      }
+
+      leaf node-id {
+        type ciena-osrp-pce-types:node-id-type;
+        description
+          "Node-id of existing network to connect virtual network to.";
+      }
+    }
+  }
+}

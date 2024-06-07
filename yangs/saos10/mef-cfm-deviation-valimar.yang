@@ -1,0 +1,221 @@
+module mef-cfm-deviation-valimar {
+
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn:mef-cfm-dev-valimar";
+    prefix "mef-cfm-dev-valimar";
+
+    import mef-cfm { prefix mef-cfm; }
+
+    import ciena-soam-pm {
+       prefix ciena-soam-pm;
+    }
+
+    import ciena-cfm {
+       prefix ciena-cfm;
+    }
+
+    import ietf-yang-types {
+       prefix yang;
+    }
+
+    revision "2023-10-01" {
+        description
+            "Added deviation for ccm-interval";
+    }
+
+    revision "2023-03-03" {
+        description
+            "Added deviation for cfm-state, fng-alarm-time and fng-reset-time.";
+    }
+
+    revision 2022-03-20 {
+        description
+            "Removed MEP interface leafref deviation.";
+    }
+    
+    revision 2020-11-04 {
+        description
+            "Added deviation for remote-meps";
+    }
+
+    revision 2020-05-18 {
+        description
+            "Added deviation for remote-mep-database  management-address";
+    }
+
+    revision 2016-02-04 {
+        description "Initial revision.";
+    }
+
+    //
+    //  Defaults
+    //
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:md-level {
+         deviate add {
+            default 3;
+         }
+    }
+
+    //
+    //  Other changes to supported config data.
+    //
+
+    deviation /mef-cfm:default-md-levels/mef-cfm:default-md-level {
+        deviate not-supported;
+    }
+
+    deviation /mef-cfm:configuration-error-list {
+        deviate not-supported;
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:name-type {
+       deviate replace {
+          type enumeration {
+             enum none {
+                description "No format specified.";
+             }
+             enum mac-address-and-uint {
+                description "MAC address + 2-octet (unsigned) integer.";
+             }
+             enum character-string {
+                description "RFC2579 DisplayString, except that the character
+                             codes 0-31 (decimal) are not used.";
+             }
+          }
+       }
+    }
+
+    // Reorder union so that string is before binary.
+    // If binary is placed before string, string with length 8 is
+    // considered as type binary.
+    // Revisit when binary type is supported.
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:name {
+       deviate replace {
+          type union {
+             type string;
+             type mef-cfm:mac-address-and-uint-type;
+          }
+       }
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:component-list {
+       deviate add {
+          min-elements 1;
+       }
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:component-list/mef-cfm:component-id {
+       deviate replace {
+          type uint32 {
+             range "1";
+          }
+       }
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:remote-meps {
+       deviate not-supported;
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:component-list/mef-cfm:vid {
+       deviate not-supported;
+    }
+
+    // Reorder union so that string is before binary and after uint16.
+    // If binary is placed before string, string with length 7 is
+    // considered as type binary.
+   // Reorder union so that string is last. The "string" type matches
+   // everything, so types appearing after string will never be checked.
+ 
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:name {
+       deviate replace {
+          type union {
+             //type vlan-id-type; This will be handled by type uint16.
+             type uint16;
+             type binary {
+                length 7;
+             }
+             type string;
+          }
+       }
+    }
+
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:primary-vid {
+          deviate not-supported;
+    }
+
+    deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:continuity-check/mef-cfm:lowest-fault-priority-defect {
+      description
+        "The lowest priority defect that is allowed to generate a Fault
+         Alarm. If lowest-fault-priority-defect is not configured,
+         defects of severity remote-invalid-ccm and higher are alarmed 
+         by default.";
+      deviate add {
+        default "remote-invalid-ccm";
+      }
+    }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:remote-mep-database/mef-cfm:remote-mep/mef-cfm:management-address {
+      deviate not-supported;
+    }
+
+   deviation /ciena-cfm:cfm-state/ciena-cfm:remote-mep/ciena-cfm:management-address {
+      deviate not-supported;
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:continuity-check/mef-cfm:fng-alarm-time {
+      deviate replace {
+         type yang:timeticks {
+            range "0..3000";
+         }
+         default 250;
+      }
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:maintenance-association-end-point/mef-cfm:continuity-check/mef-cfm:fng-reset-time {
+      deviate replace {
+         type yang:timeticks {
+            range "10..3000";
+         }
+         default 1000;
+      }
+   }
+
+   deviation /mef-cfm:maintenance-domain/mef-cfm:maintenance-association/mef-cfm:ccm-interval {
+      deviate replace {
+         type enumeration {
+          enum invalid {
+              description "No CCMs are sent (disabled).";
+          }
+          enum 3.3ms {
+              status deprecated;
+              description "CCMs are sent every 3 1/3 milliseconds (300Hz).";
+          }
+          enum 10ms {
+              description "CCMs are sent every 10 milliseconds.";
+          }
+          enum 100ms {
+              description "CCMs are sent every 100 milliseconds.";
+          }
+          enum 1s {
+              description "CCMs are sent every 1 second.";
+          }
+          enum 10s {
+              description "CCMs are sent every 10 seconds.";
+          }
+          enum 1min {
+              description "CCMs are sent every minute.";
+          }
+          enum 10min {
+              description "CCMs are sent every 10 minutes.";
+          }
+          enum 3.33ms {
+              description "CCMs are sent every 3 1/3 milliseconds (300Hz).";
+          }
+        }
+        mandatory true;
+     }
+   }
+}

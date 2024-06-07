@@ -1,0 +1,291 @@
+module ciena-waveserver-application-its {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-application-its";
+  prefix app-its;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-port {
+    prefix port;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Integrated Test Set (ITS)
+     application support.";
+
+  revision 2019-02-18 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the ITS Application external data model for.
+       performing Integrated Test Set operations on Ethernet client ports.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+
+  typedef its-status {
+    type enumeration {
+      enum "idle" {
+        description
+          "ITS status is unknown, which is the default value. This means
+           monitor has not been started.";
+      }
+      enum "in-progress" {
+        description
+          "ITS status is in progress.";
+      }
+      enum "pass" {
+        description
+          "ITS status is pass.";
+      }
+      enum "fail" {
+        description
+          "ITS status is failed.";
+      }
+      enum "disabled" {
+        description
+          "ITS is disabled.";
+      }
+    }
+    description
+      "Integrated Test Set (ITS) status.";
+  }
+
+  typedef its-sync-status {
+    type enumeration {
+      enum "none" {
+        description
+          "ITS sync status is none, which is the default value.";
+      }
+      enum "red" {
+        description
+          "ITS sync status is red, indicating active sync loss.";
+      }
+      enum "yellow" {
+        description
+          "ITS sync status is yellow, indicating active sync loss occurred at
+           some point in the past, but is synced now.";
+      }
+      enum "green" {
+        description
+          "ITS sync status is green, meaning it is synced and there is no sync
+           loss in history since the start of the test.";
+      }
+      enum "disabled" {
+        description
+          "ITS status is disabled.";
+      }
+    }
+    description
+      "Integrated Test Set (ITS) sync status.";
+  }
+
+  typedef its-fail-reason {
+    type enumeration {
+      enum "none" {
+        description
+          "No failure has occured.";
+      }
+      enum "pattern-sync-lost" {
+        description
+          "ITS failed due to loss of pattern sync.";
+      }
+      enum "ber-exceeded" {
+        description
+          "ITS failed due to excessive BER..";
+      }
+      enum "warm-restart" {
+        description
+          "ITS failed due to warm restart.";
+      }
+    }
+    description
+      "Integrated Test Set (ITS) failure reason.";
+  }
+
+  augment "/port:waveserver-ports/port:ports/port:properties" {
+    when "../port:id/port:type = 'ethernet'" {
+      description
+        "Augment for ITS properties applicable to ethernet ports.";
+    }
+    description
+      "Integrated Test Set (ITS) port properties.";
+    container its {
+      ui:ui-name "ITS Properties";
+      description
+        "Integrated Test Set (ITS) related properties.";
+      leaf test-mode {
+        ui:ui-name "Test Mode";
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Enable or disable ITS on the port. The port must be adminstratively
+           disabled in order to enable ITS. The ITS test-mode must be enabled
+           in order to start the ITS test.";
+      }
+
+      leaf duration {
+        ui:ui-name "Test Duration";
+        type uint32;
+        units "seconds";
+        description
+          "The amount of time (in seconds) the test signal will be generated.";
+      }
+
+      leaf ber-threshold {
+        ui:ui-name "Test BER Threshold";
+        type uint8 {
+          range "0|5..16";
+        }
+        description
+          "The Bit Error Ratio (BER) threshold exponent value for defect
+           reporting. This value is an integer taking values: 0 or 5 to 16.";
+      }
+
+      container status {
+        config false;
+        description
+          "ITS status.";
+        leaf monitor-status {
+          ui:ui-name "ITS Monitor Status";
+          type its-status;
+          description
+            "ITS test monitor status.";
+        }
+
+        leaf sync-status {
+          ui:ui-name "ITS Sync Status";
+          type its-sync-status;
+          description
+            "ITS test sync status.";
+        }
+
+        leaf fail-reason {
+          ui:ui-name "ITS Failure Reason";
+          type its-fail-reason;
+          description
+            "ITS test failure reason.";
+        }
+
+        leaf payload-errors {
+          ui:ui-name "Payload Errors";
+          type uint64;
+          description
+            "Payload errors.";
+        }
+
+        leaf estimated-ber {
+          ui:ui-name "Estimated BER";
+          type cienawstypes:string-sci;
+          description
+            "Estimated BER, expressed in exponential notation, e.g. '1E-06'";
+        }
+
+        leaf error-free-duration {
+          ui:ui-name "Error Free Duration";
+          type uint64;
+          units "seconds";
+          description
+            "Error free duration, in seconds.";
+        }
+
+        leaf elapsed-time {
+          ui:ui-name "Elapsed Time";
+          type uint64;
+          units "seconds";
+          description
+            "Elapsed time, in seconds.";
+        }
+      }
+    }
+  }
+
+  rpc waveserver-application-its-start {
+    description
+      "Start the integrated test set on the specified port.";
+    input {
+      leaf port-id {
+        ui:ui-name "Port ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The port slot/ptp string.";
+      }
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-its-stop {
+    description
+      "Stop the integrated test set on the specified port.";
+    input {
+      leaf port-id {
+        ui:ui-name "Port ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The port slot/ptp string.";
+      }
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-its-upload-logs {
+    description
+      "Upload the the detailed integrated test set logs for a given port to a remote server.";
+    input {
+      uses cienawstypes:rpc-log-upload-group;
+
+      leaf port-id {
+        ui:ui-name "Port ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The port slot/ptp string.";
+      }
+
+      leaf scp-server {
+        ui:ui-name "Remote scp Server";
+        type cienawstypes:ipaddr-or-hostname;
+        description
+          "The remote scp server to where the logfile will be copied.";
+      }
+
+      leaf remote-path {
+        ui:ui-name "Remote Path";
+        type cienawstypes:string-maxl-254;
+        description
+          "The full path on the server to where the logfile will be copied.";
+      }
+
+      leaf suffix {
+        ui:ui-name "Suffix";
+        type cienawstypes:string-maxl-32;
+        description
+          "A String to add to the name of the logfile as a suffix.";
+      }
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+}

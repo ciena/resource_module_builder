@@ -1,0 +1,521 @@
+module ciena-pro-pm-otn-gather {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pm-otn-gather";
+  prefix pm-otn-gather;
+
+  import ciena-pro-pm-types {
+    prefix pm-types;
+  }
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's pm otn gather object";
+
+  revision 2023-02-06 {
+    description
+      "Introduce data not available flag in PM process sample";
+    ciena-common-version:string "1.2.5";
+  }
+  revision 2023-01-04 {
+    description
+      "Introduce bin specific seconds counters in pm process sample container";
+    ciena-common-version:string "1.2.4";
+  }
+  revision 2022-11-24 {
+    description
+      "Introduce montypes list associated with each process parameter type";
+    ciena-common-version:string "1.2.3";
+  }
+  revision 2022-11-21 {
+    description
+      "Introduce Counters for MAC Sublayer in pm-primitive-statistics module";
+    ciena-common-version:string "1.2.2";
+  }
+  revision 2022-09-26 {
+    description
+      "Introduce entity state data to calculate UAS";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2022-09-13 {
+    description
+      "Include Process data model";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2022-08-30 {
+    description
+      "Introduce measurements and power";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2022-08-24 {
+    description
+      "Include Power ranges grouping and modify the PREFECBER and SER ranges";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2022-08-02 {
+    description
+      "Initial Yang File";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping pm-primitive-statistics {
+    leaf error-counter {
+      type uint64;
+      default "0";
+      description
+        "Error counter grouping: BIP| BEI| INFRAMESERR (Sublayer: MAC; Direction: Rx)| OUTFRAMESERR (Sublayer: MAC; Direction: Tx)";
+    }
+    leaf frames-counter {
+      type uint64;
+      default "0";
+      description
+        "Frames counter grouping: INFRAMES (Sublayer: MAC; Direction: Rx)| OUTFRAMES (Sublayer: MAC; Direction: Tx)";
+    }
+    leaf octets-counter {
+      type uint64;
+      default "0";
+      description
+        "Frame size (octet) counter grouping: INOCTETS (Sublayer: MAC; Direction: Rx)| OUTOCTETS (Sublayer: MAC; Direction: Tx)";
+    }
+    leaf discarded-frames-counter {
+      type uint64;
+      default "0";
+      description
+        "Discarded frames counter grouping: INDFR (Sublayer: MAC; Direction: Rx)| OUTDFR (Sublayer: MAC; Direction: Tx)";
+    }
+    leaf validity {
+      type boolean;
+      default "false";
+      description
+        "validity flag";
+    }
+    description
+      "Group of statistics counters";
+  }
+
+  grouping pm-primitive-diagnostics {
+    leaf frame-defect {
+      type boolean;
+      default "false";
+      description
+        "Frame defect grouping: lof | loflom | deskew-error | loc | oof | loflane";
+    }
+    leaf signal-conditioning-defect {
+      type boolean;
+      default "false";
+      description
+        "Signal defect grouping: ais | lola | bdi(location == FE) | tim";
+    }
+    leaf invalid-alignment-defect {
+      type boolean;
+      default "false";
+      description
+        "Invalid alignment defect grouping: iae | biae (location == FE)";
+    }
+    leaf validity {
+      type boolean;
+      default "false";
+      description
+        "validity flag";
+    }
+    description
+      "Group of Diagnostics/defects counters";
+  }
+
+  grouping power-levels {
+    description
+      "Group of counters to store single and multilane power level data";
+    leaf total-power {
+      type decimal64 {
+        fraction-digits 4;
+        range "-45.0000..45.0000";
+      }
+      config false;
+      mandatory true;
+      description
+        "Raw Total power level value";
+    }
+    leaf validity {
+      type boolean;
+      default "false";
+      description
+        "validity flag";
+    }
+    list lane-power-level {
+      key "lane";
+      description
+        "List of PM data that containes lane specific Power levels";
+      leaf lane {
+        type uint32;
+        description
+          "Power Lane number specific for this list";
+      }
+      leaf channel-power {
+        type decimal64 {
+          fraction-digits 4;
+          range "-45.0000..45.0000";
+        }
+        config false;
+        mandatory true;
+        description
+          "Raw channel power measured for a specific power lane";
+      }
+    }
+  }
+
+  grouping power-ranges {
+    description
+      "Group of PM primitive counters to store Power ranges information";
+    leaf min_design_power_range {
+      type decimal64 {
+        fraction-digits 4;
+        range "-45.0000..45.0000";
+      }
+      config false;
+      mandatory true;
+      description
+        "Minimum design power range set for a specific plug/hardware from which the power levels are reported";
+    }
+    leaf max_design_power_range {
+      type decimal64 {
+        fraction-digits 4;
+        range "-45.0000..45.0000";
+      }
+      config false;
+      mandatory true;
+      description
+        "Maximum design power range set for a specific plug/hardware from which the power levels are reported";
+    }
+    leaf min_traffic_power_range {
+      type decimal64 {
+        fraction-digits 4;
+        range "-45.0000..45.0000";
+      }
+      config false;
+      mandatory true;
+      description
+        "Minimum traffic power range set for a specific plug/hardware from which the power levels are reported";
+    }
+    leaf max_traffic_power_range {
+      type decimal64 {
+        fraction-digits 4;
+        range "-45.0000..45.0000";
+      }
+      config false;
+      mandatory true;
+      description
+        "Maximum traffic power range set for a specific plug/hardware from which the power levels are reported";
+    }
+    leaf validity {
+      type boolean;
+      default "false";
+      description
+        "validity flag";
+    }
+  }
+
+  grouping fec-grouping {
+    description
+      "Group of Forward Error Correction PM Primitive data counters";
+    leaf fec-overflow {
+      type uint64;
+      config false;
+      mandatory true;
+      description
+        "Counter that indicates when Forward Error Correction scheme fails to correct the errors in the signal";
+    }
+    leaf fec-corrected-bit-errors {
+      type uint64;
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the number of bit errors corrected by the Forward Error Correction scheme";
+    }
+    leaf fec-corrected-symbol-errors {
+      type uint64;
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the number of symbol errors corrected by the Forward Error Correction scheme";
+    }
+    leaf fec-corrected-codeword {
+      type uint64;
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the number of codeword errors corrected by the Forward Error Correction scheme";
+    }
+    leaf fec-uncorrected-errors {
+      type uint64;
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the number of errors failed to be corrected by the Forward Error Correction scheme";
+    }
+    leaf prefec_ber {
+      type decimal64 {
+        fraction-digits 18;
+        range "0..1.0";
+      }
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the PRE FEC Bit Error Rate";
+    }
+    leaf prefec_ser {
+      type decimal64 {
+        fraction-digits 18;
+        range "0..1.0";
+      }
+      config false;
+      mandatory true;
+      description
+        "Counter that provides the PRE FEC Symbol Error Rate";
+    }
+    leaf validity {
+      type boolean;
+      default "false";
+      description
+        "validity flag";
+    }
+  }
+
+  list primitive-data {
+    key "pm-resource-instance";
+    config false;
+    description
+      "List of PM primitive data that containes layer specific PM gather data";
+    leaf pm-resource-instance {
+      type instance-identifier;
+      config false;
+      mandatory true;
+      description
+        "A unique instance string used to identify each PM primitive data instance";
+    }
+    leaf parent-port {
+      type instance-identifier;
+      config false;
+      mandatory true;
+      description
+        "Parent Port is the path of the Parent of the facility associated with the given PM primitive data instance. For example for OTSI, the partent
+         port is the Physical port, for OTU, the parent port is the OTSI in that port";
+    }
+    leaf signal-type {
+      type pm-types:otn-signal-type;
+      config false;
+      mandatory true;
+      description
+        "PM Signal Type associated with the Primitive Data instance. For example, OTSI, OTU, ODU and OCN";
+    }
+    leaf pm-cache-ready {
+      type boolean;
+      config false;
+      mandatory true;
+      description
+        "PM Signal Type associated with the Primitive Data instance. For example, OTSI, OTU, ODU and OCN";
+    }
+    list gather-cache {
+      key "index";
+      description
+        "List of PM primitive data gather cache translated from raw data represented per signal type";
+      leaf index {
+        type uint32;
+        config false;
+        mandatory true;
+        description
+          "Index number is the key for gather cache list and is derived from sequence number";
+      }
+      leaf sequence-number {
+        type uint64;
+        config false;
+        mandatory true;
+        description
+          "Sequence number that indicates the order/sequence which the raw PM messages are delivered.";
+      }
+      list measurements {
+        key "sublayer location direction";
+        description
+          "List of generic PM primitive data represented by each sublayer, location and direction";
+        leaf location {
+          type pm-types:location;
+          config false;
+          mandatory true;
+          description
+            "Location, indicating either NearEnd or FarEnd";
+        }
+        leaf direction {
+          type pm-types:direction;
+          config false;
+          mandatory true;
+          description
+            "Direction, indicating either Transmit or Recieve";
+        }
+        leaf sublayer {
+          type pm-types:sub-interface;
+          config false;
+          mandatory true;
+          description
+            "Sublayer, indicates if it is either odu, otu, tcm, etc";
+        }
+        container statistics {
+          config false;
+          uses pm-primitive-statistics;
+          container fec {
+            uses fec-grouping;
+          }
+          description
+            "Provides Statistics PM primitive counters";
+        }
+        container diagnostics {
+          config false;
+          uses pm-primitive-diagnostics;
+          description
+            "Provides Diagnostics PM primitive counters";
+        }
+      }
+      list power {
+        key "power-layer location direction";
+        description
+          "List of Power specific PM primitive data represented by each location and direction";
+        leaf location {
+          type pm-types:location;
+          config false;
+          mandatory true;
+          description
+            "Location, indicating either NearEnd or FarEnd";
+        }
+        leaf direction {
+          type pm-types:direction;
+          config false;
+          mandatory true;
+          description
+            "Direction, indicating either Transmit or Recieve";
+        }
+        leaf power-layer {
+          type pm-types:power-layer;
+          config false;
+          mandatory true;
+          description
+            "Power layer, indicating either channel and total power ";
+        }
+        leaf power-value {
+          type decimal64 {
+            fraction-digits 4;
+            range "-45.0000..45.0000";
+          }
+          description
+            "Raw power value";
+        }
+        leaf validity {
+          type boolean;
+          default "false";
+          description
+            "validity flag";
+        }
+        container ranges {
+          config false;
+          uses power-ranges;
+          description
+            "Provides Power ranges that are used to determine if the power levels are within the ranges";
+        }
+      }
+    }
+    list process-cache {
+      key "index";
+      description
+        "List of PM process data stored per second interval";
+      leaf index {
+        type uint32;
+        config false;
+        mandatory true;
+        description
+          "The process cache holds 10 seconds worth of data and hence the index represents the data for each second from 0 to 9";
+      }
+      uses pm-types:process-data-grouping;
+    }
+    container process-sample {
+      description
+        "This data represents one second process-data calculated. This is a copy of the one instance of process
+         cache and is used to publish the one second worth of process-data to the subscriber";
+      uses pm-types:process-data-grouping;
+      leaf avail {
+        type boolean;
+        default "false";
+        description
+          "This flag indicates whether to consider this data sample for processing";
+      }
+      leaf seconds-count-untimed {
+        type uint32;
+        default "0";
+        description
+          "seconds count untimed";
+      }
+      leaf seconds-count-15min {
+        type uint32;
+        default "0";
+        description
+          "seconds count 15min";
+      }
+      leaf seconds-count-1day {
+        type uint32;
+        default "0";
+        description
+          "seconds count 1day";
+      }
+    }
+    list entity-state {
+      key "sublayer location direction";
+      description
+        "Provides the availabilty state of the given entity";
+      leaf location {
+        type pm-types:location;
+        config false;
+        mandatory true;
+        description
+          "Location, indicating either NearEnd or FarEnd";
+      }
+      leaf direction {
+        type pm-types:direction;
+        config false;
+        mandatory true;
+        description
+          "Direction, indicating either Transmit or Recieve";
+      }
+      leaf sublayer {
+        type pm-types:sub-interface;
+        config false;
+        mandatory true;
+        description
+          "Sublayer, indicates if it is either odu, otu, tcm, etc";
+      }
+      container availability {
+        description
+          "The availability determines if the given second is SES or UAS";
+        leaf avail {
+          type boolean;
+          description
+            "This is used to track if the given second is SES or UAS";
+        }
+        leaf count {
+          type uint8;
+          description
+            "Number of SES counts observed in the 10 second interval";
+        }
+      }
+    }
+  }
+}

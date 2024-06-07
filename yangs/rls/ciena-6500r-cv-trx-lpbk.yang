@@ -1,0 +1,277 @@
+module ciena-6500r-cv-trx-lpbk {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-cv-trx-lpbk";
+  prefix trx-lpbk;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform connection validation service consolidated results";
+
+  revision 2023-02-02 {
+    description
+      "Adding rpc allow-loopback-test.";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2023-01-10 {
+    description
+      "Adding trx-lpbk related rpcs opr-loopback and release-loopback.";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2022-09-13 {
+    description
+      "Adding transactions timestamp leaf.";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-07-16 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  container trx-lpbk {
+    config false;
+    list transactions {
+      key "port";
+      leaf port {
+        type instance-identifier;
+        description
+          "Port from where the transponder loopback starts";
+      }
+      leaf partner-port {
+        type instance-identifier;
+        description
+          "Port where the transponder loopback ends";
+      }
+      leaf lpbk-slot {
+        type instance-identifier;
+        description
+          "Name of the slot where the signal loops back";
+      }
+      leaf center-freq {
+        type ciena-6500r-types:frequency;
+        description
+          "The center frequency of the channel used to run the test.";
+      }
+      leaf spectral-width {
+        type ciena-6500r-types:frequency;
+        description
+          "This identifies Spectral width of each network media channel.";
+      }
+      leaf manual-validation {
+        type boolean;
+        description
+          "Indicates if the user needs to manually validate the connectivity of the loopback path";
+      }
+      leaf manual-release {
+        type boolean;
+        description
+          "Indicates if user needs to release the loopback path manually after the test is completed";
+      }
+      leaf test-state {
+        type enumeration {
+          enum init-state {
+            description
+              "The loopback test has begun";
+          }
+          enum pre-path-setup-state {
+            description
+              "Setup before loopback path provisioning is done";
+          }
+          enum path-available-state {
+            description
+              "The loopback path is provisioned successfully";
+          }
+          enum post-path-setup-state {
+            description
+              "Setup after loopback path provision is done";
+          }
+          enum test-completed-state {
+            description
+              "Connectivity test is completed (either automated or manual) ";
+          }
+        }
+        description
+          "The state of the loopback test.";
+      }
+      leaf timestamp {
+        type uint64;
+        description
+          "Time when Transponder Loopback is initiated.";
+      }
+      list link-trail {
+        key "link";
+        leaf link {
+          type instance-identifier;
+          description
+            "Identifier of link on the loopback path";
+        }
+        leaf fault-found {
+          type enumeration {
+            enum none {
+              description
+                "No faults found on link";
+            }
+            enum fiber-break-detected {
+              description
+                "Fiber-break-detected fault found on link";
+            }
+            enum high-fiber-loss-major {
+              description
+                "High-fiber-loss-major fault found on link";
+            }
+            enum high-fiber-loss-minor {
+              description
+                "High-fiber-loss-minor fault found on link";
+            }
+          }
+          description
+            "Indicates link fault found";
+        }
+        description
+          "Link-trail used for loopback test";
+      }
+      container original-data {
+        leaf tx-blanking {
+          type boolean;
+          description
+            "Indicates the original state of the tx-blanking";
+        }
+      }
+    }
+  }
+
+  rpc opr-loopback {
+    description
+      "RPC that allows user to run a transponder loopback test.";
+    input {
+      leaf port {
+        type instance-identifier;
+        description
+          "Local tx-proxy port name.";
+      }
+      leaf lpbk-slot {
+        type instance-identifier;
+        description
+          "The slot where the signal is to be looped back. It can be non-nodes qualified if slot is local and nodes qualified if it is a remote slot.";
+      }
+      leaf center-freq {
+        type ciena-6500r-types:frequency;
+        description
+          "The center frequency of the channel used to run the test.";
+      }
+      leaf spectral-width {
+        type ciena-6500r-types:frequency;
+        description
+          "The width of the loopback channel. It is mandatory when the manual validation is set to TRUE.";
+      }
+      leaf manual-validation {
+        type boolean;
+        default "false";
+        description
+          "Set to TRUE when using manual validation of tx-proxy values for transponder loopback test.";
+      }
+      leaf manual-release {
+        type boolean;
+        default "false";
+        description
+          "Set to TRUE to maintain loopback channel after the transponder loopback test has completed. Use release-loopback RPC to clean-up the loopback channel.";
+      }
+    }
+    output {
+      leaf status {
+        type enumeration {
+          enum failed-to-run {
+            description
+              "The transponder loopback test has failed to run for some reasons.";
+          }
+          enum in-progress {
+            description
+              "The transponder loopback test has started and is in progress.";
+          }
+        }
+        description
+          "The state of the transponder loopback test.";
+      }
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc release-loopback {
+    description
+      "RPC that allows user to release the loopback channel and input the result of the manual validation.
+
+       CANCEL -> to terminate the loopback test right away and clean up the loopback channel.
+       PASS   -> to indicate that the manual validation is successful, the channel will be released after collecting data. The result will be evaluated including the additional system evaluated criteria (e.g. LOS / HFL).
+       FAIL   -> to indicate that the manual validation has failed, the channel will be released after collecting data. The result will be marked as failed.
+
+       CANCEL is typically used for automatic validation with manual release, after the result has been evaluated.
+       PASS / FAIL is typically used with manual validation to input the manually evaluated result and continue with the system evaluated criteria.";
+    input {
+      leaf port {
+        type instance-identifier;
+        description
+          "Local tx-proxy port name.";
+      }
+      leaf action {
+        type enumeration {
+          enum pass {
+            description
+              "Indicates that the manual validation has passed and initiates the release of the loopback channel after generating the test result.";
+          }
+          enum fail {
+            description
+              "Indicates that the manual validation has failed and initiates the release of the loopback channel after generating the test result.";
+          }
+          enum cancel {
+            description
+              "Cancel the transponder loopback test and release the loopback channel.";
+          }
+        }
+        description
+          "Indicates the state of the manual validation and initiates the release of the loopback channel after generating the test result.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc allow-loopback-test {
+    input {
+      leaf allow-test {
+        type boolean;
+        description
+          "Set to TRUE to allow Trx Loopback test; FALSE to block it.";
+      }
+    }
+  }
+}

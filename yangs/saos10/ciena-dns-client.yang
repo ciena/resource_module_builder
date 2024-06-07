@@ -1,0 +1,288 @@
+module ciena-dns-client {
+  namespace "http://www.ciena.com/ns/yang/ciena-dns-client";
+  prefix dnsc;
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  
+  import openconfig-system {
+    prefix oc-sys;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's global configuration for DNS client settings.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2023-06-06 {
+    description
+      "Added max element limit for user defined dns servers";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2019-12-11 {
+    description
+      "Add default value of 'enabled' for dns-client 
+       admin-status";
+    reference
+      "";
+  }
+
+  revision 2017-05-25 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  /*
+   * Typedefs
+   */
+  typedef dns-scope {
+    type enumeration {
+      enum user {
+        description
+          "The user-configured DNS parameter is currently operational.";
+      }
+      enum dhcpv4 {
+        description
+          "The DHCPv4-configured DNS parameter is currently operational.";
+      }
+      enum dhcpv6 {
+        description
+          "The DHCPv6-configured DNS parameter is currently operational.";
+      }
+    }
+      description
+        "Whether the currently operational DNS parameter was configured by the
+         user, DHCPv4, or DHCPv6.";
+  }
+
+  /*
+   * Groupings
+   */
+  grouping dhcp-server {
+    description
+      "Operational data pertaining to DNS servers configured through DHCP.";
+
+    leaf domain-name {
+      type inet:domain-name;
+      description
+        "Specifies the domain name configured through DHCP.";
+    }
+
+    list server {
+      key address;
+      description
+        "State information pertaining to a DNS server configured through DHCP.";
+         
+      leaf address {
+        type inet:ip-address;
+        description
+          "The IP address of the DNS server.";
+      }
+  
+      leaf admin-status {
+        type ciena:admin-state;
+        description
+          "The administrative state of the DNS server.";
+      }
+     
+      leaf oper-status {
+        type ciena:oper-state;
+        description
+          "The operational state of the DNS server.";
+      }       
+    }
+  }
+     
+  /*
+   * Identities
+   */
+
+  /*
+   * Features
+   */
+
+  augment /oc-sys:system {
+    container dns {
+      description
+        "Configuration parameters for DNS client resolver";
+
+      /*
+      * Configuration data nodes
+      */
+      container dns-client {
+        description
+          "Configuration parameters of the DNS client resolver.";
+
+        leaf admin-status {
+          type ciena:admin-state;
+          default enabled;
+          description
+            "The global administrative state of the DNS client resolver.";
+        }
+
+        leaf domain-name {
+          type string {
+            length "0..64";
+          }
+          description
+            "Specifies the domain name configured by the user for this device.";
+        }
+
+        list server {
+          key address;
+          max-elements 3;
+          ordered-by user;
+          description
+            "Defines administrative information pertaining to a DNS server
+              configured by the user.";
+
+          leaf address {
+            type inet:ip-address;
+            description
+              "The IP address of the configured DNS server.";
+          }
+
+          leaf admin-status {
+            type ciena:admin-state;
+            description
+              "The administrative state of the configured DNS server.";
+          }
+        }
+      } // end container dns-client
+
+      /*
+      * Operational state data nodes
+      */
+      container dns-client-state {
+        config false;
+        description
+          "Operational data for the DNS client resolver.";
+
+        leaf domain-name-scope {
+          type dns-scope;
+          description
+            "Whether the currently operational domain name is user,
+             DHCPv4, or DHCPv6.";
+        }
+
+        leaf server-scope {
+          type dns-scope;
+          description
+            "Whether the currently operational DNS server is user,
+             DHCPv4, or DHCPv6.";
+        }
+
+        container user-servers {
+          description
+            "Operational data pertaining to DNS servers configured by the user.";
+
+          list server {
+            key address;
+            description
+              "State information pertaining to a DNS server configured by the user.";
+               
+            leaf address {
+              type inet:ip-address;
+              description
+                "The IP address of the configured DNS server.";
+            }
+        
+            leaf oper-status {
+              type ciena:oper-state;
+              description
+                "The operational state of the configured DNS server.";
+            }
+          }
+        }
+
+        container dhcpv4-servers {
+          description
+            "Operational data pertaining to DNS servers configured through DHCPv4.";
+          uses dhcp-server;      
+        }
+
+        container dhcpv6-servers {
+          description
+            "Operational data pertaining to DNS servers configured through DHCPv6.";
+          uses dhcp-server; 
+        }
+      } // end container dns-client-state
+
+    } // end container dns
+  } // end /sys:system
+
+  rpc resolve-ip {
+    description
+      "Resolve an IP address to a host name.";
+
+    input {
+
+      leaf address {
+        type inet:ip-address;
+        description
+          "The IP address to be resolved.";
+      }         
+    }
+    output {
+
+      leaf host-name {
+        type inet:domain-name;
+        description
+          "The host name resolved from the input IP address.";
+      }
+    }
+  }
+
+  rpc resolve-hostname {
+    description
+      "Resolve a host name to an IP address.";
+
+    input {
+
+      leaf host-name {
+        type inet:domain-name;
+        description
+          "The host name to be resolved.";
+      }         
+    }
+    output {
+
+      leaf address {
+        type inet:ip-address;
+        description
+          "The IP address resolved from the input host name.";
+      }
+    }
+  }
+
+}

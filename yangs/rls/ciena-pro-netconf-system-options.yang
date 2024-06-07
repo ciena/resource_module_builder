@@ -1,0 +1,168 @@
+module ciena-pro-netconf-system-options {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-netconf-system-options";
+  prefix ciena-pro-netconf-system-options;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Netconf deployment wide options.";
+
+  revision 2023-01-30 {
+    description
+      "Added new leaf client-libyang-shared-ctx";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2022-06-21 {
+    description
+      "Added new leaf for libnetconf2 and libyang log level";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-05-09 {
+    description
+      "Added new leaf client-libyang-validation";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-01-10 {
+    description
+      "Add config-dir leaf & supported-url-protocols leaf-list.";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-08-12 {
+    description
+      "Add authenticated flag and server-schema-dir in options.";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-08-12 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef log-level {
+    type enumeration {
+      enum error;
+      enum warning;
+      enum verbose;
+      enum debug;
+    }
+  }
+
+  container netconf-system-options {
+    leaf client-schema-dir {
+      type string;
+      description
+        "Directory where netconf client stores default schemas and
+         schemas retrieved from server.
+         If unset, default is <install-prefix>/share/libnetconf2";
+      config false;
+    }
+    leaf root-allowed {
+      type boolean;
+      default "true";
+      description
+        "Flag to allow root user login at Netconf";
+      config false;
+    }
+    leaf rsa-key-path {
+      type string;
+      description
+        "Path to the host key for client authentication";
+      config false;
+    }
+    leaf config-dir {
+      type string;
+      description
+        "Public root directory which holds configs for operations
+         like edit-config, copy-config, etc with file:// protocol
+         in URL. Should be absolute path without the slash at end.
+
+         If not given default (for backward compatibility) is:
+         /var/opt/ap/pub/netconf";
+      config false;
+    }
+    leaf server-schema-dir {
+      type string;
+      description
+        "Directory where netconf server loads schemas.
+         If unset, default is <install-prefix>/share/ddf/misc/nbi/yin";
+      config false;
+    }
+    leaf-list supported-url-protocols {
+      type enumeration {
+        enum scp;
+        enum http;
+        enum https;
+        enum ftp;
+        enum sftp;
+        enum ftps;
+        enum file;
+      }
+      description
+        "List of supported protocols in url capability.
+
+         If not given default (for backward compatibility) is:
+         scp file";
+      config false;
+    }
+    leaf authenticated {
+      type boolean;
+      default "true";
+      description
+        "Flag to drive if authentication is required.";
+      config false;
+    }
+    leaf client-libyang-validation {
+      type boolean;
+      default "false";
+      description
+        "Flag to allow LIBYANG validation for client code";
+      config false;
+    }
+    leaf libnetconf2-log-level {
+      type log-level;
+      description
+        "Log-level of LIBNETCONF2 library";
+    }
+    leaf libyang-log-level {
+      type log-level;
+      description
+        "Log-level of LIBYANG library";
+    }
+    leaf client-libyang-shared-ctx {
+      type boolean;
+      default "false";
+      description
+        "Flag to use shared LIBYANG context for client code.
+         When set to true, it avoids creating new context for each session.
+         Each context usually creates a pthread-key internally and hence when
+         hitting the maximum limit of 1024 keys, it fails to create further connections.
+         Using shared LIBYANG context overcomes this limit as it creates a
+         single context for all sessions. This should be useful only when we disable
+         client-libyang-validation or if all the sessions use similar YANG models.";
+      config false;
+    }
+  }
+}

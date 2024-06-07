@@ -1,0 +1,137 @@
+module ciena-pro-nodes {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-nodes";
+  prefix ciena-pro-nodes;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's pro nodes model. This provides local access to data on remote nodes.";
+
+  revision 2021-07-29 {
+    description
+      "Add node-type to config data and define local node-type";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-05-19 {
+    description
+      "Initial revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity node-type {
+    description
+      "The base identity to represent the type of node in the list";
+  }
+
+  identity local {
+    base node-type;
+    description
+      "This is the local node, and all mounted data is available from local services";
+  }
+
+  grouping node-config {
+    description
+      "Grouping that defines configuration data required to access a node. This data is mastered locally.";
+    container config {
+      leaf ip-address {
+        type inet:ip-address;
+        description
+          "Node IP address";
+      }
+      leaf local-id {
+        type string;
+        description
+          "An unique identifier to logically group a set of micro-services";
+      }
+      leaf node-type {
+        type identityref {
+          base node-type;
+        }
+      }
+    }
+  }
+
+  typedef node-operational-state {
+    type enumeration {
+      enum up;
+      enum down;
+    }
+    description
+      "The current state of a node";
+  }
+
+  grouping node-state {
+    description
+      "Grouping that defines state data for a node. This data is mastered locally.";
+    container state {
+      leaf software-version {
+        type string;
+        description
+          "Actual software release version that is currently running and is expected to
+           match active-version after an upgrade is completed.";
+        config false;
+      }
+      leaf operational-state {
+        type node-operational-state;
+        description
+          "The current operational state of a node.";
+        config false;
+      }
+      uses ciena-pro-types:admin-state;
+    }
+  }
+
+  grouping node-mount-data {
+    description
+      "Grouping that defines mounted data that is mastered remotely on the node";
+    container data {
+      anyxml config {
+        description
+          "configuration data to be pushed to a node";
+      }
+      anyxml inventory {
+        description
+          "inventory data retrieved from remote node via polling or subscriptions";
+        config false;
+      }
+    }
+  }
+
+  container nodes {
+    list node {
+      key "node-name";
+      leaf node-name {
+        type string;
+        description
+          "The name of the node.";
+      }
+      uses node-config;
+      uses node-state;
+      uses node-mount-data;
+    }
+  }
+}

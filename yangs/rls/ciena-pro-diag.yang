@@ -1,0 +1,190 @@
+module ciena-pro-diag {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-diag";
+  prefix diag;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's diagnostic point objects for the 6500r platform";
+
+  revision 2020-11-15 {
+    version:version "version" {
+      version:string "2.1.2";
+    }
+    description
+      "Add a timestamp to the diagnostic points to indicate the time of
+       the last state change.";
+  }
+  revision 2020-08-13 {
+    version:version "version" {
+      version:string "2.1.1";
+    }
+    description
+      "RLS Release 2.1
+       Increased the length of the diagnostic point name and active model
+       name to 127 characters from the previous 64.
+       Adding a version string and setting it to the same value as the
+       ciena-pro-correlation model.  The two models won't stay lock step,
+       but they may as well start out that way.";
+  }
+  revision 2019-11-20 {
+    description
+      "6500r Release 2.00
+       Added the 'registered' field to the diagnostic point grouping to
+       support notify registrations.";
+  }
+  revision 2019-11-05 {
+    description
+      "6500r Release 1.01
+       Added in the space character to the pattern for correlation-model-name_t";
+  }
+  revision 2019-10-01 {
+    description
+      "6500r Release 1.01
+       Added some characters - : ; @ - to the pattern for correlation-model-name_t";
+  }
+  revision 2019-09-24 {
+    description
+      "6500r Release 1.01
+       Fixed the pattern for diagnostic-point-name_t and active-model-name_t
+       to allow repeats of characters (it was missing the asterisk)";
+  }
+  revision 2018-09-15 {
+    description
+      "6500r Release 1.0-
+       Added container: correlation-service";
+  }
+
+  typedef diagnostic-point-state_t {
+    type enumeration {
+      enum "IDLE" {
+        value 0;
+      }
+      enum "ACTIVE" {
+        value 1;
+      }
+    }
+  }
+
+  typedef diagnostic-point-name_t {
+    type string {
+      length "1..127";
+      pattern "[0-9a-zA-Z_][0-9a-zA-Z_\\-:;@ ]*";
+    }
+    description
+      "The assigned unique identifier for correlation model.";
+  }
+
+  typedef active-model-name_t {
+    type string {
+      length "1..127";
+      pattern "[0-9a-zA-Z_][0-9a-zA-Z_\\-:;@ ]*";
+    }
+    description
+      "The assigned unique identifier for an active model.";
+  }
+
+  typedef latching_t {
+    type enumeration {
+      enum "not latched" {
+        value 0;
+      }
+      enum "latched" {
+        value 1;
+      }
+    }
+    description
+      "Flag to indicate latching state, latched or not latched";
+  }
+
+  typedef diag-date-and-time_t {
+    type string {
+      length "1..31";
+    }
+    description
+      "Storage for a formatted timestamp value of format
+           yyyy-mm-ddThh:mm:ssZ.
+       A bit of extra space has been added to allow for even finer
+       granularity ( ms? ns?) someday.";
+  }
+
+  grouping active-diagnostic-point-id {
+    description
+      "The fields that are used to identify an instance of an active diagnostic
+       point, i.e. one that is part of a model and being updated with changes
+       of state.";
+    leaf active-model-name {
+      type active-model-name_t;
+      mandatory true;
+      description
+        "Identifies the active model for which the diagnostic point data applies.
+         The same diagnostic point definition, identified by a unique name, may be
+         active in multiple models at any given time, so the active model is
+         needed to uniquely identify each active point. In most cases, the
+         active-model-name will be the name of the piece of equipment that is
+         reporting the diagnostic point information";
+    }
+
+    leaf diagnostic-point-name {
+      type diagnostic-point-name_t;
+      mandatory true;
+      description
+        "Diagnostic point identifying name, unique to any given model.";
+    }
+  }
+
+  grouping diagnostic-point-state {
+    description
+      "A grouping of the updateable and notifiable state information
+       for a diagnostic point.";
+    leaf state {
+      type diagnostic-point-state_t;
+      mandatory true;
+      description
+        "Current state of the point - ACTIVE if currently active, IDLE if not.";
+    }
+
+    leaf latched {
+      type boolean;
+      mandatory false;
+      description
+        "A flag to indicate if the current point is latched (TRUE) or not.
+         May only be TRUE if the point supports latching (latching field is
+         set to latched).  Not present if the point does not support latching
+         (not latched).";
+    }
+
+    leaf registered {
+      type boolean;
+      mandatory false;
+      description
+        "Only used with notify and upate registration diagnostic points.
+         This value indicates whether a point is registered with the data source
+         source (update or notification) or not.";
+    }
+
+    leaf state-change-time {
+      type diag-date-and-time_t;
+      mandatory false;
+      description
+        "The time of the last state change.";
+    }
+  }
+
+  list diagnostic-point-status {
+    key "active-model-name diagnostic-point-name";
+    config false;
+    description
+      "A container for extracting and reporting diagnostic point status information
+       from an active model.";
+    uses active-diagnostic-point-id;
+
+    uses diagnostic-point-state;
+  }
+}

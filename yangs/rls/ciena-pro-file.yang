@@ -1,0 +1,460 @@
+module ciena-pro-file {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-file";
+  prefix fileService;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "File service module";
+
+  revision 2023-04-13 {
+    description
+      "Add yang sensitive true parameter.";
+    ciena-common-version:string "1.2.2";
+  }
+  revision 2022-05-11 {
+    description
+      "Added xftp-config container.";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2022-01-05 {
+    description
+      "Added support for default server.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2021-12-09 {
+    description
+      "Added current working dir to the ls rpc output.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-12-03 {
+    description
+      "Remodeled ls support and added raw-output
+       leaf, removed mandatory path to support the default path of public dirs.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-12-02 {
+    description
+      "Remodeled df support and added raw-output leafs to
+       input and output.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-10-13 {
+    description
+      "Added URL support";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-05-13 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity error-invalid-input {
+    base ciena-common-yang:error-code;
+    description
+      "Error was generated because an RPC was
+       invoked with invalid input data.";
+  }
+
+  identity error-permission-denied {
+    base ciena-common-yang:error-code;
+    description
+      "Error was generated because an RPC tried
+       to read/write/remove a file without
+       the required permissions.";
+  }
+
+  identity error-file-not-found {
+    base ciena-common-yang:error-code;
+    description
+      "Error was generated because an RPC could
+       not find a specified file.";
+  }
+
+  typedef access-type {
+    type enumeration {
+      enum read;
+      enum write;
+      enum execute;
+    }
+  }
+
+  typedef transfer-type {
+    type enumeration {
+      enum putfile;
+      enum getfile;
+    }
+  }
+
+  typedef host-name {
+    type string {
+      length "2..64";
+    }
+    description
+      "User name string that has a range of 2 to 64 characters.
+       Valid charactor includes alphanumeric and '-', '_', '.'";
+  }
+
+  typedef user-name {
+    type string {
+      length "2..40";
+    }
+    description
+      "User name string that has a range of 2 to 40 characters.
+       Valid charactor includes alphanumeric and '-', '_', '.'";
+  }
+
+  typedef password {
+    ciena-common-yang:sensitive "true";
+    type string {
+      length "0..128";
+    }
+    description
+      "The user password, supplied as cleartext.";
+  }
+
+  grouping return-code-grouping {
+    leaf result {
+      description
+        "The status for the return code.";
+      type identityref {
+        base ciena-common-yang:error-code;
+      }
+    }
+    leaf error-message {
+      type string;
+    }
+  }
+
+  container xftp-config {
+    description
+      "The configuration data to be used by XFTP file transfer operations.";
+    leaf default-authority {
+      type leafref {
+        path "../../authority/name";
+      }
+    }
+  }
+  list authority {
+    description
+      "A list of authorities for XFTP server configuration attributes.";
+    key "name";
+    leaf name {
+      type string;
+      mandatory true;
+      description
+        "The name of the authority configuration.
+         If the default-authority is not configured and have only one authority configured, then this can be the implied default.";
+    }
+    leaf host {
+      type host-name;
+      mandatory true;
+      description
+        "The host name configured by user. Format is an IP address or host name.";
+    }
+    leaf port {
+      type inet:port-number;
+      default "22";
+      description
+        "The port number of the remote sftp server.
+         If no value is specified, the default value
+         for the ssh port (22) is used for SFTP and SCP protocols.
+         For HTTP, default port is 80 and port 443 is used for HTTPS";
+    }
+    leaf user-name {
+      type user-name;
+      mandatory true;
+      description
+        "User info string that has a range of 2 to 40 characters.
+         Valid characters include alphanumeric and '-', '_', '.'";
+    }
+    leaf password {
+      ciena-common-yang:sensitive "true";
+      type password;
+      mandatory true;
+      description
+        "The user entered password.";
+    }
+  }
+
+  rpc ls {
+    description
+      "This RPC will list the directory contents.";
+    input {
+      leaf path {
+        type string;
+        description
+          "The full path to a directory or file. If omitted will see public directories";
+      }
+      leaf hidden {
+        type boolean;
+        default "false";
+        description
+          "Specify whether hidden files should be included
+           in the output (true) or not (false).";
+      }
+      leaf recurse {
+        type boolean;
+        default "false";
+        description
+          "Specify whether content of all sub-directories
+           should also be included.";
+      }
+      leaf raw-output {
+        type boolean;
+        default "true";
+        description
+          "If set to false the raw-output leaf will be omitted from output.";
+      }
+    }
+    output {
+      leaf current-working-dir {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "This will return the public path to the raw-output data if there is only one directory.";
+      }
+      leaf raw-output {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "This will return the OS raw output of the command as a formatted string.";
+      }
+      list file {
+        key "filename";
+        leaf filename {
+          type string;
+          description
+            "The file name.";
+        }
+        leaf type {
+          description
+            "The file type, based on file inode information.";
+          type enumeration {
+            enum socket;
+            enum symbolic-link;
+            enum regular-file;
+            enum block-device;
+            enum directory;
+            enum character-device;
+            enum fifo;
+          }
+        }
+        leaf link-target {
+          type string;
+          description
+            "If the file is a link, this field specifies the target.";
+        }
+        leaf create-time {
+          type yang:date-and-time;
+          description
+            "The file name.";
+        }
+        leaf last-modified-time {
+          type yang:date-and-time;
+          description
+            "The file name.";
+        }
+        leaf size {
+          type uint64;
+          description
+            "The file size.";
+        }
+        leaf owner {
+          type string;
+          description
+            "Specifies the owner of the file.";
+        }
+        leaf group {
+          type string;
+          description
+            "Specifies the group of the file.";
+        }
+        leaf-list owner-access {
+          type access-type;
+          description
+            "Specifies the access priviledge of the owner.";
+        }
+        leaf-list group-access {
+          type access-type;
+          description
+            "Specifies the access priviledge for members of the group.";
+        }
+        leaf-list other-access {
+          type access-type;
+          description
+            "Specifies the access priviledge for others.";
+        }
+      }
+      uses return-code-grouping;
+    }
+  }
+
+  rpc cp {
+    description
+      "This RPC will copy files and directories.";
+    input {
+      leaf-list source-path {
+        type string;
+        description
+          "A list of full file paths specifying one or more source directory or file.";
+      }
+      leaf dest-path {
+        type string;
+        mandatory true;
+        description
+          "The full path to a destination directory or file.";
+      }
+      leaf recurse {
+        type boolean;
+        default "false";
+        description
+          "Specify whether content of all sub-directories
+           should also be included.";
+      }
+    }
+    output {
+      uses return-code-grouping;
+    }
+  }
+
+  rpc rm {
+    description
+      "This RPC will remove files or directories.";
+    input {
+      leaf path {
+        type string;
+        mandatory true;
+        description
+          "The full path to a directory or file.";
+      }
+      leaf recurse {
+        type boolean;
+        default "false";
+        description
+          "Specify whether content of all sub-directories
+           should also be included.";
+      }
+    }
+    output {
+      uses return-code-grouping;
+    }
+  }
+
+  rpc df {
+    description
+      "This RPC will provide information on filesystem disk space.";
+    input {
+      leaf path {
+        type string;
+        description
+          "The full path to any file within the desired filesystem.";
+      }
+      leaf raw-output {
+        type boolean;
+        default "true";
+        description
+          "If set to false the raw-output leaf will be omitted from output.";
+      }
+    }
+    output {
+      list filesystem {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "The filesystem which was queried.";
+        }
+        leaf available {
+          type uint64;
+          description
+            "Number of available 1K blocks.";
+        }
+        leaf onek-blocks {
+          type uint64;
+          description
+            "Number of 1K blocks in filesystem.";
+        }
+        leaf used {
+          type uint64;
+          description
+            "Number of used 1K blocks.";
+        }
+        leaf used-percentage {
+          type uint64;
+          description
+            "Percentage of used 1K blocks.";
+        }
+      }
+      leaf raw-output {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+      }
+      uses return-code-grouping;
+    }
+  }
+
+  rpc xftp {
+    description
+      "This RPC will perform a secure file transfer.";
+    input {
+      leaf transfer {
+        type transfer-type;
+        mandatory true;
+        description
+          "Specifies whether the sftp operation should be pushing or pulling a file.";
+      }
+      leaf local-filename {
+        type string;
+        mandatory true;
+        description
+          "The full path to a file, local to the file-service.";
+      }
+      leaf url {
+        type string {
+          length "0..512";
+        }
+        description
+          "The URL encoded with the provided information.
+              Example format is 'sftp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.
+                This is used to specify the absolute path to the file on the remote location,
+                and should be provided with all mandatory values such as userinfo/password, ip-address
+                and the absolute path to the file. This format can be used to override the default server
+                settings configured from authority attributes.
+              Example format is 'sftp:///<path>/<filename>'.
+                This is used to specify the absolute path to the file on the default xftp server.
+                The supported protocols in URL are sftp, scp, http and https.";
+      }
+      leaf authority-name {
+        type string;
+        description
+          "The name of authority. This leaf is only relevant when the user specifies the URL
+           in the format without user-info values, and the URL is intended to be built from configured
+           authority attributes. When it is set as input, it overrides the default authority name
+           configured by the user.";
+      }
+    }
+    output {
+      uses return-code-grouping;
+    }
+  }
+}

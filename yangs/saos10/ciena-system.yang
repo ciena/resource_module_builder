@@ -1,0 +1,786 @@
+module ciena-system {
+  namespace "http://www.ciena.com/ns/yang/ciena-system";
+  prefix "ciena-sys";
+
+  import openconfig-system {
+    prefix sys;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-netconf-acm {
+    prefix nacm;
+  }
+
+  import yumaworks-types {
+    prefix ywt;
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+   
+  description
+    "This YANG module defines Ciena's global configuration for system settings.
+
+     Copyright (c) 2018 Ciena Corporation.  All rights 
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this 
+     information or reproduction of this material is strictly 
+     forbidden unless prior written permission is obtained from 
+     Ciena Corporation.";
+
+  revision 2022-08-15 {
+     description
+        "Adding database-mismatch notification";
+  }
+  revision 2022-04-19 {
+    description
+      "Added warm-reboot enum to system-restart-notification restart-reason";
+  }
+  revision 2021-09-28 {
+    description
+      "Adding error-message list to reset-to-user-config-status oper container";
+  }
+
+  revision 2021-09-07 {
+    description
+      "Augmented the /sys:system/sys:state container with security-mode container to provide security mode of the system.";
+    reference
+      "Specific reference or standard not available.";
+  }
+
+  revision 2021-01-28 {
+    description
+      "Adding system contact and location leafs.
+       Extending rpc system-restart to support warm reboot. Adding enum leaf";
+    reference
+      "RFC 3418: Management Information Base (MIB) for the
+       Simple Network Management Protocol (SNMP),
+       SNMPv2-MIB.sysLocation.";
+  }
+
+  revision 2020-03-10 {
+    description
+      "Change leaf filename to use NcxFileName type";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2020-02-25 {
+    description
+      "Adding check-core-files rpc for checking for the presence 
+       of core files.
+       Adding enumeration for baud-rate values.
+       Adding leaf to configure serial baud-rate.
+       Adding leaf in state data to hold serial baud-rate.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2020-01-21 {
+    description
+      "Augmented the /sys:system/sys:state container by system-last-reset-reasons container to report system's last reset reasons.
+       Adding YANG notification, Reset to user config event notification event.";
+    reference
+      "Specific reference or standard not available.";
+  }
+
+  revision 2019-11-12 {
+    description
+      "Adding system-health container for reporting health status information.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2019-08-22 {
+    description
+      "Adding YANG RPCs backup-golden-config, delete-golden-config,
+       and reset-to-golden-config.
+       Adding three new enumerations, two for bootstrap-status and
+       one for restart-type.
+       Adding system uptime support.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2019-06-14 {
+    description 
+      "Adding YANG RPC reset-to-user-config and oper container
+       reset-to-user-config-status.
+       Adding YANG notification, bootstrap-event.
+       Created a new grouping, bootstrap-event-grouping, that
+       bootstrap-event will now use.
+       Added an augment to the state container, creating a
+       container called bootstrap. The container has a list,
+       bootstrap-status, inside of it.";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  revision 2018-09-30 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+  
+  typedef rtuc-status-enum {
+      type enumeration {
+         enum idle {
+            description
+                "reset-to-user-configuration operation is not initiated";
+         }
+         enum rtuc-started {
+            description
+                "reset-to-user-configuration operation is initiated";
+         }
+         enum file-not-found {
+            description
+                "user specified configuration file is not found";
+         }
+         enum system-not-ready {
+            description
+                "system is not ready to perform reset-to-user-config";
+         }
+         enum rtuc-failed {
+            description
+                "reset-to-user-config operation failed";
+         }
+         enum rtuc-inprogress {
+            description
+                "reset-to-user-config operation in progress";
+         }
+         enum rtuc-complete {
+            description
+                "reset-to-user-config operation completed 
+                 successfully";
+         }
+      }
+  }
+
+
+  typedef bootstrap-status {
+    description
+      "This enumeration describes the status of bootstrap. This also
+      includes core bootstrap which is split up into five phases. The
+      Management Phase consists of bare login/user/nacm and Management
+      plane configuation. The Device Phase consists of platform sepcific
+      device objects such as ports, interfaces, and system hardware.
+      The Defaults Phase consists of ceratin core objects whose presence
+      is mandatory for higher level configuration. The ZTP Phase consists
+      of dataplane L2/L3 configuration necessary for ZTP to function.
+      Lastly the Config phase encompasses the rest of whatever
+      default/bootstrap config might include.";
+
+    type enumeration {
+      enum bootstrap-not-done {
+        description
+          "Bootstrap is not done";
+      }
+      enum bootstrap-done {
+        description
+          "Bootstrap is done";
+      }
+      enum mgmt-phase-in-progress {
+        description
+          "Management Phase is in progress";
+      }
+      enum mgmt-phase-done {
+        description
+          "Management Phase is done";
+      }
+      enum mgmt-phase-failure {
+        description
+          "Management Phase has failed";
+      }
+      enum device-phase-in-progress {
+        description
+          "Device Phase is in progress";
+      }
+      enum device-phase-done {
+        description
+          "Device Phase is done";
+      }
+      enum device-phase-failure {
+        description
+          "Device Phase has failed";
+      }
+      enum defaults-phase-in-progress {
+        description
+          "Defaults Phase is in progress";
+      }
+      enum defaults-phase-done {
+        description
+          "Defaults Phase is done";
+      }
+      enum defaults-phase-failure {
+        description
+          "Defaults Phase has failed";
+      }
+      enum ztp-phase-in-progress {
+        description
+          "ZTP Phase is in progress";
+      }
+      enum ztp-phase-done {
+        description
+          "ZTP Phase is done.";
+      }
+      enum ztp-phase-failure {
+        description
+          "ZTP Phase has failed";
+      }
+      enum config-phase-in-progress {
+        description
+          "Config Phase is in progress";
+      }
+      enum config-phase-done {
+        description
+          "Config Phase is done";
+      }
+      enum config-phase-failure {
+        description
+          "Config Phase has failed";
+      }
+      enum golden-config-bootstrap-done {
+        description
+          "Bootstrap with Golden Config is done";
+      }
+      enum golden-config-bootstrap-failure {
+        description
+          "Bootstrap with Golden Config has failed";
+      }
+    }
+  }
+
+  typedef health-severity {
+     type enumeration {
+        enum normal {
+           description
+               "Normal health state, operating as expected";
+        }
+        enum warning {
+           description
+               "Potentially service affecting health state";
+        }
+        enum fault {
+           description
+               "Service affecting health state";
+        }
+     }
+  }
+
+  typedef baud-rate {
+    description
+      "This enumeration describes the supported values of baud-rates.";
+     type enumeration {
+        enum 9600 {
+           description
+             "9600 bits per second.";
+        }
+        enum 14400 {
+           description
+             "14400 bits per second.";
+        }
+        enum 19200 {
+           description
+             "19200 bits per second.";
+        }
+        enum 38400 {
+           description
+             "38400 bits per second.";
+        }
+        enum 57600 {
+           description
+             "57600 bits per second.";
+        }
+        enum 115200 {
+           description
+             "115200 bits per second.";
+        }
+        enum 128000 {
+           description
+             "128000 bits per second.";
+        }
+        enum 256000 {
+           description
+             "256000 bits per second.";
+        }
+     }
+  }
+
+  typedef system-restart-type {
+    description
+      "This enumeration describes the supported values of system-restart";
+
+    type enumeration {
+      enum warm {
+        description
+          "warm system reboot.";
+      }
+    }
+  }
+
+  grouping bootstrap-event-grouping {
+    leaf subsystem {
+      description
+        "Name of the subsystem running bootstrap.";
+      type string;
+    }
+
+    leaf status {
+      description
+        "Status of bootstrap.";
+      type bootstrap-status;
+    }
+  }
+
+  /*
+   * Configuration data nodes
+   */
+  augment /sys:system/sys:config{
+    description
+      "Configuration of the system and its properties.";
+    
+    leaf description {
+      type string {
+         length "1..4096";
+      }
+      description
+         "System description";
+    }
+ 
+    leaf serial-baud-rate {
+      type baud-rate;
+      units "bits per second";
+      description
+         "The baud-rate value for serial console";
+    }
+    
+    leaf contact {
+      type string {
+         length "1..4096";
+      }
+      default "Customer Support, Ciena";
+      description
+        "The administrator contact information for the system.
+
+         A server implementation MAY map this leaf to the sysContact
+         MIB object.  Such an implementation needs to use some
+         mechanism to handle the differences in size and characters
+         allowed between this leaf and sysContact.  The definition of
+         such a mechanism is outside the scope of this document.";
+      reference
+        "RFC 3418: Management Information Base (MIB) for the
+                   Simple Network Management Protocol (SNMP)
+                   SNMPv2-MIB.sysContact";
+    }
+
+    leaf location {
+      type string {
+         length "1..4096";
+      }
+      default "Not Specified";
+      description
+        "The system location.
+
+         A server implementation MAY map this leaf to the sysLocation
+         MIB object.  Such an implementation needs to use some
+         mechanism to handle the differences in size and characters
+         allowed between this leaf and sysLocation.  The definition
+         of such a mechanism is outside the scope of this document.";
+      reference
+        "RFC 3418: Management Information Base (MIB) for the
+                   Simple Network Management Protocol (SNMP)
+                   SNMPv2-MIB.sysLocation";
+    }
+  }
+
+  augment /sys:system/sys:state {
+    leaf uptime {
+      type uint64;
+      units "seconds";
+      description
+        "The system uptime in seconds";
+    }
+    container bootstrap {
+      list bootstrap-status {
+        key "subsystem";
+        uses bootstrap-event-grouping;
+      }
+    }
+    container core-file-status {
+      leaf core-files-present {
+        type boolean;
+        description
+          "Indicates whether or not core crash files are present in the system.";
+      }
+    }
+    container system-last-reset-reasons {
+      description
+        "Provides reset history";
+      list reset-reason {
+        key "reset-instance-id";
+        leaf reset-instance-id {
+          type uint8;
+          description
+            "Instance identifier for list reset-reason.";
+        }
+        leaf boot-up-time {
+          type yang:date-and-time;
+          description
+            "The time at which system resumed operation after a reset event.";
+        }
+        leaf reset-time {
+          type yang:date-and-time;
+          description
+            "The time at which the system was reset. Not all reset triggers will have a reset-time timestamp.";
+        }
+        leaf reason {
+          type string;
+          description
+            "Reason for this system reset event.";
+        }
+      }
+    }
+
+    container security-mode {
+      description
+        "Provides information whether system is set in enhanced or normal security mode ";
+      leaf system-security-mode {
+        type enumeration {
+           enum enhanced-security {
+              description
+                 "System is configured in enhanced security mode";
+           }
+           enum normal {
+              description
+                 "System is configured in normal security mode";
+           }
+        }
+        description
+          "Provides the security mode of the system.";
+      }
+    }
+
+    leaf serial-baud-rate {
+      type baud-rate;
+      units "bits per second";
+      description
+         "The baud-rate value for serial console";
+    }
+  }
+  container reset-to-user-config-status {
+     config false;
+     description
+        "Status of the last reset-to-user-config operation";
+     leaf filename {
+        type ywt:NcxFileName;
+        description
+           "File name of the user-config to reset to";
+     }
+     leaf status {
+        type rtuc-status-enum;
+        description
+           "Status of reset-to-user-config operation";
+     }
+     list error-message {
+        when "../status = 'rtuc-failed'";
+        key "error-index";
+        leaf error-index {
+            type uint8;
+            description
+                "Error index indicates the index of the error.";
+        }
+        leaf error-tag {
+            type string;
+            description
+               "Error tag identifies the error condition that 
+                resulted in RTUC failure";
+        }
+        leaf error-type {
+            type string;
+            description
+               "Error type identifies the specific error type 
+                for RTUC failure, if one exists";
+       }
+       leaf error-path {
+            type yang:xpath1.0;
+            description
+               "Error path contains the absolute XPath of the node
+                that is responsible for RTUC failure";
+        }
+        leaf error-message {
+            type string;
+            description
+               "Error message contains description of the
+                error condition";
+        }
+     }
+  }
+
+  container system-health {
+     config false;
+     description
+        "System health information";
+     leaf system-state {
+        type health-severity;
+        description
+           "Overall system health representing the most
+           severe health-report severity value.";
+     }
+     list health-report {
+        key component;
+        description
+           "Listing of zero or more health report items.";
+        leaf component {
+           type string;
+           description
+              "System component that subject of this health report.";
+        }
+        leaf severity {
+           type health-severity;
+           description
+              "Severity of the item reported in this health report list entry.";
+        }
+        leaf report {
+           type string;
+           description
+              "Health report of this health report list entry.";
+        }
+     }
+  }
+
+  rpc set-current-datetime {
+    nacm:default-deny-all;
+    description
+      "Set the /system-state/clock/current-datetime leaf
+       to the specified value.
+
+       If the system is using NTP (i.e., /system/ntp/enabled
+       is set to 'true'), then this operation will fail with
+       error-tag 'operation-failed' and error-app-tag value of
+       'ntp-active'.";
+    input {
+      leaf current-datetime {
+        type yang:date-and-time;
+        mandatory true;
+        description
+          "The current system date and time.";
+      }
+    }
+  }
+
+  rpc system-restart {
+    nacm:default-deny-all;
+    description
+      "Request that the entire system be restarted immediately.
+       A server SHOULD send an rpc reply to the client before
+       restarting the system.";
+    input {
+      leaf type {
+        type system-restart-type;
+        description
+           "System restart type.";
+      }
+    }
+  }
+
+  rpc reset-to-factory-defaults {
+    nacm:default-deny-all;
+    description
+       "Reset system to factory default configuration. By default
+        system will be brought to boot strap configuration where
+        ZTP can start again";
+  }
+
+  rpc reset-to-user-config {
+     nacm:default-deny-all;
+     description
+        "Reset system to a saved configuration on the device.";
+     input {
+         leaf filename {
+            type ywt:NcxFileName;
+            mandatory true;
+            description
+               "File name of the user-config to reset to. A simple 
+                identifier name is expected with no directory 
+                specifications (e.g., 'backup1').";
+        }
+     }
+     output {
+        leaf status {
+            type rtuc-status-enum;
+            description
+               "Status of reset-to-user-config operation";
+        }
+     }
+  }
+
+  rpc backup-golden-config {
+    nacm:default-deny-all;
+    description
+      "Takes a golden configuration backup. This backup is used
+       when reset-to-golden-config is triggered.";
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of backup-golden-config operation.";
+      }
+    }
+  }
+
+  rpc delete-golden-config {
+    nacm:default-deny-all;
+    description
+      "Delete the golden configuration backup.";
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of delete-golden-config operation.";
+      }
+    }
+  }
+
+  rpc reset-to-golden-config {
+    nacm:default-deny-all;
+    description
+       "Reset system to the golden configuration. The
+        system may engage in ZTP, depending on the contents
+        of the golden configuration being restored.";
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of reset-to-golden-config operation.";
+      }
+    }
+  }
+
+  notification system-restart-notification {
+     description
+        "System restart notification";
+     
+     leaf restart-reason {
+        description
+           "Reason for restart";
+        type string;
+     }
+
+     leaf restart-type {
+        type enumeration {
+           enum power-cycle {
+              description
+                 "Device power cycle";
+           }
+           enum reset-to-factory-defaults {
+              description
+                 "Reset to factory default";
+           }
+           enum reset-to-golden-config {
+              description
+                 "Reset to golden config";
+           }
+           enum warm-reboot {
+              description
+                 "Warm reboot";
+           }
+        }
+     }
+  }
+
+  notification hostname-change {
+     description
+        "Host name change notification";
+
+     leaf old-name {
+        description
+           "Old host name";
+        type string;
+     }
+
+     leaf new-name {
+        description
+           "New host name";
+        type string;
+     }
+  }
+
+  notification clock-update {
+     description
+        "System clock update";
+
+     leaf datetime {
+        description
+           "Configured date and time";
+        type yang:date-and-time;
+     }
+  }
+
+  notification bootstrap-event {
+    description
+      "Bootstrap event notifications.";
+    uses bootstrap-event-grouping;
+  }
+
+  notification rtuc-event {
+     description
+        "Reset to user config event notification.";
+     leaf status {
+        description
+           "Status of reset to user config event notification.";
+        type rtuc-status-enum;
+     }
+     leaf filename {
+        description
+           "Name of the rtuc file.";
+        type ywt:NcxFileName;
+      }
+  }
+
+  notification database-mismatch {
+     description
+        "Front end and back end database mismatch notification";
+     leaf mismatch-status {
+         description
+            "Status of database mismatch";
+         type enumeration {
+            enum mismatch-present {
+               description
+                  "Databases are in mismatched state";
+            }
+            enum mismatch-cleared {
+               description
+                  "Databases are in synced state";
+            }
+         }
+     }
+  }
+
+}

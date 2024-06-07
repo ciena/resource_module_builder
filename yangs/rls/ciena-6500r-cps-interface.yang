@@ -1,0 +1,145 @@
+module ciena-6500r-cps-interface {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-cps-interface";
+  prefix cpsinterface;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's interface to channnel provision service interface.";
+
+  revision 2022-11-25 {
+    description
+      "Adding low-freq-deadband and high-freq-deadband to the channel-provisioning rpc input";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2022-09-19 {
+    description
+      "Adding network-id to the channel-provisioning rpc input";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2022-07-13 {
+    description
+      "Adding link-trail to the channel-provisioning rpc output";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-11-17 {
+    description
+      "Initial revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  rpc channel-provisioning {
+    input {
+      leaf from {
+        type instance-identifier;
+        mandatory true;
+        description
+          "This identifies the From port of a path.";
+      }
+      leaf to {
+        type instance-identifier;
+        mandatory true;
+        description
+          "This identifies the To port of a path.";
+      }
+      leaf owner {
+        type string;
+        mandatory true;
+        description
+          "This identifies the owner of mc/nmc.";
+      }
+      leaf action {
+        type ciena-common-yang:yang-action;
+        mandatory true;
+        description
+          "This identifies whether it's a create or delete action.";
+      }
+      leaf spectral-width {
+        type common-types:frequency;
+        description
+          "This identifies Spectral width of each network media channel.";
+      }
+      leaf center-freq {
+        type common-types:frequency;
+        description
+          "This identifies Center frequency of the network media channel.";
+      }
+      leaf low-freq-deadband {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Lower deadband of the created MCs.";
+      }
+      leaf high-freq-deadband {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Upper deadband of the created MCs.";
+      }
+      list transits {
+        description
+          "List of transit points the channel must traverse";
+        key "transit";
+        leaf transit {
+          type instance-identifier;
+          description
+            "The channel must transit this slot or port identifier";
+        }
+      }
+      leaf network-id {
+        type string;
+        description
+          "This identifies the network unique identifier of the network media channel.";
+      }
+    }
+    output {
+      leaf mc-path-name {
+        type string;
+        description
+          "Name of created mc-path";
+      }
+      leaf nmc-path-name {
+        type string;
+        description
+          "Name of created nmc-path";
+      }
+      list link-trail {
+        description
+          "List of ordered links of the created channel path";
+        key "link";
+        leaf link {
+          type instance-identifier;
+          description
+            "Link identifier";
+        }
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

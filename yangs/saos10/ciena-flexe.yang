@@ -1,0 +1,1700 @@
+module ciena-flexe {
+   namespace "http://www.ciena.com/ns/yang/ciena-flexe";
+   prefix "ciena-flexe";
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   import ciena-openconfig-interfaces {
+      prefix cn-oc-if;
+   }
+
+   import ciena-types {
+     prefix ciena;
+   }
+
+   import ciena-packet-typedefs {
+     prefix cntypes;
+   }
+
+   import ciena-packet-ptp {
+      prefix cn-pkt-ptp;
+   }
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module contains Ciena's data definition for the
+      management of FlexE related parameters.
+
+      Copyright (c) 2020-2022 Ciena Corporation.  All rights
+      reserved.
+
+      All information and intellectual property contained in this
+      YANG module (Specification) is, and remains the property
+      of Ciena Corporation. Ciena retains all title and ownership
+      in the Specification, including any revisions.
+
+      Ciena grants all interested parties that access the
+      Specification with the intent to use or distribute ('you') a
+      non-exclusive, no-cost license to use and distribute
+      unmodified copies of the Specification solely in connection
+      with the management of Ciena products sold by or on
+      behalf of Ciena, provided this copyright notice and license
+      appear on all copies. Ciena may rescind or modify this
+      license at any time.
+
+      This Specification is supplied 'as is', and Ciena makes no
+      warranty, either express or implied, as to the use, operation,
+      condition, or performance of the Specification. You agree
+      that Ciena has no liability for your use of the Specification.";
+
+   revision "2023-07-19" {
+      description
+         "Add FlexE feature declarations.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   revision "2023-06-06" {
+      description
+         "Update FlexE Protection Profile to restrict the permissible reversion types
+          and protection modes.
+          Update FlexE channel status counters.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   revision "2022-08-16" {
+      description
+         "Expanded list of FlexE Protection event types.
+          Simplification and consolidation of leaves for FlexE Native Protection.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   revision "2022-04-26" {
+      description
+         "Updates to add FlexE Native Protection.
+          Added FlexE port and group oper state notifications.
+          Added SC-Bit to FlexE Group.
+          Updated SC-Bit default status to True.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1
+          ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   revision "2021-02-07" {
+      description
+         "Following changes have been added.
+            - Addition of FlexE port alarm status.
+            - Addition of FlexE group and FlexE port notifications.
+            - Addition of min-elements restriction for FlexE phys.
+            - change of L2-L3-mapped to L2-mapped";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1";
+   }
+
+   revision "2020-02-07" {
+      description
+         "Initial Version.";
+      reference
+         "OIF Implementation Agreement Flex Ethernet 2.1";
+   }
+
+   feature flexe {
+      description
+         "Ciena's data definition for the management of FlexE related parameters.";
+   }
+
+   /*
+    * typedefs
+    */
+
+   typedef name-string {
+      type string {
+         length "1..45";
+      }
+      description
+         "A text string of up to 45 characters.";
+   }
+
+   typedef flexe-port-ref {
+      type leafref {
+         path
+         "/ciena-flexe:flexe-ports/ciena-flexe:flexe-port/ciena-flexe:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          configured flexe ports.";
+   }
+
+   typedef flexe-group-ref {
+      type leafref {
+         path
+         "/ciena-flexe:flexe-groups/ciena-flexe:flexe-group/ciena-flexe:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          configured flexe groups.";
+   }
+
+   typedef flexe-channel-ref {
+      type leafref {
+         path "/ciena-flexe:flexe-channels/ciena-flexe:flexe-channel/ciena-flexe:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          configured flexe channels.";
+   }
+
+   typedef flexe-protection-group-ref {
+      type leafref {
+         path "/ciena-flexe:flexe-protection-groups/ciena-flexe:flexe-protection-group/ciena-flexe:name";
+      }
+      description
+         "This type is used by data models that need to reference configured FlexE protection groups.";
+   }
+
+   typedef flexe-protection-profile-ref {
+      type leafref {
+         path "/ciena-flexe:flexe-protection-profiles/ciena-flexe:flexe-protection-profile/ciena-flexe:name";
+      }
+      description
+         "This type is used by data models that need to reference configured FlexE protection profiles.";
+   }
+
+   typedef flexe-bas-oam-ref {
+      type leafref {
+         path "/ciena-flexe:flexe-bas-oams/ciena-flexe:flexe-bas-oam/ciena-flexe:name";
+      }
+      description
+         "This type is used by data models that need to reference configured FlexE BAS OAMs.";
+   }
+
+   typedef flexe-port-event-type {
+      type enumeration {
+         enum flexe-calendar-A-mismatch {
+            description
+               "FlexE group calendar A mismatch";
+         }
+
+         enum flexe-calendar-B-mismatch {
+            description
+               "FlexE group calendar B mismatch";
+         }
+
+         enum group-id-mismatch {
+            description
+               "FlexE group-ID mismatch alarm";
+         }
+
+         enum phy-id-mismatch {
+            description
+               "FlexE PHY ID mismatch";
+         }
+
+         enum loss-of-oh-frame {
+            description
+               "Loss of overhead frame error";
+         }
+
+         enum loss-of-oh-multi-frame {
+            description
+               "Loss of overhead multi frame error";
+         }
+
+         enum c-bit-error {
+            description
+               "FlexE overhead has C-bit error";
+         }
+
+         enum crc-error {
+            description
+               "FlexE overhead CRC-16 error";
+         }
+
+         enum remote-phy-failure-error {
+            description
+               "Remote PHY failure error in FlexE overhead";
+         }
+
+         enum oh-block-1-alarm {
+            description
+               "Block 1 error in FlexE overhead";
+         }
+
+         enum sync-config-mismatch-alarm {
+            description
+               "Synchronization configuration mismatch alarm";
+         }
+      }
+      description
+         "A generic FlexE port event type describing the type of events/notifications.";
+   }
+
+   typedef flexe-group-event-type {
+      type enumeration {
+         enum phy-map-mismatch {
+            description
+               "FlexE PHY map mismatch";
+         }
+
+         enum group-deskew {
+            description
+               "FlexE group deskew error";
+         }
+
+         enum active-calendar-mismatch {
+            description
+               "Active FlexE calendar mismatch";
+         }
+      }
+      description
+         "A generic FlexE group event type describing the type of events/notifications.";
+   }
+
+   typedef flexe-bas-oam-event-type {
+      type enumeration {
+         enum bas-oam-los {
+            description
+               "FlexE BAS (basic code block) OAM loss of signal";
+         }
+         enum bas-oam-remote-fault {
+            description
+               "FlexE BAS (basic code block) OAM remote fault";
+         }
+         enum bas-oam-local-fault {
+            description
+               "FlexE BAS (basic code block) OAM local fault";
+         }
+         enum bas-oam-period-mismatch {
+            description
+               "FlexE BAS (basic code block) OAM period mismatch";
+         }
+         enum bas-oam-crc {
+            description
+               "FlexE BAS (basic code block) OAM CRC";
+         }
+         enum bas-oam-rdi {
+            description
+               "FlexE BAS (basic code block) OAM RDI";
+         }
+         enum bas-oam-cs-lf {
+            description
+               "FlexE BAS (basic code block) OAM client signal local fault";
+         }
+         enum bas-oam-cs-rf {
+            description
+               "FlexE BAS (basic code block) OAM client signal remote fault";
+         }
+      }
+      description
+         "A generic FlexE BAS (basic code block) OAM event type describing the type of events/notifications.";
+   }
+
+   typedef flexe-protection-group-event-type {
+      type enumeration {
+         enum protection-switch {
+            description
+               "FlexE Protection Group protection switch.";
+         }
+         enum no-active-channel {
+            description
+               "Both the working channel and the protecting channel
+                on the FlexE Protection Group are inoperative.";
+         }
+         enum protection-mode-mismatch {
+            description
+               "Locally configured FlexE Protection mode does not 
+                match that received through APS messages";
+         }
+         enum channel-mismatch {
+            description
+               "Working/Protection channel configuration mismatch.";
+         }
+         enum no-response {
+            description
+               "No response to bridge request within 50 ms.";
+         }
+         enum aps-loss {
+            description
+               "No APS packets received on the protection channel
+                and no other defect is detected.";
+         }
+      }
+      description
+         "A generic FlexE Protection Group event type describing the type of events/notifications.";
+   }
+
+   typedef reversion-type {
+      type enumeration {
+         enum revertive {
+            description
+            "Represents revertive mode operation of a Flexe Protection group.";
+         }
+         enum non-revertive {
+            description
+            "Represents non-revertive mode operation of a Flexe Protection group.";
+         }
+      }
+      description
+         "This typedef defines reversion modes for FlexE Native Protection.";
+      reference
+         "ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   typedef protection-type {
+      type enumeration {
+         enum 1-plus-1-unidirectional {
+            description
+            "Represents 1+1 unidirectional protection configuration for a Flexe Protection group.";
+         }
+         enum 1-plus-1-bidirectional {
+            description
+            "Represents 1+1 bidirectional protection configuration for a Flexe Protection group.";
+         }
+         enum 1-to-1 {
+            description
+            "Represents 1:1 protection configuration for a Flexe Protection group.";
+         }
+         enum 1-to-n {
+            description
+            "Represents 1:n protection configuration for a Flexe Protection group.";
+         }
+      }
+      description
+         "This typedef defines protection modes for FlexE Native Protection.";
+      reference
+         "ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   typedef protection-state-type {
+      type enumeration {
+         enum no-request-working {
+            description
+            "Represents no request (normal state) with the working protection channel active.";
+         }
+         enum no-request-protecting {
+            description
+            "Represents no request (normal state) with the protecting protection channel active.";
+         }
+         enum signal-failure {
+            description
+            "Represents signal-failure on working protection channel.";
+         }
+         enum signal-failure-on-protecting {
+            description
+            "Represents signal-failure on protecting protection channel.";
+         }
+         enum forced-switch {
+            description
+            "Represents forced switch to the protecting protection channel.";
+         }
+         enum manual-switch {
+            description
+            "Represents manual switch to the working protection channel.";
+         }
+         enum do-not-revert {
+            description
+            "Represents do-not-revert (non-revertive).";
+         }
+         enum invalid {
+            description
+            "Represents invalid protection state.";
+         }
+      }
+      description
+         "This typedef defines protection states for FlexE Native Protection.";
+      reference
+         "ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   typedef protection-remote-request-type {
+      type enumeration {
+         enum no-request-working {
+            description
+            "Represents no request with the working protection channel active.";
+         }
+         enum no-request-protecting {
+            description
+            "Represents no request with the protecting protection channel active.";
+         }
+         enum signal-failure {
+            description
+            "Represents signal-failure on working protection channel.";
+         }
+         enum signal-failure-on-protecting {
+            description
+            "Represents signal-failure on protecting protection channel.";
+         }
+         enum forced-switch {
+            description
+            "Represents forced switch to the protecting protection channel.";
+         }
+         enum manual-switch {
+            description
+            "Represents manual switch to the working protection channel.";
+         }
+         enum do-not-revert {
+            description
+            "Represents do-not-revert (non-revertive).";
+         }
+         enum invalid {
+            description
+            "Represents invalid remote request.";
+         }
+      }
+      description
+         "This typedef defines remote requests for FlexE Native Protection.";
+      reference
+         "ITU G.8031 : Ethernet linear protection switching
+          ITU G.8312 : Interfaces for the metro transport network";
+   }
+
+   /*
+    * FlexE Config Model
+    */
+   grouping flexe-channel-slot {
+      description
+         "Slots allocated for a FlexE channel.";
+
+      leaf phy-number-in-group {
+         type leafref {
+            path
+            "/ciena-flexe:flexe-groups/ciena-flexe:flexe-group[name=current()/../../group-name]" +
+            "/ciena-flexe:flexe-phys/ciena-flexe:phy-number-in-group";
+         }
+         description
+            "PHY number index from the list of PHYs associated to
+            the FlexE group.
+
+            Refer to the clause 6.1 in FlexE IA 2.1.
+            For 100GBASE-R, the FlexE PHY num and the 100G
+            FlexE instance num are the same and in the range
+            [1-254]; For 200GBASE-R, each PHY num is in the
+            range [1-126]. For 400GBASE-R, each PHY num is
+            in the range [1-62]. For 50GBASE-R, each PHY num is
+            in the range [1-126].";
+      }
+
+      leaf slot-id {
+         type uint32 {
+            range "1 .. 80";
+         }
+         description
+            "Slot number within the list of slots associated to the PHY.
+            Ex: For 100G PHY range is [1..20]
+                For 200G PHY range is [1..40]
+                For 400G PHY range is [1..80]";
+      }
+   }
+
+   grouping flexe-group-slot {
+      description
+         "Slots allocated for a FlexE channel.";
+
+      leaf phy-number-in-group {
+         type uint32 {
+            range "1 .. 254";
+         }
+         description
+            "PHY number the slot resides in.";
+      }
+
+      leaf slot-id {
+         type uint32 {
+            range "1 .. 80";
+         }
+         description
+            "Slot number within the PHY.";
+      }
+
+      leaf associated-flexe-channel {
+         type name-string;
+         description
+            "Name of FlexE channel this slot is associated to.";
+      }
+   }
+
+   container flexe-ports {
+      if-feature flexe;
+      description
+         "FlexE port configurations";
+
+      list flexe-port {
+         key "name";
+         description
+            "List of FlexE ports.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for FlexE port.";
+         }
+
+         leaf admin-state {
+            type ciena:admin-state;
+            default enabled;
+            description
+               "Overall port admin state.";
+         }
+
+         leaf ptp-id {
+            type leafref {
+                path "/cn-pkt-ptp:ptps/cn-pkt-ptp:ptp/cn-pkt-ptp:ptp-id";
+            }
+            mandatory true;
+            description
+               "Unique, access identifier string of the PTP (e.g., '1/1').";
+         }
+
+         leaf port-speed {
+            type enumeration {
+               enum 50Gb {
+                  description
+                     "50 Gbps FlexE";
+               }
+               enum 100Gb {
+                  description
+                     "100 Gbps FlexE";
+               }
+               enum 200Gb {
+                  description
+                     "200 Gbps FlexE";
+               }
+               enum 400Gb {
+                  description
+                     "400 Gbps FlexE";
+               }
+            }
+            mandatory true;
+            description
+               "FlexE port speed.";
+         }
+
+         leaf forward-error-correction {
+            type cntypes:ettp-fec-enum;
+            default auto;
+            description
+               "Forward error correction";
+         }
+      }
+   }
+
+   container flexe-groups {
+      if-feature flexe;
+      description
+         "FlexE group configurations";
+
+      list flexe-group {
+         key "name";
+         description
+             "List of FlexE groups.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for FlexE group.";
+         }
+
+         leaf admin-state {
+            type ciena:admin-state;
+            default enabled;
+            description
+               "Overall FlexE group admin state.";
+         }
+
+         leaf group-number {
+            type uint32 {
+               range "1..254";
+            }
+            mandatory true;
+            description
+              "FlexE group number associated to the FlexE group";
+         }
+
+         leaf calendar-slot-granularity {
+            type enumeration {
+               enum slot-5G {
+                  value 1;
+                  description
+                     "Calendar slot is of 5G granularity";
+               }
+               enum slot-25G {
+                  value 2;
+                  description
+                     "Calendar slot is of 25G granularity";
+               }
+            }
+            default slot-5G;
+            description
+               "The granularity of calendar slot is 5G or 25G";
+            reference
+               "Refer to the clause 6.8 in OIF FlexE IA 2.1";
+         }
+
+         leaf phy-type {
+            type enumeration {
+               enum flexe-phy-50GBASE-R {
+                  value 1;
+                  description
+                     "50GBASE-R PHY";
+               }
+               enum flexe-phy-100GBASE-R {
+                  value 2;
+                  description
+                     "100GBASE-R PHY";
+               }
+               enum flexe-phy-200GBASE-R {
+                  value 3;
+                  description
+                     "200GBASE-R PHY";
+               }
+               enum flexe-phy-400GBASE-R {
+                  value 4;
+                  description
+                     "400GBASE-R PHY";
+               }
+            }
+            mandatory true;
+            description
+               "Type of PHY used in the FlexE group, such as 50/100/200/400GBASE-R.
+                All PHYs in a FlexE group should be of same type";
+            reference
+               "OIF FlexE IA 2.1";
+         }
+
+         leaf calendar {
+            type enumeration {
+               enum calendar-A {
+                  value 0 ;
+                  description
+                  "Set the A calendar configuration.";
+               }
+               enum calendar-B {
+                  value 1 ;
+                  description
+                     "Set the B calendar configuration.";
+               }
+            }
+            default calendar-A;
+            description
+               "Calendar configuration used in FlexE Mux/Demux";
+         }
+
+         leaf calendar-protocol-enable {
+            type boolean;
+            default false;
+            description
+               "Whether calendar negotiation protocol is enabled or not.";
+            reference
+               "OIF Flex 2.1: Section 7.3.4";
+         }
+
+         leaf sc-bit-enable {
+            type boolean;
+            default true;
+            description
+               "When this field is set true, the FlexE SC bit is set to 1, 
+                otherwise the FlexeE SC bit is 0.";
+            reference
+               "OIF Flex 2.1: Section 7.3.5";
+         }
+
+         list flexe-phys {
+            key phy-number-in-group;
+            min-elements 1;
+            description
+               "List of the participating PHYs in a FlexE group";
+
+            leaf phy-number-in-group {
+               type uint32 {
+                  range "1 .. 254";
+               }
+               description
+                  "Refer to the clause 6.1 in FlexE IA 2.1.
+                  For 100GBASE-R, the FlexE PHY num and the 100G
+                  FlexE instance num are the same and in the range
+                  [1-254]; For 200GBASE-R, each PHY num is in the
+                  range [1-126]. For 400GBASE-R, each PHY num is
+                  in the range [1-62]. For 50GBASE-R, each PHY num is
+                  in the range [1-126]. PHY num configured in list of
+                  flexe-phys should be in ascending order.";
+            }
+
+            leaf local-interface {
+               type ciena-flexe:flexe-port-ref;
+               mandatory true;
+               description
+                  "Local FlexE port interface related to the current
+                  phy-number in a FlexE group.";
+            }
+         }
+      }
+   }
+
+   container flexe-channels {
+      if-feature flexe;
+      description
+         "FlexE channel configurations";
+
+      list flexe-channel {
+         key "name";
+         description
+             "List of FlexE channels.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for FlexE channel.";
+         }
+
+         leaf channel-number {
+            type uint32 {
+               range "1..65534";
+            }
+            mandatory true;
+            description
+               "Channel number associated to the FlexE channel.";
+         }
+
+         leaf group-name {
+            type ciena-flexe:flexe-group-ref;
+            mandatory true;
+            description
+               "Name of FlexE group to which this FlexE channel will be associated to.";
+         }
+
+         leaf channel-mapping {
+            type enumeration {
+               enum L1-mapped {
+                  value 1 ;
+                  description
+                     "L1 switching between faceplate ETTP and FlexE MAC ETTP at matched rate or
+                      2 FlexE channels.";
+               }
+               enum L2-mapped {
+                  value 2 ;
+                  description
+                     "L2 forwarding between Logical port/flowpoints created over faceplate ETTPs/FlexE MAC ETTPs";
+               }
+            }
+            default L1-mapped;
+            description
+               "FlexE Datapath, traffic mapped at L1/L2/L3";
+         }
+
+         list calendar-A-slots-list {
+            key "phy-number-in-group slot-id";
+
+            description
+               "List of slots allocated on Calendar A for a FlexE channel.
+               Number of slots allocated for a FlexE channel is based on
+               the bandwidth allocated for it. Ex: For a system with
+               calendar slot granularity of 5G, a 10G FlexE channel
+               would be allocated 2 slots (10G/5G)";
+
+            uses flexe-channel-slot;
+         }
+
+         list calendar-B-slots-list {
+            key "phy-number-in-group slot-id";
+
+            description
+               "List of slots allocated on Calendar B for a FlexE channel.
+               Number of slots allocated for a FlexE channel is based on
+               the bandwidth allocated for it. Ex: For a system with
+               calendar slot granularity of 5G, a 10G FlexE-channel
+               would be allocated 2 slots (10G/5G)";
+
+            uses flexe-channel-slot;
+         }
+
+         leaf oam-bypass-enable {
+            type boolean;
+            default false;
+            description
+               "Enable OAM bypass.";
+         }
+
+         leaf bas-oam {
+            type ciena-flexe:flexe-bas-oam-ref;
+               description
+                  "BAS (basic code block) OAM related to FlexE channel.";
+         }
+      }
+   }
+
+   container flexe-cross-connects {
+      if-feature flexe;
+      description
+         "FlexE cross connect configurations";
+
+      list flexe-cross-connect {
+         key "name";
+         description
+             "List of FlexE cross-connects.
+              FlexE cross-connect can be between Faceplate standard ethernet ETTP
+              and FlexE MAC ETTP or two FlexE channels";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for FlexE cross-connect.";
+         }
+
+         choice end-point-a-type {
+            mandatory true;
+            description
+               "Type of cross-connect member for end-point-a";
+
+            case ettp {
+               leaf ettp-end-point-a {
+                  type leafref {
+                     path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                  }
+                  must "/oc-if:interfaces/oc-if:interface[name = current()]" +
+                       "/oc-if:config/cn-oc-if:type = 'ettp'" {
+                          error-message
+                             "Referenced interface must be of type 'ettp'.";
+                  }
+                  description
+                     "ETTP endpoint.";
+               }
+            }
+            case flexe-channel {
+               leaf flexe-channel-end-point-a {
+                  type ciena-flexe:flexe-channel-ref;
+                  description
+                     "FlexE channel endpoint.";
+               }
+            }
+            case protection-group {
+               leaf protection-group-end-point-a {
+                  type ciena-flexe:flexe-protection-group-ref;
+                  description
+                     "FlexE protection group endpoint.";
+               }
+            }
+         }
+
+         choice end-point-b-type {
+            mandatory true;
+            description
+               "Type of cross-connect member for end-point-b";
+
+            case ettp {
+               leaf ettp-end-point-b {
+                  type leafref {
+                     path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                  }
+                  must "/oc-if:interfaces/oc-if:interface[name = current()]" +
+                       "/oc-if:config/cn-oc-if:type = 'ettp'" {
+                          error-message
+                             "Referenced interface must be of type 'ettp'.";
+                  }
+                  description
+                     "ETTP endpoint.";
+               }
+            }
+            case flexe-channel {
+               leaf flexe-channel-end-point-b {
+                  type ciena-flexe:flexe-channel-ref;
+                  description
+                     "FlexE channel endpoint.";
+               }
+            }
+            case protection-group {
+               leaf protection-group-end-point-b {
+                  type ciena-flexe:flexe-protection-group-ref;
+                  description
+                     "FlexE protection group endpoint.";
+               }
+            }
+         }
+      }
+   }
+
+   /**************************************************************************
+    * Containers for FlexE Native Protection
+    **************************************************************************/
+
+   container flexe-protection-profiles {
+      if-feature flexe;
+      description
+         "FlexE Protection Profile configurations";
+
+      list flexe-protection-profile {
+         key "name";
+         description
+            "List of FlexE Protection Profiles.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for a FlexE Protection Profile.";
+         }
+
+         leaf reversion-mode {
+            type reversion-type;
+            must ". = 'non-revertive'" {
+               error-message "reversion-mode must be non-revertive.";
+            }
+            default "non-revertive";
+            description
+               "Configuration of reversion capabilities of this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching
+                ITU G.8312 : Interfaces for the metro transport network";
+         }
+
+         leaf protection-mode {
+            type protection-type;
+            must ". = '1-plus-1-unidirectional' or . = '1-plus-1-bidirectional'" {
+               error-message "protection-mode must be '1-plus-1-unidirectional' or '1-plus-1-bidirectional'";
+            }
+            default "1-plus-1-unidirectional";
+            description
+               "Configuration of protection mode of this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching
+                ITU G.8312 : Interfaces for the metro transport network";
+         }
+
+         leaf hold-off-timer {
+            type int8 {
+              range "0..100";
+            }
+            units milliseconds;
+            default "0";
+            description
+               "Time to delay before beginning a protection switching action on
+                this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching, Section 11.12";
+         }
+
+         leaf guard-timer {
+            type int16 {
+              range "0..1000";
+            }
+            units milliseconds;
+            default "10";
+            description
+               "Time to pause before resuming processing incoming frames after a
+                switching action on this FlexE Protection group.";
+         }
+
+      }
+   }
+
+   container flexe-bas-oams {
+      if-feature flexe;
+      description
+         "FlexE BAS (basic code block) OAM configurations";
+
+      list flexe-bas-oam {
+         key "name";
+         description
+            "List of FlexE BAS (basic code block) OAMs.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for a FlexE BAS (basic code block) OAM.";
+         }
+
+         leaf tx-enable {
+            type boolean;
+            default true;
+            description
+               "Enable transmission.";
+         }
+
+         leaf tx-period {
+            type enumeration {
+               enum 16K {
+                  description
+                     "16K transmission period";
+               }
+               enum 32K {
+                  description
+                     "32K transmission period";
+               }
+               enum 64K {
+                  description
+                     "64K transmission period";
+               }
+               enum 512K {
+                  description
+                     "512K transmission period";
+               }
+            }
+            default 16K;
+            description
+               "Transmission period.";
+         }
+      }
+   }
+
+   container flexe-protection-groups {
+      if-feature flexe;
+      description
+         "FlexE protection groups configurations";
+
+      list flexe-protection-group {
+         key "name";
+         description
+            "List of FlexE protection groups.";
+
+         leaf name {
+            type name-string;
+            description
+               "Name for a FlexE protection group.";
+         }
+
+         leaf working-channel {
+            type ciena-flexe:flexe-channel-ref;
+            mandatory true;
+            description
+               "Configuration of working channel on this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching
+                ITU G.8312 : Interfaces for the metro transport network";
+         }
+
+         leaf protection-channel {
+            type ciena-flexe:flexe-channel-ref;
+            mandatory true;
+            description
+               "Configuration of protection channel on this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching
+                ITU G.8312 : Interfaces for the metro transport network";
+         }
+
+         leaf protection-profile {
+            type ciena-flexe:flexe-protection-profile-ref;
+            mandatory true;
+            description
+               "Configuration of FlexE Protection Profile on this FlexE Protection group.";
+            reference
+               "ITU G.8031 : Ethernet linear protection switching
+                ITU G.8312 : Interfaces for the metro transport network";
+         }
+
+      }
+   }
+
+   grouping flexe-group-oh-status-grouping {
+      description
+         "FlexE group overhead status";
+
+      leaf flexe-calendar-A-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group calendar A mismatch";
+      }
+
+      leaf flexe-calendar-B-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group calendar B mismatch";
+      }
+
+      leaf active-calendar-mismatch {
+         type boolean;
+         default false;
+         description
+            "Active FlexE calendar mismatch";
+      }
+
+      leaf group-id-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group-ID mismatch alarm";
+      }
+
+      leaf group-deskew {
+         type boolean;
+         default false;
+         description
+            "FlexE group deskew error";
+      }
+
+      leaf phy-id-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE PHY ID mismatch";
+      }
+
+      leaf phy-map-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE PHY map mismatch";
+      }
+
+      leaf loss-of-oh-frame {
+         type boolean;
+         default false;
+         description
+            "Loss of overhead frame error";
+      }
+
+      leaf loss-of-oh-multi-frame {
+         type boolean;
+         default false;
+         description
+            "Loss of overhead multi frame error";
+      }
+
+      leaf c-bit-error {
+         type boolean;
+         default false;
+         description
+            "FlexE overhead has C-bit error";
+      }
+
+      leaf crc-error {
+         type boolean;
+         default false;
+         description
+            "FlexE overhead CRC-16 error";
+      }
+
+      leaf remote-phy-failure-error {
+         type boolean;
+         default false;
+         description
+            "Remote PHY failure error in FlexE overhead";
+      }
+
+      leaf sync-config-mismatch-error {
+         type boolean;
+         default false;
+         description
+            "Synchronization configuration mismatch error";
+      }
+
+      leaf oh-block-1-error {
+         type boolean;
+         default false;
+         description
+            "Overhead block 1 error in FlexE overhead";
+      }
+   }
+
+   grouping flexe-port-oh-status-grouping {
+      description
+         "FlexE group overhead status";
+
+      leaf phy-calendar-A-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group calendar A mismatch";
+      }
+
+      leaf phy-calendar-B-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group calendar B mismatch";
+      }
+
+      leaf phy-id-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE PHY ID mismatch";
+      }
+
+      leaf group-id-mismatch {
+         type boolean;
+         default false;
+         description
+            "FlexE group-ID mismatch alarm";
+      }
+
+      leaf loss-of-oh-frame {
+         type boolean;
+         default false;
+         description
+            "Loss of overhead frame error";
+      }
+
+      leaf loss-of-oh-multi-frame {
+         type boolean;
+         default false;
+         description
+            "Loss of overhead multi frame error";
+      }
+
+      leaf c-bit-error {
+         type boolean;
+         default false;
+         description
+            "FlexE overhead has C-bit error";
+      }
+
+      leaf crc-error {
+         type boolean;
+         default false;
+         description
+            "FlexE overhead CRC-16 error";
+      }
+
+      leaf remote-phy-failure-error {
+         type boolean;
+         default false;
+         description
+            "Remote PHY failure error in FlexE overhead";
+      }
+
+      leaf sync-config-mismatch-error {
+         type boolean;
+         default false;
+         description
+            "Synchronization configuration mismatch error";
+      }
+
+      leaf oh-block-1-error {
+         type boolean;
+         default false;
+         description
+            "Overhead block 1 error in FlexE overhead";
+      }
+   }
+
+   /*
+    * Operational data
+    */
+
+   container flexe-operational-state {
+      if-feature flexe;
+      config false;
+
+      description
+         "Operational data for FlexE.";
+
+      list flexe-port-status {
+         key "name";
+         description
+            "Operational status related to FlexE ports.";
+         leaf name {
+            type ciena-flexe:flexe-port-ref;
+            description
+               "Name for FlexE port.";
+         }
+         leaf oper-state {
+           type ciena:oper-state;
+           description
+            "Flexe port operational enable/disable.";
+         }
+         container flexe-port-oh-status {
+            description
+               "Overhead status related to FlexE port ";
+
+            uses flexe-port-oh-status-grouping;
+         }
+      }
+
+      list flexe-group-status {
+         key "name";
+         description
+            "Operational status related to FlexE group.";
+
+         leaf name {
+            type ciena-flexe:flexe-group-ref;
+            description
+               "Name for FlexE group.";
+         }
+
+         leaf flexe-group-oper-status {
+            type ciena:oper-state;
+            description
+               "Status for a FlexE group. If any PHY is in fault,
+               or any FlexE configuration is mismatched, the FlexE
+               group status is indicated in fault.";
+         }
+
+         leaf total-bandwidth {
+           type uint32;
+           description
+            "Total bandwidth of FlexE group in Gbps.";
+         }
+
+         leaf available-bandwidth {
+           type uint32;
+           description
+            "Available bandwidth of FlexE group in Gbps.";
+         }
+
+         leaf allocated-bandwidth {
+           type uint32;
+           description
+            "Bandwidth in Gbps allocated to channels associated
+            to the FlexE group in Gbps";
+         }
+
+         leaf total-slots {
+           type uint32;
+           description
+            "Total number of slots in FlexE group.";
+         }
+
+         leaf available-slots {
+           type uint32;
+           description
+            "Number of slots available in active calendar of FlexE group.";
+         }
+
+         leaf allocated-slots {
+           type uint32;
+           description
+            "Number of slots in use by FlexE channels associated to FlexE group.";
+         }
+
+         container flexe-group-oh-status {
+            description
+               "Overhead status related to FlexE group ";
+
+            uses flexe-group-oh-status-grouping;
+         }
+      }
+
+      list flexe-group-slot-map {
+         key "name";
+         description
+            "Operational status related to FlexE group.";
+
+         leaf name {
+            type ciena-flexe:flexe-group-ref;
+            description
+               "Name for FlexE group.";
+         }
+
+         list calendar-A-slot-map {
+            key "phy-number-in-group slot-id";
+
+            description
+               "FlexE channel mapping of Calendar-A slots on FlexE group.";
+
+            uses flexe-group-slot;
+         }
+
+         list calendar-B-slot-map {
+            key "phy-number-in-group slot-id";
+
+            description
+               "FlexE channel mapping of Calendar-B slots on FlexE group.";
+
+            uses flexe-group-slot;
+         }
+      }
+
+      list flexe-channel-status {
+         key "name";
+         description
+            "Operational status related to FlexE group.";
+
+         leaf name {
+            type ciena-flexe:flexe-channel-ref;
+            description
+               "Name for FlexE channel.";
+         }
+
+         leaf flexe-channel-oper-status {
+            type ciena:oper-state;
+            description
+               "Status for a FlexE channel.";
+         }
+
+         leaf active-bandwidth {
+            type uint32;
+            description
+               "Bandwidth used by FlexE channel.";
+         }
+
+         leaf in-pkts {
+            type yang:counter64;
+            description
+               "Number of inbound packets received on FlexE channel.";
+         }
+
+         leaf in-octets {
+            type yang:counter64;
+            description
+               "Number of inbound octets received on FlexE channel.";
+         }
+      }
+
+      list flexe-protection-group-status {
+         key "name";
+         description
+            "Operational status related to FlexE Protection Groups.";
+
+         leaf name {
+            type ciena-flexe:flexe-protection-group-ref;
+            description
+               "Name for FlexE Protection Group.";
+         }
+
+         leaf protection-state {
+            type ciena-flexe:protection-state-type;
+            description
+               "Protection state for this FlexE Protection Group.";
+         }
+
+         leaf rx-aps-counter {
+            type yang:counter64;
+            description
+               "Count of APS packets received.";
+         }
+
+         leaf tx-aps-counter {
+            type yang:counter64;
+            description
+               "Count of APS packets transmitted.";
+         }
+
+         leaf remote-aps-request {
+            type ciena-flexe:protection-remote-request-type;
+            description
+               "APS command received from the remote peer.";
+         }
+
+         leaf state-change-count {
+            type yang:counter64;
+            description
+               "Count of state change operations.";
+         }
+
+         leaf last-protection-switch {
+            type yang:date-and-time;
+            description
+            "Timestamp of last protection switch for this FlexE Protection Group.";
+         }
+      }
+
+      list flexe-bas-oam-status {
+         key "name";
+         description
+            "Operational status related to FlexE BAS (basic code block) OAMs.";
+
+         leaf name {
+            type ciena-flexe:flexe-bas-oam-ref;
+            description
+               "Name for FlexE BAS (basic code block) OAM.";
+         }
+
+         leaf flexe-bas-oam-oper-status {
+            type ciena:oper-state;
+            description
+               "Status for a FlexE BAS (basic code block) OAM.";
+         }
+
+         leaf rx-oam-count {
+            type yang:counter64;
+            description
+               "Count of OAM packets received.";
+         }
+
+         leaf rx-bas-oam-count {
+            type yang:counter64;
+            description
+               "Count of BAS (basic code block) OAM packets received.";
+         }
+      }
+   }
+
+   /*
+    * Notifications
+    */
+
+   notification flexe-port-oper-state-change {
+      description
+         "Generated when FlexE port oper status changes.";
+      leaf name {
+         type ciena-flexe:flexe-port-ref;
+         description
+            "Name of FlexE port.";
+      }
+      leaf oper-state {
+         type leafref {
+            path "/ciena-flexe:flexe-operational-state/ciena-flexe:flexe-port-status/ciena-flexe:oper-state";
+         }
+         description
+            "FlexE port oper status.";
+      }
+   }
+
+   notification flexe-group-oper-state-change {
+      description
+         "Generated when FlexE group oper status changes.";
+      leaf name {
+         type ciena-flexe:flexe-group-ref;
+         description
+            "Name of FlexE group.";
+      }
+      leaf oper-state {
+         type leafref {
+            path "/ciena-flexe:flexe-operational-state/ciena-flexe:flexe-group-status/ciena-flexe:flexe-group-oper-status";
+         }
+         description
+            "FlexE group oper status.";
+      }
+   }
+
+   notification flexe-port-alarm {
+      description
+         "Generated when an alarm condition is reached on FlexE port.";
+      leaf flexe-port-name {
+         type ciena-flexe:flexe-port-ref;
+         description
+            "Name of FlexE port.";
+      }
+      leaf alarm-type {
+         type ciena-flexe:flexe-port-event-type;
+         description
+            "Alarm type generating this notification.";
+      }
+   }
+
+   notification flexe-group-alarm {
+      description
+         "Generated when an alarm condition is reached on FlexE group.";
+      leaf flexe-group-name {
+         type ciena-flexe:flexe-group-ref;
+         description
+            "Name of FlexE group.";
+      }
+      leaf alarm-type {
+         type ciena-flexe:flexe-group-event-type;
+         description
+            "Alarm type generating this notification.";
+      }
+   }
+
+   notification flexe-bas-oam-alarm {
+      description
+         "Generated when an alarm condition is reached on a FlexE BAS (basic code block) OAM.";
+      leaf flexe-bas-oam-name {
+         type ciena-flexe:flexe-bas-oam-ref;
+         description
+            "Name of FlexE BAS (basic code block) OAM.";
+      }
+      leaf alarm-type {
+         type ciena-flexe:flexe-bas-oam-event-type;
+         description
+            "Alarm type generating this notification.";
+      }
+   }
+
+   notification flexe-protection-group-alarm {
+      description
+         "Generated when an alarm condition is reached on a FlexE Protection Group.";
+      leaf flexe-protection-group-name {
+         type ciena-flexe:flexe-protection-group-ref;
+         description
+            "Name of FlexE Protection Group.";
+      }
+      leaf alarm-type {
+         type ciena-flexe:flexe-protection-group-event-type;
+         description
+            "Alarm type generating this notification.";
+      }
+   }
+
+   /*
+    * RPC Operations
+    */
+   rpc flexe-protection-group-force-switch {
+     description
+       "Force switch to the protecting channel on a FlexE Protection Group.";
+     input {
+       leaf protection-group-name {
+         type flexe-protection-group-ref;
+         description
+           "Name of FlexE protection group.";
+       }
+     }
+     output {
+       leaf status {
+         type string;
+         description
+           "Status indicating whether the operation has succeeded.";
+       }
+     }
+   }
+
+   rpc flexe-protection-group-manual-switch {
+     description
+       "Force switch to the working channel on a FlexE Protection Group.";
+     input {
+       leaf protection-group-name {
+         type flexe-protection-group-ref;
+         description
+           "Name of Flexe protection group.";
+       }
+     }
+     output {
+       leaf status {
+         type string;
+         description
+           "Status indicating whether the operation has succeeded.";
+       }
+     }
+   }
+
+   rpc flexe-protection-group-clear {
+     description
+       "Clear the previous command on a FlexE Protection Group.";
+     input {
+       leaf protection-group-name {
+         type flexe-protection-group-ref;
+         description
+           "Name of FlexE protection-group.";
+       }
+     }
+     output {
+       leaf status {
+         type string;
+         description
+           "Status indicating whether the operation has succeeded.";
+       }
+     }
+   }
+
+}

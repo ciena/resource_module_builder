@@ -1,0 +1,1140 @@
+module ciena-waveserver-port {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-port";
+  prefix port;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines port data for the Waveserver. Ports are related to
+     both client and line and represent the port through which the line or
+     client signal travels. They are automatically created by the system. By
+     default, line ports are automatically mapped to client ports via services
+     and service-domains.";
+  
+  revision 2019-06-03 {
+    description
+      "Updated ports/properties/otn/conditioning-type to use common typedef.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  revision 2018-12-04 {
+    description
+      "Added 'connection-peer' list to the port and channel objects.
+       Added 'connection-state' to the port object for client ports.
+       Added 'maximum-bandwidth' and 'available-bandwidth' to the channel object.
+       Added 'link-state' for ethernet ports.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-05-31 {
+    description
+      "Added 'OTUk', 'OTUCn', and 'OTUCn-Flex' port types.
+       Obsoleted generic 'otn' port type.
+       Added 'OTUC5', 'OTUC6', 'OTUC7' port rates.
+       Updated range for 'channel-id' to accommodate up to 8 channels.
+       Deprecated 'forward-error-correction' on the port. Moved to PTP object.
+       Deprecated 'pre-fec-otu-sf-threshold', and 'pre-fec-otu-sd-threshold' on the port. Moved to PTP object.
+       Added support for OTN TTI sapi/dapi, tx-oper-actual, tx-oper-mode.
+       Added support for OTN TTI rx-sapi-hex, rx-dapi-hex, and rx-oper-hex strings.
+       Added 'waveserver-port-trace-copy-rx-to-exp' RPC.
+       Removed unused/unsupported 'capabilities' subcontainer.
+       Channel 'odu-termination' is a read-only attribute.
+       Added ncx:user-write to 'ports' and 'channels' lists.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  revision 2017-07-31 {
+    description
+      "Waveserver Platform Data Model
+      Migrated from Waveserver Classic R1.4 YANG model.
+      Updated namespace to 'ciena-waveserver'.
+      Changed 'ports' list key from integer to string type to accommodate '<slot>-<port>' format.
+      Added support for OTN and Ethernet port types.
+      Added support for ODU4 channel sub-objects.
+      Updated 'port-type' enum values and add 'port-rate' enum. Update 'port-speed' typedef.
+      Updated 'operational-state' enum values.
+      Rename 'description' to 'label'.
+      Added common and port-type-specific capabilities and properties containers, and move/rename some attributes.
+      Added finer granularity of 'conditioning-holdoff' values (10ms increments between 0-100ms).
+      Moved 'conditioning-type' and 'conditioning-holdoff' enums to ciena-waveserver-typedefs.yang
+      Removed 'xcvr-type' from properties.
+      Removed 'statistics' container and groupings.
+      Added support for otn trace attributes.";
+    reference "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef port-type-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Port type is unknown.";
+      }
+      enum "ethernet" {
+        description
+          "Port type is Ethernet.";
+      }
+      enum "otn" {
+        status obsolete;
+        description
+          "Port type is OTN. Replaced by OTUk, OTUCn, and OTUCn-Flex types.";
+      }
+      enum "OTUk" {
+        description
+          "Port type is OTUk.";
+      }
+      enum "OTUCn" {
+        description
+          "Port type is OTUCn.";
+      }
+      enum "OTUCn-Flex" {
+        description
+          "Port represents an aggregated logical OTUCn interface.";
+      }
+    }
+    description
+      "Port type";
+  }
+
+  typedef port-rate-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Port rate is unknown.";
+      }
+      enum "10GE" {
+        description
+          "Port rate is 10 Gigabits per second Ethernet.";
+      }
+      enum "40GE" {
+        description
+          "Port rate is 40 Gigabits per second Ethernet.";
+      }
+      enum "100GE" {
+        description
+          "Port rate is 100 Gigabits per second Ethernet.";
+      }
+      enum "OTU4" {
+        description
+          "Port rate is OTU4.";
+      }
+      enum "OTUC1" {
+        description
+          "Port rate is OTUC1.";
+      }
+      enum "OTUC2" {
+        description
+          "Port rate is OTUC2.";
+      }
+      enum "OTUC3" {
+        description
+          "Port rate is OTUC3.";
+      }
+      enum "OTUC4" {
+        description
+          "Port rate is OTUC4.";
+      }
+      enum "OTUC5" {
+        description
+          "Port rate is OTUC5.";
+      }
+      enum "OTUC6" {
+        description
+          "Port rate is OTUC6.";
+      }
+      enum "OTUC7" {
+        description
+          "Port rate is OTUC7.";
+      }
+    }
+    description
+      "Nominal port rate of the specified interface.";
+  }
+
+  typedef ethernet-mapping-mode {
+    type enumeration {
+      enum "None" {
+        description
+          "No ethernet mapping.";
+      }
+      enum "GMP" {
+        description
+          "Generic Mapping Procedure (GMP).";
+      }
+      //enum "IMP" {
+      //  description
+      //    "Idle Mapping Procedure (IMP).";
+      //}
+    }
+    description
+      "Ethernet mapping mode.";
+  }
+
+  typedef port-speed {
+    type decimal64 {
+      fraction-digits 4;
+      range "0.0 .. 1000.0";
+    }
+    units "Gbps";
+    description
+      "Port speed, in Gbps. Decimal value up to 4 digits.";
+  }
+
+  typedef port-operational-state {
+    type enumeration {
+      enum "down" {
+        value 0;
+        description
+          "The port or channel is not carrying traffic due to a failure or
+           because it is disabled.";
+      }
+      enum "up" {
+        value 1;
+        description
+          "The port or channel is enabled and carrying traffic.";
+      }
+      enum "loopback-tx" {
+        value 4;
+        description
+          "The transmit direction of the port loops back internally at the PHY.";
+      }
+      enum "loopback-rx" {
+        value 5;
+        description
+          "The receive direction of the port loops back at the PHY to the transmit.";
+      }
+      enum "fault" {
+        value 7;
+        description
+          "Port or channel is faulted.";
+      }
+      enum "unavailable" {
+        value 11;
+        description
+          "Channel is unavailable due to bandwidth limitation of parent port rate.";
+      }
+      enum "lower-layer-down" {
+        description
+          "Parent layer is down (dependency or server signal failure).";
+      }
+    }
+    description
+      "Port operational state.";
+  }
+
+  typedef link-state-type {
+    type enumeration {
+      enum "down" {
+        description
+          "The port is administratively disabled or there is a fault condition
+           other than LF or RF.";
+      }
+      enum "up" {
+        description
+          "Link state is up/operational.";
+      }
+      enum "local-fault" {
+        description
+          "Ethernet port has a Local Fault condition.";
+      }
+      enum "remote-fault" {
+        description
+          "Ethernet port has a Remote Fault condition.";
+      }
+    }
+    description
+      "Ethernet port fault condition.";
+  }
+
+  typedef payload-type {
+    type string {
+      length "0..4";
+    }
+    description
+      "A string representation of an OPU payload type (PT) byte value in
+       hexadecimal notation, e.g. '0x07'.";
+  }
+
+  grouping otn-trace-group {
+    description
+      "OTN trail trace identifier (TTI) properties.";
+    leaf mismatch-mode {
+      ui:ui-name "Trace Mismatch Mode";
+      type cienawstypes:trace-mismatch-mode;
+      description
+        "The trail trace identifier (TTI) mismatch mode, indicating which
+         fields of the TTI overhead are used for trace mismatch detection.";
+    }
+    leaf mismatch-fail-mode {
+      ui:ui-name "Trace Mismatch Failure Mode";
+      type cienawstypes:trace-mismatch-fail-mode;
+      description
+        "The trail trace identifier (TTI) mismatch failure mode. When TTI
+         mismatch condition occurs, this indicates the consequent action taken,
+         e.g. whether or not to raise an alarm.";
+    }
+    leaf tx-sapi {
+      ui:ui-name "Tx SAPI";
+      type cienawstypes:string-maxl-15;
+      description
+        "The source access point identifier (SAPI) portion of the transmitted
+         trace string, up to 15 characters, excluding the first byte in the TTI
+         SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-dapi {
+      ui:ui-name "Tx DAPI";
+      type cienawstypes:string-maxl-15;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         transmitted trace string, up to 15 characters, excluding the first
+         byte in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-oper {
+      ui:ui-name "Tx Operator String";
+      type cienawstypes:string-maxl-32;
+      description
+        "The operator-specific portion of the transmitted trace string, up to
+         32 characters. Ignored if tx-oper-mode is 'automatic'.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-oper-actual {
+      ui:ui-name "Tx Operator Actual";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "The actual operator-specific portion of the transmitted trace string,
+         up to 32 characters. If tx-oper-mode is 'manual' this will be the same
+         as the tx-oper attribute, otherwise it will be a system-generated
+         string.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-oper-mode {
+      ui:ui-name "Tx Operator Mode";
+      type enumeration {
+        enum "manual" {
+          description
+            "The user will manually assign the operator-specific portion of the
+             transmitted trace string. The format is free-form text.";
+        }
+        enum "automatic" {
+          description
+            "Let the system will automatically configure the operator-specific
+             portion of the transmitted trace string. The format is pre-defined
+             based on chassis MAC address, module, port, sub-port, and channel
+             number of the interface. This is the default mode for Waveserver
+             OTN line and client ports.";
+        }
+      }
+      description
+        "Specifies whether to allow manual provisioning of the transmitted TTI
+         string, or let the system assign this value automatically based on a
+         pre-defined format.";
+    }
+    leaf rx-sapi {
+      ui:ui-name "Rx SAPI";
+      type cienawstypes:string-maxl-15;
+      config false;
+      description
+        "The source access point identifier (SAPI) portion of the received
+         trace string, up to 15 characters, excluding the first byte in the TTI
+         SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-dapi {
+      ui:ui-name "Rx DAPI";
+      type cienawstypes:string-maxl-15;
+      config false;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-oper {
+      ui:ui-name "Rx Operator String";
+      type cienawstypes:string-maxl-32;
+      config false;
+      description
+        "The operator-specific portion of the received trace string, up to 32
+         characters.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-sapi-hex {
+      ui:ui-name "Rx SAPI Hex";
+      type string {
+        length "0..30";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The source access point identifier (SAPI) portion of the received
+         trace string, represented in hexadecimal notation, excluding the first
+         byte in the TTI SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-dapi-hex {
+      ui:ui-name "Rx DAPI Hex";
+      type string {
+        length "0..30";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         received trace string, represented in hexadecimal notation, excluding
+         the first byte in the TTI DAPI overhead, which is implicitly always
+         null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-oper-hex {
+      ui:ui-name "Rx Operator Hex";
+      type string {
+        length "0..64";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The operator-specific portion of the received trace string, represented
+         in hexadecimal notation.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-sapi {
+      ui:ui-name "Expected Rx SAPI";
+      type cienawstypes:string-maxl-15;
+      description
+        "The expected source access point identifier (SAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-dapi {
+      ui:ui-name "Expected Rx DAPI";
+      type cienawstypes:string-maxl-15;
+      description
+        "The expected destination access point identifier (DAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-oper {
+      ui:ui-name "Expected Rx Operator String";
+      type cienawstypes:string-maxl-32;
+      description
+        "The expected operator-specific portion of the received trace string,
+         up to 32 characters.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+  }//end otn-trace-group  
+
+  grouping connection-peer-group {
+    description
+      "Connection peer properties.";
+    leaf peer-id {
+      type cienawstypes:port-name;
+      description
+        "Specifies the client/line connection information for the port or
+         channel. Client ports can be connected to a line-side channel or port.
+         Line ports can be connected to a client side port. Line channels can
+         be connected to one or more client ports. The connection mappings are
+         static and provided by the system based on XCVR configuration.";
+      ui:ui-name "Connection Peer Id";
+    }
+    leaf peer-type {
+      type enumeration {
+        enum "none" {
+          description
+            "The connection peer-id is not specified or not applicable.";
+        }
+        enum "port" {
+          description
+            "The connection peer-id represents a port object.";
+        }
+        enum "channel" {
+          description
+            "The connection peer-id represents a channel object.";
+        }
+      }
+      config false;
+      description
+        "Indicates the port/channel type of the connection peer.";
+    }
+    leaf peer-bandwidth {
+      type uint16;
+      units "Gbps";
+      config false;
+      description
+        "Bandwidth capacity of the remote connection peer, in Gbps.";
+    }
+    leaf connected {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the line-side bandwidth is allocated for the
+         connection between this port/channel and its connection peer.";
+    }
+  }//end connection-peer-group
+
+  container waveserver-ports {
+    ui:ui-name "Ports";
+    description
+      "Waveserver port configuration and operational data.";
+    list ports {
+      ui:ui-name "Ports List";
+      ncx:user-write "update";
+      key "port-id";
+      description
+        "Configuration and operational data for the port.";
+      leaf port-id {
+        ui:ui-name "Port Id";
+        type cienawstypes:port-name;
+        description
+          "Unique, access identifier string of the port in '<slot>-<port>' format.";
+      }
+      container id {
+        ui:ui-name "Port Identification";
+        description
+          "Port identification attributes.";
+        leaf name {
+          type cienawstypes:port-name;
+          config false;
+          description
+            "Name of the port interface. Format is: '<slot>-<port>' or
+             '<slot>-<majorport>.<minorport>'.";
+          ui:ui-name "Port Name";
+        }
+        leaf label {
+          type cienawstypes:description-string;
+          description
+            "The user-specified label string for this port interface.";
+          ui:ui-name "Port User Label";
+        }
+        leaf type {
+          type port-type-enum;
+          description
+            "The port interface type.";
+          ui:ui-name "Port Type";
+        }
+        leaf rate {
+          type port-rate-enum;
+          config false;
+          description
+            "The port interface rate.";
+          ui:ui-name "Port Rate";
+        }
+        leaf speed {
+          type port-speed;
+          config false;
+          description
+            "The port speed in Gbps.";
+          ui:ui-name "Port Speed";
+        }
+        leaf interface-type {
+          type enumeration {
+            enum "i-nni" {
+              value 0;
+              description
+                "Internal Network-to-Network Interface";
+            }
+            enum "uni" {
+              value 1;
+              description
+                "User Network Interface";
+            }
+            enum "e-nni" {
+              value 2;
+              description
+                "External Network-to-Network Interface";
+            }
+          }
+          config false;
+          description
+            "The port interface type.";
+          ui:ui-name "Port Interface Type";
+        }
+      }//end port id
+
+      container state {
+        ui:ui-name "Port State";
+        description
+          "Port administrative and operational states.";
+        leaf admin-state {
+          type enumeration {
+            enum "enabled" {
+              value 1;
+              description
+                "Port is administratively enabled and ready to carry traffic.";
+            }
+            enum "disabled" {
+              value 2;
+              description
+                "Port is administratively disabled and not ready to carry traffic.";
+            }
+          }
+          description
+            "The configured administrative state of the port.";
+          ui:ui-name "Port Admin State";
+        }
+        leaf operational-state {
+          type port-operational-state;
+          config false;
+          description
+            "The operational state of the port.";
+          ui:ui-name "Port Operational State";
+        }
+        leaf operational-state-duration {
+          type uint32;
+          units "seconds";
+          config false;
+          description
+            "Amount of time since last state transition.";
+          ui:ui-name "Port Operational State Duration";
+        }
+        leaf link-state {
+          type link-state-type;
+          config false;
+          description
+            "The link state the port, if applicable. For non-Ethernet ports,
+             the state will be omitted from the response.";
+          ui:ui-name "Link State";
+        }
+      }//end port state
+
+      container properties {
+        ui:ui-name "Port Properties";
+        description
+          "Port properties.";
+        leaf loopback {
+          type enumeration {
+            enum "disabled" {
+              description
+                "Loopback is disabled.";
+            }
+            enum "rx" {
+              description
+                "Rx loopback is enabled.";
+            }
+            enum "tx" {
+              description
+                "Tx loopback is enabled.";
+            }
+          }
+          description
+            "Port PHY layer loopback. RX loopback is a loopback forwarding
+             ingress traffic from RX port directly to TX port. TX loopback is a
+             loopback forwarding egress traffic from TX port directly to RX
+             port, TX loopback is not supported in I-NNI ports. The RX/TX
+             loopback can only be enabled when the port admin-state is disabled.
+             Enable an RX/TX loopback shall fail when the port has its
+             admin-state enabled. Users shall be able to disable the xcvr/ptp
+             when its child port loopback enabled. Enable xcvr/ptp shall not
+             enable its child port with loopback enabled. A port shall has its
+             operational state rx loopback when rx loopback is enabled, and tx
+             loopback when tx loopback is enabled.";
+          ui:ui-name "Port Loopback";
+        }
+        leaf forward-error-correction {
+          type cienawstypes:enabled-disabled-enum;
+          status deprecated;
+          description
+            "Forward error correction. This is now configured on the PTP object.";
+          ui:ui-name "Forward Error Correction";
+        }
+        leaf service-index {
+          type cienawstypes:service-idx;
+          config false;
+          description
+            "The index number of the service the port is attached to. Only
+             applies to UNI interface type.";
+          ui:ui-name "Service Index";
+        }
+        leaf service-domain-index {
+          type cienawstypes:service-domain-idx;
+          config false;
+          description
+            "The index number of the service domain the port is attached to.
+             Only applies to I-NNI interface type.";
+          ui:ui-name "Service Domain Index";
+        }
+        leaf connection-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Specifies whether the line-side bandwidth is allocated for the
+             connection between this client port and its connection peer. For most
+             client port types, this is enabled by default and cannot be disabled.
+             For certain client ports that can share line-side bandwidth with other
+             client ports (such as on MOTR-AGG modules), the connection state can
+             be manually configured by the user in order to assign or release the
+             line-side bandwidth to the desired client. On the line-side, the
+             connection state is read-only.";
+        }
+        list connection-peer {
+          ui:ui-name "Connection Peer List";
+          ncx:user-write "update";
+          key "peer-id";
+          max-elements 1;
+          description
+            "Port connection peer list. Indicates the client/line port/channel
+             that may be connected to this line/client port. For certain client
+             ports, the connection state is user-configurable or can be system
+             assigned on port creation based on bandwidth availability. For
+             other ports, the connection state is fixed and cannot be manually
+             configured.";
+          uses connection-peer-group;
+        }
+        container ethernet {
+          when "../../id/type = 'ethernet'" {
+            description
+              "Ethernet properties container only applies when the port type is
+               'ethernet'.";
+          } 
+          ui:ui-name "Ethernet Properties";
+          description
+            "Ethernet-specific properties.";
+
+          //leaf mac-address {
+          //  type cienawstypes:mac-string;
+          //  config false;
+          //  description
+          //    "The MAC address of the port.";
+          //  ui:ui-name "Port MAC Address";
+          //}
+
+          leaf max-frame-size {
+            type uint32 {
+              range "0|1522..16004";
+            }
+            config false;
+            description
+              "The maximum transmission unit value (bytes). Zero indicates
+               'none' or unsupported.";
+            ui:ui-name "Maximum Frame Size";
+          }
+          leaf pause-profile {
+            type enumeration {
+              enum "discard" {
+                description
+                  "Ingress pause frames will be discarded and ignored.";
+              }
+              enum "forward" {
+                description
+                  "Ingress pause frames will be forwarded. This is the default.";
+              }
+              enum "peer" {
+                description
+                  "Ingress pause frames will be peered.";
+              }
+            }
+            config false;
+            description
+              "Port handling of ingress flow control";
+            ui:ui-name "Pause Profile";
+          }
+          leaf mapping-mode {
+            type ethernet-mapping-mode;
+            description
+              "Ethernet mapping mode.";
+            ui:ui-name "Mapping Mode";
+          }
+          leaf conditioning-type {
+            type cienawstypes:conditioning-type;
+            description
+              "Egress UNI port consequent action for an EPL service to be
+               applied on a far-end ingress UNI failure or network failure.
+               Supported values are 'none', 'laser-off', and 'ethernet'.";
+            ui:ui-name "Service Fault Action";
+          }
+          leaf conditioning-holdoff {
+            type cienawstypes:conditioning-holdoff;
+            description
+              "Number of milliseconds to delay Egress UNI port consequent
+               action for an EPL service.";
+            ui:ui-name "Service Fault-Action Holdoff";
+          }
+        }//end ethernet properties
+
+        container otn {
+          when "../../id/type[.='OTUk' or .='OTUCn' or .='OTUCn-Flex']" {
+            description
+              "OTN properties container only applies when the port is an OTN
+               type.";
+          } 
+          ui:ui-name "OTN";
+          description
+            "OTN-specific properties.";
+
+          leaf odu-termination {
+            type enumeration {
+              enum terminated {
+                description
+                  "ODUk layer is terminated at this port.";
+              }
+              enum passthrough {
+                description
+                  "ODUk layer is not terminated at this port.";
+              }
+            }
+            description
+              "ODUk termination mode.";
+            ui:ui-name "ODUk Termination";
+          }
+          leaf pre-fec-otu-sf-threshold {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.0 .. 1.0";
+            }
+            units "dBQ";
+            status deprecated;
+            description
+              "Pre-FEC OTU Signal Fail threshold value, expressed in dBQ
+               notation.";
+            ui:ui-name "Pre-FEC OTU SF Threshold";
+          }
+          leaf pre-fec-otu-sd-threshold {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.0 .. 3.50";
+            }
+            units "dBQ";
+            status deprecated;
+            description
+              "Pre-FEC OTU Signal Degrade threshold value, expressed in dBQ
+               notation.";
+            ui:ui-name "Pre-FEC OTU SD Threshold";
+          }
+          leaf otu-sd-threshold {
+            type cienawstypes:string-sci;
+            description
+              "OTU Signal Degrade threshold value, e.g. '1E-06' to '1E-09'.";
+            ui:ui-name "OTU SD Threshold";
+          }
+          leaf odu-sd-threshold {
+            type cienawstypes:string-sci;
+            description
+              "ODUk Signal Degrade threshold value, e.g. '1E-05' to '1E-09'.";
+            ui:ui-name "ODUk SD Threshold";
+          }
+          leaf conditioning-type {
+            type cienawstypes:conditioning-type;
+            description
+              "Conditioning type for OTN ports. Supported values are 'laser-off' and 'otn'.";
+          }
+          container trace {
+            ui:ui-name "Port Trace";
+            description
+              "OTN port trace attributes";
+            container section {
+              ui:ui-name "OTU Section Trace";
+              description
+                "OTUk section trace attributes for this port.";
+              uses otn-trace-group;
+            }
+            container path {
+              ui:ui-name "ODU Path Trace";
+              description
+                "ODUk path trace attributes for this port.";
+              uses otn-trace-group;
+            }
+          }
+        }//end otn properties
+      }//end port properties
+
+      list channels {
+        when "../id/type[.='OTUk' or .='OTUCn' or .='OTUCn-Flex'] and ../properties/otn/odu-termination = 'terminated'" {
+          description
+            "Channels list only applies for OTUk ports that have ODUk layer
+             terminated.";
+        } 
+        ui:ui-name "Channel List";
+        ncx:user-write "update";
+        key "channel-id";
+        description
+          "List of ODU4 channels within the parent OTU port object.";
+        leaf channel-id {
+          ui:ui-name "Channel Id";
+          type uint8 {
+            range "1..8";
+          }
+          description
+            "Channel number or ODU4 tributary number within the parent OTU port
+             object. Key value for the channels list.";
+        }
+        container id {
+          ui:ui-name "Channel Identification";
+          description
+            "Channel identification attributes.";
+          leaf name {
+            type cienawstypes:name-string;
+            config false;
+            description
+              "Name of the channel object. Format is: '<slot>-<port>.<channel>'.";
+            ui:ui-name "Channel Name";
+          }
+          leaf label {
+            type cienawstypes:description-string;
+            description
+              "The user-specified label string for this channel object.";
+            ui:ui-name "Channel User Label";
+          }
+          leaf type {
+            type enumeration {
+              enum odu {
+                description
+                  "ODU channel.";
+              }
+            }
+            config false;
+            description
+              "The channel interface type.";
+            ui:ui-name "Channel Type";
+          }
+          leaf rate {
+            type enumeration {
+              enum odu4 {
+                description
+                  "ODU4 rate.";
+              }
+            }
+            config false;
+            description
+              "The channel rate.";
+            ui:ui-name "Channel Rate";
+          }
+          leaf speed {
+            type port-speed;
+            config false;
+            description
+              "The channel speed in Gbps.";
+            ui:ui-name "Channel Speed";
+          }
+        }//end channel id
+
+        container state {
+          ui:ui-name "Channel State";
+          description
+            "Channel administrative and operational states.";
+          leaf admin-state {
+            type cienawstypes:enabled-disabled-enum;
+            description
+              "The configured administrative state of the channel.";
+            ui:ui-name "Channel Admin State";
+          }
+          leaf operational-state {
+          type port-operational-state;
+            config false;
+            description
+              "The operational state of the channel.";
+            ui:ui-name "Channel Operational State";
+          }
+          leaf operational-state-duration {
+            type uint32;
+            units "seconds";
+            config false;
+            description
+              "Amount of time since last state transition.";
+            ui:ui-name "Channel Operational State Duration";
+          }
+        }//end channel state
+
+        container properties {
+          ui:ui-name "Channel Properties";
+          description
+            "Channel properties.";
+          leaf service-index {
+            type cienawstypes:service-idx;
+            config false;
+            description
+              "The index number of the service the channel is attached to, if
+               applicable.";
+            ui:ui-name "Service Index";
+          }
+          leaf service-domain-index {
+            type cienawstypes:service-domain-idx;
+            config false;
+            description
+              "The index number of the service domain the channel is attached
+               to, if applicable.";
+            ui:ui-name "Service Domain Index";
+          }
+          leaf maximum-bandwidth {
+            type uint16;
+            units "Gbps";
+            config false;
+            description
+              "Maximum line side bandwidth associated with this channel, in Gbps.";
+            ui:ui-name "Maximum Bandwidth";
+          }
+          leaf available-bandwidth {
+            type uint16;
+            units "Gbps";
+            config false;
+            description
+              "Available bandwidth associated with this channel, in Gbps. When
+               client connection peers are created and enabled, the available
+               bandwidth on the line side channel will decrease.";
+            ui:ui-name "Maximum Bandwidth";
+          }
+          list connection-peer {
+            ui:ui-name "Connection Peer List";
+            key "peer-id";
+            config false;
+            description
+              "Channel connection peer list. Indicates the client port(s) that
+               may be connected to this channel, and the status of each
+               connection. A connection-status of enabled indicates the client
+               has sucessfully reserved bandwidth on the channel. Disabled
+               indicates the bandwidth allocation has failed or has been been
+               intentionally declined for this client based on user provisioning.";
+            uses connection-peer-group;
+          }
+          leaf odu-sd-threshold {
+            type cienawstypes:string-sci;
+            description
+              "ODU4 Signal Degrade threshold value.";
+            ui:ui-name "ODU4 SD Threshold";
+          }
+          leaf odu-termination {
+            type enumeration {
+              enum terminated {
+                description
+                  "ODU4 layer is terminated at this channel.";
+              }
+              enum passthrough {
+                description
+                  "ODU4 layer is not terminated at this channel.";
+              }
+            }
+            config false;
+            description
+              "ODU4 channel termination mode.";
+            ui:ui-name "ODU4 Channel Termination";
+          }
+          leaf tx-payload-type {
+            type payload-type;
+            config false;
+            description
+              "The transmitted (and expected) OPU4 payload type for this channel
+               (e.g. 0x07).";
+            ui:ui-name "Tx Payload Type";
+          }
+          leaf rx-payload-type {
+            type payload-type;
+            config false;
+            description
+              "The actual received OPU4 payload type for this channel (e.g. 0x07).";
+            ui:ui-name "Rx Payload Type";
+          }
+          container trace {
+            ui:ui-name "ODU4 Channel Path Trace";
+            description
+              "ODU4 path trace attributes for this channel.";
+            uses otn-trace-group;
+          }
+        }//end channel properties
+
+      }//end channels list
+    }//end ports list
+  }
+
+  rpc waveserver-port-trace-copy-rx-to-exp {
+    description
+      "Copy the current received trace value to the expected trace config string.";
+    input {
+      leaf interface-name {
+        ui:ui-name "Interface Name";
+        type cienawstypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name of the port or channel on which to perform the
+           action. If the trace-layer is 'section' or 'path', this should be a
+           port object identifier. If the trace-layer is 'channel', this should
+           be a channel object identifier.";
+      }
+      leaf trace-layer {
+        type enumeration {
+          enum section {
+            description
+              "Copy the OTUk section rx trace to exp.";
+          }
+          enum path {
+            description
+              "Copy the ODUk path rx trace to exp.";
+          }
+          enum channel {
+            description
+              "Copy the ODU4 channel path rx trace to exp.";
+          }
+        }
+        mandatory true;
+        description
+          "The trace layer on which to perform the copy action, either port
+           section/path or channel.";
+      }
+      leaf trace-type {
+        type enumeration {
+          enum sapi {
+            description
+              "Copy the SAPI portion of the trace string only.";
+          }
+          enum dapi {
+            description
+              "Copy the DAPI portion of the trace string only.";
+          }
+          enum operator {
+            description
+              "Copy the operator-specifiec portion of the trace string only.";
+          }
+        }
+        mandatory true;
+        description
+          "Specifies which portion(s) of the trace string to copy.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+}

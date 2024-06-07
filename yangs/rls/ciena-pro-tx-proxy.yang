@@ -1,0 +1,323 @@
+module ciena-pro-tx-proxy {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-tx-proxy";
+  prefix tx-proxy;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's transponder proxy data model.";
+
+  revision 2021-05-31 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.8.0";
+    }
+    description
+      "Add new enum values to link-optimization-mode";
+  }
+  revision 2021-03-22 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.7.2";
+    }
+    description
+      "change tuning-mode default from normal to accelerated";
+  }
+  revision 2021-03-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.7.1";
+    }
+    description
+      "Add tuning-mode descriptions and set default for center-freq.";
+  }
+  revision 2021-01-25 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.7.0";
+    }
+    description
+      "Add tuning-units, tuning-grid";
+  }
+  revision 2021-01-15 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.6.0";
+    }
+    description
+      "Add data-mismatch diagnostic point.";
+  }
+  revision 2020-12-13 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.5.0";
+    }
+    description
+      "Add tuning-mode";
+  }
+  revision 2020-12-11 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.4.0";
+    }
+    description
+      "Introduce ccda, laser-centering-mode and blanking enums.";
+  }
+  revision 2020-11-04 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.3.0";
+    }
+    description
+      "Add proxy-mode";
+  }
+  revision 2020-09-17 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+    description
+      "Added tuning-state";
+  }
+  revision 2020-08-18 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+    description
+      "Added center-freq and source";
+  }
+  revision 2020-08-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Initial version";
+  }
+
+  grouping transponder {
+    description
+      "Transponder proxy parameters.";
+    leaf center-freq {
+      type ciena-pro-optical-types:frequency;
+      default "0.0";
+      description
+        "Target center frequency of the optical signal to be set on the transponder";
+    }
+
+    leaf path-chromatic-dispersion {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units "ps/nm";
+      description
+        "Value of Path Chromatic Dispersion on Transponder";
+    }
+
+    leaf min-tx-power {
+      type decimal64 {
+        fraction-digits 2;
+        range "-99..24";
+      }
+      units "dBm";
+      description
+        "Minimum TX Power of the transponder in dBm.";
+    }
+
+    leaf max-tx-power {
+      type decimal64 {
+        fraction-digits 2;
+        range "-99..24";
+      }
+      units "dBm";
+      description
+        "Maximum TX Power of the transponder in dBm.";
+    }
+
+    leaf total-target-tx-power {
+      type decimal64 {
+        fraction-digits 2;
+        range "-99..24";
+      }
+      units "dBm";
+      description
+        "Total target TX Power of the transponder in dBm.";
+    }
+
+    leaf transmission-mode {
+      type string {
+        length "0..79";
+      }
+      description
+        "Transmission Mode ";
+    }
+
+    leaf link-optimization-mode {
+      type enumeration {
+        enum "standard";
+        enum "snr";
+        enum "fast-tracking";
+        enum "spectral-Low";
+        enum "low-latency";
+        enum "non-linear-channel";
+        enum "reserved-mode-1";
+        enum "reserved-mode-2";
+        enum "reserved-mode-3";
+        enum "narrow-bandwidth-channel";
+        enum "foreign-line";
+        enum "custom";
+      }
+      description
+        "Link Optimization Mode.";
+    }
+
+    leaf tx-minimum-spectral-width {
+      type ciena-pro-optical-types:frequency;
+      description
+        "Minimum spectral width of transponder";
+    }
+
+    leaf source {
+      type enumeration {
+        enum "foreign";
+        enum "Ciena";
+      }
+      default "foreign";
+      description
+        "Identifies whether the upstream source is a foreign or Ciena transponder";
+    }
+
+    leaf tuning-state {
+      type enumeration {
+        enum "not-tuned";
+        enum "tuned";
+        enum "unknown";
+      }
+      default "unknown";
+      description
+        "Indicates if the transponder is tuned to the requested center-frequency";
+    }
+
+    leaf proxy-mode {
+      type enumeration {
+        enum "native" {
+          description
+            "Application running natively on the device";
+        }
+        enum "external" {
+          description
+            "Application running external to the device";
+        }
+        enum "manual" {
+          description
+            "Manual transponder provisioning";
+        }
+      }
+      default "native";
+      description
+        "Indicates which protocol is responsible for the synchronization";
+    }
+
+    leaf ccda-enabled {
+      type boolean;
+      default "false";
+      description
+        "TX Channel Contention Detection and Avoidance.";
+    }
+
+    leaf laser-centering-mode {
+      type enumeration {
+        enum "mode1";
+        enum "mode2";
+        enum "mode3";
+        enum "unknown";
+      }
+      default "mode1";
+      description
+        "Laser Centering Mode set on transponder.";
+    }
+
+    leaf blanking {
+      type boolean;
+      default "false";
+      description
+        "Transmitter blanking.";
+    }
+
+    leaf tuning-mode {
+      type enumeration {
+        enum "normal" {
+          description
+            "Performance-Optimized Tuning Mode";
+        }
+        enum "accelerated" {
+          description
+            "Accelerated Tuning Mode";
+        }
+        enum "fast" {
+          description
+            "Fast Tuning Mode";
+        }
+      }
+      default "fast";
+      description
+        "Transponder tuning mode.";
+    }
+
+    leaf tuning-units {
+      type enumeration {
+        enum "nm";
+        enum "GHz";
+      }
+      default "GHz";
+      description
+        "Transponder tuning units";
+    }
+
+    leaf tuning-grid {
+      type enumeration {
+        enum "50GHz";
+        enum "flexgrid";
+      }
+      default "flexgrid";
+      description
+        "Transponder tuning grid";
+    }
+  }
+
+  grouping tx-proxy {
+    leaf name {
+      type ciena-pro-types:object-name;
+      description
+        "Transponder proxy object name";
+    }
+
+    leaf target-psd {
+      type ciena-pro-optical-types:psd;
+      description
+        "Power Spectral Density";
+    }
+
+    uses transponder;
+
+    container diagnostic {
+      config false;
+      description
+        "Facility diagnostic state.";
+      leaf data-mismatch {
+        type boolean;
+        description
+          "Mismatch state for the transponder proxy when config provisioning data does not match inventory data.";
+      }
+    }
+  }
+}

@@ -1,0 +1,3398 @@
+module ciena-6500r-afc-orchestrator {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-afc-orchestrator";
+  prefix afc-orchestrator;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ietf-yang-types {
+    prefix yang-types;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-6500r-afc-orchestrator-types {
+    prefix afc-orchestrator-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+           Gurgaon 122001,
+           Haryana, India";
+  description
+    "Auto fiber characterization orchestrator(AFCO) is an application which measures fiber non-linear parameters.";
+
+  revision 2023-06-07 {
+    description
+      "Adding a new parameter additional-info in afc-calculator";
+    ciena-common-version:string "1.20.0";
+  }
+  revision 2023-06-02 {
+    description
+      "Adding a new parameter (OSC Tx power) in each set of SRS measurement";
+    ciena-common-version:string "1.19.0";
+  }
+  revision 2023-03-27 {
+    description
+      "Add encryption tags to srs and two peak measurements result";
+    ciena-common-version:string "1.18.0";
+  }
+  revision 2023-03-22 {
+    description
+      "Introducing rpc to enable/disable logs generation.";
+    ciena-common-version:string "1.17.0";
+  }
+  revision 2023-02-24 {
+    description
+      "Add state-mode to instance.";
+    ciena-common-version:string "1.16.0";
+  }
+  revision 2023-02-06 {
+    description
+      "Add mode to instance.";
+    ciena-common-version:string "1.15.0";
+  }
+  revision 2022-11-28 {
+    description
+      "Remove incarnation number.";
+    ciena-common-version:string "1.14.0";
+  }
+  revision 2022-11-10 {
+    description
+      "Added action for User to run AFC ";
+    ciena-common-version:string "1.13.0";
+  }
+  revision 2022-10-10 {
+    description
+      "Remove amp-slot, amp-type, partner-raman-slot from two peak measurements results,
+       Remove frequency from frequency measurements in two peak measurements results.";
+    ciena-common-version:string "1.12.0";
+  }
+  revision 2022-08-30 {
+    description
+      "Addition of two peak measurements results";
+    ciena-common-version:string "1.11.0";
+  }
+  revision 2022-07-27 {
+    description
+      "Enhancement of fiber PFG data for afc-calculator";
+    ciena-common-version:string "1.10.0";
+  }
+  revision 2022-07-04 {
+    description
+      "Remove explicit config=true.";
+    ciena-common-version:string "1.9.1";
+  }
+  revision 2022-04-28 {
+    description
+      "Add local FSM and Algo version and updating AFC instance version as section version.";
+    ciena-common-version:string "1.9.0";
+  }
+  revision 2022-04-12 {
+    description
+      "Add auto fiber characterization calculator container.";
+    ciena-common-version:string "1.8.0";
+  }
+  revision 2022-03-28 {
+    description
+      "Add new rpc definitions.";
+    ciena-common-version:string "1.7.0";
+  }
+  revision 2022-03-14 {
+    description
+      "Remove admin state.";
+    ciena-common-version:string "1.6.0";
+  }
+  revision 2022-02-11 {
+    description
+      "Add incarnation number.";
+    ciena-common-version:string "1.5.0";
+  }
+  revision 2022-01-27 {
+    description
+      "Add bootstrap timestamp and raman bootstrap mode.";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-01-24 {
+    description
+      "Adding RPC call to update wait time.";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2021-12-21 {
+    description
+      "Adding amp list to measurements";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2021-11-19 {
+    description
+      "Introduced new compatibility container for FSM and ALGO version.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2021-10-08 {
+    description
+      "Updated types and OSC measurement data.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-09-06 {
+    description
+      "6500r-series Release 2.5
+       Initial version.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping ciena-6500r-afc-orchestrator-mount-data {
+    container afc-orchestrator {
+      container compatibility {
+        config false;
+        container fsm-version {
+          uses ciena-common-version:version;
+          description
+            "Local FSM version, same for all AFC instance.";
+        }
+        container algo-version {
+          uses ciena-common-version:version;
+          description
+            "Local ALGO version, same for all AFC instance.";
+        }
+      }
+      list instance {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Name of automatic fiber characterization orchestrator instance.
+             It is associated with functional-group name.";
+        }
+        leaf mode {
+          type afc-orchestrator-types:afco-mode;
+          description
+            "AFC Mode to operate in";
+          default "mode2";
+        }
+        leaf state-mode {
+          type afc-orchestrator-types:afco-mode;
+          config false;
+          description
+            "Indicates in which mode AFC is currently operating. This is the state value of the 'mode' attribute configured on the Mux.";
+        }
+        container compatibility {
+          config false;
+          container section-fsm-version {
+            uses ciena-common-version:version;
+            description
+              "Section FSM version of AFC instance.";
+          }
+          container section-algo-version {
+            uses ciena-common-version:version;
+            description
+              "Section ALGO Version of AFC instance.";
+          }
+        }
+        container state {
+          config false;
+          leaf fsm-state {
+            type afc-orchestrator-types:afco-fsm-state;
+            description
+              "Fsm state of automatic fiber characterization orchestrator instance.";
+          }
+          leaf status {
+            type afc-orchestrator-types:afco-status;
+            description
+              "Status of automatic fiber characterization orchestrator.";
+            config false;
+          }
+          leaf raman-bootstrap-mode {
+            type afc-orchestrator-types:raman-on;
+            description
+              "Gain-mode provisioned as Bootstrap of RAMAN(ON/OFF).";
+          }
+          leaf bootstrap-timestamp {
+            type yang-types:date-and-time;
+            description
+              "Indicates time when raman gain mode was changed to bootstrap mode.";
+            config false;
+          }
+          leaf failure-reason {
+            type string;
+            description
+              "Reason of last failure of automatic fiber characterization orchestrator(timeout/ set or get fail/alarm/oms-incomplete).";
+            config false;
+          }
+          leaf start-timestamp {
+            type yang-types:date-and-time;
+            description
+              "Start timestamp of automatic fiber characterization orchestrator.";
+            config false;
+          }
+          leaf end-timestamp {
+            type yang-types:date-and-time;
+            description
+              "End timestamp of automatic fiber characterization orchestrator.";
+            config false;
+          }
+        }
+        container result {
+          ciena-common-yang:encrypt "container-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          description
+            "Operational state data for automatic fiber characterization orchestrator.";
+          config false;
+          list amp {
+            ciena-common-yang:encrypt "list-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1";
+            description
+              "Amp in which power measurements are present.";
+            key "amp_name";
+            leaf amp_name {
+              ciena-common-yang:encrypt "leaf-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              type string;
+            }
+            list measurement-no-power {
+              ciena-common-yang:encrypt "list-2";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              description
+                "Power measurements of span measured with all channels blocked.";
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type uint8;
+              }
+              leaf in-current-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Input power to the AMP in dBm.";
+              }
+              leaf in-min-power {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf in-max-power {
+                ciena-common-yang:encrypt "leaf-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf out-current-power {
+                ciena-common-yang:encrypt "leaf-5";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Output power from the AMP in dBm.";
+              }
+              leaf out-min-power {
+                ciena-common-yang:encrypt "leaf-6";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf out-max-power {
+                ciena-common-yang:encrypt "leaf-7";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf osc-rcv-power {
+                ciena-common-yang:encrypt "leaf-8";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total rx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-9";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of measuremnt.";
+              }
+              leaf osc-tx-power {
+                ciena-common-yang:encrypt "leaf-10";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total tx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              config false;
+            }
+            list measurement-high-power {
+              ciena-common-yang:encrypt "list-3";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              description
+                "Power measurements of span measured with a particular channel with EDFA at high power.";
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type uint8;
+              }
+              leaf in-current-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Input power to the AMP in dBm.";
+              }
+              leaf in-min-power {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf in-max-power {
+                ciena-common-yang:encrypt "leaf-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf out-current-power {
+                ciena-common-yang:encrypt "leaf-5";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Output power from the AMP in dBm.";
+              }
+              leaf out-min-power {
+                ciena-common-yang:encrypt "leaf-6";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf out-max-power {
+                ciena-common-yang:encrypt "leaf-7";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf osc-rcv-power {
+                ciena-common-yang:encrypt "leaf-8";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total rx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-9";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of measuremnt.";
+              }
+              leaf osc-tx-power {
+                ciena-common-yang:encrypt "leaf-10";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total tx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              config false;
+            }
+          }
+        }
+        container container-1 {
+          ciena-common-yang:decrypt "result";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          config false;
+          list list-1 {
+            ciena-common-yang:decrypt "amp";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result";
+            key "leaf-1";
+            leaf leaf-1 {
+              type string {
+                ciena-common-yang:stringptr "true";
+              }
+              ciena-common-yang:decrypt "amp_name";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+            }
+            list list-2 {
+              ciena-common-yang:decrypt "measurement-no-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-4 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-5 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-6 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-7 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-8 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-rcv-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-9 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-10 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-tx-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              config false;
+            }
+            list list-3 {
+              ciena-common-yang:decrypt "measurement-high-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-4 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-5 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-6 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-7 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-8 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-rcv-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-9 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-10 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-tx-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              config false;
+            }
+          }
+        }
+        container two-peak-measurements-result {
+          ciena-common-yang:encrypt "container-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          description
+            "Two Peak measurements results data for automatic fiber characterization orchestrator.";
+          config false;
+          list frequency-measurements {
+            ciena-common-yang:encrypt "list-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2";
+            description
+              "Measurements result for each frequency";
+            config false;
+            key "index";
+            leaf index {
+              ciena-common-yang:encrypt "leaf-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              type uint8;
+            }
+            container partner-raman-power {
+              ciena-common-yang:encrypt "container-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              leaf express-in-power {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/container-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Express in measured power at Raman facility.";
+              }
+              leaf line-out-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/container-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Line out measured power at Raman facility.";
+              }
+            }
+            list power-measurements {
+              ciena-common-yang:encrypt "list-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              description
+                "Measurements result for each target power for a two peak channel.";
+              config false;
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type uint32;
+              }
+              leaf target-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Target power set at the amp.";
+              }
+              list amp-measurements {
+                ciena-common-yang:encrypt "list-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak amp measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type string;
+                  config false;
+                  description
+                    "Amp name";
+                }
+                leaf in-current-power {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Input power to the AMP in dBm.";
+                }
+                leaf out-current-power {
+                  ciena-common-yang:encrypt "leaf-3";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Output power from the AMP in dBm.";
+                }
+                leaf gain-tilt {
+                  ciena-common-yang:encrypt "leaf-4";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dB";
+                  config false;
+                  description
+                    "Measured Gain tilt in dB.";
+                }
+                leaf gain {
+                  ciena-common-yang:encrypt "leaf-5";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type ciena-pro-optical-types:gain-dB-1-precision;
+                  config false;
+                  description
+                    "Measured Gain in dB.";
+                }
+                leaf amp-mode {
+                  ciena-common-yang:encrypt "amp-mode";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type enumeration {
+                    enum power {
+                      value 1;
+                      description
+                        "Control to a Power Mode.";
+                    }
+                    enum gain {
+                      value 2;
+                      description
+                        "Control to a Gain Mode. (Default) ";
+                    }
+                    enum gainclamp {
+                      value 3;
+                      description
+                        "Control to a Gainclamp Mode.";
+                    }
+                    enum gain-tilt {
+                      value 4;
+                      description
+                        "Control seeks to achieve the specified target-gain-tilt.";
+                    }
+                    enum ase {
+                      value 5;
+                      description
+                        "Control to an ASE Mode to check line out fiber connectivity and APR/ORL detection.
+                         Amp output power is limited to the provisioned apr-power-level of the amp's config data.";
+                    }
+                  }
+                  default "gain";
+                  description
+                    "Control Mode of the AMP.";
+                }
+                leaf gain-mode {
+                  ciena-common-yang:encrypt "gain-mode";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type enumeration {
+                    enum low {
+                      value 1;
+                      description
+                        "Gain Mode is Low.";
+                    }
+                    enum high {
+                      value 2;
+                      description
+                        "Gain Mode is High.";
+                    }
+                  }
+                  default "high";
+                  description
+                    "Gain Mode of the AMP.";
+                }
+              }
+              list voa {
+                ciena-common-yang:encrypt "list-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak voa measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type string;
+                  config false;
+                  description
+                    "Voa name";
+                }
+                leaf target-loss {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type ciena-pro-optical-types:loss-dB-1-precision;
+                  config false;
+                  description
+                    "Target Loss in dB.";
+                }
+                leaf current-power {
+                  ciena-common-yang:encrypt "leaf-3";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Measured current power at the VOA in dBm";
+                }
+              }
+              list opms {
+                ciena-common-yang:encrypt "list-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak opms measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-3";
+                  type string;
+                  config false;
+                  description
+                    "Opm name";
+                }
+                leaf-list power-slice {
+                  ciena-common-yang:encrypt "leaf-list-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-3";
+                  type ciena-pro-optical-types:power {
+                    range "-75..75.00";
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Power measured in an OPM slice in dBm.";
+                }
+              }
+              list optmons {
+                ciena-common-yang:encrypt "list-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak optmons measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-4";
+                  type string;
+                  config false;
+                  description
+                    "Optmon name";
+                }
+                leaf current-power {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-4";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Measured current power for the optmon in dBm";
+                }
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of two peak measurement.";
+              }
+            }
+          }
+        }
+        container container-2 {
+          ciena-common-yang:decrypt "two-peak-measurements-result";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          config false;
+          list list-1 {
+            ciena-common-yang:decrypt "frequency-measurements";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result";
+            config false;
+            key "leaf-1";
+            leaf leaf-1 {
+              type string {
+                ciena-common-yang:stringptr "true";
+              }
+              ciena-common-yang:decrypt "index";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+            }
+            container container-1 {
+              ciena-common-yang:decrypt "partner-raman-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "express-in-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/partner-raman-power";
+                config false;
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "line-out-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/partner-raman-power";
+                config false;
+              }
+            }
+            list list-1 {
+              ciena-common-yang:decrypt "power-measurements";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+              config false;
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "target-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                config false;
+              }
+              list list-1 {
+                ciena-common-yang:decrypt "amp-measurements";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "in-current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-3 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "out-current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-4 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain-tilt";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-5 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf amp-mode {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "amp-mode";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                }
+                leaf gain-mode {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain-mode";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                }
+              }
+              list list-2 {
+                ciena-common-yang:decrypt "voa";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "target-loss";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+                leaf leaf-3 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+              }
+              list list-3 {
+                ciena-common-yang:decrypt "opms";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+                  config false;
+                }
+                leaf-list leaf-list-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "power-slice";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+                  config false;
+                }
+              }
+              list list-4 {
+                ciena-common-yang:decrypt "optmons";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+                  config false;
+                }
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                config false;
+              }
+            }
+          }
+        }
+        container afc-calculator {
+          config false;
+          leaf status {
+            type afc-orchestrator-types:afc-calculator-status;
+            config false;
+            description
+              "Status of automatic fiber characterization calculator.";
+          }
+          leaf effective-offset {
+            type decimal64 {
+              fraction-digits 1;
+            }
+            config false;
+            description
+              "Effective offset value for the local span.";
+          }
+          leaf fiber-break-detected {
+            type boolean;
+            config false;
+            description
+              "Fiber break detected during automatic fiber characterization.";
+          }
+          leaf calculation-timestamp {
+            type yang-types:date-and-time;
+            config false;
+            description
+              "Timestamp of auto fiber characterization calculation.";
+          }
+          leaf failure-reason {
+            type string;
+            config false;
+            description
+              "Automatic fiber characterization calculator failure reason.";
+          }
+          leaf additional-info {
+            type string;
+            config false;
+            description
+              "Automatic fiber characterization calculator status additional info.";
+          }
+          container calculator-version {
+            uses ciena-common-version:version;
+            config false;
+            description
+              "Automatic fiber characterization calculator version.";
+          }
+        }
+        container afc-fiber-data-downstream {
+          config false;
+          uses afc-orchestrator-types:afco-fiber-attributes;
+        }
+        action initialize-afc-sequencing {
+          description
+            "Used by SCO to Start AFC on a node";
+        }
+        action abort-afc-sequencing;
+        action update-action-wait-time {
+          description
+            "RPC call that updates the wait time for a desired row of the action table.";
+          input {
+            leaf delay-time {
+              type decimal64 {
+                fraction-digits 1;
+              }
+              description
+                "Wait time in seconds to update in action table";
+            }
+            leaf row {
+              type decimal64 {
+                fraction-digits 1;
+              }
+              description
+                "Row of the action table to update";
+            }
+          }
+        }
+        action start-afc-section {
+          description
+            "Starts AFC on all nodes if run from section/subsection head";
+        }
+        action abort-afc-section {
+          description
+            "If run from the section/subsection head, aborts the current AFC action, and propagates abort across all nodes.";
+        }
+        action start-afc-sequencing {
+          description
+            "User command to start AFC on a node without running calibration/recalibration";
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-mount-actions-notifs {
+    action afc-logs {
+      description
+        "Request to enable/disable logs generation.";
+      input {
+        leaf disable {
+          type boolean;
+          description
+            "Enable/Disable logs generation(true/false).";
+        }
+      }
+      output {
+        leaf result {
+          description
+            "Output result message.";
+          type string {
+            length "0..100";
+          }
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-mount-actions-notifs-as-cont {
+    container afc-logs {
+      description
+        "Request to enable/disable logs generation.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+  }
+
+  grouping ciena-6500r-afc-orchestrator-mount-data-actions-notifs-as-cont {
+    container afc-orchestrator {
+      container compatibility {
+        config false;
+        container fsm-version {
+          uses ciena-common-version:version;
+          description
+            "Local FSM version, same for all AFC instance.";
+        }
+        container algo-version {
+          uses ciena-common-version:version;
+          description
+            "Local ALGO version, same for all AFC instance.";
+        }
+      }
+      list instance {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Name of automatic fiber characterization orchestrator instance.
+             It is associated with functional-group name.";
+        }
+        leaf mode {
+          type afc-orchestrator-types:afco-mode;
+          description
+            "AFC Mode to operate in";
+          default "mode2";
+        }
+        leaf state-mode {
+          type afc-orchestrator-types:afco-mode;
+          config false;
+          description
+            "Indicates in which mode AFC is currently operating. This is the state value of the 'mode' attribute configured on the Mux.";
+        }
+        container compatibility {
+          config false;
+          container section-fsm-version {
+            uses ciena-common-version:version;
+            description
+              "Section FSM version of AFC instance.";
+          }
+          container section-algo-version {
+            uses ciena-common-version:version;
+            description
+              "Section ALGO Version of AFC instance.";
+          }
+        }
+        container state {
+          config false;
+          leaf fsm-state {
+            type afc-orchestrator-types:afco-fsm-state;
+            description
+              "Fsm state of automatic fiber characterization orchestrator instance.";
+          }
+          leaf status {
+            type afc-orchestrator-types:afco-status;
+            description
+              "Status of automatic fiber characterization orchestrator.";
+            config false;
+          }
+          leaf raman-bootstrap-mode {
+            type afc-orchestrator-types:raman-on;
+            description
+              "Gain-mode provisioned as Bootstrap of RAMAN(ON/OFF).";
+          }
+          leaf bootstrap-timestamp {
+            type yang-types:date-and-time;
+            description
+              "Indicates time when raman gain mode was changed to bootstrap mode.";
+            config false;
+          }
+          leaf failure-reason {
+            type string;
+            description
+              "Reason of last failure of automatic fiber characterization orchestrator(timeout/ set or get fail/alarm/oms-incomplete).";
+            config false;
+          }
+          leaf start-timestamp {
+            type yang-types:date-and-time;
+            description
+              "Start timestamp of automatic fiber characterization orchestrator.";
+            config false;
+          }
+          leaf end-timestamp {
+            type yang-types:date-and-time;
+            description
+              "End timestamp of automatic fiber characterization orchestrator.";
+            config false;
+          }
+        }
+        container result {
+          ciena-common-yang:encrypt "container-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          description
+            "Operational state data for automatic fiber characterization orchestrator.";
+          config false;
+          list amp {
+            ciena-common-yang:encrypt "list-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1";
+            description
+              "Amp in which power measurements are present.";
+            key "amp_name";
+            leaf amp_name {
+              ciena-common-yang:encrypt "leaf-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              type string;
+            }
+            list measurement-no-power {
+              ciena-common-yang:encrypt "list-2";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              description
+                "Power measurements of span measured with all channels blocked.";
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type uint8;
+              }
+              leaf in-current-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Input power to the AMP in dBm.";
+              }
+              leaf in-min-power {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf in-max-power {
+                ciena-common-yang:encrypt "leaf-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf out-current-power {
+                ciena-common-yang:encrypt "leaf-5";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Output power from the AMP in dBm.";
+              }
+              leaf out-min-power {
+                ciena-common-yang:encrypt "leaf-6";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf out-max-power {
+                ciena-common-yang:encrypt "leaf-7";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf osc-rcv-power {
+                ciena-common-yang:encrypt "leaf-8";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total rx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-9";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of measuremnt.";
+              }
+              leaf osc-tx-power {
+                ciena-common-yang:encrypt "leaf-10";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-2";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total tx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              config false;
+            }
+            list measurement-high-power {
+              ciena-common-yang:encrypt "list-3";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1";
+              description
+                "Power measurements of span measured with a particular channel with EDFA at high power.";
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type uint8;
+              }
+              leaf in-current-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Input power to the AMP in dBm.";
+              }
+              leaf in-min-power {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf in-max-power {
+                ciena-common-yang:encrypt "leaf-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf out-current-power {
+                ciena-common-yang:encrypt "leaf-5";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Output power from the AMP in dBm.";
+              }
+              leaf out-min-power {
+                ciena-common-yang:encrypt "leaf-6";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+              }
+              leaf out-max-power {
+                ciena-common-yang:encrypt "leaf-7";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+              }
+              leaf osc-rcv-power {
+                ciena-common-yang:encrypt "leaf-8";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total rx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-9";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of measuremnt.";
+              }
+              leaf osc-tx-power {
+                ciena-common-yang:encrypt "leaf-10";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-1/list-1/list-3";
+                type ciena-pro-optical-types:power-dBm-1-precision;
+                config false;
+                description
+                  "Total tx power within the band this OSC supports defined by the frequency attribute.";
+              }
+              config false;
+            }
+          }
+        }
+        container container-1 {
+          ciena-common-yang:decrypt "result";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          config false;
+          list list-1 {
+            ciena-common-yang:decrypt "amp";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result";
+            key "leaf-1";
+            leaf leaf-1 {
+              type string {
+                ciena-common-yang:stringptr "true";
+              }
+              ciena-common-yang:decrypt "amp_name";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+            }
+            list list-2 {
+              ciena-common-yang:decrypt "measurement-no-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-4 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-5 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-6 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-7 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-8 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-rcv-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-9 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              leaf leaf-10 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-tx-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-no-power";
+                config false;
+              }
+              config false;
+            }
+            list list-3 {
+              ciena-common-yang:decrypt "measurement-high-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp";
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-4 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "in-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-5 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-current-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-6 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-min-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-7 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "out-max-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-8 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-rcv-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-9 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              leaf leaf-10 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "osc-tx-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/result/amp/measurement-high-power";
+                config false;
+              }
+              config false;
+            }
+          }
+        }
+        container two-peak-measurements-result {
+          ciena-common-yang:encrypt "container-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          description
+            "Two Peak measurements results data for automatic fiber characterization orchestrator.";
+          config false;
+          list frequency-measurements {
+            ciena-common-yang:encrypt "list-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2";
+            description
+              "Measurements result for each frequency";
+            config false;
+            key "index";
+            leaf index {
+              ciena-common-yang:encrypt "leaf-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              type uint8;
+            }
+            container partner-raman-power {
+              ciena-common-yang:encrypt "container-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              leaf express-in-power {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/container-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Express in measured power at Raman facility.";
+              }
+              leaf line-out-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/container-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Line out measured power at Raman facility.";
+              }
+            }
+            list power-measurements {
+              ciena-common-yang:encrypt "list-1";
+              ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1";
+              description
+                "Measurements result for each target power for a two peak channel.";
+              config false;
+              key "index";
+              leaf index {
+                ciena-common-yang:encrypt "leaf-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type uint32;
+              }
+              leaf target-power {
+                ciena-common-yang:encrypt "leaf-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type decimal64 {
+                  fraction-digits 1;
+                }
+                units "dBm";
+                config false;
+                description
+                  "Target power set at the amp.";
+              }
+              list amp-measurements {
+                ciena-common-yang:encrypt "list-1";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak amp measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type string;
+                  config false;
+                  description
+                    "Amp name";
+                }
+                leaf in-current-power {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Input power to the AMP in dBm.";
+                }
+                leaf out-current-power {
+                  ciena-common-yang:encrypt "leaf-3";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Output power from the AMP in dBm.";
+                }
+                leaf gain-tilt {
+                  ciena-common-yang:encrypt "leaf-4";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dB";
+                  config false;
+                  description
+                    "Measured Gain tilt in dB.";
+                }
+                leaf gain {
+                  ciena-common-yang:encrypt "leaf-5";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type ciena-pro-optical-types:gain-dB-1-precision;
+                  config false;
+                  description
+                    "Measured Gain in dB.";
+                }
+                leaf amp-mode {
+                  ciena-common-yang:encrypt "amp-mode";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type enumeration {
+                    enum power {
+                      value 1;
+                      description
+                        "Control to a Power Mode.";
+                    }
+                    enum gain {
+                      value 2;
+                      description
+                        "Control to a Gain Mode. (Default) ";
+                    }
+                    enum gainclamp {
+                      value 3;
+                      description
+                        "Control to a Gainclamp Mode.";
+                    }
+                    enum gain-tilt {
+                      value 4;
+                      description
+                        "Control seeks to achieve the specified target-gain-tilt.";
+                    }
+                    enum ase {
+                      value 5;
+                      description
+                        "Control to an ASE Mode to check line out fiber connectivity and APR/ORL detection.
+                         Amp output power is limited to the provisioned apr-power-level of the amp's config data.";
+                    }
+                  }
+                  default "gain";
+                  description
+                    "Control Mode of the AMP.";
+                }
+                leaf gain-mode {
+                  ciena-common-yang:encrypt "gain-mode";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-1";
+                  type enumeration {
+                    enum low {
+                      value 1;
+                      description
+                        "Gain Mode is Low.";
+                    }
+                    enum high {
+                      value 2;
+                      description
+                        "Gain Mode is High.";
+                    }
+                  }
+                  default "high";
+                  description
+                    "Gain Mode of the AMP.";
+                }
+              }
+              list voa {
+                ciena-common-yang:encrypt "list-2";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak voa measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type string;
+                  config false;
+                  description
+                    "Voa name";
+                }
+                leaf target-loss {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type ciena-pro-optical-types:loss-dB-1-precision;
+                  config false;
+                  description
+                    "Target Loss in dB.";
+                }
+                leaf current-power {
+                  ciena-common-yang:encrypt "leaf-3";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-2";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Measured current power at the VOA in dBm";
+                }
+              }
+              list opms {
+                ciena-common-yang:encrypt "list-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak opms measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-3";
+                  type string;
+                  config false;
+                  description
+                    "Opm name";
+                }
+                leaf-list power-slice {
+                  ciena-common-yang:encrypt "leaf-list-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-3";
+                  type ciena-pro-optical-types:power {
+                    range "-75..75.00";
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Power measured in an OPM slice in dBm.";
+                }
+              }
+              list optmons {
+                ciena-common-yang:encrypt "list-4";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                key "name";
+                description
+                  "Two peak optmons measurements data.";
+                config false;
+                leaf name {
+                  ciena-common-yang:encrypt "leaf-1";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-4";
+                  type string;
+                  config false;
+                  description
+                    "Optmon name";
+                }
+                leaf current-power {
+                  ciena-common-yang:encrypt "leaf-2";
+                  ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1/list-4";
+                  type decimal64 {
+                    fraction-digits 1;
+                  }
+                  units "dBm";
+                  config false;
+                  description
+                    "Measured current power for the optmon in dBm";
+                }
+              }
+              leaf timestamp {
+                ciena-common-yang:encrypt "leaf-3";
+                ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/container-2/list-1/list-1";
+                type yang-types:date-and-time;
+                config false;
+                description
+                  "Timestamp of two peak measurement.";
+              }
+            }
+          }
+        }
+        container container-2 {
+          ciena-common-yang:decrypt "two-peak-measurements-result";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance";
+          config false;
+          list list-1 {
+            ciena-common-yang:decrypt "frequency-measurements";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result";
+            config false;
+            key "leaf-1";
+            leaf leaf-1 {
+              type string {
+                ciena-common-yang:stringptr "true";
+              }
+              ciena-common-yang:decrypt "index";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+            }
+            container container-1 {
+              ciena-common-yang:decrypt "partner-raman-power";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "express-in-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/partner-raman-power";
+                config false;
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "line-out-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/partner-raman-power";
+                config false;
+              }
+            }
+            list list-1 {
+              ciena-common-yang:decrypt "power-measurements";
+              ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements";
+              config false;
+              key "leaf-1";
+              leaf leaf-1 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "index";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+              }
+              leaf leaf-2 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "target-power";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                config false;
+              }
+              list list-1 {
+                ciena-common-yang:decrypt "amp-measurements";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "in-current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-3 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "out-current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-4 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain-tilt";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf leaf-5 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                  config false;
+                }
+                leaf amp-mode {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "amp-mode";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                }
+                leaf gain-mode {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "gain-mode";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+                }
+              }
+              list list-2 {
+                ciena-common-yang:decrypt "voa";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "target-loss";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+                leaf leaf-3 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+                  config false;
+                }
+              }
+              list list-3 {
+                ciena-common-yang:decrypt "opms";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+                  config false;
+                }
+                leaf-list leaf-list-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "power-slice";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+                  config false;
+                }
+              }
+              list list-4 {
+                ciena-common-yang:decrypt "optmons";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                key "leaf-1";
+                config false;
+                leaf leaf-1 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "name";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+                  config false;
+                }
+                leaf leaf-2 {
+                  type string {
+                    ciena-common-yang:stringptr "true";
+                  }
+                  ciena-common-yang:decrypt "current-power";
+                  ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+                  config false;
+                }
+              }
+              leaf leaf-3 {
+                type string {
+                  ciena-common-yang:stringptr "true";
+                }
+                ciena-common-yang:decrypt "timestamp";
+                ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator/instance/two-peak-measurements-result/frequency-measurements/power-measurements";
+                config false;
+              }
+            }
+          }
+        }
+        container afc-calculator {
+          config false;
+          leaf status {
+            type afc-orchestrator-types:afc-calculator-status;
+            config false;
+            description
+              "Status of automatic fiber characterization calculator.";
+          }
+          leaf effective-offset {
+            type decimal64 {
+              fraction-digits 1;
+            }
+            config false;
+            description
+              "Effective offset value for the local span.";
+          }
+          leaf fiber-break-detected {
+            type boolean;
+            config false;
+            description
+              "Fiber break detected during automatic fiber characterization.";
+          }
+          leaf calculation-timestamp {
+            type yang-types:date-and-time;
+            config false;
+            description
+              "Timestamp of auto fiber characterization calculation.";
+          }
+          leaf failure-reason {
+            type string;
+            config false;
+            description
+              "Automatic fiber characterization calculator failure reason.";
+          }
+          leaf additional-info {
+            type string;
+            config false;
+            description
+              "Automatic fiber characterization calculator status additional info.";
+          }
+          container calculator-version {
+            uses ciena-common-version:version;
+            config false;
+            description
+              "Automatic fiber characterization calculator version.";
+          }
+        }
+        container afc-fiber-data-downstream {
+          config false;
+          uses afc-orchestrator-types:afco-fiber-attributes;
+        }
+        container initialize-afc-sequencing {
+          description
+            "Used by SCO to Start AFC on a node";
+        }
+        container abort-afc-sequencing;
+        container update-action-wait-time {
+          description
+            "RPC call that updates the wait time for a desired row of the action table.";
+          container input {
+            ciena-common-yang:containerptr "true";
+          }
+        }
+        container start-afc-section {
+          description
+            "Starts AFC on all nodes if run from section/subsection head";
+        }
+        container abort-afc-section {
+          description
+            "If run from the section/subsection head, aborts the current AFC action, and propagates abort across all nodes.";
+        }
+        container start-afc-sequencing {
+          description
+            "User command to start AFC on a node without running calibration/recalibration";
+        }
+      }
+    }
+    container afc-logs {
+      description
+        "Request to enable/disable logs generation.";
+      container input {
+        ciena-common-yang:containerptr "true";
+      }
+      container output {
+        ciena-common-yang:containerptr "true";
+      }
+    }
+  }
+
+  uses ciena-6500r-afc-orchestrator-mount-data;
+
+  rpc afc-logs {
+    description
+      "Request to enable/disable logs generation.";
+    input {
+      leaf disable {
+        type boolean;
+        description
+          "Enable/Disable logs generation(true/false).";
+      }
+    }
+    output {
+      leaf result {
+        description
+          "Output result message.";
+        type string {
+          length "0..100";
+        }
+      }
+    }
+  }
+
+  grouping power-measurement {
+    description
+      "Power measurements.";
+    leaf in-current-power {
+      ciena-common-yang:encrypt "leaf-2";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Input power to the AMP in dBm.";
+    }
+    leaf leaf-2 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "in-current-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf in-min-power {
+      ciena-common-yang:encrypt "leaf-3";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+    }
+    leaf leaf-3 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "in-min-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf in-max-power {
+      ciena-common-yang:encrypt "leaf-4";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+    }
+    leaf leaf-4 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "in-max-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf out-current-power {
+      ciena-common-yang:encrypt "leaf-5";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Output power from the AMP in dBm.";
+    }
+    leaf leaf-5 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "out-current-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf out-min-power {
+      ciena-common-yang:encrypt "leaf-6";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+    }
+    leaf leaf-6 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "out-min-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf out-max-power {
+      ciena-common-yang:encrypt "leaf-7";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dBm";
+      config false;
+      description
+        "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+    }
+    leaf leaf-7 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "out-max-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf osc-rcv-power {
+      ciena-common-yang:encrypt "leaf-8";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "Total rx power within the band this OSC supports defined by the frequency attribute.";
+    }
+    leaf leaf-8 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "osc-rcv-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf timestamp {
+      ciena-common-yang:encrypt "leaf-9";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type yang-types:date-and-time;
+      config false;
+      description
+        "Timestamp of measuremnt.";
+    }
+    leaf leaf-9 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "timestamp";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+    leaf osc-tx-power {
+      ciena-common-yang:encrypt "leaf-10";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "Total tx power within the band this OSC supports defined by the frequency attribute.";
+    }
+    leaf leaf-10 {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      ciena-common-yang:decrypt "osc-tx-power";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/power-measurement";
+      config false;
+    }
+  }
+
+  grouping afc-orchestrator-result {
+    description
+      "Result for automatic fiber characterization orchestrator.";
+    list amp {
+      ciena-common-yang:encrypt "list-1";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result";
+      description
+        "Amp in which power measurements are present.";
+      key "amp_name";
+      leaf amp_name {
+        ciena-common-yang:encrypt "leaf-1";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1";
+        type string;
+      }
+      list measurement-no-power {
+        ciena-common-yang:encrypt "list-2";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1";
+        description
+          "Power measurements of span measured with all channels blocked.";
+        key "index";
+        leaf index {
+          ciena-common-yang:encrypt "leaf-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type uint8;
+        }
+        leaf in-current-power {
+          ciena-common-yang:encrypt "leaf-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Input power to the AMP in dBm.";
+        }
+        leaf in-min-power {
+          ciena-common-yang:encrypt "leaf-3";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+        }
+        leaf in-max-power {
+          ciena-common-yang:encrypt "leaf-4";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+        }
+        leaf out-current-power {
+          ciena-common-yang:encrypt "leaf-5";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Output power from the AMP in dBm.";
+        }
+        leaf out-min-power {
+          ciena-common-yang:encrypt "leaf-6";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+        }
+        leaf out-max-power {
+          ciena-common-yang:encrypt "leaf-7";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+        }
+        leaf osc-rcv-power {
+          ciena-common-yang:encrypt "leaf-8";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type ciena-pro-optical-types:power-dBm-1-precision;
+          config false;
+          description
+            "Total rx power within the band this OSC supports defined by the frequency attribute.";
+        }
+        leaf timestamp {
+          ciena-common-yang:encrypt "leaf-9";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type yang-types:date-and-time;
+          config false;
+          description
+            "Timestamp of measuremnt.";
+        }
+        leaf osc-tx-power {
+          ciena-common-yang:encrypt "leaf-10";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-2";
+          type ciena-pro-optical-types:power-dBm-1-precision;
+          config false;
+          description
+            "Total tx power within the band this OSC supports defined by the frequency attribute.";
+        }
+        config false;
+      }
+      list measurement-high-power {
+        ciena-common-yang:encrypt "list-3";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1";
+        description
+          "Power measurements of span measured with a particular channel with EDFA at high power.";
+        key "index";
+        leaf index {
+          ciena-common-yang:encrypt "leaf-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type uint8;
+        }
+        leaf in-current-power {
+          ciena-common-yang:encrypt "leaf-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Input power to the AMP in dBm.";
+        }
+        leaf in-min-power {
+          ciena-common-yang:encrypt "leaf-3";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Minimum tidemarked input power to the AMP in dBm. This should be the min power measured since the last measuremnt request";
+        }
+        leaf in-max-power {
+          ciena-common-yang:encrypt "leaf-4";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Maximum tidemarked input power to the AMP in dBm. This should be the max power measured since the last measuremnt request";
+        }
+        leaf out-current-power {
+          ciena-common-yang:encrypt "leaf-5";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Output power from the AMP in dBm.";
+        }
+        leaf out-min-power {
+          ciena-common-yang:encrypt "leaf-6";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Minimum tidemarked output power from the AMP in dBm. This should be the min power measured since the last measuremnt request";
+        }
+        leaf out-max-power {
+          ciena-common-yang:encrypt "leaf-7";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Maximum tidemarked output power from the AMP in dBm. This should be the max power measured since the last measuremnt request";
+        }
+        leaf osc-rcv-power {
+          ciena-common-yang:encrypt "leaf-8";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type ciena-pro-optical-types:power-dBm-1-precision;
+          config false;
+          description
+            "Total rx power within the band this OSC supports defined by the frequency attribute.";
+        }
+        leaf timestamp {
+          ciena-common-yang:encrypt "leaf-9";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type yang-types:date-and-time;
+          config false;
+          description
+            "Timestamp of measuremnt.";
+        }
+        leaf osc-tx-power {
+          ciena-common-yang:encrypt "leaf-10";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/list-1/list-3";
+          type ciena-pro-optical-types:power-dBm-1-precision;
+          config false;
+          description
+            "Total tx power within the band this OSC supports defined by the frequency attribute.";
+        }
+        config false;
+      }
+    }
+    list list-1 {
+      ciena-common-yang:decrypt "amp";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result";
+      key "leaf-1";
+      leaf leaf-1 {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        ciena-common-yang:decrypt "amp_name";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp";
+      }
+      list list-2 {
+        ciena-common-yang:decrypt "measurement-no-power";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp";
+        key "leaf-1";
+        leaf leaf-1 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "index";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+        }
+        leaf leaf-2 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-current-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-3 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-min-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-4 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-max-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-5 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-current-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-6 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-min-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-7 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-max-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-8 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "osc-rcv-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-9 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "timestamp";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        leaf leaf-10 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "osc-tx-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-no-power";
+          config false;
+        }
+        config false;
+      }
+      list list-3 {
+        ciena-common-yang:decrypt "measurement-high-power";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp";
+        key "leaf-1";
+        leaf leaf-1 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "index";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+        }
+        leaf leaf-2 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-current-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-3 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-min-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-4 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "in-max-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-5 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-current-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-6 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-min-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-7 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "out-max-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-8 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "osc-rcv-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-9 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "timestamp";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        leaf leaf-10 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "osc-tx-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-result/amp/measurement-high-power";
+          config false;
+        }
+        config false;
+      }
+    }
+  }
+
+  grouping afc-orchestrator-two-peak-measurements-result {
+    description
+      "Two peak measurements result for automatic fiber characterization orchestrator.";
+    list frequency-measurements {
+      ciena-common-yang:encrypt "list-1";
+      ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result";
+      description
+        "Measurements result for each frequency";
+      config false;
+      key "index";
+      leaf index {
+        ciena-common-yang:encrypt "leaf-1";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1";
+        type uint8;
+      }
+      container partner-raman-power {
+        ciena-common-yang:encrypt "container-1";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1";
+        leaf express-in-power {
+          ciena-common-yang:encrypt "leaf-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/container-1";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Express in measured power at Raman facility.";
+        }
+        leaf line-out-power {
+          ciena-common-yang:encrypt "leaf-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/container-1";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Line out measured power at Raman facility.";
+        }
+      }
+      list power-measurements {
+        ciena-common-yang:encrypt "list-1";
+        ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1";
+        description
+          "Measurements result for each target power for a two peak channel.";
+        config false;
+        key "index";
+        leaf index {
+          ciena-common-yang:encrypt "leaf-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          type uint32;
+        }
+        leaf target-power {
+          ciena-common-yang:encrypt "leaf-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dBm";
+          config false;
+          description
+            "Target power set at the amp.";
+        }
+        list amp-measurements {
+          ciena-common-yang:encrypt "list-1";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          key "name";
+          description
+            "Two peak amp measurements data.";
+          config false;
+          leaf name {
+            ciena-common-yang:encrypt "leaf-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type string;
+            config false;
+            description
+              "Amp name";
+          }
+          leaf in-current-power {
+            ciena-common-yang:encrypt "leaf-2";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type decimal64 {
+              fraction-digits 1;
+            }
+            units "dBm";
+            config false;
+            description
+              "Input power to the AMP in dBm.";
+          }
+          leaf out-current-power {
+            ciena-common-yang:encrypt "leaf-3";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type decimal64 {
+              fraction-digits 1;
+            }
+            units "dBm";
+            config false;
+            description
+              "Output power from the AMP in dBm.";
+          }
+          leaf gain-tilt {
+            ciena-common-yang:encrypt "leaf-4";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type decimal64 {
+              fraction-digits 1;
+            }
+            units "dB";
+            config false;
+            description
+              "Measured Gain tilt in dB.";
+          }
+          leaf gain {
+            ciena-common-yang:encrypt "leaf-5";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type ciena-pro-optical-types:gain-dB-1-precision;
+            config false;
+            description
+              "Measured Gain in dB.";
+          }
+          leaf amp-mode {
+            ciena-common-yang:encrypt "amp-mode";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type enumeration {
+              enum power {
+                value 1;
+                description
+                  "Control to a Power Mode.";
+              }
+              enum gain {
+                value 2;
+                description
+                  "Control to a Gain Mode. (Default) ";
+              }
+              enum gainclamp {
+                value 3;
+                description
+                  "Control to a Gainclamp Mode.";
+              }
+              enum gain-tilt {
+                value 4;
+                description
+                  "Control seeks to achieve the specified target-gain-tilt.";
+              }
+              enum ase {
+                value 5;
+                description
+                  "Control to an ASE Mode to check line out fiber connectivity and APR/ORL detection.
+                   Amp output power is limited to the provisioned apr-power-level of the amp's config data.";
+              }
+            }
+            default "gain";
+            description
+              "Control Mode of the AMP.";
+          }
+          leaf gain-mode {
+            ciena-common-yang:encrypt "gain-mode";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-1";
+            type enumeration {
+              enum low {
+                value 1;
+                description
+                  "Gain Mode is Low.";
+              }
+              enum high {
+                value 2;
+                description
+                  "Gain Mode is High.";
+              }
+            }
+            default "high";
+            description
+              "Gain Mode of the AMP.";
+          }
+        }
+        list voa {
+          ciena-common-yang:encrypt "list-2";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          key "name";
+          description
+            "Two peak voa measurements data.";
+          config false;
+          leaf name {
+            ciena-common-yang:encrypt "leaf-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-2";
+            type string;
+            config false;
+            description
+              "Voa name";
+          }
+          leaf target-loss {
+            ciena-common-yang:encrypt "leaf-2";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-2";
+            type ciena-pro-optical-types:loss-dB-1-precision;
+            config false;
+            description
+              "Target Loss in dB.";
+          }
+          leaf current-power {
+            ciena-common-yang:encrypt "leaf-3";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-2";
+            type decimal64 {
+              fraction-digits 1;
+            }
+            units "dBm";
+            config false;
+            description
+              "Measured current power at the VOA in dBm";
+          }
+        }
+        list opms {
+          ciena-common-yang:encrypt "list-3";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          key "name";
+          description
+            "Two peak opms measurements data.";
+          config false;
+          leaf name {
+            ciena-common-yang:encrypt "leaf-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-3";
+            type string;
+            config false;
+            description
+              "Opm name";
+          }
+          leaf-list power-slice {
+            ciena-common-yang:encrypt "leaf-list-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-3";
+            type ciena-pro-optical-types:power {
+              range "-75..75.00";
+            }
+            units "dBm";
+            config false;
+            description
+              "Power measured in an OPM slice in dBm.";
+          }
+        }
+        list optmons {
+          ciena-common-yang:encrypt "list-4";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          key "name";
+          description
+            "Two peak optmons measurements data.";
+          config false;
+          leaf name {
+            ciena-common-yang:encrypt "leaf-1";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-4";
+            type string;
+            config false;
+            description
+              "Optmon name";
+          }
+          leaf current-power {
+            ciena-common-yang:encrypt "leaf-2";
+            ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1/list-4";
+            type decimal64 {
+              fraction-digits 1;
+            }
+            units "dBm";
+            config false;
+            description
+              "Measured current power for the optmon in dBm";
+          }
+        }
+        leaf timestamp {
+          ciena-common-yang:encrypt "leaf-3";
+          ciena-common-yang:encrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/list-1/list-1";
+          type yang-types:date-and-time;
+          config false;
+          description
+            "Timestamp of two peak measurement.";
+        }
+      }
+    }
+    list list-1 {
+      ciena-common-yang:decrypt "frequency-measurements";
+      ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result";
+      config false;
+      key "leaf-1";
+      leaf leaf-1 {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        ciena-common-yang:decrypt "index";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements";
+      }
+      container container-1 {
+        ciena-common-yang:decrypt "partner-raman-power";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements";
+        leaf leaf-1 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "express-in-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/partner-raman-power";
+          config false;
+        }
+        leaf leaf-2 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "line-out-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/partner-raman-power";
+          config false;
+        }
+      }
+      list list-1 {
+        ciena-common-yang:decrypt "power-measurements";
+        ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements";
+        config false;
+        key "leaf-1";
+        leaf leaf-1 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "index";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+        }
+        leaf leaf-2 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "target-power";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          config false;
+        }
+        list list-1 {
+          ciena-common-yang:decrypt "amp-measurements";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          key "leaf-1";
+          config false;
+          leaf leaf-1 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "name";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+            config false;
+          }
+          leaf leaf-2 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "in-current-power";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+            config false;
+          }
+          leaf leaf-3 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "out-current-power";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+            config false;
+          }
+          leaf leaf-4 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "gain-tilt";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+            config false;
+          }
+          leaf leaf-5 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "gain";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+            config false;
+          }
+          leaf amp-mode {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "amp-mode";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+          }
+          leaf gain-mode {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "gain-mode";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/amp-measurements";
+          }
+        }
+        list list-2 {
+          ciena-common-yang:decrypt "voa";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          key "leaf-1";
+          config false;
+          leaf leaf-1 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "name";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+            config false;
+          }
+          leaf leaf-2 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "target-loss";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+            config false;
+          }
+          leaf leaf-3 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "current-power";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/voa";
+            config false;
+          }
+        }
+        list list-3 {
+          ciena-common-yang:decrypt "opms";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          key "leaf-1";
+          config false;
+          leaf leaf-1 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "name";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+            config false;
+          }
+          leaf-list leaf-list-1 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "power-slice";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/opms";
+            config false;
+          }
+        }
+        list list-4 {
+          ciena-common-yang:decrypt "optmons";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          key "leaf-1";
+          config false;
+          leaf leaf-1 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "name";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+            config false;
+          }
+          leaf leaf-2 {
+            type string {
+              ciena-common-yang:stringptr "true";
+            }
+            ciena-common-yang:decrypt "current-power";
+            ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements/optmons";
+            config false;
+          }
+        }
+        leaf leaf-3 {
+          type string {
+            ciena-common-yang:stringptr "true";
+          }
+          ciena-common-yang:decrypt "timestamp";
+          ciena-common-yang:decrypt-path "/ciena-6500r-afc-orchestrator/afc-orchestrator-two-peak-measurements-result/frequency-measurements/power-measurements";
+          config false;
+        }
+      }
+    }
+  }
+}

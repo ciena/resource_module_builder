@@ -1,0 +1,761 @@
+module ciena-waveserver-license {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-license";
+  prefix license;
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  import ciena-waveserver-alarm {
+    prefix alarm;
+  }
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the software licensing state for Ciena's Waveserver Platform,
+     including installed licenses, and compliance to licensing requirements.";
+
+  revision 2021-05-28 {
+    description
+      "Added rpc 'waveserver-license-client-server-sync-now'.
+       Added 'server' enumeration to typedef 'enumeration-source'.
+       Added 'commissioning' enumeration to typedef 'license-compliance-state'.
+       Changed 'operational-state' to a new typedef 'license-oper-state'.
+       Added 'license-files' container.
+       Added 'protocol' and 'sync-interval' leafs to 'server' container.
+       Added 'arrears' list.
+       Renamed 'checked-out-count' leaf to 'check-out-count'.
+       Added 'start-date' to 'licenses' container.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2020-10-16 {
+    description
+      "Added rpc 'waveserver-license-client-set-capability'.";
+    reference
+      "Waveserver OS R2.0.3 user's guide.";
+  }
+  revision 2020-02-18 {
+    description
+      "Added leaf 'time-remining' to 'licenses-list'.";
+    reference
+      "Waveserver OS R2.0 user's guide.";
+  }
+  revision 2019-02-21 {
+    description
+      "Added license compliance state enum.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2018-06-20 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.6 YANG model.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+
+  typedef license-compliance-state {
+    type enumeration {
+      enum "not-compliant" {
+        description
+          "The system is not compliant with all licensing requirements.";
+      }
+      enum "compliant" {
+        description
+          "The system complies with all licensing requirements.";
+      }
+      enum "not-initialized" {
+        description
+          "The  licensing system is not initialized yet as time is not set.";
+      }
+      enum "commissioning" {
+        description
+          "The licensing system is in commissioning mode.";
+      }
+    }
+    description
+      "Whether the system complies with all licensing requirements.";
+  }
+
+  typedef license-type {
+    type enumeration {
+      enum "trial" {
+        description
+          "Trial License";
+      }
+      enum "served" {
+        description
+          "Served License";
+      }
+      enum "pre-authorized" {
+        description
+          "Pre-Authorized License";
+      }
+    }
+    description
+      "License type.";
+  }
+
+  typedef license-status {
+    type enumeration {
+      enum "valid" {
+        description
+          "Valid License";
+      }
+      enum "invalid" {
+        description
+          "Invalid License";
+      }
+      enum "expired" {
+        description
+          "Expired License";
+      }
+    }
+    description
+      "Validity of the license.";
+  }
+
+  typedef license-source {
+    type enumeration {
+      enum "pre-install" {
+        description
+          "Pre-Installed License";
+      }
+      enum "local" {
+        description
+          "Locally Held License";
+      }
+      enum "pre-authorized" {
+        description
+          "Pre-Authorized License";
+      }
+      enum "server" {
+        description
+          "License Served from an External Server";
+      }
+    }
+    description
+      "The source of the license.";
+  }
+
+  typedef license-oper-state {
+    type enumeration {
+      enum "down" {
+        description
+          "License System is down/disabled/failed.";
+      }
+      enum "up" {
+        description
+          "License System is up/operational.";
+      }
+      enum "commissioning" {
+        description
+          "License System is up/operational and in license commissioning mode.";
+      }
+    }
+    description
+      "License Operational State.";
+  }
+
+  grouping license-file-group {
+    description
+      "Common group of attributes for license files.";
+    leaf index {
+      type uint32;
+      description
+        "Unique id, read-only attribute.";
+    }
+
+    leaf date-and-time {
+      type string {
+        length "1..31";
+      }
+      description
+        "The license file downloaded date and time, in string format.";
+    }
+
+    leaf filename {
+      type string {
+        length "1..127";
+      }
+      description
+        "The license file name.";
+    }
+
+    leaf size {
+      type uint32;
+      units "bytes";
+      description
+        "The license file size, in bytes.";
+    }
+  }
+
+  container waveserver-license {
+    ui:ui-name "License";
+    description
+      "Waveserver license information parameters.";
+    container client {
+      ui:ui-name "License Client";
+      description
+        "License client information.";
+      container id {
+        ui:ui-name "License Client Identification";
+        description
+          "License client identification information.";
+        leaf registration-id {
+          ui:ui-name "Registration Id";
+          type cienawstypes:string-maxl-64;
+          description
+            "License client registration id";
+        }
+      }
+
+      container state {
+        ui:ui-name "License Client State";
+        description
+          "License client state information.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Administrative state of the license service. Always enabled.";
+        }
+
+        leaf operational-state {
+          type license-oper-state;
+          config false;
+          description
+            "Operational state of the license service.";
+        }
+
+        leaf compliance-state {
+          ui:ui-name "Compliance State";
+          type license-compliance-state;
+          config false;
+          description
+            "Whether the license client is compliant.";
+        }
+      }
+
+      list alarm-instances {
+        ui:ui-name "License Alarm Instances";
+        key "instance";
+        config false;
+        description
+          "A reference table of the defined alarm instances associated with
+           the license client. Each alarm instance is associated with a
+           specific software feature that may be supported on the system.";
+        leaf instance {
+          ui:ui-name "Alarm Instance";
+          type alarm:alarm-instance-string;
+          description
+            "The object instance the license alarm may be raised against.";
+        }
+
+        leaf feature {
+          ui:ui-name "Feature Name";
+          type cienawstypes:string-maxl-128;
+          description
+            "The name of the feature associated with the license instance.";
+        }
+
+        leaf description {
+          ui:ui-name "Description";
+          type cienawstypes:string-maxl-128;
+          description
+            "Description of the feature associated with the license instance.";
+        }
+      }
+
+      list arrears {
+        key "index";
+        config false;
+        max-elements 200;
+        description
+          "List of licenses in arrears resulting in a License Violation Alarm.";
+        leaf index {
+          type uint32;
+          description
+            "Unique index, read-only attribute.";
+        }
+
+        leaf feature {
+          type string {
+            length "1..127";
+          }
+          description
+            "The license feature name.";
+        }
+
+        leaf description {
+          type string {
+            length "1..127";
+          }
+          description
+            "The license feature description.";
+        }
+
+        leaf installed-count {
+          type uint32;
+          description
+            "Count of permanent licenses activated.";
+        }
+
+        leaf check-out-count {
+          type uint32;
+          description
+            "Count of licenses currently in use.";
+        }
+
+        leaf arrear-count {
+          type uint32;
+          description
+            "Count of licenses currently in arrears.";
+        }
+      }
+    }
+
+    container licenses {
+      ui:ui-name "Licenses";
+      config false;
+      description
+        "Waveserver licenses.";
+      list licenses-list {
+        ui:ui-name "Licenses List";
+        key "license-index";
+        description
+          "List of waveserver licenses.";
+        leaf license-index {
+          ui:ui-name "License Index";
+          type uint32;
+          mandatory true;
+          description
+            "License index, unique, key value for the License List.";
+        }
+
+        leaf name {
+          ui:ui-name "License Name";
+          type cienawstypes:string-maxl-128;
+          description
+            "Name of the License.";
+        }
+
+        leaf description {
+          ui:ui-name "License Description";
+          type cienawstypes:string-maxl-128;
+          description
+            "Description of the License.";
+        }
+
+        leaf version {
+          ui:ui-name "Version";
+          type cienawstypes:string-maxl-16;
+          description
+            "Version of the License.";
+        }
+
+        leaf status {
+          ui:ui-name "Status";
+          type license-status;
+          description
+            "Status of the License.";
+        }
+
+        leaf source {
+          ui:ui-name "Source";
+          type license-source;
+          description
+            "Source of the License.";
+        }
+
+        leaf issuer-name {
+          ui:ui-name "Issuer Name";
+          type cienawstypes:string-maxl-128;
+          description
+            "Name of the Issuer of the License.";
+        }
+
+        leaf issued-date {
+          ui:ui-name "Issued Date";
+          type cienawstypes:string-maxl-128;
+          description
+            "Date the License was issued.";
+        }
+
+        leaf start-date {
+          ui:ui-name "Start Date";
+          type cienawstypes:string-maxl-128;
+          description
+            "Date from when the License will be Valid.";
+        }
+
+        leaf type {
+          ui:ui-name "Type";
+          type license-type;
+          description
+            "Type of the License.";
+        }
+
+        leaf host-id {
+          ui:ui-name "Host Id";
+          type cienawstypes:string-maxl-128;
+          description
+            "Host Id of the License.";
+        }
+
+        leaf count {
+          ui:ui-name "Count";
+          type cienawstypes:string-maxl-16;
+          description
+            "Number of License instances available.";
+        }
+
+        leaf check-out-count {
+          ui:ui-name "Checked out Count";
+          type cienawstypes:string-maxl-16;
+          description
+            "Number of License instances checked out.";
+        }
+
+        leaf expiry-date {
+          ui:ui-name "Expiry Date";
+          type cienawstypes:string-maxl-32;
+          description
+            "Date the License expires.";
+        }
+
+        leaf time-remaining {
+          ui:ui-name "License Time Remining";
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "days";
+          config false;
+          description
+            "Amount of time remaining in days for license expiration.";
+        }
+
+        leaf notice {
+          ui:ui-name "Notice";
+          type cienawstypes:string-maxl-128;
+          description
+            "Notice of the License.";
+        }
+      }
+    }
+
+    container server {
+      ui:ui-name "License Server";
+      description
+        "License server information.";
+      leaf host-address {
+        ui:ui-name "Host Address";
+        type string {
+          length "0..256";
+          pattern ".+:[0-9]+";
+        }
+        description
+          "The license server host name and port number, separated by a colon.";
+      }
+
+      leaf protocol {
+        ui:ui-name "License Server Protocol";
+        type enumeration {
+          enum "https" {
+            description
+              "Use HTTPS for server communication.";
+          }
+          enum "http" {
+            description
+              "Use HTTP for server communication.";
+          }
+        }
+        default "https";
+        description
+          "The protocol to communicate with the external license server.
+           The default is https.";
+      }
+
+      leaf sync-interval {
+        type uint32 {
+          range "15 .. 1440";
+        }
+        units "minutes";
+        default "15";
+        description
+          "Time (in minutes) to sync with the external license server: 15 min
+           is default; Once a day (1440min) max allowed.";
+      }
+
+      leaf num-license-servers {
+        ui:ui-name "Number of License Servers";
+        type uint32;
+        config false;
+        description
+          "The number of license servers.";
+      }
+    }
+
+    container license-files {
+      ui:ui-name "License Files";
+      config false;
+      description
+        "License files in the system (Downloaded and Processed).";
+      list downloaded-file {
+        ui:ui-name "Downloaded File";
+        key "index";
+        max-elements 50;
+        description
+          "List of downloaded license files.";
+        uses license-file-group;
+      }
+
+      list processed-file {
+        ui:ui-name "Processed File";
+        key "index";
+        max-elements 50;
+        description
+          "List of processed license files.";
+        uses license-file-group;
+      }
+    }
+  }
+
+  rpc waveserver-license-client-set-capability {
+    description
+      "Set optional license client capability string.";
+    input {
+      leaf capability-string {
+        type string {
+          length "0..64";
+        }
+        description
+          "License capability string.";
+      }
+    }
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-file-delete {
+    description
+      "Perform a license file delete.";
+    input {
+      leaf filename {
+        ui:ui-name "Filename";
+        type cienawstypes:string-maxl-254;
+        description
+          "Filename of the license file.";
+      }
+    }
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-file-generate-request {
+    description
+      "Generate a license capability file.";
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-file-activate {
+    description
+      "Activate a downloaded license file.";
+    input {
+      leaf filename {
+        ui:ui-name "Filename";
+        type cienawstypes:string-maxl-254;
+        description
+          "Filename of the license file.";
+      }
+    }
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-server-clear {
+    description
+      "Clear the license server information.";
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-file-download {
+    description
+      "Download a license file.";
+    input {
+      leaf mode {
+        ui:ui-name "Mode";
+        type enumeration {
+          enum "none" {
+            value 0;
+            description
+              "No FTP mode is specified.";
+          }
+          enum "tftp" {
+            value 1;
+            description
+              "Trivial File Transfer Protocol (TFTP) mode.";
+          }
+          enum "ftp" {
+            value 2;
+            description
+              "File Transfer Protocol (FTP) mode.";
+          }
+          enum "sftp" {
+            value 3;
+            description
+              "Secure File Transfer Protocol (SFTP) mode.";
+          }
+          enum "scp" {
+            value 4;
+            description
+              "Secure Copy Protocol (SCP) mode.";
+          }
+        }
+        mandatory true;
+        description
+          "File transfer protocol to use for the download.";
+      }
+
+      leaf server {
+        ui:ui-name "Server";
+        type cienawstypes:string-maxl-64;
+        mandatory true;
+        description
+          "Server IP Address.";
+      }
+
+      leaf login-id {
+        ui:ui-name "Login ID";
+        type cienawstypes:string-maxl-32;
+        description
+          "Login ID.";
+      }
+
+      leaf password {
+        ui:ui-name "Password";
+        type cienawstypes:string-maxl-128;
+        description
+          "Password in clear text.";
+      }
+
+      leaf filename {
+        ui:ui-name "Filename";
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        description
+          "Filename of the license file.";
+      }
+    }
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+
+  rpc waveserver-license-client-server-sync-now {
+    description
+      "Perform a license feature sync with the external license server if an external
+       license server is configured.";
+
+    output {
+      leaf license-return-code {
+        type uint32;
+        description
+          "License return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf license-return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "License return code description";
+      }
+    }
+  }
+}

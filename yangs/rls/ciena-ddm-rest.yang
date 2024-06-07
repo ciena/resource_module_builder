@@ -1,0 +1,288 @@
+module ciena-ddm-rest {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddm-rest";
+  prefix ddm-rest;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-ddy-msg {
+    prefix ciena-ddy-msg;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module describes ddm messaging layer over REST & WebSocket Layer.";
+
+  revision 2021-06-02 {
+    description
+      "Add redirect leaf to routes list.";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2021-02-15 {
+    description
+      "Add raw-conf leaf-list to routes list.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2021-01-20 {
+    description
+      "Modify exisitng routes & addition of reverse-proxy & document route options";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2015-04-07 {
+    description
+      "Initial Revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  identity rest {
+    base ciena-ddy-msg:ddm-protocols;
+    description
+      "REST Client/Server";
+  }
+
+  identity websocket {
+    base ciena-ddy-msg:ddm-protocols;
+    description
+      "WebSocket based Client/Server";
+  }
+
+  grouping rest-api-route {
+    container rest-api {
+      leaf type {
+        type enumeration {
+          enum rest;
+          enum restconf;
+        }
+      }
+      leaf tree-root {
+        type string;
+        description
+          "Path extension for datatree operations, Default is empty";
+      }
+      leaf rpc-root {
+        type string;
+        description
+          "Path extension for rpc operations, Default is empty.";
+      }
+    }
+  }
+
+  grouping document-route {
+    container documents {
+      leaf path {
+        type string;
+        description
+          "Path on file system";
+      }
+    }
+  }
+
+  grouping reverse-proxy-route {
+    container reverse-proxy {
+      leaf ipport {
+        type string;
+        description
+          "IP and PORT of the proxied server";
+      }
+      leaf prefix {
+        type string;
+      }
+      leaf method {
+        type enumeration {
+          enum http1;
+        }
+      }
+      leaf multiplex {
+        type uint8;
+        default "1";
+        description
+          "Maximum number of simultaneous requests to
+           issue to a single proxy";
+      }
+    }
+  }
+
+  grouping endpoint {
+    leaf ipport {
+      type string;
+      description
+        "IP and Port in the URL of the destination.";
+    }
+    leaf scheme {
+      type enumeration {
+        enum http;
+        enum https;
+      }
+      description
+        "Transport scheme";
+    }
+    leaf username {
+      type string;
+      description
+        "User name.";
+    }
+    leaf password {
+      type string;
+      description
+        "Password";
+    }
+    leaf auth {
+      type boolean;
+      description
+        "Authentication supported for this endpoint or not. If
+         true, routes '/login' & '/logout' will be added for it.
+         Default is false for scheme http; and true for scheme https.";
+    }
+    list routes {
+      description
+        "If no route is provided, default will be:
+          <routes>
+            <root>api</root>
+            <rest-api>
+              <type>rest</type>
+            </rest-api>
+          <routes>
+          <routes>
+            <root>restconf</root>
+            <rest-api>
+              <type>restconf</type>
+            </rest-api>
+          <routes>
+
+          With interfering routes, the route which comes first will takeover
+          the route below. For example, for following routes in order:
+            route /
+            route /test
+          '/test' would not work as per route #2, since it is part of route #1
+          i.e. '/' and would be handled by route #1.
+
+          Also if none of choice type or raw-conf is provided, route would be
+          considered as a rest route (for backward compatibility).";
+      key "root";
+      leaf root {
+        type string;
+        description
+          "API root path";
+      }
+      leaf auth-required {
+        type boolean;
+        description
+          "Describes if authentication is required to access this route.
+           Default value is true if ../auth is true. If ../auth is false,
+           this field has no effect.";
+      }
+      choice type {
+        description
+          "Specifies what type of route it is. If absent, for
+           backward compatibility route is considered to be of type
+           as rest-api[@type=rest] unless root is 'restconf' in which
+           case it is considered as type rest-api[@type=restconf]";
+        case rest-api {
+          uses rest-api-route;
+        }
+        case document {
+          uses document-route;
+        }
+        case reverse-proxy {
+          uses reverse-proxy-route;
+        }
+      }
+      leaf-list raw-conf {
+        type string {
+          yang:stringptr "true";
+        }
+        description
+          "Extra configuration that should be added to route. Value of this
+           field should adhere to the raw syntax supported by the backend
+           webserver in use.";
+      }
+      leaf redirect {
+        type boolean;
+        default "true";
+        description
+          "Should redirect to root path on authentication denial or just
+           return 401. Valid only for document & reverse-proxy routes";
+      }
+    }
+  }
+
+  augment "/ciena-ddy-msg:domains/ciena-ddy-msg:protocols" {
+    when "ciena-ddy-msg:type = 'ciena-ddy-msg:rest'";
+    container rest-options {
+      uses ddm-rest:endpoint;
+      leaf timeout {
+        type uint32;
+        description
+          "Timeout";
+      }
+      leaf format {
+        type identityref {
+          base ciena-ddy-msg:ddm-format;
+        }
+        description
+          "Serialization format for the data.";
+      }
+      list endpoints {
+        key "ipport";
+        uses ddm-rest:endpoint;
+      }
+    }
+  }
+
+  augment "/ciena-ddy-msg:domains/ciena-ddy-msg:protocols" {
+    when "ciena-ddy-msg:type = 'ciena-ddy-msg:websocket'";
+    container websocket-options {
+      leaf ipport {
+        type string;
+        description
+          "IP and Port in the URL of the destination.";
+      }
+      leaf username {
+        type string;
+        description
+          "User name.";
+      }
+      leaf password {
+        type string;
+        description
+          "Password";
+      }
+      leaf root {
+        type string;
+        description
+          "API root path";
+      }
+      leaf timeout {
+        type uint32;
+        description
+          "Timeout";
+      }
+      leaf scheme {
+        type enumeration {
+          enum ws;
+          enum wss;
+        }
+        description
+          "Transport scheme";
+      }
+      leaf format {
+        type identityref {
+          base ciena-ddy-msg:ddm-format;
+        }
+        description
+          "Serialization format for the data.";
+      }
+    }
+  }
+}

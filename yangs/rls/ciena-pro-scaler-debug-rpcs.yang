@@ -1,0 +1,174 @@
+module ciena-pro-scaler-debug-rpcs {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-debug-rpcs";
+  prefix scaler-monitor-point;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's scaler debug RPCs";
+
+  revision 2022-09-14 {
+    description
+      "added clear-statistics and display-statistics rpcs";
+  }
+  revision 2021-06-07 {
+    description
+      "added repair-database rpc";
+  }
+  revision 2020-10-15 {
+    description
+      "added stop-updates attribute";
+  }
+  revision 2020-06-15 {
+    description
+      "6500r-series Release 02.00.60";
+  }
+  revision 2019-09-26 {
+    description
+      "Initial creation";
+  }
+
+  typedef audit-type-enum {
+    type enumeration {
+      enum Measurement;
+      enum Config;
+      enum PendingEvents;
+      enum Ocms;
+    }
+  }
+
+  typedef element-type-enum {
+    type enumeration {
+      enum Port;
+      enum Link;
+      enum Path;
+      enum PointRecipe;
+      enum DeltaRecipe;
+    }
+  }
+
+  typedef log-name-enum {
+    type enumeration {
+      enum LocalNodeNameHistory;
+    }
+  }
+
+  rpc set-scaler-audit-attr {
+    description
+      "Set scaler audit attributes";
+    input {
+      leaf audit-type {
+        type audit-type-enum;
+        description
+          "The type of scaler audit";
+      }
+      leaf state {
+        type boolean;
+        description
+          "True to enable the scaler audit, False to disable it";
+      }
+      leaf stop-updates {
+        type boolean;
+        description
+          "True to stop change notification subscriptions for the data type, False continue them; supported on Measurement audit-type only";
+      }
+      leaf timeout {
+        type uint32;
+        units "second";
+        description
+          "Frequency of the scaler audit";
+      }
+      leaf retry-timeout {
+        type uint32;
+        units "second";
+        description
+          "Seconds to wait before retrying in case of audit failure";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc dump-elements {
+    description
+      "Returns a string representing data for all elements of a given type";
+    input {
+      leaf type {
+        type element-type-enum;
+        description
+          "The type of element to dump. Dump all elements if this attribute is not provided";
+      }
+    }
+    output {
+      leaf data {
+        type string {
+          length "1..5000";
+        }
+        description
+          "String representing the data for all elements of the given type";
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc display-log {
+    description
+      "Returns the content of the given log";
+    input {
+      leaf log-name {
+        type log-name-enum;
+        description
+          "The Log to display";
+      }
+    }
+    output {
+      leaf-list log-entries {
+        type string;
+        description
+          "String representing the log entries";
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc repair-database {
+    description
+      "Triggers synchronous repair of scaler database";
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc display-statistics {
+    description
+      "Returns scaler statistics";
+    output {
+      leaf-list statistics {
+        type string;
+        description
+          "String representing the statistics entries";
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc clear-statistics {
+    description
+      "Clears scaler statistics";
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

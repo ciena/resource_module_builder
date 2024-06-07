@@ -1,0 +1,813 @@
+module ciena-pim {
+   namespace "http://ciena.com/ns/yang/ciena-pim";
+   prefix "pim";
+
+   import ciena-vrf {
+       prefix "vrf";
+   }
+
+   import ciena-routing-policy {
+       prefix "rt-pol";
+   }
+
+   import ietf-inet-types {
+       prefix inet;
+   }
+
+   import ietf-routing-types {
+       prefix rt-types;
+   }
+
+   import openconfig-interfaces {
+       prefix "oc-if";
+   }
+
+   import ciena-l3-types {
+       prefix cn-l3-types;
+   }
+
+   import openconfig-yang-types { 
+      prefix yang; 
+   }
+
+   organization
+       "Ciena Corporation";
+
+   contact
+       "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                     U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+   description
+       "This YANG module contains the YANG definitions of IETF Protocol Independent
+        Multicast (PIM) Sparse Mode configurations and states information as per
+        Ciena SW Functional Specification.docx.
+
+        Copyright (c) 2022  Ciena Corporation.  All rights
+        reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+   revision "2022-09-16" {
+       description
+           "Initial revision.";
+   }
+
+   feature pim-per-vrf {
+       description
+           "Support running PIM protocol on each VRF";
+   }
+
+   feature pim-dm {
+       description
+          "Support the PIM dense-mode protocol.";
+   }
+
+   feature pim-smdm {
+       description
+          "Support the combined PIM sparse-mode and dense-mode protocol.";
+   }
+
+   grouping pim-interfaces {
+       description
+           "PIM interface configuration data";
+
+       list interface {
+           key "name";
+           description
+                "PIM interface config list.";
+
+           leaf name  {
+               type leafref {
+                   path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+               }
+               description
+                   "L3 interface name.";
+           }
+
+           leaf enable {
+               type boolean;
+               default "false";
+               description
+                   "Enable PIM on an interface.";
+           }
+           
+           leaf passive {
+               when "../enable = 'true'";
+               type boolean;
+               default "false";
+               description
+                   "Enable PIM passive mode";   
+           }
+          
+           leaf dr-priority {
+               type uint32 {
+                   range "1..4294967294";
+               }
+               default "1";
+               description
+                   "Set the router's priority value used in the designated router
+                    election. The higher value has the higher preference.";
+           }
+
+           leaf hello-interval {
+               type uint16 {
+                   range "1..3600";
+               }
+               default "30";
+               units seconds;
+               description
+                   "The periodic interval for sending Hello messages.";
+           }
+
+           leaf hello-holdtime {
+               type uint16 {
+                   range "4..65535";
+               }
+               default 105;
+               units seconds;
+               description
+                   "Holdtime is timer value to time out the neighbor
+                    state when the timer expires.
+                    The holdtime value can be specified either by the
+                    given holdtime value or by the calculation of the
+                    hello-interval multiplied by 3.5.";
+           }
+
+           leaf mode {
+               type  cn-l3-types:pim-mode-type;
+               default "sparse";
+               description
+                   "PIM sparse, dense, or sparse-dense mode.";
+           }
+       }
+   }
+
+   container pim {
+       description
+           "PIM configuration data";
+
+       list vrf {
+           key "vrf";
+           description
+               "Name of VRF.";
+
+           leaf vrf {
+               description
+                   "The VPN routing/forwarding instance";
+               type leafref {
+                  path "/vrf:vrf/vrf:vrfName";
+              }
+          }
+            
+          leaf router-id {
+              type inet:ipv4-address;
+              description
+                  "The PIM router-id to uniquely identify the router.";
+          }
+
+           leaf jp-timer {
+               type uint16 {
+                   range "1..600";
+               }
+               default 60;
+               units seconds;
+               description
+                   "The PIM join-prune timer. The holdtime is 3.5 times this value.";
+           }
+
+           container ipv4 {
+               description
+                   "IPv4 PIM configurations.";
+
+               container sm {
+                   description
+                       "PIM-SM configuration data";
+
+                   container ssm {
+                       description
+                           "PIM-SSM configuration data";
+
+                       leaf enable {
+                           type  boolean;
+                           default "false";
+                           description
+                               "Enable or disable PIM SSM";
+                       }
+
+                       leaf group-range-policy {
+                           type leafref {
+                               path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                           }
+                           description
+                               "The name of a prefix-list that contains one or more policy rules
+                                used to accept or reject certain multicast groups (from any source).
+                                The groups accepted by this policy define the multicast group
+                                address range used by SSM. If a policy is not specified, the default
+                                SSM multicast group range, 232.0.0.0/8, is used.";
+                       }
+
+                       list SG-filter {
+                           description
+                               "The filter specification to permit or deny a source or multiple sources
+                                membership to a particular multicast group. Both the source-range-policy
+                                and the group-address must be configured together to be meaningful. Only
+                                one source-range-policy for one group-address.";
+
+                           key "group-address";
+
+                           leaf group-address {
+                               type rt-types:ipv4-multicast-group-address;
+                               description
+                                   "The multicast group IP address";
+                           }
+
+                           leaf source-range-policy {
+                               mandatory true;
+                               type leafref {
+                                   path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                               }
+                               description
+                                   "The name of the prefix-list that contains one or more
+                                    policy rules used to accept or reject certain source
+                                    address or range of addresses. The addresses accepted
+                                    by this policy define the source nodes that are permitted
+                                    to join and send traffic to the multicast group specified
+                                    by the group-address leaf. Similarly, the source addresses
+                                    rejected by the policy are not permitted to join and
+                                    therefore cannot send traffic to the multicast group.";
+                           }
+                       }
+                   }
+               }
+               container interfaces {
+                   description
+                       "PIM interface configuration data.";
+                   uses pim-interfaces;               
+               }
+           }
+       }
+   }
+
+   container pim-state {
+       description
+         "PIM state";
+       config false;
+       container ipv4 {
+           uses interface-state;
+           uses pim-mroute-state;
+           uses neighbor-state;
+           uses nexthop-state;
+           uses local-membership-state;
+           container protocol-statistics {
+               description
+                   "PIM control plane statistics counters.";
+
+               list vrf {
+                   key "vrf";
+                   description
+                       "Name of VRF.";
+                   uses statistics-grouping;
+               }
+           }
+       }
+   }
+
+   grouping statistics-grouping {
+       description
+           "PIM Control Plane Statistics.";
+
+       leaf vrf {
+           type string;
+           description
+               "The name of the VPN routing/forwarding instance.";
+       }
+
+       container sent {
+           description
+               "Transmitted PIM statistics.";
+
+           leaf hello {
+                type yang:counter32;
+                description
+                    "Count of total transmitted hellos by PIM.";
+           }
+
+           leaf join-prune {
+                type yang:counter32;
+                description
+                    "Count of total transmitted join and prune packets by PIM.";
+           }
+       }
+
+       container received {
+           description
+               "Received PIM statistics.";
+
+           leaf hello {
+                type yang:counter32;
+                description
+                    "Count of total received hellos by PIM.";
+           }
+
+           leaf join-prune {
+                type yang:counter32;
+                description
+                    "Count of total received transmitted join and prune packets by PIM.";
+           }
+       }
+
+       container error {
+           description
+               "Received PIM statistics.";
+
+           leaf hello {
+                type yang:counter32;
+                description
+                    "Total count of errored Hello packets.";
+           }
+
+           leaf join-prune {
+                type yang:counter32;
+                description
+                    "Total count of errored Join/Prune packets.";
+           }
+
+           leaf checksum {
+                type yang:counter32;
+                description
+                    "Total count of packets with checksum errors.";
+           }
+
+           leaf malformed {
+                type yang:counter32;
+                description
+                    "Total count of malformed packets.";
+           }
+
+           leaf unknown-pim-version {
+                type yang:counter32;
+                description
+                    "Total count of packets with unknown pim version.";
+           }
+       }
+   }
+
+   grouping interface-state {
+       description
+          "PIM state infomation";
+
+       list interface {
+           key "name";
+           description
+               "Name of PIM interface";
+
+          leaf name {
+              type string;
+              description
+                  "The name of the interface";
+          }
+
+          leaf address {
+              type inet:ipv4-address;
+              description
+                  "The IP address of the interface";
+          }
+
+          leaf mode {
+              type  cn-l3-types:pim-mode-type;
+              description
+                  "PIM sparse, dense, or sparse-dense mode.";
+          }
+
+          leaf version {
+              type uint8;
+              description
+                  "PIM version";
+          }
+          
+          leaf passive {
+             type boolean;
+             description
+                 "Passive mode for PIM";
+          }
+          
+          leaf dr {
+              type inet:ipv4-address;
+              description
+                  "The IP address of the elected designated router";
+          }
+
+          leaf dr-priority {
+              type uint32 {
+                  range "1..4294967294";
+              }
+              description
+                 "The configured designated router priority value.";
+          }
+
+          leaf hello-interval {
+              type uint16 {
+                  range "1..3600";
+              }
+              units seconds;
+              description
+                  "The configured hello-interval value.";
+          }
+
+          leaf hello-holdtime {
+              type uint16 {
+                  range "1..65535";
+              }
+              units seconds;
+              description
+                 "The configured hello-holdtime value. If set to the maximum
+                  value of 65535, the timer does not expire.";
+          }
+
+          leaf nbr-count {
+              type uint32;
+              description
+                  "The number of neighbors on the interface";
+          }
+       }
+   }
+
+   grouping pim-mroute-state {
+       description
+          "Contains entries of the PIM multicast routing table";
+
+       list mroutes {
+           key "vrf mode group-address source-address";
+               description
+                   "List of the PIM multicast routes";
+
+           leaf vrf {
+               type string;
+               description
+                   "The name of the VPN routing/forwarding instance";
+           }
+
+           leaf mode {
+               type  cn-l3-types:pim-mode-type;
+               description
+                   "PIM sparse, dense or sparse-dense mode";
+           }
+
+           leaf group-address {
+               type rt-types:ipv4-multicast-group-address;
+               description
+                   "The multicast group IP address"; 
+           }
+
+            leaf source-address {
+                type rt-types:ipv4-multicast-source-address;
+                description
+                    "The source IP address"; 
+            }
+
+           leaf rpf-interface {
+               type string;
+               description
+                   "The upstream interface of the RPF path to source";
+           }
+
+           leaf rpf-neighbor {
+               type inet:ipv4-address;
+               description
+                   "The IP address of the upstream neighbor link";
+           }
+
+            leaf upstream-state {
+                type cn-l3-types:group-join-state;
+                description
+                    "The upstream state, either JOINED or NOT JOINED.";
+            }
+            
+            leaf join-desired-flag {
+                type boolean;
+                description
+                    "The upstream join-desired state for this mroute entry, either true or false.";
+            }
+
+            leaf jp-holdtime-remaining {
+               type uint16;
+                description
+                    "The number of seconds remaining when the join-prune holdtime expires.";
+            }
+
+            leaf-list local-oif {
+                type string;
+                description
+                    "List of lcoal outgoing interface names.";
+            }
+
+            leaf-list joined-oif {
+                type string;
+                description
+                    "List of joined outgoing interface names.";
+            }
+
+            leaf-list inherited-oif {
+                type string;
+                description
+                    "List of inherited outgoing interface names.";
+            }
+            
+            list downstream-info {
+                key "interface";
+                description
+                    "List of downstream information per interface.";
+
+                leaf interface {
+                    type string;
+                    description
+                        "The name of the outgoing interface.";
+                }
+
+                leaf expiry-timer {
+                    type uint32;
+                    description
+                        "Expiry Timer for this mroute entry.";
+                }
+
+                leaf prune-pending-timer {
+                    type uint32;
+                    description
+                        "Prune-Pending Timer  for this mroute entry valid on Prune received.";
+                }
+
+                leaf state {
+                    type cn-l3-types:pim-downstream-state;
+                    description
+                        "State of this entry either joined or prune-pending.";
+                }
+            }
+        }
+    }
+
+    grouping neighbor-state {
+        description
+            "Contains PIM neighbor information";
+
+        list neighbors {
+            key "vrf interface neighbor-address";
+            description
+                "List of PIM neighbors";
+
+            leaf vrf {
+               type string;
+               description
+                   "The name of the VPN routing/forwarding instance";
+            }
+
+            leaf interface {
+                type string;
+                description
+                    "The name of the interface";
+            }
+
+            leaf neighbor-address {
+                type inet:ipv4-address;
+                description
+                    "The IP address of the neighbor";
+            }
+
+            leaf uptime {
+                type string;
+                description
+                    "Neighbor uptime measured in weeks:days:hours:minutes:seconds notation.";
+            }
+
+            leaf expire {
+                type uint32;
+                units seconds;
+                description
+                    "The number of seconds remaining before expiration.";
+            }
+
+            leaf dr-priority {
+                type uint32;
+                description
+                    "The neighbor's hello priority used in designated router election";
+            }
+
+            leaf dr {
+                type string;
+                description
+                    "Contains the 'DR' string if neighbor is the designated router, else blank.";
+            }
+        }
+    }
+
+    grouping nexthop-state {
+        description
+            "Contains the list of next hops used by PIM to reach its various destinations
+             such as the source (S), RP and the MSDP Peer.";
+
+        list nexthops {
+            key "vrf nexthop destination";
+            description
+                "List of PIM next hops";
+
+            leaf vrf {
+               type string;
+               description
+                   "The name of the VPN routing/forwarding instance";
+            }
+
+            leaf nexthop {
+                type inet:ipv4-address;
+                description
+                    "The next hop IP address";
+            }
+
+            leaf destination {
+                type inet:ipv4-prefix;
+                description
+                    "The destination reachable from this next hop.";
+            }
+
+            leaf interface {
+                type string;
+                description
+                   "Name of outgoing interface to the next hop.";
+            }
+
+            leaf if-index {
+                type uint32;
+                description
+                   "ifindex of the interface to the next hop.";
+            }
+
+            leaf nh-count {
+                type uint16;
+                description
+                    "The number of next hops that can reach the destination.";
+            }
+
+            leaf metric {
+                type uint8;
+                description
+                    "The metric associated with this next hop.";
+            }
+
+            leaf preference {
+                type uint8;
+                description
+                    "The designated router priority used in DR election at this next hop interface.";
+            }
+
+            leaf refcnt {
+                type uint16;
+                description
+                    "The number of routes traversing this next hop.";
+            }
+
+            leaf type {
+                type cn-l3-types:pim-node-role;
+                description
+                   "The role of the destination node reached by this next hop.
+                        N = New, R = Next hop to RP, S = Next hop to Source,
+                        M = MSDP Peer, U = Unreachable.";
+            }
+        }
+    }
+
+    grouping local-membership-state {
+        description
+            "Contains local membership information on PIM interfaces.";
+
+        list memberships {
+            key "vrf mode interface group-address source-address";
+            description
+                "List of group memberships present on the interface.";
+
+            leaf vrf {
+               type string;
+               description
+                   "The name of the VPN routing/forwarding instance.";
+            }
+
+            leaf mode {
+                type  cn-l3-types:pim-mode-type;
+                description
+                    "PIM sparse, dense, or sparse-dense mode.";
+            }
+
+            leaf interface {
+                type string;
+                description
+                    "The name of the interface.";
+            }
+
+            leaf group-address {
+                type rt-types:ipv4-multicast-group-address;
+                description
+                   "The multicast group IP address.";
+            }
+
+            leaf source-address {
+                type inet:ipv4-address;
+                description
+                   "The IP address of the traffic source.";
+            }
+
+            leaf member-state {
+                type cn-l3-types:membership-state;
+                description
+                   "One of the following membership states: Include, Exclude or No Info.";
+            }
+        }
+    }
+
+    rpc pim-clear-mroutes {
+        description
+            "Rpc to delete all multicast route table entries learned by PIM.";
+        input  {
+            leaf vrf {
+                if-feature pim-per-vrf;
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                default "default";
+                description
+                    "The name of the Virtual Routing and Forwarding instance.";
+            }
+
+            leaf mode {
+                type  cn-l3-types:pim-mode-type;
+                description
+                    "PIM sparse, dense, or sparse-dense mode.";
+            }
+
+            leaf group-address {
+                type rt-types:ipv4-multicast-group-address;
+                description
+                    "The multicast group IP address."; 
+            }
+
+            leaf source-address {
+                type rt-types:ipv4-multicast-source-address;
+                description
+                    "The source IP address."; 
+            }
+
+            leaf afi {
+                type  cn-l3-types:vrf-afi-type;
+                description
+                    "The IP address family, either IPv4 or IPv6.";
+            }
+        }
+
+        output{
+            leaf response {
+                type string;
+                description
+                  "The response can be either 'success' or the reason for the failure.";
+            }
+        }
+    }
+
+    rpc pim-clear-protocol-statistics {
+        input {
+            leaf vrf {
+                if-feature pim-per-vrf;
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                default "default";
+                description
+                    "The name of the Virtual Routing and Forwarding instance.";
+            }
+        }
+        output {
+            leaf response {
+                type string;
+                description
+                    "The response could be 'success', or the reason for failure";
+            }
+        }
+    }
+}

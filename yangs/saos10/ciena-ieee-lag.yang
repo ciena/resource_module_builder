@@ -1,0 +1,1305 @@
+module ciena-ieee-lag {
+  
+  namespace "urn:ietf:params:xml:ns:yang:ciena-ieee-lag";
+  prefix ciena-ieee-lag;
+
+  import ietf-yang-types   {
+    prefix "yang"; 
+  }
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+  import ciena-openconfig-interfaces { 
+    prefix cn-oc-if; 
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines link aggregation for the NETCONF 
+     protocol.";
+
+  revision 2023-07-31 {
+    description
+      "Added range of possible values of agg-actor-admin-key leaf.";
+  }
+
+  revision 2022-12-08 {
+    description
+        "Add MAC-address as configurable attribute for LAG interface yang model.
+         Additions for Micro BFD.
+         Adds restrictions on operational parameters of Micro BFD for specific platforms.
+         Adds if-feature to disable Micro BFD IPv6 support for specific platforms.
+         Replaces BFD session state (enumeration) with BFD fault state (boolean).";
+  }
+
+  revision 2018-01-24 {
+    description
+      "Move lacp augmentations from ietf-interfaces to 
+       openconfig-interfaces";
+    reference
+      "openconfig-interfaces yang file.";
+  }
+
+  revision 2016-02-19 {
+    description
+      "Initial revision";
+    reference
+      "IEEE Standard for Local and metropolitan area networks -- 
+       Link Aggregation - 802.1AX";
+  }
+
+  feature micro-bfd {
+    description
+      "Platform specific indicator which provides information whether Micro BFD is supported on specific platform.";
+  }
+
+  feature micro-bfd-ipv6 {
+    description
+      "Platform specific indicator which provides information whether Micro BFD IPv6 is supported on specific platform.";
+  }
+
+  //
+  // Type definitions related to LACP
+  //
+ 
+  typedef lacp-key {
+    type uint16; 
+    description     
+      "The Actor or Partner Key value.";
+  }
+
+  // CHURN STATE
+
+  identity churn-state {
+    description     
+      "The state of the Churn Detection machine.";
+  }
+   
+  identity no-churn { 
+    base churn-state;
+    description
+      "Indicates that there is no churn detected by the
+       Churn Detection State Machine";
+  }
+  
+  identity churn { 
+    base churn-state;
+    description
+      "Indicates that there hasn't been a convergence detected
+       by the Churn Detection State Machine within a specified 
+       time.";          
+  }
+  identity churn-monitor { 
+    base churn-state;
+    description
+      "Indicates that the Churn Detection State Machine is within
+       the specified time for detecting convergence.";
+  }
+
+
+  // LACP-ACTIVITY
+  
+  identity lacp-activity-type {
+    description
+      "Active or Passive - Indicates whether LACP PDUs are 
+       initiated always or only in response to another LACP PDU.
+       The IEEE 802.1AX Link Aggregation will always operate in 
+       Active mode.";
+  }
+  
+  identity lacp-active {
+    base lacp-activity-type;
+    description
+      "Indicates lacp is in active mode";
+  }
+  
+  identity lacp-passive {
+    base lacp-activity-type;
+    description
+      "Indicates lacp is in passive mode";
+  }
+
+
+  // LACP-TIMEOUT
+
+  identity lacp-timeout-type {
+    description
+      "Long or Short - Indicates time to wait before sending
+       LACP PDUs. The IEEE 802.1AX Link Aggregation will always
+       use the long timeout.";
+  }
+  
+  identity lacp-timeout-long {
+    base lacp-timeout-type;
+    description
+      "Indicates Long wait time (30 sec) before sending LACP PDUs";
+    
+  }
+  
+  identity lacp-timeout-short {
+   base lacp-timeout-type;
+   description
+     "Indicates Short wait time (1 sec) before sending LACP PDUs";
+  
+  }
+
+
+  // AGGREGATION
+
+  identity aggregation-type {
+    description
+      "Individual or Aggregatable - Indicates wherher this port
+       can form an aggregation with other ports, or if it can 
+       only form an aggregation with itself. The port in 
+       one-adapter IEEE 802.1AX Link Aggregation will be marked
+       as Individual, or Aggregatable if there is more than one
+       port.";
+  }
+  
+  identity aggregatable {
+    base aggregation-type;
+    description
+      "Indicates that this port can form an aggregation
+       with other ports";   
+  }
+  
+  identity individual {
+    base aggregation-type;
+    description
+      "Indicates that this port can only form aggregation
+       with itself";   
+  }
+
+
+  // SYNCHRONIZATION
+
+  identity synchronization-type {
+    description
+      "in-sync or out-of-sync - Indicates whether the aggregation 
+       has determined it has reached synchronization with the 
+       partner.";
+  }   
+  
+  identity in-sync {
+    base synchronization-type;
+    description
+      "Indicates aggregation port has synchronized with the 
+       peer port";
+  } 
+  
+  identity out-of-sync {
+    base synchronization-type;
+    description
+      "Indicates aggregation has not reached synchronization 
+       with the partner";
+  }
+
+
+  // COLLECTING
+
+  identity collecting-type {
+    description
+      "is-collecting or is-not-collecting - Indicates whether the
+       aggregation is receiving packets.";
+  }
+  
+  identity is-collecting {
+    base collecting-type;
+    description
+      "Indicates aggregation is receiving packets";
+  }
+
+  identity is-not-collecting {
+    base collecting-type;
+    description
+      "Indicates aggregation is not receiving packets";
+  }
+
+
+  // DISTRIBUTING
+
+  identity distributing-type {
+    description
+      "is-distributing or is-not-distributing - Indicates whether the
+       aggregation is sending packets.";
+  }
+  
+  identity is-distributing {
+    base distributing-type;
+    description
+      "Indicates aggregation is sending packets";
+  }
+  
+  identity is-not-distributing {
+    base distributing-type;
+    description
+      "Indicates aggregation is not sending packets";
+  }
+
+
+  // DEFAULTED
+
+  identity defaulted-type {
+    description
+      "Default_In_Use or Default_Not_In_Use - Indicates whether the IEEE
+       802.1AX Link Aggregation is using default values for partner
+       information.";   
+  }
+
+  identity default-in-use {
+    base defaulted-type;
+    description
+      "Indicates default values for partner are being used";
+  }
+  
+  identity default-not-in-use {
+    base defaulted-type;
+    description
+      "Indicates default values for partner are not being 
+       used";
+  }
+
+
+  // EXPIRED
+
+  identity expired-type {
+    description
+      "is-expired or is-not-expired - Indicates whether the IEEE
+       802.1AX Link Aggregation is operated in expired mode.";
+  }
+
+  identity is-expired {
+    base expired-type;
+    description
+      "Indicates operation is in expired mode";
+  }
+
+  identity is-not-expired {
+    base expired-type;
+    description
+      "Indicates operation is not in expired mode";
+  }
+
+
+  // AGG PORT RX STATE
+
+  identity agg-port-rx-state {
+    description 
+      "This attribute holds the value 'currentRx' if the Receive
+       state machine for the Aggregation Port is in the 
+       CURRENT state, 'expired' if the Receive state machine
+       is in the EXPIRED state, 'defaulted' if the Receive state
+       machine is in the DEFAULTED state, 'initialize' if the
+       Receive state machine is in the INITIALIZE state,
+       'lacpDisabled' if the Receive state machine is in the
+       LACP_DISABLED state, or 'portDisabled' if the Receive
+       state machine is in the PORT_DISABLED state.
+       This value is read-only.";
+  }
+  
+  identity current-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in 
+       the CURRENT state.";    
+  } 
+ 
+  identity expired-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in
+       the EXPIRED state.";
+  }
+ 
+  identity defaulted-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in
+       the DEFAULTED state.";
+  }
+ 
+  identity initialize-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in
+       the INITIALIZE state.";
+  }
+ 
+  identity lacp-disabled-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in
+       the LACP_DISABLED state.";
+  }
+ 
+  identity port-disabled-rx {
+    base agg-port-rx-state;
+    description
+      "Indicates that the Receive State Machine is in
+       the PORT_DISABLED state.";
+  }
+
+
+  // AGG PORT MUX STATE
+
+  identity agg-port-mux-state {
+    description 
+      "This attribute holds the value 'detached' if the Mux
+       state machine (5.4.14) for the Aggregation Port is
+       in the DETACHED state, 'waiting' if the Mux state machine
+       is in the WAITING state, 'attached' if the Mux state
+       machine for the Aggregation Port is in the ATTACHED
+       state, 'collecting' if the Mux state machine for the
+       Aggregation Port is in the COLLECTING state, 'distributing'
+       if the Mux state machine for the Aggregation Port is
+       in the DISTRIBUTING state, and 'collectingDistributing'
+       if the Mux state machine for the Aggregation Port is in
+       the COLLECTING_DISTRIBUTING state.
+       This value is read-only.";
+  }
+
+  identity detached-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in DETACHED state.";
+  } 
+
+  identity waiting-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in WAITING state.";
+
+  } 
+
+  identity attached-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in ATTACHED state.";
+  } 
+
+  identity collecting-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in COLLECTING state.";
+
+  } 
+
+  identity distributing-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in DISTRIBUTING state.";
+  } 
+
+  identity collecting-distributing-mux {
+    base agg-port-mux-state;
+    description
+      "Indicates that the Mux State Machine for the Aggregation
+       Port is in COLLECTING_DISTRIBUTING state.";
+  } 
+
+
+  //
+  // Groupings related to LACP
+  //
+  grouping lacp-state {
+    leaf lacp-activity    {
+      type identityref {
+        base lacp-activity-type;
+      }
+      default lacp-active;
+      description
+        "Active or Passive - Indicates whether LACP PDUs are 
+         initiated always or only in response to another LACP PDU.
+         The IEEE 802.1AX Link Aggregation will always operate in 
+         Active mode.";
+    }
+    leaf lacp-timeout     { 
+      type identityref {
+        base lacp-timeout-type;
+      }
+      default lacp-timeout-long;
+      description
+        "Long or Short - Indicates time to wait before sending
+         LACP PDUs. The IEEE 802.1AX Link Aggregation will always
+         use the long timeout.";
+    }
+    leaf aggregation     { 
+      type identityref {
+        base aggregation-type;
+      }
+      default aggregatable;
+      description
+        "Individual or Aggregatable - Indicates wherher this port
+         can form an aggregation with other ports, or if it can 
+         only form an aggregation with itself. The port in 
+         one-adapter IEEE 802.1AX Link Aggregation will be marked
+         as Individual, or Aggregatable if there is more than one
+         port.";
+    }
+    leaf synchronization { 
+      type identityref {
+        base synchronization-type;
+      }
+      description
+        "in-sync or out-of-sync - Indicates whether the aggregation 
+         has determined it has reached synchronization with the 
+         partner.";
+    }
+    leaf collecting      { 
+      type identityref {
+        base collecting-type;
+      }
+      description
+        "Enabled or Disabled - Indicates whether the aggregation is
+         receiving packets.";
+    }
+    leaf distributing    { 
+      type identityref {
+        base distributing-type;
+      } 
+      description
+        "Enabled or Disabled - Indicates whether the aggregation is
+         sending packets.";
+    }
+    leaf defaulted       { 
+      type identityref {
+        base defaulted-type;
+      }
+      description
+        "True or False - Indicates whether the IEEE 802.1AX 
+         Link Aggregation is using default values for partner
+         information.";
+    }
+    leaf expired         { 
+      type identityref {
+        base expired-type;
+      }
+      description
+        "True or False - Indicates whether the IEEE 802.1AX 
+         Link Aggregation is operated in expired mode.";
+    }
+    description     
+      "The Actor and Partner State values from the LACPDU.";
+  }
+
+  grouping agg-port-parameters-group {
+    description
+      "per-port aggregation parameter";
+
+    leaf agg-port-actor-system-priority {
+      type uint16; 
+      description 
+        "A 2-octet read-write value used to define the priority
+         value associated with the Actor's System ID.";
+      reference   
+        "[802.1AX] 6.3.2.1.2";
+    }
+
+    leaf agg-port-actor-admin-key {
+      type lacp-key;
+      description 
+        "The current administrative value of the Key for the
+         Aggregation Port. This is a 16-bit read-write value.
+         The meaning of particular Key values is of local 
+         significance.";
+      reference   
+        "[802.1AX] 6.3.2.1.4";
+    }
+
+    leaf agg-port-partner-admin-system-priority {
+      type uint16; 
+      description 
+        "A 2-octet read-write value used to define the administrative
+         value of priority associated with the Partner's System ID.
+         The assigned value is used, along with the value of
+         partner-admin-system-ID, partner-admin-key,
+         partner-admin-port, and partner-admin-port-priority,
+         in order to achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.6";
+    }
+
+    leaf agg-port-partner-admin-system-ID {
+      type yang:mac-address;
+      description 
+        "A 6-octet read-write MACAddress value representing
+         the administrative value of the Aggregation Port's protocol
+         Partner's System ID. The assigned value is used, along with
+         the value of agg-port-partner-admin-aystem-priority,
+         partner-admin-key, partner-admin-port,
+         and partner-admin-port-priority, in order to
+         achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.8";
+    }
+
+    leaf agg-port-partner-admin-key {
+      type lacp-key;
+      description 
+        "The current administrative value of the Key for the
+         protocol Partner. This is a 16-bit read-write value.
+         The assigned value is used, along with the value of
+         partner-admin-system-priority, partner-admin-system-ID,
+         artner-admin-port, and partner-admin-port-priority,
+         in order to achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.10";
+    }
+
+    leaf agg-port-actor-port-priority {
+      type uint16; 
+      default 32768;
+      description 
+        "The priority value assigned to this Aggregation Port.
+         This 16-bit value is read-write.";
+      reference   
+        "[802.1AX] 6.3.2.1.15";
+    }
+
+    leaf agg-port-partner-admin-port {
+      type uint16; 
+      description 
+        "The current administrative value of the port number
+         for the protocol Partner. This is a 16-bit read-write value.
+         The assigned value is used, along with the value of
+         partner-admin-system-priority,partner-admin-system-ID, 
+         partner-admin-key, and partner-admin-port-priority,
+         in order to achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.16";
+    }
+
+    leaf agg-port-partner-admin-port-priority {
+      type uint16; 
+      description 
+        "The current administrative value of the port priority
+         for the protocol Partner. This is a 16-bit read-write value.
+         The assigned value is used, along with the value of
+         partner-admin-system-priority, partner-admin-system-ID, 
+         partner-admin-key, and partner-admin-port,
+         in order to achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.18";
+    }
+
+    container agg-port-actor-admin-state {
+      uses lacp-state;
+      description 
+        "A string of 8 bits, corresponding to the administrative 
+         values of Actor_State (5.4.2) as transmitted by the Actor in
+         LACPDUs. The first bit corresponds to bit 0 of Actor_State 
+         (LACP_Activity), the second bit corresponds to bit 1 
+         (LACP_Timeout), the third bit corresponds to bit 2 
+         (Aggregation), the fourth bit corresponds to bit 3 
+         (Synchronization), the fifth bit corresponds to bit 4
+         (Collecting), the sixth bit corresponds to bit 5 
+         (Distributing), the seventh bit corresponds to bit 6 
+         (Defaulted), and the eighth bit corresponds to bit 7 
+         (Expired). These values allow administrative control over the
+         values of LACP_Activity, LACP_Timeout and Aggregation.
+         This attribute value is read-write.";
+      reference   
+        "[802.1AX] 6.3.2.1.20";
+    }
+
+    container agg-port-partner-admin-state {
+      uses lacp-state;
+      description 
+        "A string of 8 bits, corresponding to the current 
+         administrative value of Actor_State for the protocol Partner.
+         The bit allocations are as defined in 6.3.2.1.20. This 
+         attribute value is read-write. The assigned value is used in
+         order to achieve manually configured aggregation.";
+      reference   
+        "[802.1AX] 6.3.2.1.22";
+    }
+  }
+
+  grouping agg-port-operational-group {
+    description
+      "Per-port LACP operational data";
+
+    leaf agg-port-actor-system-ID {
+      type yang:mac-address;
+      description 
+        "A 6-octet read-only MAC address value that defines
+         the value of the System ID for the System that contains this
+         Aggregation Port.";
+      reference   
+        "[802.1AX] 6.3.2.1.3";
+    }
+
+    leaf agg-port-actor-oper-key {
+      type lacp-key;
+      description 
+        "The current operational value of the Key for the
+         Aggregation Port. This is a 16-bit read-only value.
+         The meaning of particular Key values is of local 
+         significance.";
+      reference   
+        "[802.1AX] 6.3.2.1.5";
+    }
+
+    leaf agg-port-partner-oper-system-priority {
+      type uint16; 
+      description 
+        "A 2-octet read-only value indicating the operational value
+         of priority associated with the Partner's System ID. The
+         value of this attribute may contain the manually configured 
+         value carried in agg-port-partner-admin-system-priority
+         if there is no protocol Partner.";
+      reference   
+        "[802.1AX] 6.3.2.1.7";
+    }
+
+    leaf agg-port-partner-oper-system-ID {
+      type yang:mac-address;
+      description 
+        "A 6-octet read-only MACAddress value representing
+         the current value of the Aggregation Port's protocol 
+         Partner's System ID. A value of zero indicates that there is
+         no known protocol Partner. The value of this attribute may 
+         contain the manually configured value carried in
+         partner-admin-system-ID if there is no protocol Partner.";
+      reference   
+        "[802.1AX] 6.3.2.1.9";
+    }
+
+    leaf agg-port-partner-oper-key {
+      type lacp-key;
+      description 
+        "The current operational value of the Key for the
+         protocol Partner. The value of this attribute may contain
+         the manually configured value carried in
+         partner-admin-key if there is no protocol Partner.
+         This is a 16-bit read-only value.";
+      reference   
+        "[802.1AX] 6.3.2.1.11";
+    }
+
+    leaf agg-port-selected-agg-ID {
+      type cn-oc-if:ciena-openconfig-interface-ref;
+      description 
+        "The identifier value of the Aggregator that this Aggregation
+         Port has currently selected. Zero indicates that the 
+         Aggregation Port has not selected an Aggregator, either 
+         because it is in the process of detaching from an Aggregator
+         or because there is no suitable Aggregator available for it
+         to select. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.12";
+    }
+
+    leaf agg-port-attached-agg-ID {
+      type cn-oc-if:ciena-openconfig-interface-ref;
+      description 
+        "The identifier value of the Aggregator that this Aggregation
+         Port is currently attached to. Zero indicates that the 
+         Aggregation Port is not currently attached to an Aggregator.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.13";
+    }
+
+    leaf agg-port-actor-port {
+      type uint16; 
+      description 
+        "The port number locally assigned to the Aggregation Port.
+         The port number is communicated in LACPDUs as the
+         Actor_Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.14";
+    }
+
+    leaf agg-port-partner-oper-port {
+      type uint16; 
+      description 
+        "The operational port number assigned to this Aggregation
+         Port by the Aggregation Port's protocol Partner. The value
+         of this attribute may contain the manually configured value
+         carried in partner-admin-port if there is no protocol
+         Partner. This 16-bit value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.17";
+    }
+
+    leaf agg-port-partner-oper-port-priority {
+      type uint16; 
+      description 
+        "The priority value assigned to this Aggregation Port
+         by the Partner. The value of this attribute may contain the
+         manually configured value carried in
+         partner-admin-port-priority if there is no
+         protocol Partner. This 16-bit value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.19";
+    }
+
+    container agg-port-actor-oper-state {
+      uses lacp-state;
+      description 
+        "A string of 8 bits, corresponding to the current
+         operational values of Actor_State as transmitted by the
+         Actor in LACPDUs. The bit allocations are as defined in
+         6.3.2.1.20. This attribute value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.21";
+    }
+
+    container agg-port-partner-oper-state {
+      uses lacp-state;
+      description 
+        "A string of 8 bits, corresponding to the current values of
+         Actor_State in the most recently received LACPDU transmitted
+         by the protocol Partner. The bit allocations are as defined
+         in 6.3.2.1.20. In the absence of an active protocol Partner,
+         this value may reflect the manually configured value
+         partner-admin-state. This attribute value is read-only.";
+      reference   
+        "[802.1AX] 6.3.2.1.23";
+    }
+
+    leaf agg-port-aggregate-or-individual {
+      type boolean;
+      description 
+        "A read-only Boolean value indicating whether the
+         Aggregation Port is able to Aggregate ('TRUE') or is
+         only able to operate as an Individual link ('FALSE').";
+      reference   
+        "6.3.2.1.24";
+    }
+  }
+  
+  grouping agg-port-statistics-group {
+    description 
+      "per-port statistics for ports belonging to an Aggregator";
+
+    leaf agg-port-stats-LACPDUs-rx {
+      type yang:counter32;
+      description 
+        "The number of valid LACPDUs received on this
+         Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.2";
+    }
+
+    leaf agg-port-stats-marker-PDUs-Rx {
+      type yang:counter32;
+      description 
+        "The number of valid Marker PDUs received on this
+         Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.3";
+
+    }
+
+    leaf agg-port-stats-marker-response-PDUs-rx {
+      type yang:counter32;
+      description 
+        "The number of valid Marker Response PDUs received on this
+         Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.4";
+    }
+
+    leaf agg-port-stats-unknown-rx {
+      type yang:counter32;
+      description 
+        "The number of frames received that either:
+         - carry the Slow Protocols Ethernet Type value
+           (IEEE Std 802.3 Annex 57A.4), but contain an
+           unknown PDU, or:
+         - are addressed to the Slow Protocols group MAC
+           Address (IEEE Std 802.3 Annex 57A.4), but do
+           not carry the Slow Protocols Ethernet Type.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.5";
+    }
+
+    leaf agg-port-stats-illegal-rx {
+      type yang:counter32;
+      description 
+        "The number of frames received that carry the Slow
+         Protocols Ethernet Type value (IEEE Std 802.3 Annex
+         57A.4), but contain a badly formed PDU or an illegal
+         value of Protocol Subtype (IEEE Std 802.3 Annex 57A.4).
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.6";
+    }
+
+    leaf agg-port-stats-LACPDUs-tx {
+      type yang:counter32;
+      description 
+        "The number of LACPDUs transmitted on this
+         Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.7";
+    }
+
+    leaf agg-port-stats-marker-PDUs-tx {
+      type yang:counter32;
+      description 
+        "The number of Marker PDUs transmitted on this
+         Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.8";
+    }
+
+    leaf agg-port-stats-marker-response-PDUs-tx {
+      type yang:counter32;
+      description 
+        "The number of Marker Response PDUs transmitted
+         on this Aggregation Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.3.1.9";
+    }
+  }
+
+  grouping agg-port-debug-info-group {
+
+    description   
+      "A list of the debug parameters for a port.";
+
+    leaf agg-port-debug-rx-state {
+      type identityref {
+        base agg-port-rx-state;
+      }
+      description 
+        "This attribute holds the value 'currentRx' if the Receive
+         state machine for the Aggregation Port is in the 
+         CURRENT state, 'expired' if the Receive state machine
+         is in the EXPIRED state, 'defaulted' if the Receive state
+         machine is in the DEFAULTED state, 'initialize' if the
+         Receive state machine is in the INITIALIZE state,
+         'lacpDisabled' if the Receive state machine is in the
+         LACP_DISABLED state, or 'portDisabled' if the Receive
+         state machine is in the PORT_DISABLED state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.2";
+    }
+
+    leaf agg-port-debug-last-rx-time {
+      type yang:timeticks;
+      description 
+        "The value of aTimeSinceSystemReset (See IEEE Std 802.3 Annex
+         F.2.1) when the last LACPDU was received by this Aggregation
+         Port. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.3";
+    }
+
+    leaf agg-port-debug-mux-state {
+      type identityref {
+        base agg-port-mux-state;
+      }
+      description 
+        "This attribute holds the value 'detached' if the Mux
+         state machine (5.4.14) for the Aggregation Port is
+         in the DETACHED state, 'waiting' if the Mux state machine
+         is in the WAITING state, 'attached' if the Mux state
+         machine for the Aggregation Port is in the ATTACHED
+         state, 'collecting' if the Mux state machine for the
+         Aggregation Port is in the COLLECTING state, 'distributing'
+         if the Mux state machine for the Aggregation Port is
+         in the DISTRIBUTING state, and 'collectingDistributing'
+         if the Mux state machine for the Aggregation Port is in
+         the COLLECTING_DISTRIBUTING state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.4";
+    }
+
+    leaf agg-port-debug-mux-reason {
+      type boolean;
+      description 
+        "A human-readable text string indicating the reason
+         for the most recent change of Mux machine state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.5";
+    }
+
+    leaf agg-port-debug-actor-churn-state {
+      type identityref {
+        base churn-state;
+      }
+      description 
+        "The state of the Actor Churn Detection machine
+         (5.4.17) for the Aggregation Port. A value of 'noChurn'
+         indicates that the state machine is in either the
+         NO_ACTOR_CHURN or the ACTOR_CHURN_MONITOR
+         state, and 'churn' indicates that the state machine is in the
+         ACTOR_CHURN state. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.6";
+    }
+
+    leaf agg-port-debug-partner-churn-state {
+      type identityref {
+        base churn-state;
+      }
+      description 
+        "The state of the Partner Churn Detection machine
+         (5.4.17) for the Aggregation Port. A value of 'noChurn'
+         indicates that the state machine is in either the
+         NO_PARTNER_CHURN or the PARTNER_CHURN_MONITOR
+         state, and 'churn' indicates that the state machine is
+         in the PARTNER_CHURN state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.7";
+    }
+
+    leaf agg-port-debug-actor-churn-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Actor Churn state
+         machine has entered the ACTOR_CHURN state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.8";
+    }
+
+    leaf agg-port-debug-partner-churn-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Partner Churn
+         state machine has entered the PARTNER_CHURN state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.9";
+    }
+
+    leaf agg-port-debug-actor-sync-transition-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Actor's Mux state
+         machine (5.4.15) has entered the IN_SYNC state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.10";
+    }
+
+    leaf agg-port-debug-partner-sync-transition-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Partner's Mux
+         state machine (5.4.15) has entered the IN_SYNC state.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.11";
+    }
+
+    leaf agg-port-debug-actor-change-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Actor's perception of
+         the LAG ID for this Aggregation Port has changed.
+         This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.12";
+    }
+
+    leaf agg-port-debug-partner-change-count {
+      type yang:counter32;
+      description 
+        "Count of the number of times the Partner's perception of
+         the LAG ID (see 5.3.6.1) for this Aggregation Port has 
+         changed. This value is read-only.";
+      reference   
+        "[802.1AX] 6.3.4.1.13";
+    }
+  }
+   
+  //
+  // Data definitions related to LACP
+  //
+
+  container agg-global {
+    description
+      "Contains configurable parameters global to all Aggregators in the
+       system";
+
+    leaf global-admin-state {
+      type enumeration {
+        enum disabled {
+          description
+            "Disables aggregation on a system wide
+            basis.";
+        }
+        enum enabled {
+          description
+            "Enables aggregation on a system wide
+            basis.";
+        }
+      }
+      default enabled;
+      description
+        "Enables or Disables aggregation on a system wide
+         basis"; 
+    }
+  }
+
+  container agg-global-state {
+    config false;
+    description
+      "Contains Information global to all Aggregators in the system.";
+    leaf tables-last-changed {
+      type yang:timeticks;
+      config false;
+      description   
+        "This object indicates the time of the
+         most recent change to the agg-parameters or
+         agg-port-parameters";
+    }
+  }
+
+
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:config" {
+    when "cn-oc-if:type = 'lag'"{
+      description
+        "Augment only if the interface type is lag.";
+    }
+      
+    description
+      "Augmenting LAG to interfaces.";
+
+    container agg {
+      description
+        "Configurable parameters for each Aggregator.";
+      leaf agg-actor-system-priority {
+        type uint16; 
+        default 32768;
+        description 
+          "A 2-octet read-write value indicating the priority value
+           associated with the Actor's System ID.";
+        reference   
+          "[802.1AX] 6.3.1.1.5";
+      }
+
+      leaf agg-actor-admin-key {
+        type lacp-key;
+        must '(. >= 2049 and . <= 8191)' {
+          error-message "Value must be within range of 2049 to 8191";
+        }
+        description 
+          "The current administrative value of the Key for the 
+           Aggregator. The administrative Key value may differ from 
+           the operational Key value for the reasons discussed in 
+           5.6.2. This is a 16-bit, read-write value. The meaning of
+           particular Key values is of local significance. Value must
+           be within range of 2049..8191";
+        reference   
+          "[802.1AX] 6.3.1.1.7";
+      }
+
+      leaf agg-collector-max-delay {
+        type uint16; 
+        description 
+          "The value of this 16-bit read-write attribute defines
+           the maximum delay, in tens of microseconds, that
+           may be imposed by the Frame Collector between
+           receiving a frame from an Aggregator Parser, and
+           either delivering the frame to its MAC Client or discarding
+           the frame (see 5.2.3.1.1).";
+        reference   
+          "[802.1AX] 6.3.1.1.32";
+      }
+
+      leaf mac-address {
+        type yang:mac-address;
+        description
+          "MAC-address.";
+      }
+
+      list member-ports {
+        key "member-port";
+        description
+          "List of user configured ports on this Aggregator";
+           
+        leaf member-port {
+          type cn-oc-if:ciena-openconfig-interface-ref;
+          description
+            "Configured member ports of the Aggregator identified
+             by their interface ID";
+        }
+        uses agg-port-parameters-group;    
+        leaf agg-port-protocol-DA {
+          type yang:mac-address;
+          description   
+            "A 6-octet read-write MACAddress value specifying
+             the destination address to be used when sending Link
+             Aggregation Control and Marker PDUs on this port,
+             corresponding to the value of Protocol_DA
+             in 5.2.7.1.2, 5.2.9.1.2 and 5.5.4.2.1.
+             The default DA is the IEEE 802.3 Slow_Protocols_Multicast
+             address.";
+        reference     
+          "[802.1AX] 6.3.2.2.1";
+        }
+      }
+    }
+  }
+
+  augment "/oc-if:interfaces/"
+        + "oc-if:interface/"
+        + "oc-if:state" {
+    when "../config/cn-oc-if:type[.='ettp' or .='lag']" {
+      description
+        "Augment only if the interface type is lag or ettp.";
+    }
+    description
+      "Augmenting LAG state to interfaces state.";
+    
+    container agg-state {
+      description
+        "Operational data for each Aggregator.";
+      leaf agg-MAC-address {
+        type yang:mac-address;
+        description 
+          "A 6-octet read-only value carrying the individual
+           MAC address assigned to the Aggregator.";
+        reference   
+          "[802.1AX] 6.3.1.1.9";
+      }
+
+      leaf agg-actor-system-ID {
+        type yang:mac-address;
+        description 
+          "A 6-octet read-write MAC address value used as a unique
+           identifier for the System that contains this Aggregator.
+           NOTE-From the perspective of the Link Aggregation
+           mechanisms described in Clause 5, only a single
+           combination of Actor's System ID and System Priority are
+           considered, and no distinction is made between the
+           values of these parameters for an Aggregator and the
+           port(s) that are associated with it; i.e., the protocol
+           is described in terms of the operation of aggregation
+           within a single System. However, the managed objects
+           provided for the Aggregator and the port both allow
+           management of these parameters. The result of this is to
+           permit a single piece of equipment to be configured by
+           management to contain more than one System from the
+           point of view of the operation of Link Aggregation. This
+           may be of particular use in the configuration of
+           equipment that has limited aggregation capability 
+           (see 5.6).";
+        reference   
+          "[802.1AX] 6.3.1.1.4";
+      }
+
+      leaf agg-aggregate-or-individual {
+        type boolean;
+        description 
+          "A read-only Boolean value indicating whether the
+           Aggregator represents an Aggregate ('TRUE') or
+           an Individual link ('FALSE').";
+        reference   
+          "[802.1AX] 6.3.1.1.6";
+      }
+
+      leaf agg-actor-oper-key {
+        type lacp-key;
+        description 
+          "The current operational value of the Key for the 
+           Aggregator. The administrative Key value may differ from 
+           the operational Key value for the reasons discussed in 
+           5.6.2. This is a 16-bit read-only value. The meaning of 
+           particular Key values is of local significance.";
+        reference   
+          "[802.1AX] 6.3.1.1.8";
+      }
+
+      leaf agg-partner-system-ID {
+        type yang:mac-address;
+        description 
+          "A 6-octet read-only MAC address value consisting
+           of the unique identifier for the current protocol Partner 
+           of this Aggregator. A value of zero indicates that there
+           is no known Partner. If the aggregation is manually 
+           configured, this System ID value will be a value assigned 
+           by the local System.";
+        reference   
+          "[802.1AX] 6.3.1.1.10";
+      }
+
+      leaf agg-partner-system-priority {
+        type uint16; 
+        description 
+          "A 2-octet read-only value that indicates the priority
+           value associated with the Partner's System ID. If the
+           aggregation is manually configured, this System Priority 
+           value will be a value assigned by the local System.";
+        reference   
+          "[802.1AX] 6.3.1.1.11";
+      }
+
+      leaf agg-partner-oper-key {
+        type lacp-key;
+        description 
+          "The current operational value of the Key for the
+           Aggregator's current protocol Partner. This is
+           a 16-bit read-only value. If the aggregation is manually
+           configured, this Key value will be a value assigned by the
+           local System.";
+        reference   
+          "[802.1AX] 6.3.1.1.12";
+      }
+      list distribution-ports { 
+        
+        key "distribution-port"; 
+        description
+          "List of operationally active ports on the Aggregator";
+        leaf distribution-port {
+          type cn-oc-if:ciena-openconfig-interface-ref;
+          description
+            "Member ports of the Aggregator that are in distribution
+             identified by their interface ID";
+        }
+        uses agg-port-operational-group;
+        uses agg-port-statistics-group;
+        uses agg-port-debug-info-group;
+
+        leaf bfd-ipv4-fault-state {
+          if-feature micro-bfd;
+          config false;
+          type boolean;
+          description
+            "This object specifies whether there is a fault on BFD IPv4
+             session of member port and LACP has taken action on it.";
+          }
+
+        leaf bfd-ipv6-fault-state {
+          if-feature micro-bfd;
+          if-feature micro-bfd-ipv6;
+          config false;
+          type boolean;
+          description
+            "This object specifies whether there is a fault on BFD IPv6
+             session of member port and LACP has taken action on it.";
+          }
+      }
+    }
+  }
+}

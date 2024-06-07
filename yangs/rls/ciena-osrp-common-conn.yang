@@ -1,0 +1,255 @@
+module ciena-osrp-common-conn {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-common-conn";
+  prefix ciena-osrp-common-conn;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-osrp-common-types {
+    prefix osrp-common-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's osrp - mc/nmc conn object for the 6500r platform";
+
+  revision 2022-12-13 {
+    description
+      "Added action to define operation to be performed while channel provisioning/deprovisioning.";
+    ciena-common-version:string "2.1.0";
+  }
+  revision 2022-12-05 {
+    description
+      "New list rx-fault-status added,
+       rx-status container marked deprecated.";
+    ciena-common-version:string "2.0.0";
+  }
+  revision 2021-11-28 {
+    description
+      "Increased label length to 512 in nmc-connection and mc-connection.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2021-08-10 {
+    description
+      "Removing channel-controller-state grouping ";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2021-07-28 {
+    description
+      "Initial revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping nmc-connection {
+    leaf name {
+      type osrp-common-types:osrp-local-nmc-ckt-name;
+      description
+        "Name of Network Media Channel Connection (NMCCONN).";
+      mandatory true;
+    }
+    leaf nmc-key {
+      type osrp-common-types:osrp-local-nmc-ckt-id;
+      description
+        "Identifier of Network Media Channel Connection.";
+      mandatory true;
+    }
+    list nmc {
+      key "element";
+      leaf element {
+        type instance-identifier;
+        description
+          "NMC identifier.";
+      }
+    }
+    leaf center-freq {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Center frequency of Network Media Channel Connection.";
+      mandatory true;
+    }
+    leaf spectral-width {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Spectral Width of NMC. It's minumum value is 12.5GHz.";
+      mandatory true;
+    }
+    leaf owner {
+      type osrp-common-types:conn-owner;
+      description
+        "Owner of Network Media Channel Connection.";
+      mandatory true;
+    }
+    leaf label {
+      type string;
+      description
+        "Label of Network Media Channel Connection.";
+    }
+    leaf transmission-mode {
+      type osrp-common-types:transmission-mode;
+      description
+        "transmission mode.";
+    }
+    leaf link-optimization-mode {
+      type osrp-common-types:link-optimization-mode;
+      description
+        "link optimization mode.";
+    }
+    leaf dispersion {
+      type osrp-common-types:chromatic-dispersion;
+      description
+        "Path Chromatic Dispersion.";
+    }
+    leaf rx-acquisition-hold-off {
+      type osrp-common-types:timeperiod-msec;
+      description
+        "Rx acquisition hold-off time (expected-restoration time).";
+      default "200000";
+    }
+    leaf ase-hold-off {
+      type osrp-common-types:timeperiod-msec;
+      description
+        "ASE hold-off time.";
+      default "30000";
+    }
+    leaf action {
+      type uint16;
+      description
+        "Action to be performed on nmcconn.";
+    }
+  }
+
+  grouping mc-connection {
+    leaf name {
+      type osrp-common-types:osrp-local-mc-ckt-name;
+      description
+        "Name of Media Channel Connection (MCCONN).";
+    }
+    leaf mc-key {
+      type osrp-common-types:osrp-local-mc-ckt-id;
+      description
+        "Identifier of Media Channel Connection.";
+      mandatory true;
+    }
+    leaf from {
+      type osrp-common-types:osrp-port-identifier;
+      description
+        "From Port Identifier.";
+      mandatory true;
+    }
+    leaf to {
+      type osrp-common-types:osrp-port-identifier;
+      description
+        "To Port Identifier.";
+      mandatory true;
+    }
+    leaf min-freq {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Minimum Frequency of Media Channel Connection.";
+      mandatory true;
+    }
+    leaf max-freq {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Maximum Frequency of Media Channel Connection.";
+      mandatory true;
+    }
+    leaf low-freq-deadband {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Lower Edge Spacing.";
+    }
+    leaf high-freq-deadband {
+      type osrp-common-types:frequency-mhz;
+      description
+        "Higher Edge Spacing.";
+    }
+    leaf label {
+      type string;
+      description
+        "Label of Media Channel Connection.";
+    }
+    leaf owner {
+      type osrp-common-types:conn-owner;
+      description
+        "Owner of Media Channel Connection.";
+      mandatory true;
+    }
+    list mc {
+      key "element";
+      leaf element {
+        type instance-identifier;
+        description
+          "MC identifier.";
+      }
+    }
+    leaf node-name {
+      type osrp-common-types:node-name;
+      description
+        "Name of OSRP Node which created this conn.";
+    }
+    leaf type {
+      type osrp-common-types:channel-type;
+      description
+        "Type of channel, dynamic or permanent.";
+    }
+    leaf action {
+      type uint16;
+      description
+        "Action to be performed on mcconn.";
+    }
+  }
+
+  grouping channel-controller-state {
+    list channel-controller-status {
+      key "instance-name";
+      leaf instance-name {
+        type string;
+        description
+          "Specifies instance name of the corresponding channel controller.";
+      }
+      leaf operational-state {
+        type osrp-common-types:channel-operational-state;
+        description
+          "Specifies current operational state of channel controller.";
+      }
+      leaf additional-info {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Specifies additional info about channel controller status.";
+      }
+    }
+    container rx-status {
+      status deprecated;
+      leaf status {
+        type osrp-common-types:rx-proxy-status;
+        description
+          "Specifies rx-proxy current status.";
+        default "no-fault";
+      }
+    }
+    list rx-fault-status {
+      key "port-name";
+      leaf port-name {
+        type string;
+        description
+          "Name of the port.";
+      }
+      leaf status {
+        type osrp-common-types:rx-proxy-status;
+        description
+          "Specifies rx-proxy current status.";
+        default "no-fault";
+      }
+    }
+  }
+}

@@ -1,0 +1,108 @@
+module ciena-pro-coherent-device-restart-host {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:coherent-device-restart-host";
+  prefix coherent-device-restart-host;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-pro-coherent-device-restart-types {
+    prefix coherent-device-restart-types;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device {
+    prefix coherent-device;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "";
+
+  revision 2023-12-01 {
+    description
+      "Initial version";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:inventory/coherent-device:restart" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-inventory-restart";
+    action restart {
+      description
+        "An internal action for the host to update the restart information due to a
+         host module or chassis power-on event. Defined generically to override the data
+         that would be otherwise set due to restart and restart-cold actions.";
+      input {
+        leaf host-reason {
+          type coherent-device-restart-types:restart-reason-enum;
+          description
+            "The host must indicate whether this restart is being triggered due to user or system request.
+             A power-on event of the host module or chassis is indicated by a different means.";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action restart-cold {
+      description
+        "An internal action for the host to update the restart information due to a
+         host module or chassis power-on event. Defined generically to override the data
+         that would be otherwise set due to restart and restart-cold actions.";
+      input {
+        leaf host-reason {
+          type coherent-device-restart-types:restart-reason-enum;
+          description
+            "The host must indicate whether this restart is being triggered due to user or system request.
+             A power-on event of the host module or chassis is indicated by a different means.";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action host-update-restart {
+      description
+        "An internal action for the host to update the restart information due to a
+         host module or chassis power-on event. Defined generically to override the data
+         that would be otherwise set due to restart and restart-cold actions.";
+      input {
+        leaf reason {
+          type coherent-device-restart-types:restart-reason-enum;
+          default "power-on";
+          description
+            "";
+        }
+        leaf type {
+          type coherent-device-restart-types:restart-type-enum;
+          default "cold";
+          description
+            "";
+        }
+        leaf date-time-epoch {
+          type uint32;
+          mandatory true;
+          description
+            "The time of the power-on event in epoch time. The SDK will convert to date-time string.";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+  }
+}

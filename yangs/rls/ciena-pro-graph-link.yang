@@ -1,0 +1,223 @@
+module ciena-pro-graph-link {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-graph-link";
+  prefix graph-link;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+  import ciena-pro-mc {
+    prefix ciena-pro-mc;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-pro-graph-interface {
+    prefix ciena-pro-graph-interface;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's graph link for the 6500r-Series platform";
+
+  revision 2022-02-02 {
+    description
+      "link-state, is-inter-node and is-inter-site support";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2021-11-27 {
+    description
+      "effective-mc-occupancy support";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2021-11-15 {
+    description
+      "Add support for effective-mc-occupancy.
+       Add mc min-freq and max freq and link link-freq-avail";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2020-10-09 {
+    description
+      "RLS 2.2 module creation";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  list graph-link {
+    key "name";
+    leaf name {
+      type string {
+        length "1..200";
+      }
+      description
+        "Flattened link identifier";
+    }
+    leaf from {
+      type string {
+        length "1..200";
+      }
+      description
+        "Flattened From port identifier";
+    }
+    leaf to {
+      type string {
+        length "1..200";
+      }
+      description
+        "Flattened To port identifier";
+    }
+    leaf is-external {
+      type boolean;
+      default "false";
+      description
+        "false if link is within a slot, otherwise true";
+    }
+    leaf is-inter-node {
+      type boolean;
+      default "false";
+      description
+        "If the link is between two nodes";
+    }
+    leaf is-inter-site {
+      type boolean;
+      default "false";
+      description
+        "If the link is between two sites.
+         Note that all nodes from remote sites are being treated as single node sites.";
+    }
+    leaf link-type {
+      type ciena-pro-link:link-type;
+      default "fiber";
+      description
+        "ciena_pro_link_link_type";
+    }
+    leaf link-state {
+      type ciena-pro-link:link-state-enum;
+      default "active";
+      description
+        "Current link state indicating whether capable of carrying traffic or not.
+         For example, multiple links can be connected with a TPS. But only one of
+         them will be able to carry the traffic dictated by the switch. The rest
+         will be inactive for that moment.  When switched to another path, another
+         link will have the state as active (the rest are inactive)";
+    }
+    leaf band {
+      type ciena-pro-optical-types:band-occupancy;
+      description
+        "Supported band types";
+    }
+    container optical-constraints {
+      leaf band-info {
+        type ciena-pro-optical-types:band-occupancy;
+        description
+          "supported band types of the link";
+      }
+      leaf min-freq {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Minimum frequency of the link";
+      }
+      leaf max-freq {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Maximum frequency of the link";
+      }
+    }
+    list nmc {
+      key "freq";
+      leaf freq {
+        type uint32;
+        description
+          "Center frequency of the network media channel";
+      }
+      leaf width {
+        type uint32;
+        description
+          "Spectral width of the network media channel";
+      }
+      leaf effective-mc-occupancy {
+        type uint32;
+        description
+          "The amount of spectral width within the mc that the nmc effectively occupies including dead band or guard band.
+           Photonic control uses this to convert PSD to total power. The conversion needs to account for the dead space so that the
+           power of the NMC achieves the average PSD across the mc bandwidth";
+      }
+    }
+    list mc {
+      key "name";
+      leaf name {
+        type string {
+          length "1..200";
+        }
+        description
+          "MC name";
+      }
+      leaf auto-created {
+        type boolean;
+        description
+          "Indicate if MC is auto-created";
+      }
+      leaf mc-type {
+        type ciena-pro-mc:mc-type-enum;
+        default "traffic";
+        description
+          "Describes the intended media channel usage";
+      }
+      leaf min-freq {
+        type uint32;
+        description
+          "Minimum frequency edge of the media channel";
+      }
+      leaf max-freq {
+        type uint32;
+        description
+          "Maximum frequency edge of the media channel";
+      }
+      list nmc {
+        key "network-id";
+        leaf network-id {
+          type string;
+          description
+            "This is used to stitch network media channel fragments end-to-end and must ideally be set
+             to the network unique identifier of the end-to-end network media channel this fragment relates
+             to or at a minimum to the center frequency value";
+        }
+        leaf center-freq {
+          type uint32;
+          description
+            "Center frequency of the network media channel";
+        }
+      }
+    }
+    leaf channel-occupancy {
+      description
+        "List of provisioned channels.
+         Only the channel center frequencies are identified.";
+      type ciena-pro-graph-interface:channel-bitmap-type;
+    }
+    leaf link-freq-avail {
+      description
+        "List of available frequencies on this link taking associated contention ports into account.
+         Optical constraint and mc widths are considered.
+         It does not take into account any upstream or downstream configured mc or nmc.";
+      type ciena-pro-graph-interface:channel-bitmap-type;
+    }
+  }
+}

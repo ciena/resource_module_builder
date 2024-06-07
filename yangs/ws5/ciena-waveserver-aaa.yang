@@ -1,0 +1,1356 @@
+module ciena-waveserver-aaa {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-aaa";
+  prefix aaa;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  import ciena-waveserver-system {
+    prefix system;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the Authentication, Authorization and Accounting (AAA)
+     functionality for Ciena's Waveserver platform.";
+
+  revision 2019-09-18 {
+    description
+      "Changed range definition for RADIUS 'key' and 'secret'.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  revision 2019-02-20 {
+    description
+      "Added pattern definition for leaf 'trusted-fingerprint'.
+       Increased user name length from 32 to 64 characters max.
+       Made 'access-level' a mandatory leaf for the user list.
+       Changed range definition for TACACS 'privilege-level-rw'
+       and 'privilege-level-diag'.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-09-19 {
+    description
+      "Added support for TACACS+ server data model.
+       Added support for RADIUS server data model.
+       Added support for RADSEC server data model.
+       Added support for 'waveserver-aaa-authentication-statistics-clear' rpc.
+       Added support for 'waveserver-aaa-tacacs-server-statistics-clear' rpc.
+       Added support for 'waveserver-aaa-radsec-server-statistics-clear' rpc.
+       Added support for 'waveserver-aaa-kill-user' rpc.
+       Added scope attribute to authentication method.
+       Added statistics container to authentication method.
+       Added user lockout attributes.";
+    reference "Waveserver Ai R1.3 user's guide.";
+  }
+
+  revision 2018-05-17 {
+    description
+      "Publishing the AAA external data model for general availability.
+       Added ncx:password support.
+       Enforce uniqueness on authentication-method type.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  revision 2018-01-04 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the AAA external data model.
+       In Waveserver R1.1, this module is intended for internal use only, and
+       should not be published externally. The data model is not yet finalized.";
+    reference "Waveserver Ai R1.1 user's guide.";
+  }
+
+  typedef server-search-method {
+    type enumeration {
+      enum "priority" {
+        description
+          "Priority is used to order to loop over the available servers for each request.";
+      }
+      enum "cached" {
+        description
+          "The last used server will be queried first with the request.";
+      }
+    }
+    description
+      "Server Search Method";
+  }
+
+  typedef server-entry-type {
+    type enumeration {
+      enum "global" {
+        value 1;
+        description
+          "The AAA server entry is a member of the global server list.";
+      }
+      enum "authentication" {
+        description 
+          "The AAA server entry is a member of the authentication server list.";
+      }
+      enum "authorization" {
+        description
+          "The AAA server entry is a member of the authorization server list.";
+      }
+      enum "accounting" {
+        description
+          "The AAA server entry is a member of the accounting server list.";
+      }
+    }
+    description
+      "Identifies a AAA server list type for the purposes of querying or
+       clearing server statistics.";
+  }
+
+  typedef authentication-method-type {
+    type enumeration {
+      enum "local" {
+        description
+          "Authentication based on local user list.";
+      }
+      enum "radius" {
+        description
+          "Remote authentication via RADIUS, if configured/enabled.";
+      }
+      enum "tacacs" {
+        description
+          "Remote authentication via TACACS+, if configured/enabled.";
+      }
+      enum "radsec" {
+        description
+          "Remote authentication via RADSEC, if configured/enabled.";
+      }
+    }
+    description
+      "Identifies an authentication method / provider type.";
+  }
+
+  typedef authentication-scope-type {
+    type enumeration {
+      enum "all" {
+        description
+          "Accessing the node through all (remote or serial).";
+      }
+      enum "serial" {
+        description
+          "Aceessing the node through serial (RS232) port.";
+      }
+      enum "remote" {
+        description
+          "Accessing the node through SSH or REST interfaces.";
+      }
+    }
+    description
+      "Scope of the authentication method (or provider).";
+  }
+
+  typedef user-access-level {
+    type enumeration {
+      enum "limited" {
+        description
+          "User has limited (mostly read-only) privileges. This user's role
+          is used for system monitoring and gathering information about the
+          configuration and performance of the system. Limited users can
+          change their own password, but not another user's password. Cannot
+          create/delete/modify other user accounts, but can view users with
+          same or lower access-level.";
+      }
+      enum "admin" {
+        description
+          "User has administrative privileges. This user's role includes
+          ability to configure most system attributes, excluding security
+          files such as password files and SSH/SSL server keys. Admin users
+          can change their own password, but not another user's password.
+          Cannot create/delete/modify other user accounts, but can view
+          users with same or lower access-level.";
+      }
+      enum "super" {
+        description
+          "User has superuser privileges. This user's role includes
+          managing local user accounts, authentication methods, and other
+          security configuration.";
+      }
+      enum "diag" {
+        description
+          "User has diagnostic privileges. This user's role includes access
+          to the diag shell (native Linux OS shell), but excludes access to
+          user security configuration.";
+      }
+    }
+    description
+      "The access-level or role assigned to the local user.";
+  }
+
+  grouping common-server-attributes {
+    description
+      "Set of server attributes common for various server definitions.";
+    leaf address {
+      ui:ui-name "Address";
+      type cienawstypes:ipaddr-or-hostname;
+      description
+        "Configured IP address or Domain Name of the remote server.";
+    }
+    leaf ip-address {
+      ui:ui-name "IP Address";
+      type cienawstypes:ip-address;
+      config false;
+      description
+        "Operational IP address associated with the remote server,
+        if configured/available, or 'Unresolved' otherwise.";
+    }
+    leaf admin-state {
+      ui:ui-name "Admin State";
+      type cienawstypes:enabled-disabled-enum;
+      description
+        "Server administrative state.";
+    }
+    leaf operational-state {
+      ui:ui-name "Operational State";
+      type cienawstypes:up-down-enum;
+      config false;
+      description
+        "Server operational state.";
+    }
+    leaf priority {
+      ui:ui-name "Priority";
+      type uint8 {
+        range "1..8";
+      }
+      description
+        "Server priority.";
+    }
+  }
+    
+  grouping common-server-statistics {
+    description
+      "Common server statistics attributes.";
+
+    leaf access-requests {
+      ui:ui-name "Access Requests";
+      type uint32;
+      config false;
+      description
+         "server access requests.";
+    }
+    leaf access-rejects {
+      ui:ui-name "Access Rejects";
+      type uint32;
+      config false;
+      description
+         "server access rejects.";
+    }
+    leaf access-accepts {
+      ui:ui-name "Access Accepts";
+      type uint32;
+      config false;
+      description
+         "server access accepts.";
+    }
+    
+    leaf bad-authenticator-packets {
+      ui:ui-name "Bad Authenticator Packets";
+      type uint32;
+      config false;
+      description
+         "bad authenticator server packets.";
+    }
+    leaf malformed-responses {
+      ui:ui-name "Malformed Responses";
+      type uint32;
+      config false;
+      description
+         "malformed server responses.";
+    }
+  }
+
+  grouping tacacs-server-statistics {
+    description
+      "TACACS+ server statistics attributes.";
+
+    leaf access-retransmissions {
+      ui:ui-name "Access Retransmissions";
+      type uint32;
+      config false;
+      description
+         "server access retransmissions.";
+    }
+    leaf packet-timeouts {
+      ui:ui-name "Packet Timeouts";
+      type uint32;
+      config false;
+      description
+         "server packet timeouts.";
+    }
+    leaf packet-rx-with-bad-seq {
+      ui:ui-name "Packets Rx with Bad Seq";
+      type uint32;
+      config false;
+      description
+         "server packets received with bad sequence.";
+    }
+  }
+
+  grouping radius-server-statistics {
+    description
+      "RADIUS server statistics attributes.";
+
+    leaf access-retransmissions {
+      ui:ui-name "Access Retransmissions";
+      type uint32;
+      config false;
+      description
+         "server access retransmissions.";
+    }
+    leaf packet-timeouts {
+      ui:ui-name "Packet Timeouts";
+      type uint32;
+      config false;
+      description
+         "server packet timeouts.";
+    }
+    leaf access-challenges {
+      ui:ui-name "Access Challenges";
+      type uint32;
+      config false;
+      description
+         "server access challenges.";
+    }
+     
+    leaf pending-requests {
+      ui:ui-name "Pending Requests";
+      type uint32;
+      config false;
+      description
+         "pending server requests.";
+    } 
+    leaf packets-dropped {
+      ui:ui-name "Packets Dropped";
+      type uint32;
+      config false;
+      description
+         "server packets dropped.";
+    }
+  }
+
+  grouping radsec-server-statistics {
+    description
+      "RADSec server statistics attributes.";
+
+    leaf access-challenges {
+      ui:ui-name "Access Challenges";
+      type uint32;
+      config false;
+      description
+         "server access challenges.";
+    }
+
+    leaf packets-dropped {
+      ui:ui-name "Packets Dropped";
+      type uint32;
+      config false;
+      description
+         "server packets dropped.";
+    }
+
+    leaf connection-attempts {
+      ui:ui-name "Connection Attempts";
+      type uint32;
+      config false;
+      description
+         "server connection attempts.";
+    }
+
+    leaf successful-connections {
+      ui:ui-name "Successful Connections";
+      type uint32;
+      config false;
+      description
+         "server successful connections.";
+    }
+
+    leaf failed-tcp-connections {
+      ui:ui-name "Failed TCP Connections";
+      type uint32;
+      config false;
+      description
+         "server failed tcp connections.";
+    }
+
+    leaf failed-tls-connections {
+      ui:ui-name "Failed TLS Connections";
+      type uint32;
+      config false;
+      description
+         "server failed tls connections.";
+    }
+
+    leaf timeout-connections {
+      ui:ui-name "Timed Out Connections";
+      type uint32;
+      config false;
+      description
+         "server timeout connections.";
+    }
+
+    leaf unexpected-closes {
+      ui:ui-name "Unexpected Closes";
+      type uint32;
+      config false;
+      description
+         "server unexpected closes.";
+    }
+
+    leaf closed-connections {
+      ui:ui-name "Closed Connections";
+      type uint32;
+      config false;
+      description
+         "server closed connections.";
+    }
+
+    leaf responses {
+      ui:ui-name "Responses";
+      type uint32;
+      config false;
+      description
+         "server responses.";
+    }
+
+    leaf unknown-types {
+      ui:ui-name "Unknown Types";
+      type uint32;
+      config false;
+      description
+         "server unknown types.";
+    }
+
+  }
+
+  grouping tacacs-server-attributes {
+    description
+      "Set of additional attributes specific to TACACS+ servers.";
+
+    leaf tcp-port {
+      ui:ui-name "TCP Port";
+      type uint16 {
+        range "1..65535";
+      }
+      default 49;
+      description
+        "TACACS+ server TCP Port. Default value is 49.";
+    }
+    leaf source-address {
+      ui:ui-name "Source Address";
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Source IP address used in messages to the TACACS+ server.";
+    } 
+  }
+
+  container waveserver-aaa {
+    ui:ui-name "AAA";
+    description
+      "Waveserver AAA configuration and operational data. Defines authentication,
+      authorization and accounting services.";
+
+    container authentication {
+      ui:ui-name "Authentication";
+      description
+        "Global authentication configuration.";
+
+      list authentication-method {
+        ui:ui-name "Authentication Method";
+        key "priority";
+        unique "type";
+        max-elements 4;
+        description
+          "Ordered list of authentication methods for user login attempts,
+          indexed by priority. If an authentication attempt fails using the
+          first method, the next defined method will be attempted, until all
+          specified authentication methods have been tried, at which point the
+          user will be denied access. By default, this list will have a single
+          entry with type 'local'.";
+        leaf priority {
+          ui:ui-name "Priority";
+          type uint8 {
+            range "1..4";
+          }
+          description
+            "Authentication priority, indicating the order in which each of the
+            authentication providers will be consulted.";
+        }
+        leaf type {
+          ui:ui-name "Type";
+          type authentication-method-type;
+          description
+           "The authentication method / provider type. Must be unique within the list.";
+        }
+        leaf scope {
+          ui:ui-name "Scope";
+          type authentication-scope-type;
+          description
+            "Scope of the authentication method."; 
+        }
+        container statistics {
+          ui:ui-name "Authentication Statistics";
+          config false;
+          description
+            "User Authentication Statistics.";
+
+          leaf called {
+            ui:ui-name "Called";
+            type uint32;
+            description
+               "Number of times the authentication method has been called.";
+          }
+          leaf success {
+            ui:ui-name "Success";
+            type uint32;
+            description
+               "Number of times the authentication method has been successful.";
+          }
+          leaf failure {
+            ui:ui-name "Failure";
+            type uint32;
+            description
+               "Number of failed authentication attempts via this method.";
+          }
+          leaf skipped {
+            ui:ui-name "Skipped";
+            type uint32;
+            description
+               "Number of skipped authentication attempts via this method.";
+          }
+        }
+      }//end authentication-method
+    }//end authentication
+  
+    container user-management {
+      ui:ui-name "User Management";
+      description
+        "User management.";
+
+      leaf max-limited-users {
+        ui:ui-name "Max Limited Users";
+        type uint8 {
+          range "0..9";
+        }
+        description
+          "Maximum number of network logins of limited-level users.";
+      }
+      leaf current-limited-users {
+        ui:ui-name "Current Limited Users";
+        type uint8; 
+        config false;
+        description
+          "Current number of network logins of limited-level users.";
+      }
+      leaf max-admin-users {
+        ui:ui-name "Max Admin Users";
+        type uint8 {
+          range "0..9";
+        }
+        description
+          "Maximum number of network logins of admin-level users.";
+      }
+      leaf current-admin-users {
+        ui:ui-name "Current Admin Users";
+        type uint8; 
+        config false;
+        description
+          "Current number of network logins of admin-level users.";
+      }
+      leaf max-super-users {
+        ui:ui-name "Max Super Users";
+        type uint8 {
+          range "1..10";
+        }
+        description
+          "Maximum number of network logins of super users.";
+      }
+      leaf current-super-users {
+        ui:ui-name "Current Super Users";
+        type uint8; 
+        config false;
+        description
+          "Current number of network logins of super users.";
+      }
+      leaf min-password-length {
+        ui:ui-name "Min Password Length";
+        type uint16 {
+          range "1..128";
+        }
+        description
+          "Minimum length of the user password.";
+      }
+      leaf max-login-attempt {
+        ui:ui-name "Max Login Attempt";
+        type uint16 {
+          range "2..10";
+        }
+        description
+          "Maximum number of consecutive unsuccessful login attempts allowed
+           before a user account is locked out. Applies only to local user
+           accounts. System default is 5.";
+      }
+      leaf lockout-interval {
+        ui:ui-name "User Lockout Interval";
+        type uint16 {
+          range "1..30";
+        }
+        units "minutes";
+        description
+          "User lockout time interval, in minutes. Applies only to local user
+           accounts. System default is 10 min.";
+      }
+
+      list active-users {
+        ui:ui-name "Active Users";
+        key "session-id";
+        config false;
+        description
+          "display active users.";
+
+        leaf session-id {
+          ui:ui-name "Session ID";
+          type uint64;
+          description
+            "Session Id.";
+        }
+        leaf username {
+          ui:ui-name "Username";
+          type cienawstypes:string-maxl-64;
+          description
+            "User name.";
+        }
+        leaf idle-time {
+          ui:ui-name "Idle Time(min.)";
+          type uint64;
+          description
+            "Idle time.";
+        }
+        leaf interface-type {
+          ui:ui-name "Interface Type";
+          type cienawstypes:string-maxl-15;
+          description
+            "Interface type.";
+        }
+        leaf terminal {
+          ui:ui-name "Terminal";
+          type cienawstypes:string-maxl-128;
+          description
+            "Terminal.";
+        }
+      }
+
+    } // end user-management
+
+    list user {
+      ui:ui-name "User List";
+      key "user-name";
+      max-elements 50;
+      description
+        "List of local user accounts used for local authentication.";
+      leaf user-name {
+        ui:ui-name "User Name";
+        type cienawstypes:string-maxl-64;
+        description
+          "The configured username for this local user. Must be unique across
+          the list of configured local users.";
+      }
+      leaf password {
+        ui:ui-name "User Password";
+        type cienawstypes:string-maxl-128;
+        description
+          "The user password, supplied as cleartext. This is a write-only
+          attribute that should not be stored nor returned on user retrieval.
+          The password will be encrypted via one-way hash function and stored
+          only in its encrypted format. The hashed password string can be
+          retrieved via the 'secret' attribute.";
+        ncx:password;
+      }
+      leaf secret {
+        ui:ui-name "Password Secret";
+        type cienawstypes:string-maxl-256;
+        description
+          "The encrypted user password string, supplied as a hashed value. This
+          should only be configured at user creation time, and will be ignored
+          if the user account already exists.";
+      }
+      leaf access-level {
+        type enumeration {
+          enum "limited" {
+            description
+              "User has limited (mostly read-only) privileges. This user's role
+              is used for system monitoring and gathering information about the
+              configuration and performance of the system. Limited users can
+              change their own password, but not another user's password. Cannot
+              create/delete/modify other user accounts, but can view users with
+              same or lower access-level.";
+          }
+          enum "admin" {
+            description
+              "User has administrative privileges. This user's role includes
+              ability to configure most system attributes, excluding security
+              files such as password files and SSH/SSL server keys. Admin users
+              can change their own password, but not another user's password.
+              Cannot create/delete/modify other user accounts, but can view
+              users with same or lower access-level.";
+          }
+          enum "super" {
+            description
+              "User has superuser privileges. This user's role includes
+              managing local user accounts, authentication methods, and other
+              security configuration. This is the required privilege level for
+              accessing various NETCONF,REST, WebSocket, and other northbound
+              interfaces.";
+          }
+          enum "diag" {
+            description
+              "User has diagnostic privileges. This user's role includes access
+              to the diag shell (native Linux OS shell) and is restricted to the
+              console port only.";
+          }
+        }
+        mandatory true;
+        description
+          "The access-level or role assigned to the local user.";
+      }
+      leaf locked-out {
+        ui:ui-name "Locked Out";
+        type boolean;
+        config false;
+        description
+          "Indicates whether this local user account is currently locked out.";
+      }
+      leaf login-failures {
+        ui:ui-name "Login Failures";
+        type uint32;
+        config false;
+        description
+          "Number of consecutive failed login attempts for this user account.";
+      }
+      leaf last-failure {
+        ui:ui-name "Last Failure";
+        type cienawstypes:string-maxl-32;
+        config false;
+        description
+          "The date and time of the most recent failed login attempt in
+           'YYYY-MM-DD HH:MM:SS' format, or empty string if not applicable or
+           unknown.";
+      }
+    }//end user list
+
+    container tacacs {
+      ui:ui-name "TACACS";
+      description
+        "Top-level TACACS+ container.";
+
+      container global-config {
+        ui:ui-name "Global Config";
+        description
+          "Global TACACS+ configuration attributes.";
+
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "TACACS+ administrative state.";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "TACACS+ operational state.";
+        }
+        leaf authentication-admin-state {
+          ui:ui-name "Authentication Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "TACACS+ authentication administrative state.";
+        }
+        leaf authorization-admin-state {
+          ui:ui-name "Authorization Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "TACACS+ authorization administrative state.";
+        }
+        leaf accounting-admin-state {
+          ui:ui-name "Accounting Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "TACACS+ accounting administrative state.";
+        }
+        leaf accounting-command-enabled {
+          ui:ui-name "Accounting Command";
+          type boolean;
+          description
+            "Specifies whether TACACS+ command accounting is enabled.";
+        }
+        leaf accounting-session-enabled {
+          ui:ui-name "Accounting Session";
+          type boolean;
+          description
+            "Specifies whether TACACS+ session accounting is enabled.";
+        }
+        leaf syslog-admin-state {
+          ui:ui-name "Syslog Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "TACACS+ syslog administrative state.";
+        }
+        leaf global-servers {
+          ui:ui-name "Global Servers";
+          type cienawstypes:on-off-enum;
+          description
+            "Specifies whether the TACACS+ global servers list is enabled for all AAA functions.";
+        }
+        leaf search-method {
+          ui:ui-name "Search Method";
+          type server-search-method;
+          default "priority";
+          description
+            "set the search method for TACACS+ servers (Default: priority)";
+        }
+        leaf privilege-level-admin {
+          ui:ui-name "Admin Priv Level";
+          type uint16 {
+            range "1..13";
+          }
+          default 2;
+          description
+            "value for read-write privilege level (Default: 2).";
+        }
+        leaf privilege-level-rw {
+          ui:ui-name "RW-Create Priv Level";
+          type uint16 {
+            range "2..15";
+          }
+          default 10;
+          description
+            "value for read-write-create privilege level (Default: 10)";
+        }
+        leaf privilege-level-diag {
+          ui:ui-name "Diag Priv Level";
+          type uint16 {
+            range "2..15";
+          }
+          default 15;
+          description
+            "value for diagnostic privilege level (Default: 15).";
+        }
+        leaf timeout {
+          ui:ui-name "Timeout";
+          type uint16 {
+            range "1..30";
+          }
+          units "seconds";
+          description
+            "Global timeout period in seconds on responses from a TACACS+ server.";
+        }
+        leaf key {
+          ui:ui-name "Key";
+          type string {
+            length "0|2..64";
+          }
+          ncx:password;
+          description
+            "The non-encrypted key that can be configured to generate a shared
+            secret between the authentication server and the device. This string
+            is clear-text and will not be retrievable nor stored directly on the
+            device. Specifying a zero-length string will clear the key value.";
+        }
+        leaf key-min-length {
+          ui:ui-name "Key Min Length";
+          type uint16 {
+            range "2..64";
+          }
+          description
+            "The minimum secret key length in bytes.";
+        }
+        leaf secret {
+          ui:ui-name "Secret";
+          type string {
+            length "0|4..128";
+          }
+          description
+            "The encrypted shared secret key used between the authentication
+            server and the device. Specifying a zero-length string will clear
+            the shared secret value.";
+        }
+      }//end global-config
+
+      list server {
+        ui:ui-name "Global Server List";
+        key "address";
+        max-elements 8;
+        description
+          "Global list of TACACS+ servers to use for AAA functions.";
+        
+        uses common-server-attributes;
+        uses tacacs-server-attributes;
+
+        container statistics {
+          ui:ui-name "Global Statistics";
+          config false;
+          description
+            "TACACS+ Global AAA Server Statistics.";
+
+          container authentication {
+            ui:ui-name "Global Authentication Statistics";
+            description
+              "TACACS+ Global Server Authentication Statistics.";
+            uses common-server-statistics;
+            uses tacacs-server-statistics;
+          }
+          container authorization {
+            ui:ui-name "Global Authorization Statistics";
+            description
+              "TACACS+ Global Server Authorization Statistics.";
+            uses common-server-statistics;
+            uses tacacs-server-statistics;
+          }
+          container accounting {
+            ui:ui-name "Global Accounting Statistics";
+            description
+              "TACACS+ Global Server Accounting Statistics.";
+            uses common-server-statistics;
+            uses tacacs-server-statistics;
+          }
+        }
+
+      }//end server list
+
+      list authentication-server {
+        ui:ui-name "Authentication Server List";
+        key "address";
+        max-elements 8;
+        description
+          "List of TACACS+ authentication servers to use for AAA functions.";
+        
+        uses common-server-attributes;
+        uses tacacs-server-attributes;
+        container statistics {
+          ui:ui-name "Authentication Statistics";
+          config false;
+          description
+            "TACACS+ Authentication Server Statistics.";
+          uses common-server-statistics;
+          uses tacacs-server-statistics;
+        }
+      }//end authentication server list
+
+      list authorization-server {
+        ui:ui-name "Authorization Server List";
+        key "address";
+        max-elements 8;
+        description
+          "List of TACACS+ authorization servers to use for AAA functions.";
+        
+        uses common-server-attributes;
+        uses tacacs-server-attributes;
+        container statistics {
+          ui:ui-name "Authorization Statistics";
+          config false;
+          description
+            "TACACS+ Authorization Server Statistics.";
+          uses common-server-statistics;
+          uses tacacs-server-statistics;
+        }
+      }//end authorization server list
+      
+      list accounting-server {
+        ui:ui-name "Accounting Server List";
+        key "address";
+        max-elements 8;
+        description
+          "List of TACACS+ accounting servers to use for AAA functions.";
+        
+        uses common-server-attributes;
+        uses tacacs-server-attributes;
+        container statistics {
+          ui:ui-name "Accounting Statistics";
+          config false;
+          description
+            "TACACS+ Accounting Server Statistics.";
+          uses common-server-statistics;
+          uses tacacs-server-statistics;
+        }
+      }//end accounting server list
+
+    }//end tacacs
+
+    container radius {
+      ui:ui-name "RADIUS";
+      description
+        "Top-level RADIUS container.";
+
+      container global-config {
+        ui:ui-name "Global Config";
+        description
+          "Global RADIUS configuration attributes.";
+
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "RADIUS administrative state.";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "RADIUS operational state.";
+        }
+        leaf timeout {
+          ui:ui-name "Timeout";
+          type uint16 {
+            range "1..30";
+          }
+          units "seconds";
+          description
+            "Global timeout period in seconds on responses from a RADIUS server.";
+        }
+        leaf search-method {
+          ui:ui-name "search-method";
+          type server-search-method;
+          default "priority";
+          description
+            "RADIUS Search Method (Default: priority)";
+        }
+        leaf key {
+          ui:ui-name "Key";
+          type string {
+            length "0|8..64";
+          }
+          description
+            "The non-encrypted key that can be configured to generate a shared
+            secret between the authentication server and the device. This string
+            is clear-text and will not be retrievable nor stored directly on the
+            device. Specifying a zero-length string will clear the key value.";
+          ncx:password;
+        }
+        leaf secret {
+          ui:ui-name "Secret";
+          type string {
+            length "0|16..128";
+          }
+          description
+            "The encrypted shared secret key used between the authentication
+            server and the device. Specifying a zero-length string will clear
+            the shared secret value.";
+        }
+        leaf retries {
+          ui:ui-name "Retries";
+          type uint16 {
+            range "0..3";
+          }
+          default 3;
+          description
+            "The number of retries. Default is 3.";
+        }
+      }  // end global-config
+
+      list server {
+        ui:ui-name "Server List";
+        key "address";
+        max-elements 8;
+        description
+          "Global list of RADIUS servers to use for AAA functions.";
+
+        uses common-server-attributes;
+        
+        leaf udp-port {
+          ui:ui-name "UDP Port";
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "RADIUS server UDP Port. Default value is 1812.";
+        }
+    
+        container statistics {
+          ui:ui-name "RADIUS Server Statistics";
+          config false;
+          description
+            "RADIUS Server Statistics.";
+          
+          uses common-server-statistics;
+          uses radius-server-statistics;
+        }
+      } // end radius server list
+    } //end radius
+
+    container radsec {
+      ui:ui-name "RADSec";
+      description
+        "Top-level RADSec container.";
+
+      container global-config {
+        ui:ui-name "Global Config";
+        description
+          "Global RADSec configuration attributes.";
+
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "RADSec administrative state.";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "RADSec operational state.";
+        }
+        leaf timeout {
+          ui:ui-name "Timeout";
+          type uint16 {
+            range "1..30";
+          }
+          units "seconds";
+          description
+            "Global timeout period in seconds on responses from a RADSec server.";
+        }
+        leaf search-method {
+          ui:ui-name "search-method";
+          type server-search-method;
+          default "priority";
+          description
+            "RADSec Search Method (Default: priority)";
+        }
+        leaf certificate-name {
+          ui:ui-name "Certificate Name";
+          type string {
+            length "0..32";
+          }
+          description
+            "RADSec device certificate name.";
+        }
+        leaf certificate-status {
+          type cienawstypes:string-maxl-254;
+          config false;
+          description
+            "RADSec device certificate/key status string to indicate if the certificate 
+             exists (irrespective of active or expired), in which case the displayed 
+             result is OK. If the certificate doesn't exist, the displayed result will 
+             be one of the appropriate error strings, like no private key, no device
+             certificate, etc."; 
+        }
+        leaf certificate-fingerprint {
+          type string {
+            length "0..95";
+          }
+          config false;
+          description
+            "RADSec device certificate fingerprint.";
+        }
+        leaf check-ip-host {
+          ui:ui-name "Check IP Host";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Check peer's specified ip or hostname against it's certificate.";
+        }
+        leaf check-fingerprint {
+          ui:ui-name "Check Fingerprint";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Check the fingerprint of the peer's certificate.";
+        }
+      }  // end global-config
+      container ocsp-config {
+        ui:ui-name "RADSec OCSP Config";
+        description
+          "RADSec Online Certificate Status Protocol (OCSP) configuration attributes.";
+
+        uses system:common-ocsp-group;
+      }  // end ocsp config attributes 
+      list server {
+        ui:ui-name "Server List";
+        key "address";
+        max-elements 8;
+        description
+          "Global list of RADSec servers to use for AAA functions.";
+
+        uses common-server-attributes;
+        
+        leaf port {
+          ui:ui-name "Port";
+          type uint16 {
+            range "1..65535";
+          }
+          default 2083;
+          description
+            "RADSec server TCP Port. Default value is 2083.";
+        }
+        leaf trusted-dns {
+          ui:ui-name "Trusted-DNS";
+          type string {
+            length "0..255";
+          }
+          description
+            "Trusted dns name used to check peer's certificate. The
+             name should be fully qualified whenever possible, and can
+             accept a leading wildcard period.";
+        }
+        leaf trusted-fingerprint {
+          ui:ui-name "Trusted Fingerprint";
+          type string {
+            length "0|7|95"; 
+            pattern '(([0-9A-F]{2}[:]){31}([0-9A-F]{2}))?|(Not Set)';
+          }
+          description
+            "Trusted fingerprint for peer's certificate. The string should have 
+             length of 95, except when it is empty or 'Not Set'.";
+        }
+        container statistics {
+          ui:ui-name "RADSec Server Statistics";
+          config false;
+          description
+            "RADSec Server Statistics.";
+          
+          uses common-server-statistics;
+          uses radsec-server-statistics;
+        }
+      } // end radius server list
+    } // end radsec
+  }
+
+  rpc waveserver-aaa-authentication-statistics-clear {
+    description
+      "Clear user authentication provider statistics.";
+    input {
+      leaf provider {
+        ui:ui-name "Provider";
+        type authentication-method-type;
+        mandatory true;
+        description
+          "Identifies the provider type for which the statistics will be cleared.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-aaa-tacacs-server-statistics-clear {
+    description
+      "Clear TACACS+ server statistics.";
+    input {
+      leaf address {
+        ui:ui-name "Address";
+        type cienawstypes:ipaddr-or-hostname;
+        mandatory true;
+        description
+          "Configured IP address or Domain Name of the remote server.";
+      }
+      leaf type {
+        ui:ui-name "Type";
+        type server-entry-type;
+        description
+          "Optional input argument to specify the server list containing the
+           entry to be cleared. The default behavior is to consult the global
+           TACACS+ server list.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-aaa-radsec-server-statistics-clear {
+    description
+      "Clear RADSec server statistics.";
+    input {
+      leaf address {
+        ui:ui-name "Address";
+        type cienawstypes:ipaddr-or-hostname;
+        description
+          "Configured IP address or Domain Name of the remote server. If
+           omitted, all server statistics will be cleared.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-aaa-kill-user {
+    description
+      "Call to kill a specific user session or all sessions except own";
+    input {
+      leaf session {
+        ui:ui-name "Session";
+        type uint64;
+        description
+          "User session. This input needs to be specified to kill specific session.";
+      } 
+      leaf all {
+        ui:ui-name "All";
+        type boolean;
+        description
+          "Kill all user sessions but mine. Default is false."; 
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

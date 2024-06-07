@@ -1,0 +1,758 @@
+module ciena-pro-lcm {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-lcm";
+  prefix lcm-fsm;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-pro-state-machine {
+    prefix fsm;
+  }
+  import ciena-ddy-msg {
+    prefix ddyMsg;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "LCM  state machine derived from generic state machine.";
+
+  revision 2023-05-16 {
+    description
+      "Add ready-lcm-event RPC";
+    ciena-common-version:string "1.9.0";
+  }
+  revision 2020-11-30 {
+    description
+      "Add force publication drop flag";
+    ciena-common-version:string "1.8.0";
+  }
+  revision 2020-10-06 {
+    description
+      "Add LCM state change time and internal fault flag";
+    ciena-common-version:string "1.7.0";
+  }
+  revision 2020-08-28 {
+    description
+      "Add LCM option for SIGTERM handler.
+       Introduce asynchronous option for LCM dispatch event RPC";
+    ciena-common-version:string "1.6.0";
+  }
+  revision 2020-07-30 {
+    description
+      "Introduce ready-to-activate state";
+    ciena-common-version:string "1.5.0";
+  }
+  revision 2020-06-20 {
+    description
+      "Remove the initialization and shutodwn timeout from the LCM list";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2020-05-22 {
+    description
+      "Introduce impair event and change the default timeout
+       for all LCM timer";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2020-05-13 {
+    description
+      "Add service name in the timer and policing rpc";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2019-11-20 {
+    description
+      "Introduce framework for the new type of LCM dependency rules";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2019-09-24 {
+    description
+      "Add Timer support for service startup/shutdown";
+    reference
+      "";
+  }
+  revision 2019-06-15 {
+    description
+      "Rework of LCM to use generic fsm";
+    reference
+      "";
+  }
+  revision 2018-12-15 {
+    description
+      "Initial Revision.";
+    reference
+      "";
+  }
+
+  typedef lcm-timer-type {
+    type enumeration {
+      enum initialization {
+        description
+          "Timeout for resolving dependencies during startup. On expiry the service
+           will be put into a fault/degrade state";
+      }
+      enum shutdown {
+        description
+          "Shutdown timeout of a service";
+      }
+      enum audit {
+        description
+          "A periodic timer that gets armed when a service enters into fault/degrade state. Timer is disabled
+           when the service departs the fault/degrade state";
+      }
+    }
+  }
+
+  typedef lcm-policing-type {
+    type enumeration {
+      enum all-block {
+        description
+          "All service resources are unavailable";
+      }
+      enum all-pass {
+        description
+          "All service resources are available";
+      }
+      enum publication-block {
+        description
+          "Only publications are blocked";
+      }
+    }
+  }
+
+  identity error-invalid-service-state {
+    base yang:error-code;
+    description
+      "Error was generated because of an invalid service state.";
+  }
+
+  identity timer-state-name {
+    description
+      "Base identity for Timer state name";
+  }
+
+  identity timer-disabled {
+    description
+      "The timer is disabled";
+    base timer-state-name;
+  }
+
+  identity timer-armed {
+    description
+      "The timer is armed";
+    base timer-state-name;
+  }
+
+  identity timer-expired {
+    description
+      "The timer has expired.";
+    base timer-state-name;
+  }
+
+  identity pre-init {
+    base yang:state-name;
+    description
+      "Service is uninitialized";
+  }
+
+  identity initialize {
+    base yang:state-name;
+    description
+      "Service has completed it's initialization";
+  }
+
+  identity ready-to-activate {
+    base yang:state-name;
+    description
+      "All service state dependencies are met. The service needs to enrich its resources further prior to
+       transitioning to ACTIVE";
+  }
+
+  identity active {
+    base yang:state-name;
+    description
+      "Service is operational. All the service resources are complete and available";
+  }
+
+  identity fault {
+    base yang:state-name;
+    description
+      "Service is in fault state and all its resources are unavailable";
+  }
+
+  identity down {
+    base yang:state-name;
+    description
+      "Service is shutting down";
+  }
+
+  identity degrade {
+    base yang:state-name;
+    description
+      "Service resources are partially available due a dependency failure";
+  }
+
+  identity init-complete {
+    base fsm:event;
+    description
+      "An event to put a service into INITIALIZE state";
+  }
+
+  identity shutdown {
+    base fsm:event;
+    description
+      "An event to trigger SHUTDOWN";
+  }
+
+  identity enable {
+    base fsm:event;
+    description
+      "An event to put a service into ACTIVE state";
+  }
+
+  identity ready {
+    base fsm:event;
+    description
+      "An event to put a service into READY-TO-ACTIVATE state";
+  }
+
+  identity fail {
+    base fsm:event;
+    description
+      "An event to put a service into FAULT state";
+  }
+
+  identity impair {
+    base fsm:event;
+    description
+      "An event to put a service into DEGRADE state";
+  }
+
+  list lcm {
+    config false;
+    key "service-name";
+    leaf service-name {
+      type string;
+    }
+    leaf current-state {
+      type identityref {
+        base yang:state-name;
+      }
+      description
+        "Current state of the service";
+    }
+    leaf initialize-timer-state {
+      type identityref {
+        base lcm-fsm:timer-state-name;
+      }
+      description
+        "State of the service initialization timer";
+    }
+    leaf shutdown-timer-state {
+      type identityref {
+        base lcm-fsm:timer-state-name;
+      }
+      description
+        "Current state of the service shutdown timer";
+    }
+    leaf activation-flag {
+      type boolean;
+      description
+        "This flag is used as an additional entry criterion for transitioning to ACTIVE or READY-TO-ACTIVATE state.
+         The flag needs to be set for entering ACTIVE state and it needs to be cleared for entering READY-TO-ACTIVATE state.
+         This flag is mainly used to change the flow of state transition during startup";
+    }
+    leaf state-changed {
+      type string;
+      description
+        "Time of the last state change";
+    }
+    leaf resource-policing {
+      type lcm-policing-type;
+      description
+        "Resource policing status";
+    }
+    leaf internal-fault-flag {
+      type boolean;
+      description
+        "This flag is set when there is an internal fault";
+      default "false";
+    }
+    leaf force-publication-drop {
+      type boolean;
+      description
+        "When set, all publications are blocked. When cleared default policing rule is applied";
+      default "false";
+    }
+    leaf fsm-name {
+      type string;
+      description
+        "Name of the fsm table";
+    }
+  }
+
+  rpc dispatch-lcm-event {
+    description
+      "Send a lcm event to a service";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Service name";
+      }
+      leaf event {
+        type identityref {
+          base fsm:event;
+        }
+        description
+          "Transition event for a state change";
+      }
+      leaf asynchronous {
+        type boolean;
+        description
+          "Make the RPC asynchronous. When set, RPC doesn't wait for completion and returns success";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success.";
+      }
+    }
+  }
+
+  rpc terminate-service {
+    description
+      "Terminate the service";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Service name";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success.";
+      }
+    }
+  }
+
+  rpc fail-lcm-event {
+    description
+      "Service RPC that is invoked for a fail event";
+    input {
+      leaf from-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition from LCM state";
+      }
+      leaf to-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition to LCM state";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success.";
+      }
+    }
+  }
+
+  rpc ready-lcm-event {
+    description
+      "Service RPC that is invoked for a ready-to-activate event";
+    input {
+      leaf from-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition from LCM state";
+      }
+      leaf to-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition to LCM state";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success.";
+      }
+    }
+  }
+
+  rpc enable-lcm-event {
+    description
+      "Service RPC that is invoked for an enable event";
+    input {
+      leaf from-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition from LCM state";
+      }
+      leaf to-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition to LCM state";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc impair-lcm-event {
+    description
+      "Service RPC that is invoked for an enable event";
+    input {
+      leaf from-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition from LCM state";
+      }
+      leaf to-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition to LCM state";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc shutdown-lcm-event {
+    description
+      "Service RPC that get invoked for shutdown event";
+    input {
+      leaf from-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition from LCM state";
+      }
+      leaf to-state {
+        type identityref {
+          base yang:state-name;
+        }
+        description
+          "Transition to LCM state";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc apply-resource-access-policy {
+    description
+      "Block service resource access.";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Service name";
+      }
+      leaf policy-name {
+        type string;
+        description
+          "Name of the resource access policy";
+      }
+    }
+  }
+
+  rpc arm-lcm-timer {
+    description
+      "Arm LCM timer";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Service name";
+      }
+      leaf timeout {
+        type uint32;
+        description
+          "Timeout value in ms";
+      }
+      leaf timer-name {
+        type lcm-timer-type;
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc disable-lcm-timer {
+    description
+      "Arm LCM timer";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Service name";
+      }
+      leaf timer-name {
+        type lcm-timer-type;
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc enter-ready-to-activate-state {
+    description
+      "The service RPC on entry to the READY-TO-ACTIVATE state";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Name of the service";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc enter-active-state {
+    description
+      "The service RPC on entry to the ACTIVE state";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Name of the service";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc enter-fault-state {
+    description
+      "The service RPC on entry to the FAULT state";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Name of the service";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc enter-degrade-state {
+    description
+      "The service RPC on entry to the DEGRADE state";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Name of the service";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  rpc enter-down-state {
+    description
+      "The service RPC on entry to the DOWN state";
+    input {
+      leaf service-name {
+        type string;
+        description
+          "Name of the service";
+      }
+    }
+    output {
+      leaf success {
+        type boolean;
+        description
+          "Return true on success";
+      }
+    }
+  }
+
+  identity lcm {
+    description
+      "Service LCM dependency";
+    base ddyMsg:dependency-type;
+  }
+
+  container lcm-options {
+    description
+      "Deployment options for LCM in a domain";
+    leaf handle-terminate-signal {
+      type boolean;
+      description
+        "When set, LCM would handle the SIGTERM. The handler would send shutdown event
+         to all services within the domain";
+      default "false";
+    }
+    leaf handle-interrupt-signal {
+      type boolean;
+      description
+        "When set, LCM would handle the SIGINT. The handler would send shutdown event
+         to all services within the domain";
+      default "false";
+    }
+  }
+
+  grouping lcm-dependency {
+    container lcm-dependency {
+      yang:alias "lcm-dependency";
+      leaf lcm-binding {
+        description
+          "Type of relationship";
+        type enumeration {
+          enum optional;
+          enum mandatory;
+        }
+      }
+      leaf-list service-state {
+        description
+          "List of dependent service states. LCM uses those service state to craft filter
+           rules for the state transition";
+        type identityref {
+          base yang:state-name;
+        }
+      }
+      leaf target {
+        description
+          "The arbitary yang instance value the current service depends on for it's LCM state";
+        type instance-identifier;
+      }
+      leaf operator {
+        type fsm:compare-operator;
+        description
+          "Binary operator";
+      }
+      leaf target-value {
+        description
+          "Value it is compared against";
+        type string;
+      }
+    }
+  }
+
+  grouping lcm-profile {
+    container lcm-profile {
+      yang:alias "lcm-profile";
+      leaf lcm-init-timeout {
+        type uint32;
+        description
+          "Initialization timeout";
+        units "ms";
+        default "600000";
+      }
+      leaf lcm-shutdown-timeout {
+        type uint32;
+        description
+          "Shutdown timeout";
+        units "ms";
+        default "60000";
+      }
+      leaf lcm-audit-timeout {
+        type uint32;
+        description
+          "A periodic audit timer that gets armed when a service enters into fault/degrade state";
+        units "ms";
+        default "60000";
+      }
+    }
+  }
+
+  augment "/ddyMsg:domain/ddyMsg:service/ddyMsg:dependency/ddyMsg:depends" {
+    uses lcm-dependency;
+  }
+
+  augment "/ddyMsg:domains/ddyMsg:service/ddyMsg:dependency/ddyMsg:depends" {
+    uses lcm-dependency;
+  }
+
+  augment "/ddyMsg:domain/ddyMsg:service/ddyMsg:dependency/ddyMsg:profiles" {
+    uses lcm-profile;
+  }
+
+  augment "/ddyMsg:domains/ddyMsg:service/ddyMsg:dependency/ddyMsg:profiles" {
+    uses lcm-profile;
+  }
+}

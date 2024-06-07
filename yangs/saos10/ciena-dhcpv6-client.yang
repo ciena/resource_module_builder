@@ -1,0 +1,531 @@
+module ciena-dhcpv6-client {
+  namespace "http://www.ciena.com/ns/yang/ciena-dhcpv6-client";
+  prefix dhcpv6-client;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the YANG definition of the DHCPv6 client per
+     Ciena functional specification 106-0054-001_CES_DHCPv6_FS.doc.
+
+     Copyright (c) 2018 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains the property of
+     Ciena Corporation. Dissemination of this information or
+     reproduction of this material is strictly forbidden unless prior
+     written permission is obtained from Ciena Corporation.";
+
+  revision 2021-03-11 {
+    description
+       "Added DUID  option for DHCPv6";
+    reference
+       "RFC 3315";
+  }
+
+  revision 2019-07-10 {
+    description
+      "Initial revision.";
+    reference
+     "RFC 3315, Dynamic Host Configuration Protocol for IPv6 (DHCPv6)";
+  }
+
+   /*
+   * Typedefs
+   */
+  typedef dhcpv6-state-value {
+    type enumeration {
+      enum bound {
+        description
+          "The DHCP client has done an initial binding to a new address.";
+      }
+      enum renew {
+        description
+          "The DHCP client has a renewed binding.";
+      }
+      enum rebind {
+        description
+          "The DHCP client has rebound to a new DHCP server.";
+      }
+      enum reboot {
+        description
+          "The DHCP client has successfully reacquired its old address after a reboot.";
+      }
+      enum expire {
+        description
+          "The DHCP client has failed to renew its lease or acquire a new one, and the lease has expired.";
+      }
+      enum fail {
+        description
+          "The DHCP client has been unable to contact any DHCP servers, and any leases that have been tested have not proved to be valid.";
+      }
+      enum stop {
+        description
+          "The DHCP client has been informed to shut down gracefully.";
+      }
+      enum release {
+        description
+          "The DHCP client has been informed to release its lease(s).";
+      }
+      enum nbi {
+        description
+          "The DHCP client was unable to find any interfaces for starting DHCP (No Broadcast Interfaces).";
+      }
+      enum timeout {
+        description
+          "The DHCP client has been unable to contact any DHCP servers.";
+      }
+      enum medium {
+        description
+          "The DHCP client is requesting that an interface's media type be set.";
+      }
+      enum preinit {
+        description
+          "The DHCP client is requesting that an interface be configured as required in order to send packets prior to receiving an actual address.";
+      }
+      enum depreferred {
+        description
+          "The DHCP client is in depreferred state.";
+      }
+    }
+      description
+        "DHCPv6 client state.";
+  }
+
+  typedef dhcpv6-config-state-value {
+    type enumeration {
+      enum disabled {
+        description
+          "The DHCP client is disabled.";
+      }
+      enum stateful {
+        description
+          "The DHCP client is in stateful mode.";
+      }
+      enum stateless {
+        description
+          "The DHCP client is in stateless mode.";
+      }
+    }
+      description
+        "Whether the current DHCP client is disabled or in stateful or stateless mode.";
+  }
+
+  container dhcpv6-client {
+    description
+      "DHCPv6 client configuration values.";
+    reference
+      "RFC 3315";
+
+    list client {
+
+     must "requested-preferred-lifetime = 0 or
+          requested-valid-lifetime = 0 or
+          requested-preferred-lifetime <= requested-valid-lifetime" {
+      error-message
+        "Preferred-lifetime cannot exceed valid-lifetime when both are non-zero";
+      description
+        "Either or both requested-preferred-lifetime or
+         requested-valid-lifetime can be zero (meaning user has no
+         requested value), but if both are non zero,
+         requested-preferred-lifetime must be <=
+         requested-valid-lifetime.";
+      reference
+        "RFC 3315, Section 22.6 IA Address Option";
+      }
+      key interface-name;
+      description
+        "A client may have several interfaces.  This list defines
+         specific client interfaces and their configuration data.
+         Different interfaces are distinguished by the key which is
+         a string whose value is the name of an existing interface.";
+      leaf interface-name {
+        type oc-if:base-interface-ref;
+        description
+          "Interface name";
+      }
+
+      leaf admin-enable {
+        type boolean;
+           default true;
+        description
+          "The administrative state of this DHCPv6 client.";
+      }
+
+      leaf rapid-commit-state {
+        type boolean;
+           default true;
+        description
+          "The rapid commit administrative state.  When enabled, the
+           client includes the Rapid Commit Option (option code 14) in
+           its Solicit message and is prepared to perform the
+           Solicit-Reply message exchange.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6), Section 22.14 Rapid Commit Option";
+      }
+
+      leaf requested-preferred-lifetime {
+        type uint32;
+        units seconds;
+           default 0;
+        description
+          "The IA (Identity Assignment) preferred lifetime requested by
+           the client.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf requested-valid-lifetime {
+        type uint32;
+        units seconds;
+           default 0;
+        description
+          "The IA (Identity Assignment) valid lifetime requested by the
+           client.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf duid {
+        type enumeration {
+          enum DUID-EN {
+            description
+              "An enterprise number plus additional information of
+               chassis serial number.";
+          }
+          enum DUID-LLT {
+            description
+              "The link-layer address of one of the DHCP client network
+               interfaces, concatenated with a timestamp";
+          }
+          enum DUID-LL {
+            description
+              "The link-layer address of one of the DHCP client network
+               interfaces";
+          }
+        }
+        default DUID-EN;
+        description
+           "DHCP Unique Identifiers (DUIDs) are used in DHCPv6 to identify
+            clients and servers. It makes it possible for devices to use UUIDs
+            to identify themselves to DHCP servers and vice versa.";
+        reference
+          "RFC 3315";
+      }
+
+      container option-enable {
+        description
+          "Specifies the option codes to be included in the Option
+           Request Option (option code 6) and to be used if received.
+           (An option may be requested even if not enabled, but it will
+           be ignored if received and not enabled.)";
+        reference
+          "RFC 3315, Section 22.7 Option Request Option";
+
+        leaf dns-server-list {
+          type boolean;
+             default true;
+          description
+            "DNS Recursive Name Server option, option code 23";
+          reference
+            "RFC 3646 DNS Configuration options for Dynamic Host
+             Configuration Protocol for IPv6 (DHCPv6), Section 3 DNS
+             Recursive Name Server Option";
+        }
+
+        leaf domain-search-list {
+          type boolean;
+             default true;
+          description
+            "Domain Search List option, option code 24";
+          reference
+            "RFC 3646 DNS Configuration options for Dynamic Host
+             Configuration Protocol for IPv6 (DHCPv6), Section 4 Domain
+             Search List Option";
+        }
+
+        leaf posix-timezone {
+          type boolean;
+             default false;
+          description
+            "POSIX Timezone Option, option code 41";
+          reference
+            "RFC 4833 Timezone Options for DHCP, Section 3";
+        }
+
+        leaf tzdb-timezone {
+          type boolean;
+             default true;
+          description
+            "TZDB Timezone Option, option code 42";
+          reference
+            "RFC 4833 Timezone Options for DHCP, Section 3";
+        }
+
+        leaf ntp-server {
+          type boolean;
+             default true;
+          description
+            "NTP (Network Time Protocol) Server Option, option code 56";
+          reference
+            "RFC 5908 Network Time Protocol (NTP) Server Option for
+             DHCPv6, Section 4";
+        }
+
+        leaf boot-file-url {
+          type boolean;
+             default true;
+          description
+            "Boot File Uniform Resource Locator (URL) Option, option
+             code 59";
+          reference
+            "RFC 5970 DHCPv6 Options for Network Boot, Section 3.1";
+        }
+      }
+    }
+  }
+
+  container dhcpv6-client-state {
+    config false;
+    description
+      "DHCPv6 client operational state values.";
+    reference
+      "RFC 3315";
+
+    list client {
+      key interface-name;
+      description
+        "A client may have several interfaces.  This list defines
+         specific client interfaces and their operational state data.
+         Different interfaces are distinguished by the key which is
+         a string whose value is the name of an existing interface.";
+      leaf interface-name {
+        type string;
+        description
+          "Interface name";
+      }
+
+      leaf oper-state {
+        type ciena:oper-state;
+        description
+          "The global operational state of this DHCPv6 client.";
+      }
+
+      leaf dhcpv6-state {
+        type dhcpv6-state-value;
+        description
+          "The state of this DHCPv6 client.";
+      }
+
+      leaf config-state {
+        type dhcpv6-config-state-value;
+        description
+          "The current config state: Disabled, Stateful or Stateless.";
+        reference
+          "RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf renewal-time {
+        type uint32;
+        units seconds;
+        description
+          "The initial time before the current lease is renewed (T1), in
+           seconds.";
+      }
+
+      leaf renewal-time-remaining {
+        type uint32;
+        units seconds;
+        description
+          "The remaining time before the current lease is renewed (T1),
+           in seconds.";
+      }
+
+      leaf rebinding-time {
+        type uint32;
+        units seconds;
+        description
+          "The initial time before the current lease is rebound (T2), in
+           seconds.";
+      }
+
+      leaf rebinding-time-remaining {
+        type uint32;
+        units seconds;
+        description
+          "The remaining time before the current lease is rebound (T2),
+           in seconds.";
+      }
+
+      leaf preferred-lifetime {
+        type uint32;
+        units seconds;
+        description
+          "The Preferred Lifetime of the current IA.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf preferred-lifetime-remaining {
+        type uint32;
+        units seconds;
+        description
+          "The remaining Preferred Lifetime of the current IA.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf valid-lifetime {
+        type uint32;
+        units seconds;
+        description
+          "The Valid Lifetime of the current IA.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf valid-lifetime-remaining {
+        type uint32;
+        units seconds;
+        description
+          "The remaining Valid Lifetime of the current IA.";
+        reference
+          "RFC 3315 Dynamic Host Configuration Protocol for IPv6
+           (DHCPv6);
+           RFC 4862 IPv6 Stateless Address Autoconfiguration";
+      }
+
+      leaf dhcpv6-server-identifier {
+       type string;
+       description
+         "The DHCP Unique Identifier (DUID) identifying the server
+          providing the current IA, as received in the Server Identifier
+          Option, option code 2.";
+       reference
+         "RFC 3315, Section 9 DHCP Unique Identifier (DUID)
+          RFC 3315, Section 22.3 Server Identifier Option";
+      }
+
+      container option-value {
+        description
+          "Contains the values of options received.";
+
+        leaf-list dns-server-list {
+          type inet:ipv6-address;
+          max-elements 4095;
+          description
+            "DNS Recursive Name Server option, option code 23";
+          reference
+            "RFC 3646 DNS Configuration options for Dynamic Host
+             Configuration Protocol for IPv6 (DHCPv6), Section 3 DNS
+             Recursive Name Server Option";
+        }
+
+        leaf-list domain-search-list {
+          type string;
+          description
+            "Domain Search List option, option code 24";
+          reference
+            "RFC 3646 DNS Configuration options for Dynamic Host
+             Configuration Protocol for IPv6 (DHCPv6), Section 4 Domain
+             Search List Option";
+        }
+
+        leaf-list posix-timezone {
+          type string;
+          max-elements 1;
+          description
+            "POSIX Timezone Option, option code 41";
+          reference
+            "RFC 4833 Timezone Options for DHCP, Section 3";
+        }
+
+        leaf-list tzdb-timezone {
+          type string;
+          max-elements 1;
+          description
+            "TZDB Timezone Option, option code 42";
+          reference
+            "RFC 4833 Timezone Options for DHCP, Section 3";
+        }
+
+        leaf-list ntp-server {
+          type inet:ipv6-address;
+          description
+            "NTP (Network Time Protocol) Server Option, option code 56";
+          reference
+            "RFC 5908 Network Time Protocol (NTP) Server Option for
+             DHCPv6, Section 4";
+        }
+
+        leaf-list boot-file-url {
+          type string;
+          max-elements 1;
+          description
+            "Boot File Uniform Resource Locator (URL) Option, option
+             code 59";
+          reference
+            "RFC 5970 DHCPv6 Options for Network Boot, Section 3.1";
+        }
+      }
+    }
+  }
+
+   /*
+    * RPC
+    */
+
+  rpc dhcpv6-client-lease-renew {
+    description
+      "Renew the lease.";
+
+    input {
+      leaf interface-name {
+        type oc-if:base-interface-ref;
+        description
+          "Interface name.  Optional.  If no interface-name is given,
+           all operationally-enabled clients are told to renew their
+           leases.";
+      }
+    }
+    output {
+      leaf status {
+        type string; 
+        description 
+          "Status of the lease renew operation.";
+      }
+    }
+  }
+}

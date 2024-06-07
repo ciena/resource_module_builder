@@ -1,0 +1,113 @@
+/*
+ * File name : ciena-ip-oam.yang
+ *
+ * Description: YANG model for IP ping and traceroute
+ *
+ * Copyright (c) 2018  Ciena Corp. All Rights Reserved.
+ */
+
+module ciena-ip-oam {
+    namespace "http://ciena.com/ns/yang/ciena-ip-oam";
+    prefix "ip-oam";
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-oam-options {
+        prefix oam-options;
+    }
+
+    import ciena-vrf {
+       prefix "vrf";
+    }
+
+    organization
+         "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+         "This YANG module defines Ciena's specific implementation
+         for IP ping and traceroute.
+
+         Copyright (c) 2018  Ciena Corporation.  All rights
+         reserved.
+
+         All information contained herein is, and remains the
+         property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained
+         from Ciena Corporation.";
+
+    revision "2020-01-30" {
+        description
+             "Marking this yang model as deprecated, as a generic
+              modelling approach will be used for both ip & mpls.
+              Introducing source IP as an input for rpc.";
+    }
+
+    revision "2018-11-27" {
+        description "Initial version of IP OAM datamodel.";
+    }
+
+    typedef ip-oam-return-code {
+        description "Return codes in IP OAM response";
+        type enumeration {
+            enum success {
+               description "Successful OAM response";
+            }
+            enum timeout {
+               description "Echo request timed out";
+            }
+        }
+    }
+
+    rpc ping {
+        status "deprecated";
+        input {
+           leaf destination {
+              mandatory true;
+              description  "Destination IP address";
+              type inet:ip-address;
+           }
+           leaf vrf {
+              description  "VRF name";
+              type leafref {
+                 path "/vrf:vrf/vrf:vrfName";
+              }
+           }
+           leaf data-size {
+              description  "ICMP data bytes to be sent";
+              type uint16 {
+                 range "36..18000";
+              }
+              default 56;
+              units bytes;
+           }
+           uses oam-options:ping-base-input-options;
+           leaf source {
+              type inet:ip-address;
+              description  "Source IP Address";
+           }
+        }
+        output {
+           leaf return-code {
+              type ip-oam-return-code;
+              description  "The response for an echo request";
+           }
+           leaf response-ttl {
+              type uint8;
+              description  "TTL value in the received response packet";
+           }
+           uses oam-options:ping-base-output;
+        }
+    }
+}

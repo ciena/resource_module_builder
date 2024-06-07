@@ -1,0 +1,675 @@
+module ciena-openconfig-aaa {
+  namespace "http://www.ciena.com/ns/yang/ciena-openconfig-aaa";
+  prefix "ciena-oc-aaa";
+
+  import openconfig-aaa-types { prefix oc-aaa-types; }
+  import ciena-openconfig-aaa-types { prefix cn-oc-aaa-types; }
+  import openconfig-system { prefix oc-sys; }
+  import ciena-types { prefix ciena; }
+  import openconfig-yang-types { prefix oc-yang; }
+  import ietf-yang-types { prefix yang; }
+  import openconfig-inet-types { prefix oc-inet; }
+  import ciena-tls-service-profile { prefix ciena-tsp; }
+  import openconfig-aaa {prefix oc-aaa;}
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+      
+  description
+    "This YANG module defines Ciena's augmentations to openconfig-aaa.
+
+      Copyright (c) 2017 Ciena Corporation.  All rights 
+      reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this 
+      information or reproduction of this material is strictly 
+      forbidden unless prior written permission is obtained from 
+      Ciena Corporation.";
+
+  revision 2022-11-24 {
+    description
+      "Augmentation for server-group and server config containers
+       to support TACACS server resilience scenarios.
+       Added LOGOUT enum in login-event notification.
+       Added TACACS server yang notification.";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2022-08-01 {
+    description
+      "Added supported object for local account password history";
+    reference
+      "No specific reference or standard available.";
+  }
+
+  revision 2020-10-20 {
+    description
+      "Augmentations for RADSEC container for servers.";
+    reference
+      "Radius over TLS(RADSEC) RFC6614 and added Units field for lockout-time policy";
+  }
+
+  revision 2020-08-14 {
+    description
+      "Moved user identities to ciena-openconfig-aaa-types";
+    reference
+      "";
+  }
+
+  revision 2019-09-17 {
+    description 
+      "Augmentations for server-group cached mode server search.";
+    reference
+      "";
+  }
+  
+  revision 2019-06-04 {
+    description 
+      "Added RPC to clear server statistics and radius counters.
+       Added RPC to clear auth statistics.";
+    reference
+      "";
+  }
+  
+  revision 2018-06-20 {
+    description 
+      "augmentations for additional server statistics and radius counters";
+    reference
+      "";
+  }
+  
+  revision 2018-04-09 {
+    description 
+      "augmentations for authentication provider stats";
+    reference
+      "";
+  }
+
+  revision 2018-03-12 {
+    description 
+      "Added password-policy and lockout-policy containers.
+       Added the unlock user-account RPC.";
+    reference
+      "";
+  }
+
+  revision 2017-09-19 {
+    description 
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  typedef on-off-state {
+    type enumeration {
+      enum off {
+        description 
+          "The off state.";
+      }
+      enum on {
+        description 
+          "The on state.";
+      }
+    }
+    description 
+      "The on / off state.";
+  }
+
+  augment "/oc-sys:system/oc-sys:aaa/oc-sys:authentication" {
+    description
+        "Authentication augmentation that supports the lockout and password policies.";
+    container password-policy {
+      description
+        "Rules about how users are allowed to create passwords.";
+      container config {
+        description
+          "Configurable password-policy leaves";
+        leaf disallow-dict-words {
+          type on-off-state;
+          description
+            "Disallow passwords containing words in the dictionary.";
+        }
+        leaf disallow-username {
+          type on-off-state;
+          description
+            "Disallow passwords containing the user name or its reverse.";
+        }
+        leaf max-repeated-chars {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Maximum run of the same character in user account passwords.";
+        }
+        leaf min-length {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Minimum length of the user account passwords.";
+        }
+        leaf min-lowercase-chars {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Minimum number of lower case letters in the user account passwords.";
+        }
+        leaf min-numeric-chars {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Minimum number of numeric characters in the user account passwords.";
+        }
+        leaf min-special-chars {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Minimum number of special characters in the user account passwords, such as !@#$%^*().";
+        }
+        leaf min-uppercase-chars {
+          type uint16 {
+            range "0..128";
+          }
+          description
+            "Minimum number of upper case letters in the user account passwords.";
+        }
+        leaf past-password-history {
+          type uint16 {
+            range "0..10";
+          }
+          description
+            "The number of preceding passwords that are disallowed
+             when setting a new password for a user.";
+        }
+      }
+    }
+    container lockout-policy {
+      description
+        "Rules about when and how user passwords get locked out.";
+      container config {
+        description
+          "Configurable lockout-policy leaves";
+        leaf fail-limit {
+          type uint16 {
+            range "0..5";
+          }
+          description
+            "Number of times a user's password can be invalid before they are locked out.";
+        }
+        leaf lockout-time {
+          type uint16;
+          units seconds;
+          description
+            "Amount of time a user is locked out before they can retry.";
+        }
+      }
+    }
+  }
+  
+  // identity statements
+
+  identity RADSEC {
+    base oc-aaa-types:AAA_SERVER_TYPE;
+    description
+      "Transport Layer Security (TLS) Encryption for RADIUS (RADSEC)
+      AAA server";
+    reference
+      "RFC 6614 - Transport Layer Security (TLS)
+      Encryption for RADIUS";
+  }
+
+  grouping ciena-oc-aaa-radsec-server-config {
+    description
+      "Configuration data for a RADSEC server";
+
+    leaf port {
+      type oc-inet:port-number;
+      default 2083;
+      description
+        "Port number for radius over TLS requests";
+    }
+
+    leaf tls-service-profile {
+      type leafref {
+        path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+      }
+      description
+        "The TLS Service Profile to be used to establish
+         TLS connections with RADSEC server.";
+    }
+ 
+  }
+
+  grouping ciena-oc-aaa-radX-server-stats {
+    description
+      "Augmentation for Radius/RADSEC state to add additional RADIUS specific counters";
+
+    leaf access-challenges {
+      type oc-yang:counter64;
+      description
+        "The number of RADIUS Access-Challenge packets (valid or invalid) received
+        from this server.";
+    }
+
+    leaf accounting-responses {
+      type oc-yang:counter64;
+      description
+        "The number of RADIUS Accounting-Response packets (valid or invalid) received
+        from this server.";
+    }
+
+    leaf unknown-types {
+      type oc-yang:counter64;
+      description
+        "The number of RADIUS packets of unknown type which were received from this server
+        on the authentication port.";
+    }
+
+    leaf packets-dropped {
+      type oc-yang:counter64;
+      description
+        "The number of RADIUS packets which were received from this server on the authentication
+        port and dropped for some other reason.";
+    }
+
+    leaf round-trip-time {
+      type yang:timeticks;
+      description
+        "The time interval (in hundredths of a second) between the most
+        recent Access-Reply/Access-Challenge and the Access-Request that
+        matched it from this RADIUS server.";
+    }
+  }
+
+  grouping ciena-oc-aaa-radsec-server-state {
+    description
+      "Operational state data for a RADSEC server";
+
+    container counters {
+      description
+        "A collection of RADIUS over TLS related state objects
+         adapted from the openconfig-aaa-radius yang model. The
+         following leaves are present in the reference but
+         are deviated out in ciena-openconfig-system-deviation,
+         so are omitted here:
+            leaf access-accepts
+            leaf access-rejects
+            leaf timeout-access-requests
+            leaf retried-access-requests
+         When those are no longer deviated, they will need
+         to be added to this container as well.";
+      reference
+        "openconfig-aaa-radius";
+
+      // Additional stats added to radsec
+      uses ciena-oc-aaa-radX-server-stats;
+      //Additional stats for TLS connection
+      leaf failed-tcp-connections {
+        type oc-yang:counter64;
+        description
+          "Number of TCP connection failures to RADSEC server.";
+      }
+
+      leaf failed-tls-connections {
+        type oc-yang:counter64;
+        description
+          "Number of TLS connection failures to RADSEC server.";
+      }
+    }
+  }
+
+  grouping ciena-oc-aaa-radsec-server-top {
+    description
+      "Top-level grouping for RADSEC server data";
+
+    container radsec {
+      description
+        "Top-level container for RADSEC server data";
+
+      container config {
+        description
+          "Configuration data for RADSEC servers";
+
+        uses ciena-oc-aaa-radsec-server-config;
+      }
+
+      container state {
+        config false;
+        description
+          "Operational state data for RADSEC servers.";
+
+        uses ciena-oc-aaa-radsec-server-state;
+      }
+    }
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:servers/oc-sys:server {
+    description
+      "Augmentation for openconfig-aaa to add radsec container to server list";
+
+    when "../../config/type = 'ciena-oc-aaa:RADSEC'";
+
+    uses ciena-oc-aaa-radsec-server-top;
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:authentication/oc-sys:state {
+    description
+      "Augmentation for openconfig-aaa to add authentication stats per provider";
+    
+    list authentication-provider {
+      key "name";
+      description
+        "List of server-groups configured to provide authentication services";
+
+      leaf name {
+        type string;
+        description
+          "Reference to configured name of server-group providing authentication services";
+      }
+
+      leaf type {
+        type identityref {
+          base cn-oc-aaa-types:AUTHEN_PVDR_TYPE;
+        }
+        description
+          "Reference to type of authentication service provided";
+      }
+
+      leaf oper-state {
+        type ciena:oper-state;
+        description
+          "the operational state of the authentication provider";
+      }
+
+        leaf called {
+        type oc-yang:counter64;
+        description
+          "Number of times this authentication provider was invoked.";
+      }
+
+      leaf success {
+        type oc-yang:counter64;
+        description
+          "Number of times this authentication provider returned success.";
+      }
+
+      leaf failure {
+        type oc-yang:counter64;
+        description
+          "Number of times this authentication provider returned failure.";
+      }
+
+      leaf skipped {
+        type oc-yang:counter64;
+        description
+          "Number of times this authentication provider was skipped.";
+      }
+    }
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:config {
+    description
+      "Augmentation for openconfig-aaa to add search-mode leaf to server-group configuration";
+    
+    leaf search-method {
+      when "../search-method != 'load-balance' or ../type = 'oc-aaa:TACACS'";
+      type enumeration {
+        enum priority {
+          description "Search in order of servers listed.";
+        }
+        enum cached {
+          description "Search starting with last known good server in server group.";
+        }
+        enum load-balance {
+          description "Search in order of server listed. But if server(s) are unavailable, they
+          will be reattempted after configured delay." ;
+        }
+      }
+      default cached;
+      description
+        "The search method for the server group to perform when trying servers in the server group.";
+    }
+
+    leaf hold-down-delay {
+      type uint16{
+        range "0 | 10..1200";
+      }
+      default 30;
+      units seconds;
+      description
+        "When all the TACACS servers configured within server-group have failed, this is the amount
+        of delay before this server-group may be reattempted.";
+
+    }
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:servers/oc-sys:server/oc-sys:config {
+    description
+      "Augmentation for openconfig-aaa to add admin-state leaf to server list entries";
+    
+    leaf admin-state {
+      type ciena:admin-state;
+      default enabled;
+      description
+        "The administrative state of the authentication server";
+    }
+
+    leaf retry-delay {
+      type uint16 {
+        range "0 | 10..3600";
+      }
+      default 30;
+      units seconds;
+      description
+        "Amount of delay before the failed TACACS server may be reattempted.";
+    }
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:servers/oc-sys:server/oc-sys:state {
+    description
+      "Augmentation for openconfig-aaa to add oper-state and SAOS-style server statistics";
+    
+    leaf access-requests {
+      type oc-yang:counter64;
+      description
+        "The number of Access-Request packets sent to this server.
+        This does not include retransmissions.";
+    }
+
+    leaf access-accepts {
+      type oc-yang:counter64;
+      description
+        "The number of Access-Accept packets received from this server.";
+    }
+
+    leaf access-rejects {
+      type oc-yang:counter64;
+      description
+        "The number of Access-Reject packets received from this server.";
+    }
+
+    leaf malformed-responses {
+      type oc-yang:counter64;
+      description
+        "The number of Malformed-Response packets received from this server.
+        Malformed packets include packets with an invalid length.
+        Bad authenticators or signature attributes or unknown types are not included
+        as malformed access responses.";
+    }
+
+    leaf bad-authenticators {
+      type oc-yang:counter64;
+      description
+        "The number of packets containing invalid authenticators
+        or signature attributes received from this server.";
+    }
+
+    leaf oper-state {
+      type ciena:oper-state;
+      default enabled;
+      description
+        "the operational state of the AAA server.";
+    }
+
+  }
+
+  augment /oc-sys:system/oc-sys:aaa/oc-sys:server-groups/oc-sys:server-group/oc-sys:servers/oc-sys:server/oc-sys:radius/oc-sys:state/oc-sys:counters {
+    description
+      "Augmentation for openconfig-aaa-radius to add additional RADIUS specific counters";
+    
+    uses ciena-oc-aaa-radX-server-stats;
+  }
+
+  rpc unlock-user-account {
+    description
+      "Unlocks the linked user account.";
+    input {
+      leaf user {
+        type string;
+          description
+            "Username to unlock.";
+      }
+    }
+  }
+
+  rpc clear-aaa-server-stats {
+    description
+      "Clears locally-cached aaa server statistics.";
+    input {
+      leaf server-group {
+        type string;
+          description
+            "Server-group to clear stats for.";
+      }
+
+      leaf address {
+        type oc-inet:ip-address;
+          description
+            "IP address to clear stats for.";
+      }
+    }
+  }
+
+  rpc clear-aaa-auth-stats {
+    description
+      "Clears locally-cached aaa authentication statistics.";
+    input {
+      leaf method {
+        type string;
+          description
+            "Authentication method to clear stats for.";
+      }
+    }
+  }
+
+  notification login-event {
+    description
+      "Login event notification";
+
+    leaf user-name {
+      description
+        "Name of user trying to access system";
+      type string;
+    }
+
+    leaf login-status {
+      description
+        "Login success or failure indication";
+      type string;
+    }
+
+    leaf ip-address {
+      description
+        "Remote ip that was used for login";
+      type string;
+    }
+
+    leaf port {
+      description
+        "Port used to access";
+      type string;
+    }
+
+    leaf event-type {
+      description
+        "Type of login event the user would like to subscribe to.";
+      type enumeration {
+        enum SUCCESS {
+          description "Subscribe to only successful login notifications.";
+        }
+        enum FAILURE {
+          description "Subscribe to only failed login notifications.";
+        }
+        enum ANY {
+          description "Subscribe to any login notifications.";
+        }
+        enum LOGOUT {
+          description "Subscribe to any logout notifications.";
+        }
+      }
+    }
+  }
+
+  notification tacacs-server-status-event {
+    description
+      "TACACS server status event notification";
+
+    leaf server-group {
+      description
+        "Server group of the TACACS server";
+      type string;
+    }
+
+    leaf tacacs-server {
+      description
+        "The IP address of the LDAP server.";
+      type string;
+    }
+
+    leaf server-status {
+      description
+        "State of the TACACS server.";
+      type enumeration {
+        enum AVAILABLE {
+          description "TACACS server is available to connect.";
+        }
+        enum UNREACHABLE {
+          description "TACACS server is unreachable.";
+        }
+      }
+    }
+  }
+
+  notification all-tacacs-servers-down-event {
+    description
+      "All TACACS servers down event notification";
+
+    leaf server-group {
+      description
+        "Server group of the TACACS servers";
+      type string;
+    }
+
+    leaf all-server-down {
+      description
+        "All TACACS servers down";
+      type boolean;
+    }
+  }
+}

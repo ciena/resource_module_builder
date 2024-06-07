@@ -1,0 +1,72 @@
+module ciena-northbound-extensions {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-northbound-common";
+  prefix "nbie";
+
+  import ciena-publish {
+    prefix publish;
+  }
+
+  organization "Ciena Corporation (INTERNAL USE ONLY)";
+
+  contact
+    "Internal contact: Aaron Seilis <aseilis@ciena.com>";
+
+  description
+    "
+    Common extensions for North-Bound interfaces
+     
+    This YANG module describes extensions for north-bound-interfaces.
+    Typically, these extensions are intended to be used for code generation,
+    or other internal configuration or use. By specifying metadata about
+    nodes directly in the YANG modules, designers may modify internal
+    component behaviour without relying on custom code.
+
+    The intention of these extensions is to be used in accordance with the
+    principles of Data-Driven-Design and Generic Programming.
+    ";
+
+  revision 2017-10-18 {
+    description "Initial revision";
+    reference "Sculpt Documentation: https://bitbucket.ciena.com/projects/DDF/repos/sculpt";
+  }
+
+  publish:enabled "false";
+
+  extension runtime-depends {
+    argument nodes;
+    description
+      "Mark a node with runtime dependencies. Used for declarative sets.
+
+      This extension has no effect on non-leaf nodes and has no externally-
+      visible effect. It exists purely to mark nodes as dependent on others
+      at runtime so that internal components may order commands.
+    
+      A leaf node with this marking means that the conditions defined in the
+      extension must be satisfied before the set-command may be executed. The
+      intended application is to use this node to indicate to internal software
+      components to order configuration changes to satisfy manager-thread
+      requirements.
+
+      The runtime-depends node has the following example syntax:
+
+        runtime-depends '../other-node=false ../depend-node=5';
+  
+      More formally, the argument is a space-separated list of nodes which must
+      contain particular values before this leaf node is set. Each item in the
+      list consists of an XPath expresion evaluating to another node followed
+      by an '=' character and the canonical value. Booleans, strings, etc. are
+      written as literals. Enums are written as the value name.
+
+      Full example of a container with 3 leafs and one dependent on the other
+      two:
+        container outer {
+          leaf A { type uint8; }
+          leaf B { type enumeration { enum 'on'; enum 'off'; } }
+          leaf C {
+            type uint32;
+            nbi:runtime-depends './B=off A=5' 
+          }
+        }
+      ";
+  }
+}

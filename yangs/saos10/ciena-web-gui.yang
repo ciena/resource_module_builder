@@ -1,0 +1,229 @@
+module ciena-web-gui {
+   namespace "http://www.ciena.com/ns/yang/ciena-web-gui";
+   prefix "webguimgmt";
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   import ciena-types {
+      prefix cn-types;
+   }
+
+   import ietf-inet-types {
+      prefix inet;
+   }
+
+   import ciena-tls-service-profile {
+      prefix ciena-tsp;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module is used to show operational data of WebGUI
+       and clear active session(s).
+
+       Copyright (c) 2021  Ciena Corporation.  All rights
+       reserved.
+
+       All information contained herein is, and remains the
+       property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained
+       from Ciena Corporation.";
+
+   revision "2023-08-10" {
+        description
+            "Marking ciena-web-gui Yang Model as deprecated.";
+   }
+
+   revision "2022-01-13" {
+       description
+          "Added support of WebGUI server statistics.";
+   }
+   revision "2021-08-13" {
+       description
+          "Added basic support of TLS/PKIX to WebGUI HTTPs connections."; 
+   }
+   revision "2021-06-20" {
+       description
+          "Initial revision."; 
+   }
+
+   typedef server-certificate-type {
+      description
+         "Type of certificate to be used in HTTPs connections.";
+      type enumeration {
+         enum "self-signed-cert" {
+            description 
+                "Self signed certificate";
+         }
+         enum "profile-cert" {
+            description 
+                "Valid certificate attached to TLS service profile";
+         }
+      }
+   }
+   container web-gui {
+       status deprecated;
+       description
+          "This container describes the WebGUI configuration.";
+
+       leaf tls-service-profile {
+           type leafref {
+             path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+          }
+          description
+             "The TLS service profile for accepting TLS connections.";
+       }
+   }
+
+   container web-gui-state {
+       status deprecated;
+       config false;
+       description
+          "Information on operational state and sessions.";
+
+       leaf oper-state {
+           description
+                "Operational state of WebGUI.";
+           type cn-types:state;
+       }
+       list session {
+           key "id";
+           description
+                "Active sessions of WebGUI.";
+           leaf id {
+                description
+                    "Connection ID.";
+                type uint32;
+           }
+           leaf client {
+                description
+                    "Client IP address string either v4 or v6.";
+                type inet:ip-address;
+           }
+           leaf user {
+                description
+                    "User connected to this session.";
+                type string;
+           }
+           leaf last-access {
+                description
+                    "Last access time.";
+                type yang:date-and-time;
+           }
+       }
+       container tls-state {
+           description
+              "Detailed information related to attached TLS Service Profile.";
+
+           leaf type-of-cert-in-use {
+               description
+                   "Either attached TLS service profile's valid certificate
+                    or Self signed certificate that is currently in use for
+                    WebGUI HTTPs connections.";
+               type server-certificate-type;
+           }
+       }
+       container statistics {
+           description
+               "WebGUI statistics information.";
+
+           leaf session-attempts {
+               type yang:counter64;
+               description
+                  "Total number of WebGUI session establish attempts.";
+           }
+
+           leaf successful-sessions {
+               type yang:counter64;
+               description
+                   "Number of successful WebGUI sessions.";
+           }
+
+           leaf failed-attempts {
+               type yang:counter64;
+               description
+                   "Number of failed WebGUI session attempts.";
+           }
+
+           leaf idle-timed-out-sessions {
+               type yang:counter64;
+               description
+                   "Number of idle timed out WebGUI sessions.";
+           }
+
+           leaf closed-sessions {
+               type yang:counter64;
+               description
+                   "Number of gracefully closed WebGUI sessions.";
+           }
+
+           leaf unexpected-closed-sessions {
+               type yang:counter64;
+               description
+                   "Number of sessions that are closed unexpectedly.";
+           }
+       }
+   }
+   
+   rpc web-gui-clear-sessions {
+        status deprecated;
+        description
+            "RPC to clear either all the active WebGUI sessions or with 
+             specific ID. In case, no input is provided then 
+             all sessions will be cleared.";
+
+        input {
+            leaf id {
+                type uint32;
+                description
+                    "ID of the WebGUI Session which is to be cleared.";
+            }
+        }
+        output {
+            leaf response-status {
+                type cn-types:status;
+                description
+                    "Status can be either success or failure";
+            }
+            leaf response {
+                type string;
+                description
+                    "The response can be either a success message or 
+                     the reason for failure, based on the response status.";
+            }
+       }
+   }
+
+   rpc web-gui-clear-statistics {
+       status deprecated;
+       description
+           "Clears or resets the WebGUI statistics.";
+        output {
+            leaf response-status {
+                type cn-types:status;
+                description
+                    "Status can be either success or failure";
+            }
+            leaf response {
+                type string;
+                description
+                    "The response can be either a success message or 
+                     the reason for failure, based on the response status.";
+            }
+        }
+   }
+}

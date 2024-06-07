@@ -1,0 +1,103 @@
+module ciena-common-test-usersession {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-test-usersession";
+  prefix usersession;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Test module - redifinitions to augments to ciena-common-yang for usersession information";
+
+  revision 2020-04-16 {
+    description
+      "Initial revision";
+  }
+
+  typedef user-name {
+    type string {
+      length "2..40";
+    }
+    description
+      "User name string that has a range of 2 to 40 characters.
+       Valid charactor includes alphanumeric and '-', '_', '.'";
+  }
+
+  typedef access-level {
+    type enumeration {
+      enum limited {
+        description
+          "User has limited (mostly read-only) privileges. Limited user shall
+           - be a read only user with access to retrieve most of the system configurations.
+           - NOT be able to retrieve most of  security configurations, except their own user and user session information.
+           - be able to change their own password";
+      }
+      enum admin {
+        description
+          "User has administrative privileges. Admin user shall
+           - be able to perform all the capabilities of limited user
+           - be able to provision most of the system configurations
+           - NOT be able to retrieve and provision most of  security configurations,
+            except retrieve their own user and user session information
+           - be able to change their own password";
+      }
+      enum super {
+        description
+          "User has superuser privileges. Super user shall
+           - be able to perform all the capabilities of admin and limited user
+           - be able to perform all retrieval and provisioning of security related configurations
+             (Configuring  and retrieving users, user sessions, TACACS+, banners, ssh, intrusion ...)
+           - be able to execute RPC ";
+      }
+      enum diag {
+        description
+          "User has debug shell access. Diag user shall
+           - be able to perform all the capabilities of super user
+           - be able to execute the CLI command diag-shell";
+      }
+      enum initial {
+        description
+          "User has very limited access. Initial user shall
+           - only be able to change their own password
+           - Note: can not create a user with initial access level, only used for default user.";
+      }
+    }
+  }
+
+  grouping usersession-info {
+    leaf name {
+      type user-name;
+      description
+        "The authenticated user name.";
+    }
+    leaf level {
+      type access-level;
+      description
+        "The access level that the user has.";
+    }
+  }
+
+  grouping usersession-data {
+    container ddy-user {
+      yang:alias "ddy-test-usersession";
+      uses usersession-info;
+    }
+  }
+
+  augment "/yang:yang-rpc-action/yang:input" {
+    uses usersession-data;
+  }
+
+  augment "/yang:yang-delivery" {
+    uses usersession-data;
+  }
+}

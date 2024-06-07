@@ -1,0 +1,314 @@
+module ciena-pro-ssh {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-ssh";
+  prefix ciena-pro-ssh;
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-crypto-types {
+    prefix ciena-pro-crypto;
+  }
+
+  import ciena-pro-ssh-common {
+    prefix ciena-pro-ssh-common;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines SSH functionality that is used by all clients and
+     servers requiring SSH transport";
+
+  revision 2020-10-22 {
+    ciena-common-version:string "0.1.0";
+    description
+      "Make model platform independent";
+  }
+  revision 2019-12-10 {
+    description
+      "Fixing typos in descriptions.";
+  }
+  revision 2018-12-12 {
+    description
+      "Changed to read only";
+  }
+  revision 2018-10-23 {
+    description
+      "Initial version, based on OneOS, Waveserver and IETF Experimental
+       modules";
+  }
+
+  typedef ssh-auth-method {
+    type enumeration {
+      enum "publickey" {
+        description
+          "Public Key based user authentication";
+      }
+      enum "password" {
+        description
+          "Password based user authentication";
+      }
+      enum "keyboard-interactive" {
+        description
+          "Keyboard interactive user authentication";
+      }
+      enum "none" {
+        description
+          "No user authentication";
+      }
+    }
+    description
+      "All SSH Authentication methods";
+  }
+
+  typedef ssh-service {
+    type enumeration {
+      enum "shell" {
+        description
+          "enable opening a shell for a SSH session";
+      }
+      enum "scp-application" {
+        description
+          "enable opening a shell for a SSH session";
+      }
+      enum "rsync-application" {
+        description
+          "enable opening a shell for a SSH session";
+      }
+      enum "subsystem-sftp" {
+        description
+          "enable sftp service for a SSH session";
+      }
+      enum "subsystem-netconf" {
+        description
+          "enable netconf service for a SSH session";
+      }
+    }
+    description
+      "All SSH server services";
+  }
+
+  grouping ssh-server-config {
+    uses ciena-pro-ssh-common:transport-params-grouping;
+
+    uses ciena-pro-ssh-common:rekey-grouping;
+
+    container authentication {
+      description
+        "SSH server authentication parameters";
+      leaf authentication-retries {
+        type uint8 {
+          range "1 .. 3";
+        }
+        default "3";
+        description
+          "Number of authentication retries allowed before the SSH connection
+           is dropped.";
+      }
+
+      leaf login-grace-time {
+        type uint32 {
+          range "0 .. 2147483647";
+        }
+        default "60";
+        description
+          "This leaf specifies the time given for successful SSH authentication.";
+      }
+    }
+  }
+
+  container ssh {
+    presence "Enables SSH";
+    list server-config-profile {
+      key "name";
+      config false;
+      min-elements 1;
+      max-elements 1;
+      description
+        "A grouping for configuring SSH server parameters that can be
+         shared by multiple servers, independent of server identity and
+         without any consideration for how underlying TCP sessions are
+         established.";
+      leaf name {
+        type string {
+          length "0..79";
+        }
+        description
+          "An arbitrary name for this ssh server configuration that can be
+           shared by multiple SSH servers";
+      }
+
+      uses ssh-server-config;
+    }
+
+    list server {
+      key "name";
+      config false;
+      min-elements 1;
+      max-elements 1;
+      description
+        "A SSH server without any consideration for how underlying TCP
+         sessions are established.";
+      leaf name {
+        type string {
+          length "0..79";
+        }
+        description
+          "An arbitrary name for a SSH server that can be used by
+           multiple server applications that require SSH transport";
+      }
+
+      container configuration {
+        description
+          "Holds all of the SSH server configuration data.";
+        uses ciena-pro-types:admin-state {
+          description
+            "This leaf specifies the administrative
+             state of the server.";
+          refine "admin-state" {
+            default "Enabled";
+          }
+        }
+
+        leaf-list authentication-methods {
+          type ssh-auth-method;
+          min-elements 1;
+          description
+            "Allowed SSH server user authentication methods";
+        }
+
+        leaf config-instance {
+          type leafref {
+            path "../../../server-config-profile/name";
+          }
+          mandatory true;
+        }
+
+        leaf identity-instance {
+          type leafref {
+            path "../../../server-identity/name";
+          }
+          mandatory true;
+        }
+      }
+
+      container state {
+        config false;
+        description
+          "Holds all of the SSH operational data.";
+      }
+    }
+
+    list server-identity {
+      key "name";
+      config false;
+      min-elements 1;
+      max-elements 1;
+      leaf name {
+        type string {
+          length "0..79";
+        }
+        description
+          "An arbitrary name for a SSH server that can be used by
+           multiple server applications that require SSH transport";
+      }
+
+      list host-key {
+        key "type";
+        min-elements 1;
+        max-elements 1;
+        leaf type {
+          type ciena-pro-crypto:key-algorithm;
+          description
+            "SSH configured key type.";
+        }
+
+        leaf public-key {
+          type ciena-pro-ssh-common:ssh-host-key;
+          config false;
+          description
+            "Public Key in RFC4253 OpenSSH format";
+        }
+
+        leaf status {
+          type ciena-pro-ssh-common:ssh-key-generation-status;
+          config false;
+          description
+            "SSH key generation status.";
+        }
+
+        container fingerprint {
+          config false;
+          description
+            "SSH key fingerprint data.";
+          leaf value {
+            type string {
+              length "0..79";
+            }
+            description
+              "SSH key fingerprint value.";
+          }
+        }
+      }
+    }
+  }
+
+  rpc ssh-server-key-regenerate {
+    description
+      "Requests the server to generate the ssh key, returns
+       the status of the request.";
+    input {
+      leaf server-identity {
+        type string {
+          length "0..79";
+        }
+        description
+          "The server-identity name.";
+      }
+
+      leaf key-type {
+        type ciena-pro-crypto:key-algorithm;
+        description
+          "The SSH key type.";
+      }
+    }
+
+    output {
+      leaf status {
+        type enumeration {
+          enum "success" {
+            description
+              "Key generation succeeded.";
+          }
+          enum "failure" {
+            description
+              "Key generation failure.";
+          }
+        }
+        description
+          "This leaf specifies the result of the ssh key
+           generation";
+      }
+
+      leaf reason-string {
+        type string {
+          length "0..79";
+        }
+        description
+          "Return code description";
+      }
+    }
+  }
+}

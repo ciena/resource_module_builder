@@ -1,0 +1,416 @@
+module ciena-pro-internal-system-health-data {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-internal-system-health-data";
+  prefix internal-health-data;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the system's health data YANG structures used for developer debugging";
+
+  revision 2020-09-22 {
+    description
+      "Initial Creation of health-data pro service";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef health-data-internal-percent-range {
+    description
+      "Allows a percent (whole numbers) to be set";
+    type uint32 {
+      range "0..100";
+    }
+  }
+
+  container internal-health-data {
+    description
+      "Container around the internal System Health Data service debuging data as well as product specific settings from the depo.";
+    list debug-logs {
+      key "log-number";
+      config false;
+      description
+        "List of stored SW debug logs. For internal use only. These are overwritten every poll run.";
+      leaf log-number {
+        type uint32;
+        description
+          "Bin number being recorded";
+      }
+      leaf log {
+        type string {
+          length "0..132";
+        }
+        description
+          "The log message being recorded";
+      }
+    }
+    leaf min-idle-cpu-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If IDLE CPU percentage falls below this number, write the overall CPU
+         data to the low resource log. Default is 15 percent";
+    }
+    leaf process-cpu-usage-with-idle-condition-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If the CPU usage of a process is greater than this value AND IDLE
+         CPU percentage is below its minimum, write the process CPU data to
+         the low resource log. Default 1 percent";
+    }
+    leaf process-cpu-usage-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If the CPU usage of a process is greater than this value write the
+         process CPU data to the low resource log. Default is 24 percent";
+    }
+    leaf temperature-reading-file-logging {
+      type uint32;
+      description
+        "If the temperature of a sensor is greater than this value write the
+         sensor's temperature data to the low resource log. Default is 42 degrees C";
+    }
+    leaf min-free-memory-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If the minimal free memory percentage is less than this value write the
+         overall memory data to the low resource log. Default is 15 percent";
+    }
+    leaf process-used-memory-with-free-condition-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If the minimal free memory percentage crosses it's threshold AND
+         a process's used memory percentage is greater than this value,
+         add that process to the low resource log. Default is 1 percent";
+    }
+    leaf process-used-memory-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If a process's used memory percentage is greater than this value,
+         add that process to the low resource log. Default is 13 percent";
+    }
+    leaf disk-used-percentage-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If the total disk usage percentage is greater than this value,
+         write this run's disk usage data to the low resource log. Default is 75 percent";
+    }
+    leaf min-free-memory-syslog {
+      type health-data-internal-percent-range;
+      description
+        "If the minimal free memory percentage is less than this value,
+         write the overall memory data to syslog. Default is 0 (turned off)";
+    }
+    leaf process-used-memory-with-free-syslog {
+      type health-data-internal-percent-range;
+      description
+        "If the minimal free memory percentage has triggered a syslog AND a
+         process' total memory percentage usage is higher than this value,
+         then print that process to syslog. Default is 100 (turned off)";
+    }
+    leaf process-used-memory-syslog {
+      type health-data-internal-percent-range;
+      description
+        "If the minimal free memory percentage is less than this value,
+         write the overall memory data to syslog. Default is 0 (turned off)";
+    }
+    leaf graceful-restart-percentage {
+      type decimal64 {
+        fraction-digits 5;
+        range "0..21474836";
+      }
+      description
+        "If total available memory drops below this percentage of total memory, do a graceful restart instead of having an OOM assert. Default is .01875";
+    }
+    leaf health-data-directory {
+      type string {
+        length "0..128";
+      }
+      description
+        "The root directory to put the health-data files in. Default is /var/opt/health-data";
+    }
+    leaf filesystem-inode-used-percentage-file-logging {
+      type health-data-internal-percent-range;
+      description
+        "If a filesystem's inode used percentage is greater than this,
+         write it to the low resources file";
+    }
+    leaf file-descriptor-used-percentage {
+      type health-data-internal-percent-range;
+      description
+        "If a process' percentage of open file descriptors versus its limit is greater than this,
+         write the process and its file descriptor data to the low resources file";
+    }
+    leaf file-descriptor-low-percentage {
+      type health-data-internal-percent-range;
+      description
+        "If a process' percentage of open file descriptors versus its limit is greater than this,
+         write the process and its file descriptor data to the open-FD file with no tag";
+    }
+    leaf file-descriptor-medium-percentage {
+      type health-data-internal-percent-range;
+      description
+        "If a process' percentage of open file descriptors versus its limit is greater than this,
+         write the process and its file descriptor data to the open-FD file with a tag of medium usage";
+    }
+    leaf file-descriptor-high-percentage {
+      type health-data-internal-percent-range;
+      description
+        "If a process' percentage of open file descriptors versus its limit is greater than this,
+         write the process and its file descriptor data to the open-FD file with a tag of high usage";
+    }
+  }
+
+  rpc dump-memory-data {
+    description
+      "Perform an immediate or periodic dump of memory data. Internal use only";
+    input {
+      leaf filename {
+        description
+          "The filename to dump the data to. This should be the full path.";
+        type string {
+          length "0..128";
+        }
+      }
+      leaf process-name {
+        description
+          "Either all or ALL for all processes or a process name you wish to dump.";
+        type string {
+          length "0..64";
+        }
+      }
+      leaf time-period {
+        type uint32 {
+          range "0 .. 1440";
+        }
+        description
+          "The time-period in minutes you wish to gather. 0 means immediately and only once. You can sample from every minute up to once every day";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 20";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        description
+          "Return code description";
+        type string {
+          length "0..128";
+        }
+      }
+    }
+  }
+
+  grouping shared-object-data-group {
+    description
+      "Data to summarize a shared-object's memory map. All data is in KB (1024 bytes)";
+    leaf rss {
+      type uint64;
+      description
+        "Resident Set Size (RSS) of the shared object";
+    }
+    leaf pss {
+      type uint64;
+      description
+        "Proportional Share Size (PSS) of the shared object. Private pages are summed up as is, and each shared mapping's size is divided by the number of processes that share it.";
+    }
+    leaf shared-clean {
+      type uint64;
+      description
+        "Clean pages shared between multiple processes. Clean pages are pages that have not been modified since they were mapped";
+    }
+    leaf shared-dirty {
+      type uint64;
+      description
+        "Dirty data from a shared object being used by this process. Diry pages were modified. This forces memory to be allocated for this process";
+    }
+    leaf private-clean {
+      type uint64;
+      description
+        "Clean data private to this process. Clean pages are pages that have not been modified since they were mapped";
+    }
+    leaf private-dirty {
+      type uint64;
+      description
+        "Data Private to this process. This data was modified.";
+    }
+    leaf referenced {
+      type uint64;
+      description
+        "How much of the memory allocated has actually been referenced (accessed).";
+    }
+    leaf anonymous {
+      type uint64;
+      description
+        "Shows the amount of memory not mapped to any file";
+    }
+    leaf anonymous-huge {
+      type uint64;
+      description
+        "Shows amount of non-file backed huge pages mapped into user-space page tables";
+    }
+    leaf virtual-size {
+      type uint64;
+      description
+        "Shows amount of virtual memory set aside for this library. This is the VIRT in the top command";
+    }
+  }
+
+  rpc dump-smaps {
+    description
+      "Perform a dump of shared object memory data for one or all processes.";
+    input {
+      leaf process-name {
+        description
+          "Name of the process to get the smaps for (or all for all processes)";
+        type string {
+          length "0..128";
+        }
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 20";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        description
+          "Return code description";
+        type string {
+          length "0..128";
+        }
+      }
+      leaf process-name {
+        description
+          "Name of the process to get the smaps for (or all for all processes)";
+        type string {
+          length "0..128";
+        }
+      }
+      list shared-object-data {
+        key "index";
+        description
+          "List of the shared objects and their memory breakdown";
+        leaf index {
+          type uint32;
+          description
+            "The index for this entry";
+        }
+        leaf so-name {
+          type string {
+            length "0..32";
+          }
+          description
+            "The shared object name being counted";
+        }
+        container shared-object {
+          description
+            "Shared object memory count breakdown";
+          uses shared-object-data-group;
+        }
+      }
+      container shared-object-summary {
+        description
+          "Summary of all shared object memory counts for this process (or all processes)";
+        uses shared-object-data-group;
+      }
+    }
+  }
+
+  rpc dump-smaps-summary {
+    description
+      "Perform a summary of processes' having an RSS and or PSS count larger than a user defined filter. Both filters work in tandem if both specified";
+    input {
+      leaf rss-size-filter {
+        type uint64;
+        description
+          "Only show processes with an RSS KB size greater than this number. Defaults to 0 if not set.";
+      }
+      leaf pss-size-filter {
+        type uint64;
+        description
+          "Only show processes with an PSS KB size greater than this number. Defaults to 0 if not set.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32 {
+          range "0 .. 20";
+        }
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        description
+          "Return code description";
+        type string {
+          length "0..128";
+        }
+      }
+      list summary {
+        key "index";
+        description
+          "List of processes and their data that exceeds the rss-size-filter";
+        leaf index {
+          type uint32;
+          description
+            "The index for this entry";
+        }
+        leaf process-name {
+          type string {
+            length "0..32";
+          }
+          description
+            "The process being displayed";
+        }
+        leaf rss {
+          type uint64;
+          description
+            "Resident Set Size (RSS) of the shared object";
+        }
+        leaf pss {
+          type uint64;
+          description
+            "Proportional Share Size (PSS) of the shared object. Private pages are summed up as is, and each shared mapping's size is divided by the number of processes that share it.";
+        }
+        leaf private-dirty {
+          type uint64;
+          description
+            "Private dirty. Memory that has been written to and allocated solely to this process";
+        }
+        leaf private-clean {
+          type uint64;
+          description
+            "Private clean. Memory that has not been written to but is still allocated solely to this process";
+        }
+        leaf shared-dirty {
+          type uint64;
+          description
+            "Shared dirty. Memory that has been written to and most likely is allocated solely to this process. On the Waveserver modules, this category is still clean";
+        }
+        leaf shared-clean {
+          type uint64;
+          description
+            "Shared clean. Untouched memory shared between processes. Only one allocation of this data.";
+        }
+      }
+    }
+  }
+}

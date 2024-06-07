@@ -1,0 +1,841 @@
+module ciena-rsvp-te {
+   namespace "http://ciena.com/ns/yang/ciena-rsvp-te";
+   prefix ciena-rsvpte;
+
+   import ietf-inet-types {
+      prefix inet;
+   }
+   import ciena-ietf-te {
+      prefix "ciena-te";
+   }
+   import ciena-rsvp {
+      prefix "ciena-rsvp";
+   }
+   import openconfig-mpls-types {
+      prefix oc-mplst;
+   }
+   import ciena-mpls-tunnel-tca {
+      prefix tca-profile;
+   }
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This module contains the Ciena proprietary YANG defintions
+       for the RSVP-TE tunnel configuration and state information.
+       Copyright (c) 2022 Ciena Corporation.  All rights reserved.
+
+       All information contained herein is, and remains
+       the property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained from
+       Ciena Corporation.";
+
+   revision "2023-08-11" {
+      description
+         "1. Updated the description of protected-interface.
+          2. Updated the validation condition for set-bandwidth parameter.
+          3. Added tunnel path error code/reason/value fields.";
+   }
+
+   revision "2023-04-24" {
+      description
+         "1. TUNNEL_TYPE and PROTECTION-TYPE are extended with new
+             values.
+          2. It includes extension to tunnel attributes like explicit
+             route and auto bandwidth configurations.
+          3. It includes addition of leafs to global tunnel configuration.
+          4. Added RPC for stats collection of non-ingress tunnel.
+          5. Added Yang based validation.
+          6. Updated the description of protection-style-requested.";
+   }
+
+   revision "2022-10-10" {
+      description
+        "1. Initial Version for RSVP-TE Support.
+         2. It includes RSVP tunnel config parameters.
+         3. It includes tunnel bandwidth and RSVP path.";
+   }
+
+   typedef te-bandwidth-type {
+      type enumeration {
+         enum SPECIFIED {
+            description
+               "Bandwidth is explicitly specified";
+         }
+         enum AUTO {
+            description
+               "Bandwidth is automatically computed";
+         }
+      }
+      description
+         "Enumerated type for specifying whether bandwidth is
+          explicitly specified or automatically computed";
+   }
+
+   typedef mpls-hop-type {
+      type enumeration {
+         enum LOOSE {
+            description
+               "Loose hop in an explicit path";
+         }
+         enum STRICT {
+            description
+               "Strict hop in an explicit path";
+         }
+      }
+      description
+         "Enumerated type for specifying loose or strict
+          paths";
+   }
+
+   identity PROTECTED {
+      base oc-mplst:PROTECTION_TYPE;
+      description
+        "protection is desired";
+   }
+
+   identity FACILITY_BYPASS {
+      base oc-mplst:TUNNEL_TYPE;
+      description
+        "Facility bypass tunnel type";
+   }
+
+   grouping p2p-path-state {
+      description
+         "Operational state parameters for P2P paths";
+      leaf-list associated-rsvp-sessions {
+         type leafref {
+            path "/ciena-rsvp:rsvp-te/ciena-rsvp:sessions/ciena-rsvp:session/ciena-rsvp:local-index";
+         }
+         description
+            "If the signalling protocol specified for this path is
+             RSVP-TE, this leaf-list provides a reference to the associated
+             sessions within the RSVP-TE protocol sessions list, such
+             that details of the signaling can be retrieved. More than
+             one session may exist during re-signalling such as
+             make-before-break.";
+      }
+   }
+
+   grouping p2p-path-config {
+      description
+         "Configuration parameters for P2P paths";
+
+      leaf name {
+         type string {
+            length "1..128";
+         }
+         description
+            "Path name";
+      }
+      leaf path-computation-method {
+         type identityref {
+            base oc-mplst:PATH_COMPUTATION_METHOD;
+         }
+         default oc-mplst:LOCALLY_COMPUTED;
+         description
+            "The method used for computing the path, either
+             locally computed, queried from a server or not
+             computed at all (explicitly configured).";
+      }
+      leaf use-cspf {
+         when "../path-computation-method = 'oc-mplst:LOCALLY_COMPUTED'" {
+         description
+            "The use of CSPF when the path-computation method is
+             local computation";
+         }
+         type boolean;
+         description
+            "Flag to enable CSPF for locally computed LSPs";
+      }
+      leaf metric-type {
+         type identityref {
+            base oc-mplst:PATH_METRIC_TYPE;
+         }
+         default oc-mplst:IGP_METRIC;
+         description
+            "Path metric type";
+      }
+      leaf explicit-path-name {
+         when "../path-computation-method = 'oc-mplst:EXPLICITLY_DEFINED'" {
+         description
+            "The name of the explicitly defined path used";
+         }
+         type leafref {
+            path "/named-explicit-paths/named-explicit-path/config/name";
+         }
+         description
+            "Reference to a defined path";
+      }
+      uses ciena-rsvp:rsvp-p2p-path-attributes-config;
+   }
+
+   grouping explicit-route-subobject-config {
+      description
+         "The explicit route subobject grouping";
+      leaf address {
+         type inet:ip-address;
+         description
+         "Router hop for the LSP path";
+      }
+      leaf hop-type {
+         type mpls-hop-type;
+         description
+            "Strict or loose hop";
+      }
+      leaf index {
+         type uint8 {
+            range "0..255";
+         }
+         description
+            "Index of this explicit route object to express
+             the order of hops in the path";
+      }
+      leaf exclude {
+         type boolean;
+         description
+            "Exclude option to exclude the Router hop if the hop type is loose";
+      }
+   }
+
+   grouping named-explicit-path-config {
+      description
+         "Configuration parameters relating to a named
+          explicit path";
+
+      leaf name {
+         type string {
+            length "1..255";
+         }
+         description
+            "A string name that uniquely identifies an explicit
+             path";
+      }
+   }
+
+   container named-explicit-paths {
+      description
+         "Enclosing container for the named explicit paths";
+      list named-explicit-path {
+         key "name";
+         description
+            "A list of explicit paths";
+         leaf name {
+            type leafref {
+               path "../config/name";
+            }
+            description
+               "A string name that uniquely identifies
+                an explicit path";
+         }
+         container config {
+            description
+               "Configuration parameters relating to named explicit
+                paths";
+            uses named-explicit-path-config;
+         }
+         container explicit-route-objects {
+            description
+               "Enclosing container for EROs";
+            list explicit-route-object {
+               key "index";
+               description
+                  "List of explicit route objects";
+               leaf index {
+                  type leafref {
+                     path "../config/index";
+                  }
+                  description
+                     "Index of this explicit route object,
+                      to express the order of hops in path";
+               }
+               container config {
+                  description
+                     "Configuration parameters relating to an explicit
+                      route";
+                  uses explicit-route-subobject-config;
+               }
+            }
+         }
+      }
+   }
+
+   grouping te-path-placement-constraints-top {
+      description
+         "Top-level grouping ";
+      container admin-groups {
+         description
+            "Top-level container for include/exclude constraints for
+             link affinities";
+         container config {
+            description
+               "Configuration data ";
+            uses te-path-placement-constraints-config;
+         }
+         container operational-admin-groups {
+            config false;
+            description
+               "Top-level container to display operational value of
+                link affinities";
+            uses te-path-placement-constraints-state;
+         }
+      }
+   }
+
+   grouping p2p-primary-paths-top {
+      description
+         "Top level grouping for P2P primary paths";
+      container p2p-primary-path {
+         description
+            "Primary paths associated with the LSP";
+         list p2p-primary-path {
+            key "name";
+            description
+               "List of P2P primary paths for a tunnel";
+            leaf name {
+               type leafref {
+                  path "../config/name";
+               }
+               description
+                  "Path name";
+            }
+            container config {
+               description
+                  "Configuration parameters related to paths";
+               uses p2p-path-config;
+            }
+            container state {
+               config false;
+               description
+                  "State parameters related to paths";
+               uses p2p-path-state;
+            }
+            uses te-path-placement-constraints-top;
+         }
+      }
+   }
+
+   grouping te-path-placement-constraints-config {
+      description
+         "Configuration data for link affinities";
+
+      leaf-list exclude-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups to exclude in
+             path calculation.";
+      }
+      leaf-list include-all-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups of which all must
+             be included";
+      }
+      leaf-list include-any-group {
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of references to named admin-groups of which one must
+             be included";
+      }
+   }
+
+   grouping te-path-placement-constraints-state {
+      description
+         "Operational data for link affinities";
+      leaf-list exclude-group {
+         type string;
+         description
+            "List of named admin-groups excluded in path calculation.";
+      }
+      leaf-list include-all-group {
+         type string;
+         description
+            "List of named admin-groups which are all included";
+      }
+      leaf-list include-any-group {
+         type string;
+         description
+            "List of named admin-groups of which one got included";
+      }
+   }
+   grouping tunnel-p2p-attributes-config {
+      description
+         "Configuration related to P2P LSPs";
+      leaf destination {
+         type inet:ip-address;
+         description
+            "P2P tunnel destination address";
+      }
+   }
+
+   grouping te-tunnel-p2p-top {
+      description
+         "Top level grouping for P2P configuration";
+      container p2p-tunnel-attributes {
+         description
+            "Parameters related to LSPs of type P2P";
+         container config {
+            description
+               "Configuration parameters for P2P LSPs";
+            uses tunnel-p2p-attributes-config;
+         }
+         uses p2p-primary-paths-top;
+      }
+   }
+
+   grouping te-lsp-auto-bandwidth-config {
+      description
+         "Configuration parameters related to autobandwidth";
+      leaf enabled {
+         when "/ciena-rsvpte:rsvp-te-tunnels/ciena-rsvpte:tunnel/ciena-rsvpte:config/ciena-rsvpte:tunnel-stats-collection = 'on'" {
+            description
+               "Autobandwidth can be enabled only when
+                stats collection is on";
+         }
+         type boolean;
+         default false;
+         description
+            "Enables MPLS auto-bandwidth on the LSP";
+      }
+      leaf min-bw {
+         type oc-mplst:bandwidth-kbps {
+            range "0..1600000000";
+         }
+         default 0;
+         description
+            "Set the minimum bandwidth in Kbps for an
+             auto-bandwidth LSP";
+      }
+      leaf max-bw {
+         type oc-mplst:bandwidth-kbps {
+            range "0..1600000000";
+         }
+         default 100000000;
+         description
+            "Set the maximum bandwidth in Kbps for an
+             auto-bandwidth LSP";
+      }
+      leaf increment-bw {
+         type oc-mplst:bandwidth-kbps {
+            range "0..1000000";
+         }
+         default 0;
+         description
+            "Set the increment bandwidth in Kbps for an
+             auto-bandwidth LSP";
+      }
+      leaf tca-profile {
+         type leafref {
+            path "/tca-profile:tca-profiles/tca-profile:tca-profile/tca-profile:name";
+         }
+         description
+            "TCA profile name to associate with RSVP tunnel";
+      }
+      leaf failure-action {
+         type enumeration {
+            enum alarm {
+               description
+                  "Auto bandwidth failure mode is alarm.";
+            }
+            enum mbb {
+               description
+                  "Auto bandwidth failure mode is mbb.";
+            }
+         }
+         default alarm;
+        description
+           "Auto bandwidth failure handling mode";
+      }
+   }
+
+   grouping te-tunnel-bandwidth-config {
+      description
+         "Configuration parameters related to bandwidth for a tunnel";
+      leaf specification-type {
+         type te-bandwidth-type;
+         default SPECIFIED;
+         description
+            "The method used for setting the bandwidth, either explicitly
+             specified or configured";
+      }
+      leaf set-bandwidth {
+         when "../specification-type = 'SPECIFIED'" {
+         description
+            "The bandwidth value when bandwidth is explicitly
+             specified";
+         }
+         type oc-mplst:bandwidth-kbps;
+         description
+            "Set bandwidth explicitly, e.g., using
+             offline calculation";
+      }
+   }
+
+   grouping te-tunnel-bandwidth-top {
+      description
+         "Top level grouping for specifying bandwidth for a tunnel";
+      container bandwidth {
+         description
+            "Bandwidth configuration for TE LSPs";
+         container config {
+            description
+               "Configuration parameters related to bandwidth on TE
+                tunnels";
+            uses te-tunnel-bandwidth-config;
+         }
+         container auto-bandwidth {
+            when "../config/specification-type = 'AUTO' and ../../config/type != 'ciena-rsvpte:FACILITY_BYPASS'" {
+            description
+               "Include this container for auto bandwidth
+                specific configuration";
+            }
+            description
+               "Parameters related to auto-bandwidth";
+            container config {
+               description
+                  "Configuration parameters relating to MPLS
+                   auto-bandwidth on the tunnel.";
+               uses te-lsp-auto-bandwidth-config;
+            }
+         }
+      }
+   }
+
+   grouping te-tunnel-reoptimize-config {
+      description
+         "Definition for reoptimize timer configuration";
+      leaf reoptimize-timer {
+         when "../type != 'ciena-rsvpte:FACILITY_BYPASS'" {
+         description
+            "Do not include this leaf for LSPs of type FACILITY_BYPASS";
+         }
+         type uint16 {
+            range "0 | 5..1500";
+         }
+         units minutes;
+         default 0;
+         description
+            "Frequency of reoptimization of
+             a traffic engineered LSP, 0 means reoptimize-timer is disabled";
+      }
+   }
+
+   grouping te-global-tunnel-config {
+      description
+         "Configuration parameters relevant to a single
+          traffic engineered tunnel.";
+      leaf name {
+         type string {
+            length "1..128";
+         }
+         description
+            "The tunnel name";
+      }
+      leaf type {
+         type identityref {
+            base oc-mplst:TUNNEL_TYPE;
+         }
+         default oc-mplst:P2P;
+         description
+            "Tunnel type";
+      }
+      leaf description {
+         type string {
+            length "1..255";
+         }
+         description
+            "Optional text description for the tunnel";
+      }
+      leaf admin-status {
+         type identityref {
+            base oc-mplst:TUNNEL_ADMIN_STATUS;
+         }
+         default oc-mplst:ADMIN_UP;
+         description
+            "TE tunnel administrative state.";
+      }
+      leaf protection-style-requested {
+         type identityref {
+            base oc-mplst:PROTECTION_TYPE;
+         }
+         default oc-mplst:UNPROTECTED;
+         description
+            "Style of mpls frr protection desired: should be
+             protected or unprotected only.";
+      }
+      leaf fast-reroute-object {
+         when "../protection-style-requested != 'oc-mplst:UNPROTECTED' and ../type != 'ciena-rsvpte:FACILITY_BYPASS'" {
+         description
+            "The Fast Reroute configuration for signaling in FRR Obejct of this tunnel";
+         }
+         type leafref {
+            path "/ciena-rsvp:rsvp-te/ciena-rsvp:fast-reroute-objects/ciena-rsvp:fast-reroute-object/ciena-rsvp:name";
+         }
+         description
+            "The fast reroute configuration in FRR object of this tunnel";
+      }
+      uses te-tunnel-reoptimize-config;
+      uses ciena-rsvp:rsvp-p2p-tunnel-attributes-config;  // Original was oc-rsvp:rsvp-p2p-tunnel-attributes-config
+      leaf tunnel-stats-collection {
+         type enumeration {
+            enum off {
+               description
+                  "RSVP tunnel stats collection off";
+            }
+            enum on {
+               description
+                  "RSVP tunnel stats collection on.";
+            }
+         }
+         default off;
+         description
+            "Stats collection on or off on RSVP-TE tunnel.";
+      }
+      leaf soft-preemption-enabled {
+         when "../type != 'ciena-rsvpte:FACILITY_BYPASS'" {
+         description
+            "Do not include this leaf for LSPs of type FACILITY_BYPASS";
+         }
+         type boolean;
+         default false;
+         description
+            "enabling or disabling soft-preemption on admin down tunnel.";
+      }
+      leaf exclude-ip {
+         type inet:ip-address;
+         description
+            "The IP address for the facility-bypass FRR to exclude.";
+      }
+      leaf cos-profile {
+         type string {
+            length "1..64";
+         }
+         description
+            "The name of the tunnel COS profile.";
+      }
+      leaf protected-interface {
+        type leafref {
+           path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+        }
+        description
+           "Name of the interface which has to be protected.";
+      }
+      leaf srlg-mode {
+         type ciena-rsvp:srlg-mode-type;
+         default NONE;
+         description
+            "The SRLG mode for the facility bypass tunnel. Only applies when the type is set to
+             facility-bypass.";
+      }
+      leaf-list share-srlg {
+         type uint32;
+         description
+            "List of shared SRLG values for the facility bypass tunnel.";
+      }
+   }
+
+   grouping te-tunnel-state {
+      description
+         "Counters and statistical data relevent to a single
+          tunnel.";
+      leaf oper-status {
+         type identityref {
+            base oc-mplst:LSP_OPER_STATUS;
+         }
+         description
+            "The operational status of the TE tunnel";
+      }
+      leaf role {
+         type identityref {
+            base oc-mplst:LSP_ROLE;
+         }
+         description
+            "The lsp role at the current node, whether it is headend,
+             transit or tailend.";
+      }
+      leaf tunnel-down-reason {
+         type string;
+         description
+            "RSVP-TE tunnel down reason";
+      }
+      leaf tunnel-path-error-code {
+         type uint32;
+         description
+            "RSVP-TE tunnel path error code";
+      }
+      leaf tunnel-path-error-code-reason {
+         type string;
+         description
+            "RSVP-TE tunnel path error code reason";
+      }
+      leaf tunnel-path-error-value {
+         type uint32;
+         description
+            "RSVP-TE tunnel path error value";
+      }
+      leaf tunnel-path-error-value-reason {
+         type string;
+         description
+            "RSVP-TE tunnel path error value reason";
+      }
+      leaf tunnel-path-error-sender {
+         type inet:ip-address;
+         description
+            "RSVP-TE tunnel path error sender";
+      }
+   }
+   grouping mbb-history-element {
+      description
+         "elements relavent to MBB history of tunnel";
+      leaf start-time {
+         type string;
+         description
+            "Start Time of MBB of the tunnel";
+      }
+      leaf end-time {
+         type string;
+         description
+            "End Time of MBB of the tunnel";
+      }
+      leaf status {
+         type string;
+         description
+            "Status of MBB";
+      }
+      leaf reason {
+         type string;
+         description
+            "Reason for MBB";
+      }
+   }
+
+   container rsvp-te-tunnels {
+      description
+         "RSVP-TE tunnel configuration";
+      list tunnel {
+         key "name";
+         description
+            "List of TE tunnels. This list contains only the LSPs that the
+             current device originates (i.e., for which it is the head-end).
+             Where the signaling protocol utilised for an LSP allows a mid-point
+             or tail-end to be aware of the LSP (e.g., RSVP-TE), then the
+             associated sessions are maintained per protocol";
+         leaf name {
+            type leafref {
+               path "../config/name";
+            }
+            description
+               "The tunnel name";
+         }
+         container config {
+            description
+               "Configuration parameters related to TE tunnels:";
+            uses te-global-tunnel-config;
+         }
+         container state {
+            config false;
+            description
+               "State parameters related to TE tunnels";
+            uses te-tunnel-state;
+         }
+         list mbb-history-elements {
+            config false;
+            uses mbb-history-element;
+         }
+         uses te-tunnel-bandwidth-top;
+         uses te-tunnel-p2p-top;
+      }
+   }
+
+   rpc rsvp-te-tunnel-reoptimize {
+      description
+         "RPC to reoptimize the RSVP tunnel";
+      input {
+         leaf tunnel {
+            type leafref {
+               path "/ciena-rsvpte:rsvp-te-tunnels/ciena-rsvpte:tunnel/ciena-rsvpte:name";
+            }
+            description
+               "Name of tunnel to be reoptimized with least path cost as suggested via cspf";
+         }
+      }
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for tunnel reoptimization failure";
+         }
+      }
+   }
+
+   rpc rsvp-te-tunnel-stats-collection {
+      description
+         "RPC to enable RSVP tunnel stats only for non-ingress tunnels";
+      input {
+         leaf tunnel-name {
+            type string;
+            mandatory true;
+            description
+               "RSVP tunnel name";
+         }
+        
+         leaf source-address {
+            type inet:ip-address;      
+            mandatory true;
+            description
+               "Source IP of RSVP tunnel of non-ingress tunnel";
+         }
+      
+         leaf dest-address {
+            type inet:ip-address;
+            mandatory true;
+            description
+               "Destination IP of RSVP tunnel of non-ingress tunnel";       
+         }
+
+         leaf tunnel-stats-collection {
+            type enumeration {
+               enum off {
+                  description
+                     "RSVP tunnel stats collection off";
+               }
+               enum on {
+                  description
+                     "RSVP tunnel stats collection on";
+               }
+            }
+            mandatory true;
+         }   
+      }
+      
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for failure";
+         }
+      }
+   }
+}

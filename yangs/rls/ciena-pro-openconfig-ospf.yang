@@ -1,0 +1,77 @@
+module ciena-pro-openconfig-ospf {
+  yang-version 1;
+  namespace "http://openconfig.net/yang/ospf";
+  prefix oc-ospf;
+
+  import openconfig-network-instance {
+    prefix oc-ni;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  include "ciena-pro-openconfig-ospf-global";
+
+  include "ciena-pro-openconfig-ospf-area";
+
+  include "ciena-pro-openconfig-ospf-area-interface";
+
+  include "ciena-pro-openconfig-ospf-common";
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module augments Ciena's 6500r platform OSC attributes into
+     OpenConfig network interface object.";
+
+  revision 2019-08-28 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Initial revision";
+  }
+
+  grouping ospfv3-top {
+    description
+      "Top-level OSPFv3 configuration and operational state";
+    container ospfv3 {
+      description
+        "Top-level configuration and operational state for
+         Open Shortest Path First (OSPF) v3";
+      uses ospf-global-structural;
+
+      container areas {
+        description
+          "Configuration and operational state relating to an
+           OSPFv3 area.";
+        list area {
+          key "identifier";
+          description
+            "The OSPFv3 areas within which the local system exists";
+          leaf identifier {
+            type leafref {
+              path "../config/identifier";
+            }
+            description
+              "A reference to the identifier for the area.";
+          }
+
+          uses ospf-area-structure;
+        }
+      }
+    }
+  }
+
+  augment "/oc-ni:network-instances/oc-ni:network-instance/oc-ni:protocols/oc-ni:protocol" {
+    description
+      "OSPFv3 interface paramaters";
+    uses ospfv3-top;
+  }
+}

@@ -1,0 +1,1364 @@
+module ciena-evpn {
+  namespace "http://ciena.com/ns/yang/ciena-evpn";
+  prefix "cnevpn";
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import ietf-routing-types {
+    prefix "rt-types";
+  }
+
+  import ciena-ethernet-segment-types {
+    prefix "es";
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-mef-fd {
+    prefix "mef-fd";
+  }
+
+  import ciena-mef-logical-port {
+    prefix "mef-logical-port";
+  }
+
+  import ciena-l3-types {
+    prefix "cn-l3-types";
+  }
+
+  import ciena-bgp {
+    prefix "bgp";
+  }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+  description
+      "This module contains the Ciena proprietary EVPN YANG module.
+      Copyright (c) 2020 Ciena Corporation.  All rights reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained from
+      Ciena Corporation.";
+
+  revision "2023-08-14" {
+    description
+      "Added validation for EVPN vpn-target type 2 with BGP extended AS.";
+  }
+
+  revision "2021-08-30" {
+    description
+      "Added VPLS enum to fxc-service-type typedef and typedef description.";
+  }
+
+  revision "2021-07-28" {
+      description
+          "Added Notification support for Evlag protection and Ethernet Segment Fault.";
+  }
+
+  revision "2020-12-22" {
+      description
+          "Added color and fallback for SR policy.";
+  }
+  
+  revision "2020-02-20" {
+      description
+         "Merged with Ethernet Segment and FXC Yang models.";
+      reference   "";
+  }
+
+  revision "2019-03-21" {
+      description
+         "Initial version";
+      reference   "";
+  }
+
+  feature evpn-bgp-params {
+    description
+      "EVPN's BGP parameters";
+  }
+
+  feature evpn-pbb-params {
+    description
+      "EVPN's PBB parameters";
+  }
+
+  /* Identities */
+  identity evpn-notification-state {
+    description
+      "The base identity on which EVPN notification " +
+      "states are based";
+  }
+
+  identity MAC-duplication-detected {
+    base "evpn-notification-state";
+    description
+      "MAC duplication is detected";
+  }
+
+  identity mass-withdraw-received {
+    base "evpn-notification-state";
+    description
+      "Mass withdraw received";
+  }
+
+  identity static-MAC-move-detected {
+    base "evpn-notification-state";
+    description
+      "Static MAC move is detected";
+  }
+
+  /* Typedefs */
+  typedef cn-service-type {
+    type enumeration {
+      enum "vlan-based" {
+        value "1";
+        description
+          "VLAN based service.";
+      }
+      enum "vlan-bundle" {
+        value "2";
+        description
+          "VLAN bundle based service";
+      }
+      enum "port-based" {
+        value "3";
+        description
+          "Port based service.";
+      }
+    }
+    description
+      "Indicates the service type of the EVPN instance";
+  }
+
+  typedef fxc-service-type {
+    type enumeration {
+      enum "vlan-unaware" {
+        value "0";
+        description
+          "VLAN unaware service.";
+      }
+      enum "vlan-aware" {
+        value "1";
+        description
+          "VLAN aware service";
+      }
+      enum "vpws" {
+        value "2";
+        description
+          "EVPN Virtual Private Wire Service (VPWS)";
+      }
+      enum "vpls" {
+        value "3";
+        description
+          "EVPN Virtual Private LAN Service (VPLS)";
+      }
+    }
+    description
+      "Indicates the forwarder/service type of the EVPN";
+  }
+
+  typedef stats-collection-type {
+    type enumeration {
+      enum "enable" {
+        value "0";
+        description
+          "Enable statistics collection";
+      }
+      enum "disable" {
+        value "1";
+        description
+          "Disable statistics collection";
+      }
+    }
+  }
+
+  typedef ciena-route-distinguisher-type-0 {
+    type string {
+      pattern
+        '((6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|'
+        + '[0-5]?\d{0,3}\d):(429496729[0-5]|42949672[0-8]\d|'
+        + '4294967[01]\d{2}|429496[0-6]\d{3}|42949[0-5]\d{4}|'
+        + '4294[0-8]\d{5}|429[0-3]\d{6}|42[0-8]\d{7}|4[01]\d{8}|'
+        + '[0-3]?\d{0,8}\d))';
+    }
+    description
+      "A route distinguisher is an 8-octet value used to distinguish
+       routes from different BGP VPNs (RFC 4364). A route
+       distinguisher consists of three fields: A 2-octet type field,
+       an administrator field, and an assigned number field.
+       According to the data formats for type 0, 1, and 2 defined in
+       RFC4364, the encoding pattern is defined as:
+
+       0:2-octet-asn:4-octet-number
+
+       Valid example is: 0:100:100.";
+    reference "RFC4364: BGP/MPLS IP Virtual Private Networks (VPNs).";
+  }
+
+  typedef ciena-route-distinguisher-type-1 {
+    type string {
+      pattern
+        '(((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|'
+        +   '25[0-5])\.){3}([0-9]|[1-9][0-9]|'
+        +   '1[0-9]{2}|2[0-4][0-9]|25[0-5])):(6553[0-5]|'
+        +   '655[0-2][0-9]|'
+        +   '65[0-4][0-9]{2}|6[0-4][0-9]{3}|'
+        +   '[1-5][0-9]{4}|[1-9][0-9]{0,3}|0))';
+    }
+    description
+      "A route distinguisher is an 8-octet value used to distinguish
+       routes from different BGP VPNs (RFC 4364). A route
+       distinguisher consists of three fields: A 2-octet type field,
+       an administrator field, and an assigned number field.
+       According to the data formats for type 0, 1, and 2 defined in
+       RFC4364, the encoding pattern is defined as:
+
+       1:4-octet-ipv4addr:2-octet-number
+       2:4-octet-asn:2-octet-number.
+
+       Currently we only support type 1, valid example is: 1:1.1.1.1:100.
+       Invalid examples are: 0:100:100 and 2:1234567890:203.";
+    reference "RFC4364: BGP/MPLS IP Virtual Private Networks (VPNs).";
+  }
+
+  typedef ciena-route-distinguisher-type-2 {
+    type string {
+      pattern
+        '((429496729[0-5]|42949672[0-8]\d|4294967[01]\d{2}|'
+        + '429496[0-6]\d{3}|42949[0-5]\d{4}|4294[0-8]\d{5}|'
+        + '429[0-3]\d{6}|42[0-8]\d{7}|4[01]\d{8}|[0-3]?\d{0,8}\d):'
+        + '(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|'
+        + '[0-5]?\d{0,3}\d))';
+    }
+    description
+      "A route distinguisher is an 8-octet value used to distinguish
+       routes from different BGP VPNs (RFC 4364). A route
+       distinguisher consists of three fields: A 2-octet type field,
+       an administrator field, and an assigned number field.
+       According to the data formats for type 0, 1, and 2 defined in
+       RFC4364, the encoding pattern is defined as:
+
+       2:4-octet-asn:2-octet-number.
+
+       Valid example is: 2:1234567890:203.";
+    reference "RFC4364: BGP/MPLS IP Virtual Private Networks (VPNs).";
+  }
+
+  typedef ciena-ethernet-segment-identifier-type  {
+    type string {
+      pattern '(([0-9a-fA-F]{2}:){8}([0-9a-fA-F]{2}))';
+    }
+    description
+      "The 9-octet Ethernet Segment Identifier (ESI) Value,
+       ex: 5a:5a:5a:5a:5a:5a:5a:5a:5a
+       The header indicating the type will be appended
+       separately for the user.
+       ex: 03:5a:5a:5a:5a:5a:5a:5a:5a:5a";
+    reference "RFC7432: BGP MPLS-Based Ethernet VPN.";
+  }
+
+  typedef oper-status-type {
+    type enumeration {
+      enum "up" {
+        value "0";
+        description
+          "Instance is up.";
+      }
+      enum "down" {
+        value "1";
+        description
+          "Instance is down";
+      }
+    }
+    description
+      "Indicates the oper status of the instance";
+  }
+
+  typedef active-mode-type {
+    type enumeration {
+      enum "single-active-mode" {
+        value "0";
+        description
+          "Single-active mode allows only a single node attached 
+           to the particular Ethernet Segment to forward traffic
+           to and from that Ethernet Segment";
+      }
+      enum "all-active-mode" {
+        value "1";
+        description
+          "All-active mode allows all nodes attached to the
+           particular Ethernet Segment to forward traffic
+           to and from that Ethernet Segment";
+      }
+    }
+    description
+      "Indicates the active-mode-type of the Ethernet Segment";
+  }
+
+  typedef df-mode-type {
+    type enumeration {
+      enum "primary" {
+        value "1";
+        description
+          "Ethernet Segment acts as a Designated Forwarder.";
+      }
+      enum "backup" {
+        value "2";
+        description
+          "Ethernet Segment acts as a Backup Designated forwarder.";
+      }
+      enum "nondf" {
+        value "3";
+        description
+          "Ethernet Segment doesnt acts as either Designated Forwarder or Backup Designated Forwarder.";
+      }
+    }
+    description
+      "Indicates the df-mode-type of the Ethernet Segment";
+  }
+
+  typedef ethernet-segment-identifier-auto-derive-type {
+    type enumeration {
+      enum "true" {
+        value "1";
+      }
+    }
+  }
+
+  /* Groupings */
+  grouping vpn-route-targets {
+    description
+      "A grouping that specifies Route Target import-export rules
+       used in the BGP enabled Virtual Private Networks (VPNs).";
+    reference
+      "RFC4364: BGP/MPLS IP Virtual Private Networks (VPNs).
+       RFC4664: Framework for Layer 2 Virtual Private Networks (L2VPNs)";
+    list vpn-target {
+      key route-target;
+      description
+        "List of Route Targets.";
+      leaf route-target {
+        type rt-types:route-target;
+             must "starts-with(.,'0:') or starts-with(.,'1:') or starts-with(. ,'2:') and
+                   ((/bgp:bgp/instance/as<=65535 and /bgp:bgp/instance/extended-asn-cap='true') or (/bgp:bgp/instance/as>65535))" {
+                 error-message "Invalid input: Setting EVPN vpn-target type 2 requires either BGP 4 byte AS or BGP 2 byte AS and extended-asn-cap enabled.";
+             }
+        description
+          "Route Target value";
+      }
+      leaf route-target-type {
+        type rt-types:route-target-type;
+        mandatory true;
+        description
+          "Import/export type of the Route Target.";
+      }
+    }
+  }
+
+  grouping cross-connect-cfg {
+    description
+      "Grouping for cross connect configuration.";
+    leaf local-service-id {
+      mandatory true;
+      type uint32 {
+        range "1..16777216";
+      }
+      description
+        "Service ID of locally connected CE <1..16777216>";
+    }
+    leaf remote-service-id {
+      type uint32 {
+        range "1..16777216";
+      }
+      description
+        "Service ID of remote CE or host behind remote CE <1..16777216>";
+    }
+  }
+
+  /* EVPN YANG Model */
+  container evpn {
+    description
+      "Ethernet Virtual Private Network (EVPN)";
+    container global-route-distinguisher {
+      description
+        "Default Global Route Distinguisher";
+      leaf route-distinguisher {
+        type rt-types:route-distinguisher;
+        description
+          "Global Route Distinguisher used to distinguish routes from different VPNs";
+      }
+    }
+    container ethernet-segments {
+      description
+        "Top level Ethernet Segment (ES) container for Ethernet Segment configurations";
+      list ethernet-segment {
+        key "name";
+        description
+          "Top level ES configuration list";
+        leaf name {
+          type string;
+          description
+            "Name of the ES";
+        }
+        leaf logical-port {
+          mandatory true;
+          type mef-logical-port:logical-port-ref;
+          description
+            "Logical port of the ES";
+        }
+        leaf evlag {
+          type boolean;
+          default false;
+          description
+            "Enable/disable EvLag on the AGG port.
+             By default, the value is set to false/disable.";
+        }
+        container ethernet-segment-identifier {
+          description
+            "10-octet Ethernet Segment Identifier (ESI) used to identify an Ethernet Segment";
+          choice esi-type {
+            mandatory true;
+            description
+              "Mandatory choice between different types of ESIs";
+            case type-0 {
+              container arbitrary {
+                description
+                  "ESI that is managed and configured by user";
+                leaf arbitrary {
+                  type ciena-ethernet-segment-identifier-type;
+                  description
+                    "Arbitrary value (9-octet)";
+                }
+              }
+            }
+            case type-1 {
+              container lacp-based {
+                description
+                  "Auto-generated ESI value determined from LACP.
+                   MAC address (6 octets) + port key (2 octets) +
+                   0x00 (1 octet)";
+                leaf auto-derived {
+                  type ethernet-segment-identifier-auto-derive-type;
+                  description
+                    "Set to 'true' for auto-derived ESI.";
+                }
+              }
+            }
+            case type-2 {
+              container lan-based {
+                description
+                  "Auto-generated if CE-PE connected via bridged forwarding-domain.  
+                   Root bridge MAC (6 octets) + priority (2 octets) + 
+                   0x00 (1 octet)";
+                leaf auto-derived {
+                  type ethernet-segment-identifier-auto-derive-type;
+                  description
+                    "Set to 'true' for auto-derived ESI.";
+                }
+              }
+            }
+            case type-3 {
+              container mac-based {
+                description
+                  "MAC based ESI – can be auto-generated/configured.  
+                   System MAC (6 octets) + Local discriminator (3 octets)";
+                leaf auto-derived {
+                  type boolean;
+                  description
+                    "Set to 'true' for auto-derived ESI. 
+                     Set to 'false' for user configuration.";
+                }
+                leaf system-mac-address {
+                  mandatory true;
+                  type yang:mac-address;
+                  description
+                    "ESI System MAC (6 octets)";
+                }
+                leaf local-discriminator {
+                  mandatory true;
+                  type uint32;
+                  description
+                    "Local discriminator (3 octets)";
+                }
+              }
+            }
+            case type-4 {
+              container router-id-based {
+                description
+                  "Router-ID based ESI – can be auto-generated/configured.
+                   Router ID (4 octets) + Local discriminator (4 octets) + 0x00 (1 octet)";
+                leaf auto-derived {
+                  type boolean;
+                  description
+                    "Set to 'true' for auto-derived ESI. 
+                     Set to 'false' for user configuration.";
+                }
+                leaf router-id {
+                  type inet:ipv4-address;
+                  description
+                    "Router ID (4 octets)";
+                }
+                leaf local-discriminator {
+                  mandatory true;
+                  type uint32;
+                  description
+                    "Local discriminator (4 octets)";
+                }
+              }
+            }
+            case type-5 {
+              container as-based {
+                description
+                  "Autonomous System (AS) based – can be auto-generated/configured.
+                   AS number (4 octets) + local discriminator (4 octets) + 0x00 (1 octet)";
+                leaf auto-derived {
+                  type boolean;
+                  description
+                    "Set to 'true' for auto-derived ESI. 
+                     Set to 'false' for user configuration.";
+                }
+                leaf router-id {
+                  type inet:as-number;
+                  description
+                    "AS number (4 octets)";
+                }
+                leaf local-discriminator {
+                  mandatory true;
+                  type uint32;
+                  description
+                    "Local discriminator (4 octets)";
+                }
+              }
+            }
+          }
+        }
+        leaf active-mode {
+          type active-mode-type;
+          default "single-active-mode";
+          description
+            "Choice of active mode with a default single-active-mode.
+             By default, the mode is set to single-active-mode.";
+        }
+        container df-election {
+          description
+            "Designated Forwarder (DF) election";
+          leaf df-election-method {
+            type es:df-election-method-type;
+            default "default";
+            description
+              "The DF election method.
+               By default, the method is set to default.";
+          }
+          leaf preference {
+            type uint16;
+            default "32767";
+            description
+              "The DF preference value.
+               By default, the value is set to 32767.";
+          }
+          leaf revertive {
+            type boolean;
+            default true;
+            description
+              "The 'preempt' or 'revertive' behavior.
+               By default, the value is set to true.";
+          }
+          leaf election-wait-time {
+            type uint32 {
+              range "3..max";
+            }
+            default "3";
+            units seconds;
+            description
+              "Wait time in seconds for DF election <3..max>.
+               By default, the value is set to 3.";
+          }
+          leaf select-high-preference {
+            type boolean;
+            default true;
+            description
+              "Preference with higher value will be selected first.
+               By default, the value is set to true.";
+          }
+          leaf reversion-hold-time {
+            type uint32 {
+              range "3..max";
+            }
+            default "3";
+            units seconds;
+            description
+              "Duration in seconds before reversion <3..max>.
+               By default, the value is set to 3.";
+          }
+        }
+        container es-import {
+          leaf route-distinguisher {
+            type rt-types:route-distinguisher;
+            description
+              "Route Distinguisher (8-octet) value used to 
+               distinguish routes from different VPNs";
+          }
+          leaf route-target {
+            type rt-types:route-target;
+            description
+              "Route Target (8-octet) value used when importing
+               routes into forwarding tables";
+          }
+        }
+      }
+    }
+    container evpn-instances {
+      description
+        "Top level EVPN instance container for EVPN instance configurations";
+      list evpn-instance {
+        key "id";
+        description
+          "Top level EVPN instance configuration list";
+        leaf id {
+          type uint32 {
+            range "1..65536";
+          }
+          description
+            "ID of EVPN instance <1..65536>";
+        }
+        choice services {
+          mandatory true;
+          description
+            "Flexible Cross Connect (FXC), Virtual Private Wire Service (VPWS), Virtual Private LAN Service (VPLS) services";
+          case flexible-cross-connect-vlan-aware-fd {
+            list flexible-cross-connect-vlan-aware-fd {
+              key "forwarding-domain";
+              max-elements "1";
+              description
+                "Vlan-aware EVPN-FXC service";
+              leaf forwarding-domain {
+                type leafref {
+                  path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+                }
+                must "(/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode='fxc')" {
+                  error-message "Forwarding Domain mode must be set to fxc/resource is currently in use";
+                }
+                description
+                  "Name of the forwarding domain";
+              }
+              leaf control-word {
+                type boolean;
+                default "true";
+                description
+                  "The attribute enables or disables the control-word.
+                   By default, the value is true.";
+              }
+              leaf l2mtu {
+                type uint32 {
+                  range "64..65536";
+                }
+                default "1500";
+                description
+                  "This attribute sets the Layer 2 Maximum Transmission Unit(MTU) <64..65536>.
+                   By default, the value is set to 1500.";
+              }
+              leaf stats-collection {
+                type stats-collection-type;
+                default "disable";
+                description
+                  "Evpn Statistic Collection.
+                   By default, the value is set to disable.";
+              }
+            }
+          }
+          case point-to-point {
+            list vpws-cross-connect-fd {
+              key "forwarding-domain";
+              description
+                "EVPN-VPWS service";
+              leaf forwarding-domain {
+                type leafref {
+                  path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+                }
+                must "(/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode='evpn-vpws')" {
+                  error-message "Forwarding Domain mode must be set to evpn-vpws/resource is currently in use";
+                }
+                description
+                  "Name of the forwarding domain";
+              }
+              leaf control-word {
+                type boolean;
+                default "true";
+                description
+                  "The attribute enables or disables the control-word.
+                   By default, the value is true.";
+              }
+              leaf l2mtu {
+                type uint32 {
+                  range "64..65536";
+                }
+                default "1500";
+                description
+                  "This attribute sets the Layer 2 Maximum Transmission Unit(MTU) <64..65536>.
+                   By default, the value is set to 1500.";
+              }
+              leaf stats-collection {
+                type stats-collection-type;
+                default "disable";
+                description
+                  "Evpn Statistic Collection.
+                   By default, the value is set to disable.";
+              }
+              uses cross-connect-cfg;
+            }
+            list flexible-cross-connect-vlan-unaware-fd {
+              key "forwarding-domain";
+              description
+                "Vlan-unaware EVPN-FXC service";
+              leaf forwarding-domain {
+                type leafref {
+                  path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+                }
+                must "(/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode='fxc')" {
+                  error-message "Forwarding Domain mode must be set to fxc/resource is currently in use";
+                }
+                description
+                  "Name of the forwarding domain";
+              }
+              leaf control-word {
+                type boolean;
+                default "true";
+                description
+                  "The attribute enables or disables the control-word.
+                   By default, the value is true.";
+              }
+              leaf l2mtu {
+                type uint32 {
+                  range "64..65536";
+                }
+                default "1500";
+                description
+                  "This attribute sets the Layer 2 Maximum Transmission Unit(MTU) <64..65536>.
+                   By default, the value is set to 1500.";
+              }
+              uses cnevpn:cross-connect-cfg;
+            }
+          }
+          case vpls-fd {
+            list vpls-fd {
+              key "forwarding-domain";
+              description
+                "EVPN-VPLS service";
+              leaf forwarding-domain {
+                type leafref {
+                  path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+                }
+                must "(/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode='evpn-vpls')" {
+                  error-message "Forwarding Domain mode must be set to vpls/resource is currently in use";
+                }
+                description
+                  "Name of the forwarding domain";
+              }
+            }
+          }
+        }
+        container route-distinguisher {
+          description
+            "A route distinguisher is an 8-octet value used to distinguish
+             routes from different BGP VPNs (RFC 4364). A route
+             distinguisher consists of three fields: A 2-octet type field,
+             an administrator field, and an assigned number field.
+             According to the data formats for type 0, 1, and 2 defined in
+             RFC4364, the encoding pattern is defined as:
+
+             0:2-octet-asn:4-octet-number
+             1:4-octet-ipv4addr:2-octet-number
+             2:4-octet-asn:2-octet-number.
+             2-octet-other-hex-number:6-octet-hex-number
+
+             Some valid examples are: 100:100, 1.1.1.1:100, and 1234567890:203";
+          choice rd-type {
+            description
+              "Choice between different types of Route Distinguishers";
+            case type-0 {
+              container asn-2-octet-based {
+                leaf value {
+                  type ciena-route-distinguisher-type-0;
+                  description
+                    "2-octet-asn:4-octet-number Route Distinguisher.
+                     ex: 100:100";
+                }
+              }
+            }
+            case type-1 {
+              container ip-based {
+                leaf value {
+                  type ciena-route-distinguisher-type-1;
+                  description
+                    "4-octet-ipv4addr:2-octet-number Route Distinguisher.
+                     ex: 1.1.1.1:100";
+                }
+              }
+            }
+            case type-2 {
+              container asn-4-octet-based {
+                leaf value {
+                  type ciena-route-distinguisher-type-2;
+                  description
+                    "4-octet-asn:2-octet-number Route Distinguisher.
+                     ex: 1234567890:203";
+                }
+              }
+            }
+          }
+        }
+        uses vpn-route-targets;
+        container sr-policy {
+          leaf color {
+            type uint32;
+            description
+              "Color associated with the SR policy";
+          }
+
+          leaf fallback {
+            type enumeration {
+              enum enable {
+                description
+                  "Specifies fallback as enable";
+              }
+              enum disable {
+                description
+                  "Specifies fallback as disable";
+              }
+            }
+            default "enable";
+            description
+              "Fallback enable is used when the SR policy is down.
+               The service will still continue to be UP, but
+               will fall back to labeled IGP shortest path.
+               By default, the value is set to enable.";
+          }
+        }
+      }
+    }
+  }
+
+  /* Oper Data */
+  container evpn-ethernet-segment-state {
+    config "false";
+    container ethernet-segments {
+      description
+        "Top level Ethernet Segment (ES) state container for ES state related information";
+      list ethernet-segment {
+        key "name";
+        description
+          "Top level ES state list";
+        leaf name {
+          type leafref {
+            path "/evpn/ethernet-segments/ethernet-segment/name";
+          }
+          description
+            "Name of the ES";
+        }
+        leaf logical-port {
+          type mef-logical-port:logical-port-ref;
+          description
+            "Logical port of the ES";
+        }
+        leaf ethernet-segment-identifier {
+          type string;
+          description
+            "10-octet Ethernet Segment Identifier (ESI) value used to identify an Ethernet Segment";
+        }
+        leaf ethernet-segment-identifier-label {
+          type uint32;
+          description
+            "ESI label used to represent an ES by the advertising node";
+        }
+        leaf multi-homing {
+          type boolean;
+          description
+            "Multi-homing status: enabled/disabled";
+        }
+        leaf active-mode {
+          type active-mode-type;
+          description
+            "Single-Active or All-Active mode";
+        }
+        leaf interface-status {
+          type oper-status-type;
+          description
+            "Interface status: Up or Down";
+        }
+        leaf evlag {
+          type boolean;
+          description
+            "Evlag status: enabled/disabled";
+        }
+        leaf election-wait-time {
+          type uint32;
+          units seconds;
+          description
+            "Wait time in seconds for DF election";
+        }
+        leaf reversion-hold-time {
+          type uint32;
+          units seconds;
+          description
+            "Duration in seconds before reversion";
+        }
+        leaf local-df-election-method {
+          type string;
+          description
+            "The locally configured DF election method - 
+             default, highest random weight, or preference-based";
+        }
+        leaf local-df-election-method-in-use {
+          type string;
+          description
+            "The locally in-use dynamic DF election method - 
+             default, highest random weight, or preference-based";
+        }
+        leaf local-preference {
+          type uint16;
+          description
+            "The locally configured DF preference";
+        }
+        leaf local-preference-in-use {
+          type uint16;
+          description
+            "The locally in-use dynamic DF preference";
+        }
+        leaf local-revertive {
+          type boolean;
+          description
+            "The locally configured 'preempt' or 'revertive' behavior";
+        }
+        leaf local-revertive-in-use {
+          type boolean;
+          description
+            "The locally in-use dynamic 'preempt' or 'revertive' behavior";
+        }
+        container es-import {
+          leaf route-distinguisher {
+            type string;
+            description
+              "Imported Route Distinguisher value used to 
+               distinguish routes from different VPNs";
+          }
+          leaf route-target {
+            type rt-types:route-target;
+            description
+              "Imported Route Target (8-octet) value used when importing
+               routes into forwarding tables";
+          }
+        }
+        list df {
+          key "peer-ip";
+          description
+            "DF of an EVPN instance's VLAN";
+          leaf peer-ip {
+            type inet:ip-address;
+            description
+              "The peer's IP-address";
+          }
+          leaf peer-df-election-method {
+            type string;
+            description
+              "The peer's DF election method - default, highest 
+               random weight, or preference-based";
+          }
+          leaf peer-preference {
+            type uint16;
+            description
+              "The peer's DF preference";
+          }
+          leaf peer-revertive {
+            type boolean;
+            description
+              "The 'preempt' or 'revertive' behavior of the peer";
+          }
+        }
+        list mapped-evi {
+          key "evi-id";
+          description
+            "Mapped EVPN Instance to ES";
+          leaf evi-id {
+            type uint32;
+            description
+              "EVPN Instance ID of the attached EVPN instance";
+          }
+          leaf designated-forwarder {
+            type string;
+            description
+              "DF of the attached EVPN instance";
+          }
+          leaf local-switching-label {
+            type uint32;
+            description
+              "Local switching label of the attached EVPN instance";
+          }
+          leaf service-type {
+            type fxc-service-type;
+            description
+              "Service type of the attached EVPN instance";
+          }
+        }
+      }
+    }
+  }
+  container evpn-state {
+    config "false";
+    container evpn-instances {
+      description
+        "Top level EVPN instance container for EVPN state related information";
+      list evpn-instance {
+        key "id";
+        description
+          "Top level EVPN instance state list";
+        leaf id {
+          type uint32;
+          description
+            "ID of EVPN instance <1..65536>";
+        }
+        leaf route-distinguisher {
+          type string;
+          description
+            "Route Distinguisher (8-octet) value used to 
+             distinguish routes from different VPNs";
+        }
+        list vpn-target {
+          key "route-target";
+          description
+            "List of Route Targets";
+          leaf route-target {
+            type rt-types:route-target;
+            description
+              "Route Target (8-octet) value used when importing
+               routes into forwarding tables";
+          }
+          leaf route-target-type {
+            type rt-types:route-target-type;
+            description
+              "Import/export type of the route target.";
+          }
+        }
+
+        list cross-connect {
+          key "forwarding-domain";
+          description
+            "Flexible Cross Connect (FXC) State";
+          leaf forwarding-domain {
+            type leafref {
+              path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+            }
+            description
+              "Name of the forwarding domain";
+          }
+          leaf service-type {
+            type fxc-service-type;
+            description
+              "Service type of EVPN instance";
+          }
+          leaf oper-status {
+            type oper-status-type;
+            description
+              "Up or Down status for EVPN Instance";
+          }
+          list forwarding-database {
+            key "prefix next-hop-address ethernet-segment-identifier";
+            description
+              "Forwarding Database for EVPN";
+            leaf prefix {
+              type string;
+              description
+                "Ethernet Tag ID";
+            }
+            leaf next-hop-address {
+              type inet:ip-address;
+              description
+                "Next hop IP address";
+            }
+            leaf ethernet-segment-identifier {
+              type string;
+              description
+                "10-octet Ethernet Segment Identifier (ESI) used to identify an Ethernet Segment";
+            }
+            leaf out-label {
+              type uint32;
+              description
+                "Out label";
+            }
+            leaf control-word {
+              type boolean;
+              default "true";
+              description
+                "The state of the control-word.
+                 By default, the value is true.";
+            }
+            leaf l2mtu {
+              type uint32 {
+                range "64..65536";
+              }
+              default "1500";
+              description
+                "The state of the Layer 2 Maximum Transmission Unit (MTU) <64..65536>.
+                 By default, the value is set to 1500.";
+            }
+            leaf flags {
+              type string;
+              description
+                "(L) or (R)  -- local or remote VID
+                 (P) or (B) or empty -- Primary, Backup or none
+                 (C) - Control Word - set or none
+                 (M)  -- Learnt from Multi-home peer or not";
+            }
+            leaf interface {
+              type mef-logical-port:logical-port-ref;
+              description
+                "Logical port interface";
+            }
+            leaf route-distinguisher {
+              type string;
+              description
+                "Route Distinguisher (8-octet) value used to 
+                 distinguish routes from different VPNs";
+            }
+          }
+          container ilm-database {
+            description
+              "Incoming Label Map (ILM)";
+            leaf service-label {
+              type uint32;
+              description
+                "Service label";
+            }
+            list esi-label {
+              key "label";
+              description
+                "List of ESI labels";
+              leaf label {
+                type uint32;
+                description
+                  "ESI label";
+              }
+            }
+            list local-switching-label {
+              key "label";
+              description
+                "List of local-switching labels";
+              leaf label {
+                type uint32;
+                description
+                  "Local switching label";
+              }
+              leaf ethernet-segment-identifier {
+                type string;
+                description
+                  "10-octet Ethernet Segment Identifier (ESI) used to identify an Ethernet Segment";
+              }
+              leaf logical-port {
+                type mef-logical-port:logical-port-ref;
+                description
+                  "Logical port of the ES";
+              }
+            }
+            leaf mac-label {
+              type uint32;
+              description
+                "In label";
+            }
+            leaf out-interface {
+              type string;
+              description
+                "Out interface";
+            }
+          }
+          list service-tunnel {
+            key "index";
+            description
+              "List of service tunnels";
+            leaf index {
+              type uint32;
+              description
+                "Service tunnel index";
+            }
+            leaf next-hop-address {
+              type inet:ip-address;
+              description
+                "Next hop IP address";
+            }
+            leaf out-label {
+              type uint32;
+              description
+                "Service tunnel out-label";
+            }
+            leaf transport-lsp {
+              type string;
+              description
+                "Underlaying transport label switching path";
+            }
+            leaf transport-lsp-index {
+              type uint32;
+              description
+                "Underlaying transport label switching path index";
+            }
+            leaf oper-status {
+              type oper-status-type;
+              description
+                "Up or Down status for service tunnel";
+            }
+          }
+          uses cross-connect-cfg;
+        }
+        container sr-policy {
+          leaf color {
+            type uint32;
+            description
+              "Color associated with the SR policy";
+          }
+
+          leaf fallback {
+            type enumeration {
+              enum enable {
+                description
+                  "Specifies fallback as enable";
+              }
+              enum disable {
+                description
+                  "Specifies fallback as disable";
+              }
+            }
+            default "enable";
+            description
+              "Fallback enable is used when the SR policy is down.
+               The service will still continue to be UP, but
+               will fall back to labeled IGP shortest path.
+               By default, the value is set to enable.";
+          }
+        }
+      }
+    }
+  }
+  notification evpn-evlag-protection-status{
+    list ethernet-segment {
+      key "name";
+      description
+        "Top level EVLAG  notification list";
+      leaf name {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:name";
+        }
+        description
+          "Name of the Ethernet Segment";
+      }
+      leaf evpn-instance-id {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:evpn-instances/cnevpn:evpn-instance/cnevpn:id";
+        }
+        description
+          "EVPN instance ID";
+      }
+      leaf logical-port {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:logical-port";
+        }
+        description
+          "Logical port of the Ethernet Segment";
+      }
+      leaf ethernet-segment-identifier {
+        type string;
+        description
+          "10-octet Ethernet Segment Identifier (ESI) used to identify an Ethernet Segment";
+      }
+      leaf active-mode {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:active-mode";
+        }
+        description
+          "Single active or all active mode";
+      }
+      leaf evlag {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:evlag";
+        }
+        description
+          "Enable/disable EVLAG on the AGG port.";
+      }
+      leaf new-protection-status {
+        type df-mode-type;
+        description
+          "If true it is Designated forwarder or primary; otherwise, it is non DF or backup";
+      }
+     leaf old-protection-status {
+        type df-mode-type;
+        description
+          "If true it is Designated forwarder or primary; otherwise, it is non DF or backup";
+      }
+      leaf reason {
+        type cn-l3-types:evpn-evlag-reason-type;
+        description
+          "Notification event reason.";
+      }
+    }
+  }
+  notification ethernet-segment-fault-status {
+    list ethernet-segment {
+      key "name";
+      description
+        "Top level ES configuration list";
+      leaf name {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:name";
+        }
+        description
+          "Name of the Ethernet Segment";
+      }
+      leaf logical-port{
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:logical-port";
+        }
+        description
+          "Logical port of the Ethernet Segment";
+      }
+      leaf ethernet-segment-identifier {
+        type string;
+        description
+          "10-octet Ethernet Segment Identifier (ESI) used to identify an Ethernet Segment";
+      }
+      leaf active-mode {
+        type leafref {
+          path "/cnevpn:evpn/cnevpn:ethernet-segments/cnevpn:ethernet-segment/cnevpn:active-mode";
+        }
+        description
+          "Single-Active or All-Active mode";
+      }
+      leaf new-fault-status {
+        type oper-status-type;
+        description
+          "Ethernet Segment status: Up or Down";
+      }
+      leaf old-fault-status {
+        type oper-status-type;
+        description
+          "Ethernet Segment status: Up or Down";
+      }
+      leaf reason {
+        type cn-l3-types:ethernet-segment-fault-reason-type;
+        description
+          "Notification event reason.";
+      }
+    }
+  }
+}

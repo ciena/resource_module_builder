@@ -1,0 +1,2309 @@
+module ciena-sync-ptp {
+  namespace "http://www.ciena.com/ns/yang/ciena-sync-ptp";
+  prefix "ptp";
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-sync { 
+    prefix sync; 
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data model for the management of clock
+     synchronization in packet networks specific to Precision Time Protocol 
+     (PTP) timing references.
+
+     Copyright (c) 2018-2022 Ciena Corporation. All rights reserved.
+
+     All information contained herein is, and remains the property of Ciena
+     Corporation. Dissemination of this information or reproduction of this
+     material is strictly forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+  revision "2023-04-20" {
+    description
+      "Added RX drop counter field for follow up messages.
+      Added RX drop counter field for delay response messages.";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.1: Precision time protocol telecom profile for phase/time
+                       synchronization with full timing support from the
+                       network.";
+  }
+
+  revision "2022-07-06" {
+    description
+      "Added support to configure sync-rx-loss-num and delay-response-rx-loss-num support
+      PFSF for G.8275.2 T-BC.
+      Added support to show ptsf-losssync, ptsf-unusable and ptsf-syncUncertainas part of
+      ptp input ref output.
+      Added Assisted backup PTP Input reference for frequency protection group. Added 
+      forward path delay, reverse path delay and time of day in current ds. Added Assisted 
+      PTP backup ready for phase protection group.
+      Added telemetry and syslog support for 8275.2 APTS feature.
+      Added new parameter cos for 8275.2 profile";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.2: Precision time protocol telecom profile for time/phase
+                       synchronization with partial timing support from the 
+                       network";
+  }
+
+  revision "2022-05-09" {
+    description
+      "Added support for PTP profile configuration.
+      Added Support for adding PTP Ref in Frequency protection group for G.8275.2 profile
+      Added support to display PTP Ref in FPG. Added client global statistics for 8275.2 
+      PTP profile.
+      Added phase-holdover-duration to replace unused attribute  phase-holdover-time.
+      Added signalling statistics in existing input reference stats and new parameter 
+      grant-duration for 8275.2 profile.
+      Added telemetry and syslog support for 8275.2 TBC.
+      Added defaults for ptp-profile";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.2: Precision time protocol telecom profile for time/phase
+                       synchronization with partial timing support from the 
+                       network";
+  }
+
+  revision "2021-09-28" {
+    description
+      "Added new profile 8275.2 and static client parameters(signalling,
+      max-grant-rate and static-client-list), added new parameters ttl and dscp
+      for 8275.2 profile. Added new ptp client list and related parameters for 
+      8275.2 ptp profile. Added config change for static client list to accept 
+      ipv6 also. Removed default values for max-grant-rate and 
+      max-global-session. Modified some counters/statistics related to ptp client.
+      Added client addition/deletion/denied notification";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.2: Precision time protocol telecom profile for time/phase
+                       synchronization with partial timing support from the 
+                       network";
+  }
+
+  revision "2021-09-20" {
+    description
+    "Added new input ref paramters(signalling, master-ip-address) 
+     to support G.8275.2 T-BC case.";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.2: Precision time protocol telecom profile for time/phase
+                       synchronization with partial timing support from the  
+                       network";
+  }
+
+  revision "2020-12-14" {
+    description
+      "Add new AFTS related fields (backup ptp input reference and phase offset)
+      in phase protection group in sync-state.";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.1: Precision time protocol telecom profile for phase/time
+                       synchronization with full timing support from the
+                       network.";
+  }
+
+  revision "2020-03-19" {
+    description
+      "Add new clock type (GM), add config for setting multicast address,
+       add phase-holdover time and add current UTC offset.";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.1: Precision time protocol telecom profile for phase/time
+                       synchronization with full timing support from the
+                       network.";
+  }
+
+  revision "2018-06-01" {
+    description
+      "Initial version.";
+    reference
+      "IEEE 1588-2008: IEEE Standard for a Precision Clock Synchronization
+                       Protocol for Networked Measurement and Control Systems.
+       ITU-T G.8275.1: Precision time protocol telecom profile for phase/time
+                       synchronization with full timing support from the
+                       network.";
+  }
+
+  /*
+   * Identities
+   */
+
+  identity announce-rx-timeout {
+    base sync:sync-reference-oper-state-identity;
+    description
+      "PTP input reference encountered an Announce message RX timeout.";
+  }
+
+  /*
+   * Typedefs
+   */
+
+  typedef interface-type {
+    type oc-if:base-interface-ref;
+    description
+      "PTP timing interface type.";
+  }
+
+  typedef input-reference-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:input-references" +
+           "/ptp:ptp-input-reference" +
+           "/ptp:name";
+    }
+    description
+      "PTP input reference leafref type.";
+  }
+
+  typedef output-reference-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:output-references" +
+           "/ptp:ptp-output-reference" +
+           "/ptp:name";
+    }
+    description
+      "PTP output reference leafref type.";
+  }
+
+  typedef input-reference-interface-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:input-references" +
+           "/ptp:ptp-input-reference" +
+           "/ptp:interface";
+    }
+    description
+      "PTP input reference interface leafref type.";
+  }
+
+  typedef output-reference-interface-leafref-type {
+    type leafref {
+      path "/sync:sync" +
+           "/sync:output-references" +
+           "/ptp:ptp-output-reference" +
+           "/ptp:interface";
+    }
+    description
+      "PTP output reference interface leafref type.";
+  }
+
+  typedef input-reference-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:input-references" +
+           "/ptp:ptp-input-reference" +
+           "/ptp:oper-state";
+    }
+    description
+      "PTP input reference operational state leafref type.";
+  }
+
+  typedef output-reference-oper-state-leafref-type {
+    type leafref {
+      path "/sync:sync-state" +
+           "/sync:output-references" +
+           "/ptp:ptp-output-reference" +
+           "/ptp:oper-state";
+    }
+    description
+      "PTP output reference operational state leafref type.";
+  }
+  typedef profile-leafref-type {
+    type leafref {
+         path "/sync:sync/ptp-profiles/ptp-profile/name";
+       }
+       description
+         "Profile associated with the reference";
+  }
+  typedef packet-rate-type {
+    type enumeration {
+      enum 128 {
+        description
+          "128 packets per second.";
+      }
+      enum 64 {
+        description
+          "64 packets per second.";
+      }
+      enum 32 {
+        description
+          "32 packets per second.";
+      }
+      enum 16 {
+        description
+          "16 packets per second.";
+      }
+      enum 8 {
+        description
+          "8 packets per second.";
+      }
+      enum 4 {
+        description
+          "4 packets per second.";
+      }
+      enum 2 {
+        description
+          "2 packets per second.";
+      }
+      enum 1 {
+        description
+          "1 packet per second.";
+      }
+      enum 1-2nd {
+        description
+          "1 packet every 2 seconds.";
+      }
+      enum 1-4th {
+        description
+          "1 packet every 4 seconds.";
+      }
+      enum 1-8th {
+        description
+          "1 packet every 8 seconds.";
+      }
+      enum 1-16th {
+        description
+          "1 packet every 16 seconds.";
+      }
+    }
+    description
+      "PTP packet rate type.";
+  }
+
+  typedef delay-mechanism-type {
+    type enumeration {
+      enum e2e {
+        value 1;
+        description
+          "The port uses the delay request-response mechanism.";
+      }
+      enum p2p {
+        value 2;
+        description
+          "The port uses the peer delay mechanism.";
+      }
+      enum disabled {
+        value 254;
+        description
+          "The port does not implement any delay mechanism.";
+      }
+    }
+    description
+      "The propagation delay measuring option used by the
+       port. Values for this enumeration are specified
+       by the IEEE 1588 standard exclusively.";
+    reference
+      "IEEE Std 1588-2008: 8.2.5.4.4";
+  }
+
+  typedef port-state-type {
+    type enumeration {
+      enum initializing {
+        value 1;
+        description
+          "The port is initializing its data sets, hardware, and
+           communication facilities.";
+      }
+      enum faulty {
+        value 2;
+        description
+          "The port is in the fault state.";
+      }
+      enum disabled {
+        value 3;
+        description
+          "The port is disabled, and is not communicating PTP
+           messages (other than possibly PTP management
+           messages).";
+      }
+      enum listening {
+        value 4;
+        description
+          "The port is listening for an Announce message.";
+      }
+      enum pre-master {
+        value 5;
+        description
+          "The port is in the pre-master state.";
+      }
+      enum master {
+        value 6;
+        description
+          "The port is behaving as a master port.";
+      }
+      enum passive {
+        value 7;
+        description
+          "The port is in the passive state.";
+      }
+      enum uncalibrated {
+        value 8;
+        description
+          "A master port has been selected, but the port is still
+           in the uncalibrated state.";
+      }
+      enum slave {
+        value 9;
+        description
+          "The port is synchronizing to the selected master port.";
+      }
+    }
+
+    description
+      "The current state of the protocol engine associated
+       with the port.  Values for this enumeration are specified
+       by the IEEE 1588 standard exclusively.";
+    reference
+      "IEEE Std 1588-2008: 8.2.5.3.1, 9.2.5";
+  }
+
+  typedef time-interval-type {
+    type int64;
+    description
+      "Derived data type for time interval, represented in units of
+       nanoseconds and multiplied by 2^16";
+    reference
+      "IEEE Std 1588-2008: 5.3.2";
+  }
+
+  typedef clock-identity-type {
+    type string {
+      pattern '[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){7}';
+    }
+    description
+      "Derived data type to identify a clock";
+    reference
+      "IEEE Std 1588-2008: 5.3.4";
+  }
+
+  typedef clock-type {
+    type enumeration {
+      enum bc {
+        description
+          "Boundary Clock (BC). A clock that has multiple PTP ports in a
+           domain and maintains the timescale used in the domain. It may
+           serve as the source of time, i.e., be a master clock, and may
+           synchronize to another clock, i.e., be a slave clock.";
+      }
+      enum oc-slave {
+        description
+          "Ordinary-Clock (OC) Slave. A clock that has a single PTP port in
+           a domain, maintains the timescale used in the domain and 
+           synchronizes to another clock, i.e., be a slave clock.";
+      }
+      enum gm {
+        description
+          "Grandmaster (GM). A clock that has multiple PTP ports in
+           a domain, maintains the timescale used in the domain and
+           cannot be slaved to another PTP clock.";
+      }
+    }
+    description
+      "PTP clock type.";
+  }
+
+  typedef telecom-profile-type {
+    type enumeration {
+      enum g.8275.1 {
+        description
+          "PTP G.8275.1 telecom profile.";
+      }
+      enum g.8275.2 {
+        description
+          "PTP G.8275.2 telecom profile.";
+      }
+    }
+    description
+      "PTP telecom profile type.";
+  }
+
+  typedef protocol-version-type {
+    type enumeration {
+      enum 2 {
+        description
+          "IEEE Std 1588-2008 protocol version.";
+      }
+    }
+    description
+      "PTP protocol-version type.";
+  }
+
+  typedef timestamp-mode-type {
+    type enumeration {
+      enum one-step {
+        description
+          "One-step";
+      }
+      enum two-step {
+        description
+          "Two-step";
+      }
+    }
+    description
+      "PTP timestamp-mode type.";
+  }
+
+  typedef multicast-address-type {
+    type enumeration {
+      enum forwardable {
+        description
+          "Forwardable multicast address: 01-1B-19-00-00-00";
+      }
+      enum non-fowardable {
+        description
+          "Non-forwardable multicast address: 01-80-C2-00-00-0E";
+      }
+    }
+    description
+      "Multicast MAC address to use when transmitting PTP PDUs";
+  }
+
+  typedef phase-holdover-time-type {
+    type enumeration {
+      enum 0 {
+        description
+          "0 hours, i.e. immediate, no delay.";
+      }
+      enum 1h {
+        description
+          "1 hour";
+      }
+      enum 6h {
+        description
+          "6 hours";
+      }
+      enum 12h {
+        description
+          "12 hours";
+      }
+      enum 24h {
+        description
+          "24 hours";
+      }
+      enum indefinite {
+        description
+          "Indefinite";
+      }
+    }
+    description
+      "The duration to propagate a clockClass when the phase
+       clock goes into holdover and while in performance
+       specification before propagating a clockClass
+       representing an out-of-specification condition.";
+  }
+  
+  typedef signalling {
+    type enumeration {
+      enum off {
+        value 0;
+        description 
+          "Only static clients are supported";
+      }    
+      enum on {
+        value 1;
+        description 
+          "Both static and signalled clients are supported";
+      }
+    }
+    description 
+      "Controls if output ref supports unicast signalling or not";
+  }
+
+   typedef client-type {
+     type enumeration {
+      enum dynamic {
+         value 0;
+         description
+          "Client learnt through unicast signalling";
+       }
+      enum static {
+         value 1;
+         description
+          "Client added by user without unicast signalling";
+       }
+     }
+     description
+      "Indicates client is static or dynamic.";
+   }
+
+   typedef client-event-type {
+     type enumeration {
+      enum add {
+         value 0;
+         description
+          "Client added to client list.";
+       }
+      enum delete {
+         value 1;
+         description
+          "Client deleted from client list.";
+       }
+      enum deny {
+         value 2;
+         description
+          "Grant denied to client. No change in client list.";
+       }
+     }
+     description
+      "Type of client event";
+   }
+
+   typedef signalling-event-type {
+     type enumeration {
+      enum established {
+         value 1;
+         description
+          "Unicast session between PTP grant-port and request-port established successfully.";
+       }
+      enum terminated {
+         value 2;
+         description
+          "Unicast session between PTP grant-port and request-port terminated.";
+       }
+      enum denied {
+         value 3;
+         description
+          "PTP grant port denied requested unicast session by request-port.";
+       }
+     }
+     description
+      "Type of unicast session event between PTP grant-port and request-port";
+   }
+
+   typedef client-event-reason {
+     type enumeration {
+      enum max-global-session-reached {
+         value 2;
+         description
+          "Defined maximum global session count already reached.";
+       }
+      enum invalid-grant-rate-requested {
+         value 3;
+         description
+          "Requested grant rate is out of defined range.";
+       }
+      enum exceeds-allowed-max-grant-rate {
+         value 4;
+         description
+          "Requested grant rate is exceeding the configured maximum grant rate.";
+       }
+      enum static-client-entry-exist {
+         value 5;
+         description
+          "Static client with same client IP already exists";
+       }
+     }
+     description
+      "Indicates reasons of client events occurred";
+   }
+
+   typedef assisted-ptp-backup-status-type {
+     type enumeration {
+      enum ready {
+         value 0;
+         description
+          "The servo is locked and assisted ptp backup is ready to takeover in case of loss of local time reference.";
+       }
+      enum not-ready {
+         value 1;
+         description
+          "The servo is not locked and assisted ptp backup is not ready to takeover in case of loss of local time reference.";
+       }
+     }
+     description
+      "The status of assisted backup ptp input reference";
+   }
+   
+  /*
+   * Groupings
+   */
+
+  grouping ptp-default-ds-grouping {
+    description
+      "Grouping for defaultDS data set";
+    container default-ds {
+      description
+        "The default data set of the clock (see IEEE Std
+         1588-2008 subclause 8.2.1).";
+      leaf two-step-flag {
+        type boolean;
+        description
+          "When set, the clock is a two-step clock; otherwise,
+           the clock is a one-step clock.";
+      }
+      leaf clock-identity {
+        type ptp:clock-identity-type;
+        description
+          "The clockIdentity of the local clock";
+      }
+      leaf number-ports {
+        type uint16;
+        description
+          "The number of PTP ports on the instance.";
+      }
+      leaf clock-quality-clock-class {
+        type uint8;
+        default 248;
+        description
+          "The clockClass denotes the traceability of the time
+           or frequency distributed by the clock.";
+      }
+      leaf clock-quality-clock-accuracy {
+        type uint8;
+        description
+          "The clockAccuracy indicates the expected accuracy
+           of the clock.";
+      }
+      leaf clock-quality-offset-scaled-log-variance {
+        type uint16;
+        description
+          "The offsetScaledLogVariance provides an estimate of
+           the variations of the clock from a linear timescale
+           when it is not synchronized to another clock
+           using the protocol.";
+      }
+      leaf priority1 {
+        type uint8;
+        description
+          "The priority1 attribute of the local clock.";
+      }
+      leaf priority2{
+        type uint8;
+        description
+          "The priority2 attribute of the local clock. ";
+      }
+      leaf domain-number {
+        type uint8;
+        description
+          "The domain number of the current syntonization
+           domain.";
+      }
+      leaf slave-only {
+        type boolean;
+        description
+          "When set, the clock is a slave-only clock.";
+      }
+    }      
+  }
+
+  grouping ptp-current-ds-grouping {
+    description
+      "Grouping for currentDS data set";
+    container current-ds {
+      description
+        "The current data set of the clock (see IEEE Std
+         1588-2008 subclause 8.2.2).";
+      leaf steps-removed {
+        type uint16;
+        default 0;
+        description
+          "The number of communication paths traversed
+           between the local clock and the grandmaster clock.";
+      }
+      leaf offset-from-master {
+        type ptp:time-interval-type;
+        description
+          "The current value of the time difference between
+           a server and a client clock as computed by the client.";
+      }
+      leaf mean-path-delay {
+        type ptp:time-interval-type;
+        description
+          "The current value of the mean propagation time between
+           a server and a client clock as computed by the client.";
+      }
+      leaf forward-path-delay {
+        type ptp:time-interval-type;
+        description
+          "The current value of the forward propagation time between
+           a server and a client clock as computed by the client.";
+      }
+      leaf reverse-path-delay {
+        type ptp:time-interval-type;
+        description
+          "The current value of the reverse propagation time between
+           a server and a client clock as computed by the client.";
+      }
+      leaf time-of-day {
+        type yang:date-and-time;
+        description
+            "Current time of day as per PTP clock.";
+      }
+    }
+  }
+
+  grouping ptp-parent-ds-grouping {
+    description
+      "Grouping for parentDS data set";
+    container parent-ds {
+      description
+        "The parent data set of the clock (see IEEE Std 1588-2008
+         subclause 8.2.3).";
+      leaf parent-port-identity-clock-identity {
+        type ptp:clock-identity-type;
+        description
+          "Identity of the clock";
+      }
+      leaf parent-port-identity-port-number {
+        type uint16;
+        description
+          "Port number";
+      }
+      leaf parent-stats {
+        type boolean;
+        default false;
+        description
+          "When set, the values of
+           observedParentOffsetScaledLogVariance and
+           observedParentClockPhaseChangeRate of parentDS
+           have been measured and are valid.";
+      }
+      leaf observed-parent-offset-scaled-log-variance {
+        type uint16;
+        default 65535;
+        description
+          "An estimate of the parent clock's PTP variance
+           as observed by the slave clock.";
+      }
+      leaf observed-parent-clock-phase-change-rate {
+        type int32;
+        description
+          "An estimate of the parent clock's phase change rate
+           as observed by the slave clock.";
+      }
+      leaf grandmaster-identity {
+        type ptp:clock-identity-type;
+        description
+          "The clockIdentity attribute of the grandmaster clock.";
+      }
+      leaf grandmaster-clock-quality-clock-class {
+        type uint8;
+        default 248;
+        description
+          "The clockClass denotes the traceability of the time
+           or frequency distributed by the clock.";
+      }
+      leaf grandmaster-clock-quality-clock-accuracy {
+        type uint8;
+        description
+          "The clockAccuracy indicates the expected accuracy
+           of the clock.";
+      }
+      leaf grandmaster-clock-quality-offset-scaled-log-variance {
+        type uint16;
+        description
+          "The offsetScaledLogVariance provides an estimate of
+           the variations of the clock from a linear timescale
+           when it is not synchronized to another clock
+           using the protocol.";
+      }
+      leaf grandmaster-priority1 {
+        type uint8;
+        description
+          "The priority1 attribute of the grandmaster clock.";
+      }
+      leaf grandmaster-priority2 {
+        type uint8;
+        description
+          "The priority2 attribute of the grandmaster clock.";
+      }
+    }
+  }
+
+  grouping ptp-time-properties-ds-grouping {
+    description
+      "Grouping for timePropertiesDS data set";
+    container time-properties-ds {
+      description
+        "The timeProperties data set of the clock (see
+         IEEE Std 1588-2008 subclause 8.2.4).";
+      leaf current-utc-offset-valid {
+        type boolean;
+        description
+          "When set, the current UTC offset is valid.";
+      }
+      leaf current-utc-offset {
+        type int16;
+        description
+          "The offset between TAI and UTC when the epoch of the
+           PTP system is the PTP epoch, i.e., when ptp-timescale
+           is TRUE; otherwise, the value has no meaning.";
+      }
+      leaf leap59 {
+        type boolean;
+        description
+          "When set, the last minute of the current UTC day
+           contains 59 seconds.";
+      }
+      leaf leap61 {
+        type boolean;
+        description
+          "When set, the last minute of the current UTC day
+           contains 61 seconds.";
+      }
+      leaf time-traceable {
+        type boolean;
+        description
+          "When set, the timescale and the currentUtcOffset are
+           traceable to a primary reference.";
+      }
+      leaf frequency-traceable {
+        type boolean;
+        description
+          "When set, the frequency determining the timescale
+           is traceable to a primary reference.";
+      }
+      leaf ptp-timescale {
+        type boolean;
+        description
+          "When set, the clock timescale of the grandmaster
+           clock is PTP; otherwise, the timescale is ARB
+           (arbitrary).";
+      }
+      leaf time-source {
+        type uint8;
+        description
+          "The source of time used by the grandmaster clock.";
+      }
+    }
+  }
+
+  grouping ptp-port-ds-grouping {
+    description
+      "Grouping for portDS data set";
+    container port-ds {
+      description
+        "List of port data sets of the clock (see IEEE Std
+         1588-2008 subclause 8.2.5).";
+      leaf port-number {
+        type uint16;
+        description
+          "Port number.
+           The data sets (i.e. information model) of IEEE Std
+           1588-2008 specify a member portDS.portIdentity, which
+           uses a typed struct with members clockIdentity and
+           portNumber.
+           In this YANG data model, portIdentity is not modeled
+           in the port-ds, however, its members are provided
+           as follows:
+           portIdentity.portNumber is provided as this port-
+           number leaf in port-ds; and
+           portIdentity.clockIdentity is provided as the clock-
+           identity leaf in default-ds of the instance
+           (i.e. ../../default-ds /clock-identity).";
+      }
+      leaf port-state {
+        type ptp:port-state-type;
+        default "initializing";
+        description
+          "Current state associated with the port.";
+      }
+      leaf underlying-interface {
+        type ptp:interface-type;
+        description
+          "Reference to the configured underlying interface that
+           is used by this PTP Port (see RFC 7223).";
+      }
+      leaf log-min-delay-req-interval {
+        type int8;
+        description
+          "The base-two logarithm of the minDelayReqInterval
+           (the minimum permitted mean time interval between
+           successive Delay_Req messages).";
+      }
+      leaf peer-mean-path-delay {
+        type ptp:time-interval-type;
+        default 0;
+        description
+          "An estimate of the current one-way propagation delay
+           on the link when the delayMechanism is P2P; otherwise,
+           it is zero.";
+      }
+      leaf log-announce-interval {
+        type int8;
+        description
+          "The base-two logarithm of the mean
+           announceInterval (mean time interval between
+           successive Announce messages).";
+      }
+      leaf announce-receipt-timeout {
+        type uint8;
+        description
+          "The number of announceInterval that have to pass
+           without receipt of an Announce message before the
+           occurrence of the event ANNOUNCE_RECEIPT_TIMEOUT_
+           EXPIRES.";
+      }
+      leaf log-sync-interval {
+        type int8;
+        description
+          "The base-two logarithm of the mean SyncInterval
+           for multicast messages.  The rates for unicast
+           transmissions are negotiated separately on a per port
+           basis and are not constrained by this attribute.";
+      }
+      leaf delay-mechanism {
+        type ptp:delay-mechanism-type;
+        description
+          "The propagation delay measuring option used by the
+           port in computing meanPathDelay.";
+      }
+      leaf log-min-pdelay-req-interval {
+        type int8;
+        description
+          "The base-two logarithm of the
+           minPdelayReqInterval (minimum permitted mean time
+           interval between successive Pdelay_Req messages).";
+      }
+      leaf version-number {
+        type uint8;
+        description
+          "The PTP version in use on the port.";
+      }
+      leaf ptsf-losssync {
+        type boolean;
+        description
+          "ptsf-losssync represents whether the 
+          sync/followup/DelayResponse message have timeout on
+          a PTP input reference for G.8275.2 profile";
+      }
+      leaf ptsf-unusable {
+        type boolean;
+        description
+          "ptsf-unusable will be true if servo notifies that it is 
+          not able to lock to master due to excessive PDV or 
+          some other reason";
+      }
+      leaf ptsf-syncUncertain {
+        type boolean;
+        description
+          "ptsf-sync-uncertain will come from the master as part 
+          of announce message header and based on that it will
+          be set or reset";
+      }
+
+    }
+  }
+
+  grouping ptp-input-reference-config-grouping {
+    description
+      "PTP input reference configuration attributes.";
+    leaf interface {
+      type ptp:interface-type;
+      mandatory true;
+      description
+        "Interface used by a PTP input reference.";
+    }
+    uses sync:sync-input-reference-config-grouping;
+
+    leaf multicast-address {
+      type ptp:multicast-address-type;
+      default forwardable;
+      description
+        "Multicast MAC address to use when transmitting PTP
+         PDUs from this reference.";
+    }  
+    leaf master-ip-address {
+       type inet:ip-address;
+       description
+          "IP address of master";
+    }
+    leaf signalling {
+       type ptp:signalling;
+       description 
+         "signalling field to use to enable/disable signalling";
+    }
+  }
+
+  grouping ptp-output-reference-config-grouping {
+    description
+      "PTP output reference configuration attributes.";
+    leaf interface {
+      type ptp:interface-type;
+      mandatory true;
+      description
+        "Interface used by a PTP output reference.";
+    }
+    leaf multicast-address {
+      type ptp:multicast-address-type;
+      default forwardable;
+      description
+        "Multicast MAC address to use when transmitting PTP
+         PDUs from this reference.";
+    }
+    leaf signalling {
+       type ptp:signalling;
+       description 
+         "Signalling field to use to when supporting 
+           signalling client and static client";
+    }
+    leaf max-grant-rate {
+      type ptp:packet-rate-type;
+      description
+        "Highest packet rate which can be granted as part of unicast signalling";
+    }
+    leaf-list static-client-list {
+       type inet:ip-address;
+       max-elements 16;
+       description
+          "IP address of statically configured PTP client";
+    }
+    leaf profile {
+       when /sync:sync/ptp-profiles/ptp-profile;
+       type ptp:profile-leafref-type;
+       description
+         "Profile associated with the reference";
+    }
+  }
+
+  grouping ptp-input-reference-statistics-grouping {
+    description
+      "PTP input reference statistics grouping.";
+    leaf tx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs transmitted.";
+    }
+    leaf rx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs received.";
+    }
+    leaf rx-announce {
+      type yang:counter64;
+      description
+        "Number of Announce PDUs received.";
+    }
+    leaf rx-sync {
+      type yang:counter64;
+      description
+        "Number of Sync PDUs received.";
+    }
+    leaf rx-follow-up {
+      type yang:counter64;
+      description
+        "Number of Follow-up PDUs received.";
+    }
+    leaf rx-delay-response {
+      type yang:counter64;
+      description
+        "Number of Delay Response PDUs received.";
+    }
+    leaf tx-delay-request {
+      type yang:counter64;
+      description
+        "Number of Delay Request PDUs transmitted.";
+    }
+    leaf rx-drop-delay-request {
+      type yang:counter64;
+      description
+        "Number of Delay Request PDUs received and dropped.";
+    }
+    leaf rx-drop-peer-delay-request {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Request PDUs received and dropped.";
+    }
+    leaf rx-drop-peer-delay-response {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Response PDUs received and dropped.";
+    }
+    leaf rx-drop-peer-delay-response-follow-up {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Response Follow-up PDUs received and dropped.";
+    }
+    leaf rx-drop-signaling {
+      type yang:counter64;
+      description
+        "Number of Signaling PDUs received and dropped.";
+    }
+    leaf rx-drop-management {
+      type yang:counter64;
+      description
+        "Number of Management PDUs received and dropped.";
+    }
+    leaf rx-drop-bad-message-type {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP message type.";
+    }
+    leaf rx-drop-bad-domain {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to an invalid PTP domain value.";
+    }
+    leaf rx-drop-bad-version {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP version number.";
+    }
+    leaf rx-drop-bad-ptp-message-length {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP message length.";
+    }
+    leaf tx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to a transmit error.";
+    }
+    leaf rx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to a receive error.";
+    }
+    leaf rx-signalling {
+      type yang:counter64;
+      description
+        "Number of signalling PDUs received.";
+    }
+    leaf tx-signalling {
+      type yang:counter64;
+      description
+        "Number of signalling PDUs transmitted.";
+    }
+    leaf rx-unicast-grant-tlv {
+      type yang:counter64;
+      description
+        "Number of grant unicast PDUs received.";
+    }
+    leaf tx-unicast-request-tlv {
+      type yang:counter64;
+      description
+        "Number of request unicast PDUs transmitted.";
+    }
+    leaf rx-unicast-cancel-tlv {
+      type yang:counter64;
+      description
+        "Number of cancel unicast PDUs received.";
+    }
+    leaf tx-unicast-cancel-tlv {
+      type yang:counter64;
+      description
+        "Number of cancel unicast PDUs transmitted.";
+    }
+    leaf rx-unicast-deny-tlv {
+      type yang:counter64;
+      description
+        "Number of deny unicast PDUs received.";
+    }
+    leaf tx-drop-signalling {
+      type yang:counter64;
+      description
+        "Number of signalling PDUs dropped due to transmit error.";
+    }
+    leaf tx-drop-delay-request {
+      type yang:counter64;
+      description
+        "Number of delay request PDUs dropped due to transmit error.";
+    }
+    leaf rx-drop-announce {
+      type yang:counter64;
+      description
+        "Number of announce PDUs received and dropped.";
+    }
+    leaf rx-drop-sync {
+      type yang:counter64;
+      description
+        "Number of sync PDUs received and dropped.";
+    }
+    leaf rx-drop-follow-up {
+      type yang:counter64;
+      description
+        "Number of Follow-up PDUs received and dropped.";
+    }
+    leaf rx-drop-delay-response {
+      type yang:counter64;
+      description
+        "Number of Drop Delay Response PDUs received and dropped.";
+    }
+  }
+
+  grouping ptp-output-reference-statistics-grouping {
+    description
+      "PTP output reference statistics grouping.";
+    leaf tx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs transmitted.";
+    }
+    leaf rx-total {
+      type yang:counter64;
+      description
+        "Total number of PDUs received.";
+    }
+    leaf tx-announce {
+      type yang:counter64;
+      description
+        "Number of Announce PDUs transmitted.";
+    }
+    leaf tx-sync {
+      type yang:counter64;
+      description
+        "Number of Sync PDUs transmitted.";
+    }
+    leaf tx-follow-up {
+      type yang:counter64;
+      description
+        "Number of Follow-up PDUs transmitted.";
+    }
+    leaf tx-delay-response {
+      type yang:counter64;
+      description
+        "Number of Delay Response PDUs transmitted.";
+    }
+    leaf rx-delay-request {
+      type yang:counter64;
+      description
+        "Number of Delay Request PDUs received.";
+    }
+    leaf rx-drop-announce {
+      type yang:counter64;
+      description
+        "Number of Announce PDUs received.";
+    }
+    leaf rx-drop-sync {
+      type yang:counter64;
+      description
+        "Number of Sync PDUs received.";
+    }
+    leaf rx-drop-follow-up {
+      type yang:counter64;
+      description
+        "Number of Follow-up PDUs received.";
+    }
+    leaf rx-drop-delay-response {
+      type yang:counter64;
+      description
+        "Number of Delay Response PDUs received.";
+    }
+    leaf rx-drop-peer-delay-request {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Request PDUs received and dropped.";
+    }
+    leaf rx-drop-peer-delay-response {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Response PDUs received and dropped.";
+    }
+    leaf rx-drop-peer-delay-response-follow-up {
+      type yang:counter64;
+      description
+        "Number of Peer Delay Response Follow-up PDUs received and dropped.";
+    }
+    leaf rx-drop-signaling {
+      type yang:counter64;
+      description
+        "Number of Signaling PDUs received and dropped.";
+    }
+    leaf rx-drop-management {
+      type yang:counter64;
+      description
+        "Number of Management PDUs received and dropped.";
+    }
+    leaf rx-drop-bad-message-type {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP message type.";
+    }
+    leaf rx-drop-bad-domain {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to an invalid PTP domain value.";
+    }
+    leaf rx-drop-bad-version {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP version number.";
+    }
+    leaf rx-drop-bad-ptp-message-length {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to invalid PTP message length.";
+    }
+    leaf tx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to transmit error.";
+    }
+    leaf rx-drop-error {
+      type yang:counter64;
+      description
+        "Number of PDUs dropped due to receive error.";
+    }
+  }
+
+  grouping ptp-client-grouping {
+    description
+      "Grouping for client related data.";
+    leaf client-clock-identity {
+      type ptp:clock-identity-type;
+      description
+        "The clock identity of the PTP client.";
+    }
+    leaf refname {
+      type sync:name-string-type;
+      description
+        "PTP output reference through which client is connected.";
+    }
+    leaf client-type {
+      type ptp:client-type;
+      description
+        "Flag indicating if client is using PTP signalling
+         or not.";
+    }
+    leaf announce-rate {
+      type ptp:packet-rate-type;
+      description
+        "The granted rate of announce messages (packets per second).";
+    }
+    leaf sync-rate {
+      type ptp:packet-rate-type;
+      description
+        "The granted rate of sync messages (packets per second).";
+    }
+    leaf delay-response-rate {
+      type ptp:packet-rate-type;
+      description
+        "The granted rate of delay response messages (packets per second).";
+    }
+    leaf announce-duration {
+      type yang:counter32;
+      description
+        "The granted announce duration.";
+    }
+    leaf sync-duration {
+      type yang:counter32;
+      description
+        "The granted sync duration.";
+    }
+    leaf delay-response-duration {
+      type yang:counter32;
+      description
+        "The granted delay response duration.";
+    }
+    container statistics {
+      description
+        "Client statistics.";
+      leaf tx-total {
+        type yang:counter64;
+        description
+          "Total number of PDUs transmitted.";
+      }
+      leaf rx-total {
+        type yang:counter64;
+        description
+          "Total number of PDUs received.";
+      }
+      leaf tx-announce {
+        type yang:counter64;
+        description
+          "Number of announce PDUs transmitted.";
+      }
+      leaf tx-sync {
+        type yang:counter64;
+        description
+          "Number of sync PDUs transmitted.";
+      }
+      leaf tx-delay-response {
+        type yang:counter64;
+        description
+          "Number of delay response PDUs transmitted.";
+      }
+      leaf rx-delay-request {
+        type yang:counter64;
+        description
+          "Number of delay request PDUs received.";
+      }
+      leaf tx-drop-announce {
+        type yang:counter64;
+        description
+          "Number of announce PDUs dropped.";
+      }
+      leaf tx-drop-sync {
+        type yang:counter64;
+        description
+          "Number of sync PDUs dropped.";
+      }
+      leaf tx-drop-delay-response {
+        type yang:counter64;
+        description
+          "Number of delay response PDUs dropped.";
+      }
+      leaf rx-drop-delay-request {
+        type yang:counter64;
+        description
+          "Number of delay request PDUs dropped.";
+      }
+      leaf rx-drop-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs received and dropped.";
+      }
+      leaf tx-drop-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs dropped due to transmit error.";
+      }
+      leaf tx-drop-error {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to transmit error.";
+      }
+      leaf rx-drop-error {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to receive error.";
+      }
+      leaf tx-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs transmitted.";
+      }
+      leaf rx-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs received.";
+      }
+    }
+  }
+
+  grouping ptp-client-global-grouping {
+    description
+      "Grouping for PTP  client global statistics data.";
+    container statistics {
+      description
+        "Global client statistics.";
+      leaf tx-total {
+        type yang:counter64;
+        description
+          "Total number of PDUs transmitted.";
+      }
+      leaf rx-total {
+        type yang:counter64;
+        description
+          "Total number of PDUs received.";
+      }
+      leaf tx-announce {
+        type yang:counter64;
+        description
+          "Number of announce PDUs transmitted.";
+      }
+      leaf tx-sync {
+        type yang:counter64;
+        description
+          "Number of sync PDUs transmitted.";
+      }
+      leaf tx-delay-response {
+        type yang:counter64;
+        description
+          "Number of delay response PDUs transmitted.";
+      }
+      leaf rx-delay-request {
+        type yang:counter64;
+        description
+          "Number of delay request PDUs received.";
+      }
+      leaf rx-drop-delay-response {
+        type yang:counter64;
+        description
+          "Number of Delay Response PDUs received and dropped.";
+      }
+      leaf rx-drop-sync {
+        type yang:counter64;
+        description
+          "Number of Sync PDUs received and dropped.";
+      }
+      leaf rx-drop-announce {
+        type yang:counter64;
+        description
+          "Number of Announce PDUs received and dropped.";
+      }	  
+      leaf rx-drop-signalling {
+        type yang:counter64;
+        description
+          "Number of Signalling PDUs received and dropped.";
+      }
+      leaf tx-drop-signalling {
+        type yang:counter64;
+        description
+          "Number of Signalling PDUs dropped due to transmit error.";
+      }
+      leaf tx-drop-error {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to transmit error.";
+      }
+      leaf rx-drop-error {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to receive error.";
+      }
+      leaf rx-drop-bad-domain {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to an invalid PTP domain value.";
+      }
+      leaf rx-drop-bad-version {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to invalid PTP version number.";
+      }
+      leaf rx-drop-bad-ptp-message-length {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to invalid PTP message length.";
+      }
+      leaf rx-drop-bad-message-type {
+        type yang:counter64;
+        description
+          "Number of PDUs dropped due to invalid PTP message type.";
+      }
+      leaf tx-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs transmitted.";
+      }
+      leaf rx-signalling {
+        type yang:counter64;
+        description
+          "Number of signalling PDUs received.";
+      }
+      leaf tx-unicast-grant {
+        type yang:counter64;
+        description
+          "Number of grant unicast PDUs transmitted.";
+      }
+      leaf tx-unicast-timeout {
+        type yang:counter64;
+        description
+          "Number of unicast PDUs timed out before transmission.";
+      } 
+      leaf tx-unicast-terminate {
+        type yang:counter64;
+        description
+          "Number of terminate unicast PDUs transmitted.";
+      }
+      leaf tx-unicast-deny {
+        type yang:counter64;
+        description
+          "Number of deny unicast PDUs transmitted.";
+      }	  
+    }
+  }
+
+  grouping ptp-global-state-grouping {
+    description
+      "PTP global state attributes.";
+    uses ptp:ptp-default-ds-grouping;
+    uses ptp:ptp-current-ds-grouping;
+    uses ptp:ptp-parent-ds-grouping;
+    uses ptp:ptp-time-properties-ds-grouping;
+  }
+
+  grouping ptp-input-reference-state-grouping {
+    description
+      "PTP input reference state attributes.";
+    uses sync:sync-input-reference-state-grouping;
+    uses ptp:ptp-current-ds-grouping;
+    uses ptp:ptp-parent-ds-grouping;
+    uses ptp:ptp-time-properties-ds-grouping;
+    uses ptp:ptp-port-ds-grouping;
+    container statistics {
+      description
+        "Container for PTP input reference statistics.";
+      uses ptp:ptp-input-reference-statistics-grouping;
+    }
+  }
+
+  grouping ptp-output-reference-state-grouping {
+    description
+      "PTP output reference state attributes.";
+    uses sync:sync-output-reference-state-grouping;
+    uses ptp:ptp-port-ds-grouping;
+    container statistics {
+      description
+        "Container for PTP output reference statistics.";
+      uses ptp:ptp-output-reference-statistics-grouping;
+    }
+  }
+
+  grouping ptp-profiles-grouping {
+    description
+      "Grouping for profile data set";
+      leaf profile-type {
+        type ptp:telecom-profile-type;
+        mandatory true;
+        description
+          "PTP telecom profile.";
+      }
+      leaf domain-number {
+        type uint8;
+        mandatory true;
+        description
+          "The PTP domain number. A domain consists of a logical grouping of
+           clocks communicating with each other using the PTP protocol.
+           Only a single PTP domain is currently supported.";
+      }
+      leaf protocol-version {
+        type ptp:protocol-version-type;
+        default 2;
+        description
+          "PTP protocol version.";
+      }
+      leaf announce-rx-loss-num {
+        type uint8 {
+          range "2..10";
+        }
+        default 3;
+        description
+          "The number of announce intervals that has to pass without RX of an
+           announce message as a slave clock before a timeout is assumed.";
+      }
+      leaf delay-request-tx-rate {
+        when "../profile-type='g.8275.1'";
+        type ptp:packet-rate-type;
+        default 16;  
+        description
+          "The TX rate of delay request messages (packets per second) as a
+           slave clock.";
+      }
+      leaf announce-tx-rate {
+        when "../profile-type='g.8275.1'";
+        type ptp:packet-rate-type;
+        default 8;
+        description
+          "The TX rate of announce messages (packets per second) as a master
+           clock.";
+      }
+      leaf sync-tx-rate {
+        when "../profile-type='g.8275.1'";
+        type ptp:packet-rate-type;
+        default 16;
+        description
+          "The TX rate of sync messages (packets per second) as a master
+           clock.";
+      }
+      leaf priority1 {
+        type uint8;
+        default 128;
+        description
+          "The priority1 attribute of the local clock.";
+      }
+      leaf priority2 {
+        type uint8;
+        default 128;
+        description
+          "The priority2 attribute of the local clock. ";
+      }
+  }
+
+  /*
+   * Configuration data
+   */
+
+  augment "/sync:sync" {
+    description
+      "PTP configuration.";
+    container ptp-global {
+      description
+        "PTP global configuration.";
+      leaf clock-type {
+        type ptp:clock-type;
+        default bc;
+        description
+          "PTP clock type.";
+      }
+      leaf domain-number {
+        type uint8;
+        description
+          "The PTP domain number. A domain consists of a logical grouping of
+           clocks communicating with each other using the PTP protocol.
+           Only a single PTP domain is currently supported.";
+      }
+      leaf profile {
+        type ptp:telecom-profile-type;
+        description
+          "PTP telecom profile.";
+      }
+      leaf protocol-version {
+        type ptp:protocol-version-type;
+        default 2;
+        description
+          "PTP protocol version.";
+      }
+      leaf announce-rx-loss-num {
+        type uint32 {
+          range "2..10";
+        }
+        description
+          "The number of announce intervals that has to pass without RX of an
+           announce message as a slave clock before a timeout is assumed.";
+      }
+      leaf delay-request-tx-rate {
+        type ptp:packet-rate-type;
+        description
+          "The TX rate of delay request messages (packets per second) as a
+           slave clock.";
+      }
+      leaf announce-tx-rate {
+        type ptp:packet-rate-type;
+        description
+          "The TX rate of announce messages (packets per second) as a master
+           clock.";
+      }
+      leaf sync-tx-rate {
+        type ptp:packet-rate-type;
+        description
+          "The TX rate of sync messages (packets per second) as a master
+           clock.";
+      }
+      leaf priority1 {
+        type uint8;
+        description
+          "Clock attribute priority1 configuration.
+           Currently unused in the G.8275.1 telecom profile.";
+      }
+      leaf priority2 {
+        type uint8;
+        description
+          "Clock attribute priority2 configuration.";
+      }
+      leaf timestamp-mode {
+        type ptp:timestamp-mode-type;
+        description
+          "PTP timestamping mode for transmitting messages.";
+      }
+      leaf current-utc-offset {
+        type int16;
+        default 37;
+        description
+          "The offset between TAI and UTC when the epoch of the
+           PTP system is the PTP epoch, i.e., when ptp-timescale
+           is TRUE; otherwise, the value has no meaning.";
+      }
+      leaf phase-holdover-time {
+        type phase-holdover-time-type;
+        default 24h;
+        description
+          "Attribute not in use. Use phase-holdover-duration instead.";
+      }
+      leaf max-global-session {
+        type uint8;
+        description
+        "Maximum number of ptp clients supported by device.";
+      }
+      leaf ttl {
+        type uint8;
+        description
+          "Value used to populate TTL field in IP header of PTP packets";
+      }
+      leaf dscp {
+        type uint8;
+        description
+          "Value used for Differentiated Services Code Point field in IP header of PTP packet";
+      }
+      leaf cos {
+        type uint8 {
+          range "0..7";
+        }
+        description
+          "Value used to specify the class of service field used by PTP packets in L2 header.";
+      }
+      leaf phase-holdover-duration {
+        type uint16 {
+          range "1..32767";
+        }
+        units minutes;
+        default 30;
+        description
+          "The duration to propagate a clockClass when the phase
+           clock goes into holdover and while in performance
+           specification before propagating a clockClass
+           representing an out-of-specification condition.";
+      }
+      leaf grant-duration {
+        type uint32;
+        description
+          "The value of duration field shall be the requested number of seconds for which the 
+           requested messages to be transmitted";
+      }
+      leaf sync-rx-loss-num {
+        type uint32 {
+          range "16..1024";
+        }
+        default 64;
+        description
+          "The number of sync intervals that has to pass without RX of an
+           sync message as a slave clock before a timeout is assumed.";
+      }
+      leaf delay-response-rx-loss-num {
+        type uint32 {
+          range "16..1024";
+        }
+        default 64;
+        description
+          "The number of delay response  intervals that has to pass without RX of an
+           delay response message as a slave clock before a timeout is assumed.";
+      }
+
+    }
+  }
+  augment "/sync:sync" {
+    description
+      "PTP profiles configuration.";
+    container ptp-profiles {
+      description
+        "PTP profile configuration.";
+      list ptp-profile {
+        key "name";
+        description
+        "A list of all PTP profile types";
+        leaf name {
+          type sync:name-string-type;
+          description
+            "Name of PTP profile.";
+        }
+        uses ptp:ptp-profiles-grouping;
+      }
+    }
+  }
+  augment "/sync:sync" + 
+          "/sync:input-references" {
+    description
+      "PTP input reference configuration.";
+    list ptp-input-reference {
+      key "name";
+      description
+        "A list of all PTP input configuration entries.";
+      leaf name {
+        type sync:name-string-type;
+        description
+          "Name of PTP input reference.";
+      }
+      uses ptp:ptp-input-reference-config-grouping;
+    }
+  }
+
+  augment "/sync:sync" + 
+          "/sync:output-references" {
+    description
+      "PTP output reference configuration.";
+    list ptp-output-reference {
+      key "name";
+      description
+        "A list of all PTP output configuration entries.";
+      leaf name {
+        type sync:name-string-type;
+        description
+          "Name of PTP output reference.";
+      }
+      uses ptp:ptp-output-reference-config-grouping;
+    }
+  }
+
+  augment "/sync:sync" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "PTP input reference configuration in frequency protection-group.";
+    leaf-list ptp-input-reference {
+      type ptp:input-reference-leafref-type;
+      description
+        "List of PTP input references that shall be considered as candidates
+         for clock selection in phase protection-group.";
+    }
+  }
+
+  augment "/sync:sync" + 
+          "/sync:protection-groups" + 
+          "/sync:phase-protection-group" {
+    description
+      "PTP input reference configuration in phase protection-group.";
+    leaf-list ptp-input-reference {
+      type ptp:input-reference-leafref-type;
+      description
+        "List of PTP input references that shall be considered as candidates
+         for clock selection in phase protection-group.";
+    }
+    leaf threshold-clock-class {
+      type uint8;
+      description
+        "Threshold clockClass configuration of phase protection-group.
+         Operational RX clockClass of input references added to this
+         protection-group must satisfy the configured threshold clockClass in
+         order to be considered selectable.";
+    }
+  }
+
+  /*
+   * State data
+   */
+
+  augment "/sync:sync-state" {
+    description
+      "PTP global state.";
+    container ptp-global {
+      description
+        "PTP global state container.";
+      uses ptp:ptp-global-state-grouping;
+    }
+  }
+  augment "/sync:sync-state" +
+          "/sync:input-references" {
+    description
+      "PTP input reference state.";
+    list ptp-input-reference {
+      key "name";
+      description
+        "A list of all PTP input state entries.";
+      leaf name {
+        type ptp:input-reference-leafref-type;
+        description
+          "Name of PTP input reference.";
+      }
+      uses ptp:ptp-input-reference-state-grouping;
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:output-references" {
+    description
+      "PTP output reference state.";
+    list ptp-output-reference {
+      key "name";
+      description
+        "A list of all PTP output state entries.";
+      leaf name {
+         type ptp:output-reference-leafref-type;
+         description
+           "Name of PTP output reference.";
+      }
+      uses ptp:ptp-output-reference-state-grouping;
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:output-references" {
+    description
+      "PTP client list.";
+    list ptp-client-list {
+      key "client-ip-address";
+      description
+        "A list of all PTP client entries.";
+      leaf client-ip-address {
+         type string;
+         description
+           "Destination IP address of the PTP client.";
+      }
+      uses ptp:ptp-client-grouping;
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:output-references" {
+    description
+      "PTP client global statistics.";
+    list ptp-client-global {
+      key "refname";
+      description
+        "A list of all PTP client global statistics.";
+      leaf refname {
+         type string;
+         description
+           "Name of PTP output reference.";
+      }
+      uses ptp:ptp-client-global-grouping;
+    }
+  }
+ 
+  augment "/sync:sync-state" + 
+          "/sync:protection-groups" + 
+          "/sync:phase-protection-group" {
+    description
+      "PTP input reference selected in phase protection-group.";
+    leaf selected-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "PTP input reference name.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:phase-protection-group" {
+    description
+      "Assisted Timing Support (ATS) backup PTP input reference in phase protection-group.";
+    leaf ats-backup-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "Assisted Timing Support (ATS) backup PTP input reference name.";
+    }
+    leaf phase-offset {
+      type int32;
+      description
+        "If the selected reference is a local GNSS reference, this field shows the phase offset
+         of the ats-backup-ptp-input-reference relative to the local GNSS.
+         If the selected reference is a ptp reference, this field shows the phase compensation
+         applied to the selected-ptp-input-reference.";
+    }
+    leaf assisted-ptp-backup-ready {
+      type boolean;
+      description 
+        "Assisted Timing Support (ATS) PTP backup ready. This is set to True if assisted ptp
+         backup is ready to takeover in case of loss of local time reference, otherwise it is 
+         set to false.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "PTP input reference selected in phase protection-group.";
+    leaf selected-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "PTP input reference name.";
+    }
+  }
+
+  augment "/sync:sync-state" +
+          "/sync:protection-groups" +
+          "/sync:frequency-protection-group" {
+    description
+      "Assisted backup PTP input reference in frequency protection-group.";
+    leaf assisted-backup-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "Assisted backup PTP input reference name.";
+    }
+  }
+  /*
+   * RPC Operations
+   */
+
+  augment "/sync:sync-protection-group-selection-force-switch" +
+          "/sync:input" {
+    description
+      "Force-switch a PTP input reference selection on protection-group.";
+    leaf ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "Name of PTP input reference.";
+    }
+  }
+  
+  rpc sync-ptp-statistics-clear {
+    description 
+      "Clear the statistics for a specific PTP input/output reference or 
+       for all references.";
+    input {
+      leaf ptp-input-reference-name {
+        type ptp:input-reference-leafref-type;
+        description
+          "Name of PTP input reference.";
+      }
+      leaf ptp-output-reference-name {
+        type ptp:output-reference-leafref-type;
+        description
+          "Name of PTP output reference.";
+      }
+      leaf all {
+        type empty;
+        description
+          "All PTP input/output references.";
+      }
+    }
+    output {
+      leaf status {
+        type string; 
+        description 
+          "Status of the statistics clear operation.";
+      }
+    }
+  }
+
+  /*
+   * Notifications
+   */
+
+  notification ptp-input-reference-oper-state-change {
+    description
+      "Generated when the operational state of a PTP input reference changes.";
+    leaf ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "Name of PTP input reference.";
+    }
+    leaf interface {
+      type ptp:input-reference-interface-leafref-type;
+      description
+        "Interface of PTP input reference.";
+    }
+    leaf oper-state {
+      type ptp:input-reference-oper-state-leafref-type;
+      description
+        "Operational state of PTP input reference.";
+    }
+  }
+
+  notification ptp-output-reference-oper-state-change {
+    description
+      "Generated when the operational state of a PTP output reference changes.";
+    leaf ptp-output-reference-name {
+      type ptp:output-reference-leafref-type;
+      description
+        "Name of PTP output reference.";
+    }
+    leaf interface {
+      type ptp:output-reference-interface-leafref-type;
+      description
+        "Interface of PTP output reference.";
+    }
+    leaf oper-state {
+      type ptp:output-reference-oper-state-leafref-type;
+      description
+        "Operational state of PTP output reference.";
+    }
+  }
+
+  augment "/sync:phase-protection-group-oper-state-change" {
+    description
+      "PTP input reference selected in phase protection-group.";
+    leaf selected-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "PTP input reference name.";
+    }
+  }
+
+  augment "/sync:frequency-protection-group-oper-state-change" {
+    description
+      "PTP input reference selected in frequency protection-group.";
+    leaf selected-ptp-input-reference-name {
+      type ptp:input-reference-leafref-type;
+      description
+        "PTP input reference name.";
+    }
+  }
+
+  notification ptp-client-list-change {
+     description
+       "Generated when a client request for new lease or a client removed from client list";
+     leaf client-ip-address {
+       type string;
+       description
+         "Destination IP address of the PTP client.";
+     }
+     leaf client-type {
+       type ptp:client-type;
+       description
+         "Flag indicating client is static or dynamic.";
+     }
+     leaf refname {
+       type sync:name-string-type;
+       description
+         "PTP output reference through which client is connected.";
+     }
+     leaf client-event-type {
+       type ptp:client-event-type;
+       description
+         "Flag indicating client is added, deleted or denied";
+     }
+     leaf client-event-reason {
+       type ptp:client-event-reason;
+       description
+         "Flag indicating the reason of client event occured";
+     }
+  }
+
+  notification ptp-input-reference-unicast-session-change {
+     description
+       "Generated when a PTP request-port request for a new unicast session to a PTP grant-port
+        or an established session is terminated.";
+     leaf signalling-event {
+       type ptp:signalling-event-type;
+       description
+         "Unicast session event type.";
+     }
+     leaf source-ip-address {
+       type string;
+       description
+         "IP address of the PTP request-port.";
+     }
+     leaf master-ip-address {
+       type string;
+       description
+         "IP address of the PTP grant-port.";
+     }
+     leaf refname {
+       type sync:name-string-type;
+       description
+         "PTP input reference used for unicast session between PTP request-port and grant-port.";
+     }
+  }
+
+  notification ptp-input-reference-assisted-backup-status {
+     description
+       "Generated when assisted ptp backup is either ready to takeover in case of loss of local time reference
+        or in not ready state";
+     leaf refname {
+       type ptp:input-reference-leafref-type;
+       description
+         "Assisted backup PTP input reference name.";
+     }
+     leaf status {
+       type ptp:assisted-ptp-backup-status-type;
+       description
+         "The status of assisted backup ptp input reference name.
+          Defines whether the assisted ptp backup is ready or not ready to takeover in case of loss of local time reference";
+     }
+     leaf offset-from-local-time-source {
+       type int32;
+       description
+         "If the selected reference is a local GNSS reference, this field shows the offset
+          of the ats-backup-ptp-input-reference relative to the local GNSS.
+          If the selected reference is a ptp reference, this field shows the phase compensation
+          applied to the selected-ptp-input-reference.";
+     }
+  }
+
+
+}

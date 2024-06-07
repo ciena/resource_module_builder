@@ -1,0 +1,199 @@
+module ciena-pro-depo {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-depo";
+  prefix ddy-depo;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-ddy-msg {
+    prefix ddm;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Deployment Orchestration Model";
+
+  revision 2023-05-16 {
+    description
+      "Rename deployment to deployment-data to avoid name collision";
+    version:string "2.0.0";
+  }
+  revision 2022-04-12 {
+    description
+      "Add legacy-autoload attribute for plugin library";
+    version:string "1.5.0";
+  }
+  revision 2022-01-30 {
+    description
+      "Revert the library type to leaf-list";
+    version:string "1.4.0";
+  }
+  revision 2021-11-29 {
+    description
+      "Add run-time dependency type";
+    version:string "1.3.0";
+  }
+  revision 2021-02-08 {
+    description
+      "Adding language field to run time dependency";
+    version:string "1.2.0";
+  }
+  revision 2021-01-08 {
+    description
+      "Added in deployment container and domain/service lists to allow
+       patches to be applied by directory service and bifrost launcher.";
+    version:string "1.1.0";
+  }
+  revision 2020-09-29 {
+    description
+      "Initial Revision";
+    version:string "1.0.0";
+  }
+
+  identity run-time {
+    description
+      "Run-time deployement dependency";
+    base ddm:dependency-type;
+  }
+
+  typedef run-time-library-dependency-type {
+    description
+      "Dependency type is used to manage the loading order. The platform preload libraries get loaded
+       first, followed by the platform framework and service library";
+    type enumeration {
+      enum platform-preload {
+        description
+          "Platform related runtime libraries that needs to get pre-loaded when launched from dir-svc ";
+      }
+      enum platform {
+        description
+          "Platform related runtime library dependency";
+      }
+      enum framework {
+        description
+          "Framework related runtime library dependency";
+      }
+      enum service {
+        description
+          "Service related runtime library dependency";
+      }
+      enum service-driver {
+        description
+          "Service driver related runtime library dependency";
+      }
+    }
+  }
+
+  grouping depo-run-time-dependency {
+    container depo-run-time-dependency {
+      yang:alias "depo-run-time-dependency";
+      description
+        "Container to specify run time dependencies for a service, this could include shared libraries, configuration files. etc.";
+      leaf-list library {
+        type string;
+        description
+          "Name of shared library that this deployment has a run time dependency on";
+      }
+      container version {
+        uses version:version;
+      }
+      leaf path {
+        type string;
+        description
+          "Specify the library path";
+      }
+      leaf legacy-auto-load {
+        type boolean;
+        description
+          "If set, this library is automatically loaded for services that need the legacy auto-load feature.
+           Product needs to create a dependency library configuration file in /etc/ddf/depo/dir-svc and set this flag for all plugin library.
+           When set, dir-svc will create legacy_lib_autoload.txt file in the current launch directory of every domain. DDF Framework will automatically
+           load those plugin file for domains that needs legacy auto-load feature";
+      }
+      leaf library-type {
+        type run-time-library-dependency-type;
+        description
+          "Type of the library";
+      }
+      leaf language {
+        type enumeration {
+          enum c {
+            description
+              "The service is a c service";
+          }
+          enum python {
+            description
+              "The service is a python service";
+          }
+        }
+        description
+          "The language the service is written in, this will dictate how the service is launched";
+      }
+    }
+  }
+
+  augment "/ddm:domains/ddm:service/ddm:dependency/ddm:depends" {
+    uses depo-run-time-dependency;
+  }
+
+  augment "/ddm:domain/ddm:service/ddm:dependency/ddm:depends" {
+    uses depo-run-time-dependency;
+  }
+
+  augment "/ddm:dependency/ddm:depends" {
+    uses depo-run-time-dependency;
+  }
+
+  grouping deployment-patch-group {
+    list patches {
+      yang:alias "yang-patch";
+      key "action path";
+      uses yang:patch;
+      description
+        "Patches patches to be applied at deployment, domain, and
+         service levels on deployment and domain startup.";
+    }
+  }
+
+  container deployment-data {
+    description
+      "Container to hold deployment data.
+
+       Patches exist at the deployment, domain, and service levels
+       and can be applied to modify any deployment data at any level.
+
+       Service level patches are applied first, then domain level,
+       and deployment level.  This allows higher levels to always
+       override lower levels in a deployment.";
+    list domains {
+      description
+        "Domain data for a deployment";
+      key "domain";
+      leaf domain {
+        type string;
+      }
+      list services {
+        description
+          "Service data for a deployment";
+        key "service";
+        leaf service {
+          type string;
+        }
+        uses deployment-patch-group;
+      }
+      uses deployment-patch-group;
+    }
+    uses deployment-patch-group;
+  }
+}

@@ -1,0 +1,445 @@
+module ciena-pro-software-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-software-debug";
+  prefix ciena-pro-software-debug;
+
+  import ciena-pro-software {
+    prefix ciena-pro-software;
+  }
+  import ciena-common-yang {
+    prefix ciena-common;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "This module defines software upgrade -debug support for Ciena's 6500r Platform.";
+
+  revision 2022-06-02 {
+    description
+      "Added rpcs to support alarming unknown software version";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-05-26 {
+    description
+      "Added diagnostic data container";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2021-05-06 {
+    description
+      "Add RPC for a forced cancel.";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-10-15 {
+    description
+      "Added the adoptable & adopted leaf to card-controller
+       \\ added minimum-software-release as well.";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2020-08-07 {
+    description
+      "Added rpc to enable/disable licensing";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2020-08-04 {
+    description
+      "Added license blocking enabled/disabled";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2020-03-21 {
+    description
+      "Depreciate RPC return-description in favour of yang-common rpc-result-common";
+  }
+  revision 2019-09-09 {
+    description
+      "Software Controller Object";
+  }
+  revision 2019-08-13 {
+    description
+      "RLS 1.1 Sprint 15 - Original commit";
+  }
+
+  grouping timer-info {
+    description
+      "Timer Information";
+    leaf timer {
+      type uint32;
+      description
+        "Pointer to Timer Object";
+    }
+    leaf timer_retries {
+      type uint32;
+      description
+        "Retry Count";
+    }
+  }
+
+  grouping software-component-adoption {
+    description
+      "Component adoption fields.";
+    uses ciena-pro-software:software-component-adoption;
+    leaf adoptable {
+      type boolean;
+      description
+        "Value in card vpd indicating revert is supported.";
+    }
+    leaf upgradable {
+      type boolean;
+      description
+        "Load(s) for PEC & Firmware id are present in manifest file
+         \\card can be upgraded/auto-upgraded";
+    }
+  }
+
+  grouping state-machine-controller {
+    description
+      "Basic State Machine Controller";
+    leaf state-machine {
+      description
+        "Pointer to State Machine";
+      type uint32;
+    }
+    leaf operation {
+      description
+        "Super State";
+      type ciena-pro-software:upgrade-op-state;
+    }
+    leaf upgrade-state {
+      description
+        "Upgrade State";
+      type ciena-pro-software:upgrade-op-state;
+    }
+    leaf hierarchy-id {
+      description
+        "Unique State Machine Hierarchy Id";
+      type string;
+    }
+    uses timer-info;
+  }
+
+  grouping upgrade-controller {
+    description
+      "Disable/Enable auto-upgrades, upgrades/downgrades";
+    leaf auto_upgrade_disabled {
+      description
+        "Auto Upgrade is  disabled";
+      type boolean;
+    }
+    leaf upgrade_disabled {
+      description
+        "Upgrade is  disabled, will not participate in upgrade/downgrade";
+      type boolean;
+    }
+    leaf license_blocking {
+      description
+        "Upgrade is blocked if any software licenses are missing";
+      type boolean;
+    }
+    leaf cold_restart_enabled {
+      description
+        "Cold Restart on the next software-invoke.";
+      type boolean;
+    }
+    leaf upgrade_to_version {
+      description
+        "Software version to upgrade to.";
+      type string;
+    }
+  }
+
+  grouping card-controller {
+    description
+      "Basic State Machine Controller";
+    leaf present {
+      description
+        "Card Presence";
+      type boolean;
+    }
+    leaf ready {
+      description
+        "Card Ready";
+      type boolean;
+    }
+    leaf child_id {
+      description
+        "Child Id";
+      type uint32;
+    }
+    uses state-machine-controller;
+    uses upgrade-controller;
+    uses software-component-adoption;
+  }
+
+  container controller {
+    config false;
+    description
+      "Software Controller Information";
+    uses state-machine-controller;
+    uses upgrade-controller;
+    list card-controller {
+      key "child_id";
+      uses card-controller;
+    }
+  }
+  container mallinfo {
+    config false;
+    description
+      "Memory information about the process";
+    leaf uordblks {
+      description
+        "This is the total size of memory occupied by chunks handed out by malloc.";
+      type uint32;
+    }
+    leaf fordblks {
+      description
+        "This is the total size of memory occupied by free (not in use) chunks.";
+      type uint32;
+    }
+  }
+  container diagnostic-data {
+    config false;
+    description
+      "Data collected for upgrade analysis";
+    container install-performance-data {
+      description
+        "Data collected to track upgrade times";
+      leaf install-start-time {
+        type string;
+        description
+          "The start time for the installation";
+      }
+      leaf install-end-time {
+        type string;
+        description
+          "The end time for the installation";
+      }
+      leaf deliver-start-time {
+        type string;
+        description
+          "The start time for the deliver";
+      }
+      leaf deliver-end-time {
+        type string;
+        description
+          "The end time for the deliver";
+      }
+      leaf load-start-time {
+        type string;
+        description
+          "The start time for the load";
+      }
+      leaf load-end-time {
+        type string;
+        description
+          "The end time for the load";
+      }
+      leaf activate-start-time {
+        type string;
+        description
+          "The start time for the activate";
+      }
+      leaf activate-end-time {
+        type string;
+        description
+          "The end time for the activate";
+      }
+      leaf commit-start-time {
+        type string;
+        description
+          "The start time for the commit";
+      }
+      leaf commit-end-time {
+        type string;
+        description
+          "The end time for the commit";
+      }
+    }
+    container operation-info {
+      description
+        "Grouping for the operation history information.";
+      container operation-in-progress {
+        description
+          "Grouping for any current active operation parameters.";
+        leaf operation {
+          type ciena-pro-software:upgrade-operation;
+          description
+            "Current software manager operation in progress, if applicable.";
+        }
+        leaf additional-info {
+          type string;
+          description
+            "Additional information describing the operation in progress.";
+        }
+        leaf start-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the current software manager operation in progress started.";
+        }
+      }
+      container last-operation {
+        description
+          "Grouping for the last operation completed.";
+        leaf operation {
+          type ciena-pro-software:upgrade-operation;
+          description
+            "Last completed software manager operation.";
+        }
+        leaf result {
+          type ciena-pro-software:operation-result-type;
+          description
+            "Result of the last completed software manager operation.";
+        }
+        leaf result-str {
+          type string;
+          description
+            "Result description details of the last completed software manager\\
+             \\operation.";
+        }
+        leaf start-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the last software manager operation had started.\\
+             \\(Not supported in this software release version).";
+        }
+        leaf end-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the last software manager operation completed.";
+        }
+      }
+    }
+  }
+
+  rpc controller-reset {
+    description
+      "Reset the software upgrade states";
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-fsm-event {
+    description
+      "Send an event to the controller state machine";
+    input {
+      leaf event-id {
+        type uint32;
+        description
+          "State Machine Event Id";
+        mandatory true;
+      }
+      leaf child_id {
+        type uint32;
+        description
+          "Child Id";
+        mandatory false;
+      }
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  grouping controller-upgrade-inputs {
+    leaf slot {
+      type uint32;
+      description
+        "Targeted Equipment Slot";
+    }
+    choice enable-disable {
+      mandatory true;
+      case has-enable {
+        leaf enable {
+          type boolean;
+        }
+      }
+      case has-disable {
+        leaf disable {
+          type boolean;
+        }
+      }
+    }
+  }
+
+  rpc controller-auto-upgrade {
+    description
+      "Modifies Auto-Upgrade Behaviour of a slot.";
+    input {
+      uses controller-upgrade-inputs;
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-upgrade {
+    description
+      "Modifies Upgrade/Downgrade Behaviour of a slot.";
+    input {
+      uses controller-upgrade-inputs;
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-licensing {
+    description
+      "Modifies License Validation Behaviour.";
+    input {
+      choice enable-disable {
+        mandatory true;
+        case has-enable {
+          leaf enable {
+            type boolean;
+          }
+        }
+        case has-disable {
+          leaf disable {
+            type boolean;
+          }
+        }
+      }
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-cancel-forced {
+    description
+      "Forced upgrade cancel for use when normal cancel isn't sufficient";
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-ap-service {
+    description
+      "Notifies of a change in AP service state.";
+    input {
+      leaf in-service {
+        type boolean;
+        mandatory true;
+      }
+    }
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc controller-ap-recovered {
+    description
+      "Notifies of the AP recovery completion.";
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+}

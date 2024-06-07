@@ -1,0 +1,436 @@
+module ciena-pro-scaler-monitor-point {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-scaler-monitor-point";
+  prefix scaler-monitor-point;
+
+  import ciena-pro-scaler-types {
+    prefix scaler-types;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-ddy-diag {
+    prefix ciena-ddy-diag;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's scaler monitor point object for the 6500r-Series platform";
+
+  revision 2023-08-24 {
+    description
+      "Added moving-average-window to monitor-point-desc";
+  }
+  revision 2023-02-01 {
+    description
+      "Renamed raw-data-refresh-times to timestamps with min/max";
+  }
+  revision 2023-01-06 {
+    description
+      "Added incarnation-number to monitor-point. Added raw-data-refresh-times to power-results. Added express-recipe-path to discovered-info.";
+  }
+  revision 2022-11-11 {
+    description
+      "Added express-recipe-path to monitor-point/freq-range";
+  }
+  revision 2022-08-11 {
+    description
+      "Added actual-fmin and actual-fmax to power-results grouping";
+  }
+  revision 2022-07-25 {
+    description
+      "Added nmc-network-id to freq-desc grouping";
+  }
+  revision 2022-03-24 {
+    description
+      "Moved log-level out of get-multiple-scaled-powers to parent container";
+  }
+  revision 2022-03-10 {
+    description
+      "Added log level for get-scaled-power and get-multiple-scaled-powers RPCs";
+  }
+  revision 2022-02-10 {
+    description
+      "Added source-total-power-mismatch-threshold field to get-multiple-scaled-powers RPC";
+  }
+  revision 2022-02-03 {
+    description
+      "Added source-total-power-mismatch-threshold field to monitor-point-desc and get-scaled-power RPC";
+  }
+  revision 2021-10-28 {
+    description
+      "Added deadzone field to monitor-point-desc";
+  }
+  revision 2021-10-14 {
+    description
+      "added discovered-info to get-scaled-power and get-multiple-scaled-powers RPCs";
+  }
+  revision 2021-06-24 {
+    description
+      "added tx-port field";
+  }
+  revision 2021-05-11 {
+    description
+      "added spectral-tilt and aggregated-total-power to power-results";
+  }
+  revision 2019-05-27 {
+    description
+      "Initial creation.";
+  }
+
+  grouping monitor-point-desc {
+    leaf destination-port {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Destination port";
+    }
+    leaf owner {
+      type identityref {
+        base scaler-types:owner;
+      }
+      mandatory true;
+      description
+        "Owner of this monitor point";
+    }
+    leaf name {
+      type string;
+      mandatory true;
+      description
+        "Name of this monitor point";
+    }
+    uses scaler-types:monitor-point-options;
+    leaf deadzone {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "Only destination-powers changes strictly above the specified value should be published";
+    }
+    leaf source-total-power-mismatch-threshold {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      units "dB";
+      description
+        "The threshold for raising the source-total-power-mismatch diagnostic";
+    }
+    leaf moving-average-window {
+      type uint16;
+      units "seconds";
+      description
+        "When greater than 0, destination-powers are subjected to m-point moving average filtering where m is the ceiling of (moving-average-window / polling-cadence)";
+    }
+  }
+
+  grouping source-location {
+    leaf source-port {
+      type instance-identifier;
+      description
+        "Source port";
+    }
+    leaf direction {
+      type scaler-types:direction-enum;
+      description
+        "Direction of scaling";
+    }
+  }
+
+  grouping freq-desc {
+    uses scaler-types:freq-desc;
+    leaf source-type {
+      type scaler-types:source-type-enum;
+      mandatory true;
+      description
+        "Source type";
+    }
+    list source-powers {
+      key "index";
+      leaf index {
+        type int16;
+        description
+          "Bin index";
+      }
+      leaf power {
+        mandatory true;
+        type ciena-6500r-types:power;
+        units "dBm";
+        description
+          "Powers to use at the source port (input)";
+      }
+    }
+    container source {
+      uses source-location;
+    }
+    leaf nmc-network-id {
+      type string;
+      description
+        "Network unique identifier of the end-to-end network media channel";
+    }
+  }
+
+  grouping power-results {
+    list destination-powers {
+      key "index";
+      config false;
+      leaf index {
+        type int16;
+        description
+          "Bin index";
+      }
+      leaf power {
+        mandatory true;
+        type ciena-6500r-types:power;
+        units "dBm";
+        description
+          "Scaled powers at the destination (output)";
+      }
+    }
+    container timestamps {
+      config false;
+      leaf min {
+        type uint64;
+      }
+      leaf max {
+        type uint64;
+      }
+      description
+        "Epoch times of when raw data used for scaling are refreshed.";
+    }
+    container diagnostic {
+      config false;
+      uses scaler-types:diagnostic;
+    }
+    leaf debug-info {
+      config false;
+      type string;
+      description
+        "Additional debugging info";
+    }
+    leaf spectral-tilt {
+      config false;
+      type ciena-6500r-types:power;
+      units "dB";
+      description
+        "Spectral tilt as derived from bin powers";
+    }
+    leaf aggregated-total-power {
+      config false;
+      type ciena-6500r-types:power;
+      units "dBm";
+      description
+        "Total power as aggregated from bin powers at the destination port";
+    }
+    leaf measured-total-power {
+      config false;
+      type ciena-6500r-types:power;
+      units "dBm";
+      description
+        "The measured total power for the spectral band at the destination port";
+    }
+    leaf source-aggregated-total-power {
+      config false;
+      type ciena-6500r-types:power;
+      units "dBm";
+      description
+        "Total power as aggregated from bin powers at the source port";
+    }
+    leaf source-measured-total-power {
+      config false;
+      type ciena-6500r-types:power;
+      units "dBm";
+      description
+        "The measured total power for the spectral band at the source port";
+    }
+    leaf actual-fmin {
+      config false;
+      type scaler-types:frequency;
+      description
+        "Actual minimum frequency when the destination power is aggregated from spectral bins";
+    }
+    leaf actual-fmax {
+      config false;
+      type scaler-types:frequency;
+      description
+        "Actual maximum frequency when the destination power is aggregated from spectral bins";
+    }
+  }
+
+  list monitor-point {
+    key "destination-port owner name";
+    uses monitor-point-desc;
+    leaf cache-revision {
+      type uint64;
+      description
+        "Revision of cache";
+    }
+    leaf incarnation-number {
+      config false;
+      type uint32;
+      description
+        "Incarnation number that is incremented on every publication cycle.";
+    }
+    container diagnostic {
+      config false;
+      uses scaler-types:diagnostic;
+    }
+    leaf debug-info {
+      config false;
+      type string;
+      description
+        "Additional debugging info";
+    }
+    list freq-range {
+      key "fmin";
+      uses freq-desc;
+      container discovered-source {
+        config false;
+        uses source-location;
+      }
+      container tx-port {
+        config false;
+        uses source-location;
+      }
+      container recipe-path {
+        config false;
+        leaf-list port {
+          type string;
+        }
+        description
+          "Ordered list of ports on the scaling path";
+      }
+      container express-recipe-path {
+        config false;
+        leaf-list port {
+          type string;
+        }
+        description
+          "Ordered list of ports on the scaling path in express mode";
+      }
+      uses power-results;
+    }
+  }
+
+  grouping discovered-info {
+    leaf discovered-source-port {
+      config false;
+      type instance-identifier;
+      description
+        "Discovered source port";
+    }
+    leaf tx-port {
+      config false;
+      type instance-identifier;
+      description
+        "Tx port on the recipe-path";
+    }
+    container recipe-path {
+      config false;
+      leaf-list port {
+        type string;
+      }
+      description
+        "Ordered list of ports on the scaling path";
+    }
+    container express-recipe-path {
+      config false;
+      leaf-list port {
+        type string;
+      }
+      description
+        "Ordered list of ports on the scaling path in express mode";
+    }
+  }
+
+  rpc get-scaled-power {
+    description
+      "Get scaled power without creating a monitor point";
+    input {
+      leaf destination-port {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Destination port";
+      }
+      leaf source-total-power-mismatch-threshold {
+        type decimal64 {
+          fraction-digits 1;
+        }
+        units "dB";
+        description
+          "The threshold for raising the source-total-power-mismatch diagnostic";
+      }
+      leaf log-level {
+        type ciena-ddy-diag:log-level;
+        description
+          "Logging level which is in effect for the duration of the RPC.";
+      }
+      uses scaler-types:monitor-point-options;
+      uses freq-desc;
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      uses discovered-info;
+      uses power-results;
+    }
+  }
+
+  rpc get-multiple-scaled-powers {
+    description
+      "Get multiple scaled powers without creating a monitor point";
+    input {
+      list endpoints {
+        leaf destination-port {
+          type instance-identifier;
+          mandatory true;
+          description
+            "Destination port";
+        }
+        leaf source-total-power-mismatch-threshold {
+          type decimal64 {
+            fraction-digits 1;
+          }
+          units "dB";
+          description
+            "The threshold for raising the source-total-power-mismatch diagnostic";
+        }
+        uses scaler-types:monitor-point-options;
+        uses freq-desc;
+      }
+      leaf log-level {
+        type ciena-ddy-diag:log-level;
+        description
+          "Logging level which is in effect for the duration of the RPC.";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      list powers {
+        leaf destination-port {
+          type instance-identifier;
+          description
+            "Destination port";
+        }
+        leaf source-port {
+          type instance-identifier;
+          description
+            "Source port";
+        }
+        uses scaler-types:freq-desc;
+        uses discovered-info;
+        uses power-results;
+      }
+    }
+  }
+}

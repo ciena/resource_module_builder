@@ -1,0 +1,71 @@
+module ciena-pro-isis {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-isis";
+  prefix ciena-pro-isis;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import openconfig-isis-types {
+    prefix oc-isis-types;
+  }
+  import openconfig-network-instance {
+    prefix oc-ni;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "Ciena forwarding information base";
+
+  revision 2022-09-09 {
+    description
+      "Initial version";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping isis-if-metric {
+    description
+      "Container for the ISIS interface metric (narrow and wide), used per level.";
+    container metric {
+      description
+        "ISIS interface metric";
+      leaf narrow {
+        type oc-isis-types:narrow-metric;
+        description
+          "Narrow metric";
+      }
+      leaf wide {
+        type oc-isis-types:wide-metric;
+        description
+          "Narrow metric";
+      }
+    }
+  }
+
+  grouping isis-nodecount {
+    description
+      "Nodecount: number of ISIS nodes in the network, used per level.";
+    leaf network-nodecount {
+      type yang:counter32;
+      description
+        "Nodecount";
+    }
+  }
+
+  augment "/oc-ni:network-instances/oc-ni:network-instance/oc-ni:protocols/oc-ni:protocol/oc-ni:isis/oc-ni:interfaces/oc-ni:interface/oc-ni:levels/oc-ni:level" {
+    description
+      "Add metric to each ISIS interface level";
+    uses isis-if-metric;
+  }
+
+  augment "/oc-ni:network-instances/oc-ni:network-instance/oc-ni:protocols/oc-ni:protocol/oc-ni:isis/oc-ni:levels/oc-ni:level/oc-ni:system-level-counters/oc-ni:state" {
+    description
+      "Add network-nodecount to the system-level-counters state";
+    uses isis-nodecount;
+  }
+}

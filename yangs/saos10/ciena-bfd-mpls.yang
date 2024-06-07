@@ -1,0 +1,121 @@
+module ciena-bfd-mpls {
+
+  namespace "http://ciena.com/ns/yang/ciena-bfd-mpls";
+
+  prefix "bfd-mpls";
+
+  import ciena-bfd-types {
+     prefix "bfd-types";
+  }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+     "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+     "This module contains the YANG definition for BFD parameters for
+      MPLS LSPs as per RFC 5884.
+
+      Copyright (c) 2020  Ciena Corporation.  All rights
+      reserved.
+
+      All information contained herein is, and remains the
+      property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained
+      from Ciena Corporation.";
+
+  revision 2021-07-19 {
+     description 
+        "Added support for Seamless-BFD over SR-policy.
+         Introduced seamless-gach-value for GACh channel-type 
+         values specific for Seamless-BFD over MPLS paths.";
+  }
+
+  revision 2020-01-27 {
+     description 
+        "Initial revision.";
+  }
+
+  /*
+   * Identity definitions
+   */
+  identity encap-gach {
+     base bfd-types:encap-type;
+     description
+        "BFD with G-ACh encapsulation as per RFC 5586.";
+  }
+
+  identity encap-ip-gach {
+     base bfd-types:encap-type;
+     description
+        "BFD with IP and G-ACh encapsulation as per RFC 5586.";
+  }
+
+  /*
+   * Groupings
+   */
+  grouping encap-cfg {
+     description
+        "Configuration for BFD encapsulation";
+     leaf encap {
+        type identityref {
+           base bfd-types:encap-type;
+        }
+        default encap-gach;
+        description
+           "BFD encapsulation";
+     }
+  }
+
+  typedef gach-value {
+     type enumeration {
+        enum mpls-tp-cc {
+           value "22";
+           description
+              "MPLS-TP CC message";
+        }
+
+        enum mpls-tp-cv {
+           value "23";
+           description
+              "MPLS-TP CV message";
+        }
+
+        enum pw-ach {
+           value "7";
+           description
+              "BFD Control, PW-ACH encapsulation (without IP/UDP Headers).";
+        }
+     }
+     description
+        "Configuration for BFD G-ACh encapsulation";
+     default mpls-tp-cc; // For MPLS-TP use gach = 0x22 by default
+  }
+
+  typedef seamless-gach-value {
+     type enumeration {
+        enum pw-ach {
+           value "8";
+           description
+              "Seamless-BFD Control, PW-ACH encapsulation (without IP/UDP Headers).";
+        }
+
+        enum ipv4 {
+           value "21";
+           description
+              "IPv4/UDP message.";
+        }
+     }
+     description
+        "Configuration for Seamless-BFD G-ACh encapsulation";
+  }
+}

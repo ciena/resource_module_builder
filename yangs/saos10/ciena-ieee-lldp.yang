@@ -1,0 +1,1381 @@
+module ciena-ieee-lldp {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-ieee-lldp";
+    prefix "lldp";
+
+    import ietf-yang-types { prefix "yang"; }
+
+    import openconfig-interfaces { prefix oc-if; }
+
+    import ciena-openconfig-interfaces { prefix cn-oc-if; }
+
+    organization
+        "Ciena Corporation";
+ 
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                 U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module contains the schema definition for Link Layer
+        Discovery Protocol.";
+
+    revision "2022-03-10" {
+        description
+            "Adding remote-management-interface under lldp-global-operational,
+             preferred-remote-mgmt-interface under lldp-global-config
+             Changed preferred-remote-mgmt-interface type from leafref to string";
+    }
+
+    revision "2021-05-19" {
+        description
+            "Adding remote-entry-change-details notification
+             with the following details of neighbor node:
+             remote-operation, chassis-id, chassis-id-subtype,
+             system-name, local-port-id, remote-port-id";
+    }
+
+    revision "2018-01-24" {
+        description
+            "Updating lldp to augment openconfig-interfaces.";
+    }
+
+    revision "2015-03-14" {
+        description
+            "Initial Version.";
+        reference "ieee Std 802.1AB";
+    }
+
+    feature dot1-extension {
+        description
+            "This feature means that device supports dot1-extended tlvs";
+    }
+
+    feature dot3-extension {
+        description
+            "This feature means that device supports dot3-extended tlvs";
+    }
+
+    //This is IANA-Address-Family-Numbers definition will be 
+    // moved out of LLDP once we have the standard data type.
+    typedef address-family {
+        type enumeration {
+            enum ipv4 {
+                value 1;
+                description "IP version 4";
+            }
+            enum ipv6 {
+                value 2;
+                description "IP version 6";
+            }
+            enum nsap {
+                value 3;
+                description "NSAP";
+            }
+            enum hdlc {
+                value 4;
+                description "HDLC (8-bit multidrop)";
+            }
+            enum bbn-1822 {
+                value 5;
+                description "BBN 1822";
+            }
+            enum all-802 {
+                value 6;
+                description "802 (includes all 802 media plus Ethernet 'canonical format')";
+            }
+            enum e-163 {
+                value 7;
+                description "E.163";
+            }
+            enum e-164 {
+                value 8;
+                description "E.164 (SMDS, FrameRelay, ATM)";
+            }
+            enum f-69 {
+                value 9;
+                description "F.69 (Telex)";
+            }
+            enum x-121 {
+                value 10;
+                description "X.121 (X.25, Frame Relay)";
+            }
+            enum ipx {
+                value 11;
+                description "IPX (Internetwork Packet Exchange)";
+            }
+            enum appletalk {
+                value 12;
+                description "Appletalk";
+            }
+            enum decnet-iv {
+                value 13;
+                description "DECnet IV";
+            }
+            enum banyan-vines {
+                value 14;
+                description "Banyan Vines";
+            }
+            enum e-164-with-nsap {
+                value 15;
+                description "E.164 with NSAP format subaddress";
+                reference "ATM Forum UNI 3.1";
+            }
+            enum dns {
+                value 16;
+                description "DNS (Domain Name System)";
+            }
+            enum distinguished-name {
+                value 17;
+                description "Distinguished Name (per X.500)";
+            }
+            enum as-number {
+                value 18;
+                description "Autonomous System Number";
+            }
+            enum xtp-over-ipv4 {
+                value 19;
+                description "XTP over IP version 4";
+            }
+            enum xtp-over-ipv6 {
+                value 20;
+                description "XTP over IP version 6";
+            }
+            enum xtp-native-mode-xtp {
+                value 21;
+                description "XTP native mode XTP";
+            }
+            enum fibre-channel-wwpn {
+                value 22;
+                description "Fibre Channel World-Wide Port Name";
+            }
+            enum fibre-channel-wwnn {
+                value 23;
+                description "Fibre Channel World-Wide Node Name";
+            }
+            enum gwid {
+                value 24;
+                description "Gateway Identifier";
+            }
+            enum l2vpn {
+                value 25;
+                description "AFI for L2VPN information";
+                reference
+                    "RFC 4761: Virtual Private LAN Service (VPLS): Using BGP for Auto-Discovery
+                     and Signaling RFC 6074: Provisioning, Auto-Discovery, and Signaling
+                     in Layer 2 Virtual Private Networks (L2VPNs)";
+            }
+            enum mpls-tp-section-endpoint-identifier {
+                value 26;
+                description "MPLS-TP Section Endpoint Identifier";
+                reference "draft-ietf-mpls-gach-adv";
+            }
+            enum mpls-tp-lsp-endpoint-identifier {
+                value 27;
+                description "MPLS-TP LSP Endpoint Identifier";
+                reference "draft-ietf-mpls-gach-adv";
+            }
+            enum mpls-tp-pseudowire-endpoint-identifier {
+                value 28;
+                description "MPLS-TP Pseudowire Endpoint Identifier";
+                reference "draft-ietf-mpls-gach-adv";
+            }
+            enum eigrp-common-service-family {
+                value 16384;
+                description "EIGRP Common Service Family";
+            }
+            enum eigrp-ipv4-service-family {
+                value 16385;
+                description "EIGRP IPv4 Service Family";
+            }
+            enum eigrp-ipv6-service-family {
+                value 16386;
+                description "EIGRP IPv6 Service Family";
+            }
+            enum lisp-canonical-address-format {
+                value 16387;
+                description "LISP Canonical Address Format (LCAF)";
+            }
+            enum bgp-ls {
+                value 16388;
+                description "BGP-LS";
+                reference "draft-ietf-idr-ls-distribution";
+            }
+            enum 48-bit-mac {
+                value 16389;
+                description "48-bit MAC";
+                reference "draft-eastlake-rfc5342bis";
+            }
+            enum 64-bit-mac {
+                value 16390;
+                description "64-bit MAC";
+                reference "draft-eastlake-rfc5342bis";
+            }
+        }
+        description
+            "This typedef is a YANG enumeration of IANA-registered address
+             family numbers (AFN).";
+        reference
+            "IANA Address Family Numbers registry. <http://www.iana.org/assignments/address-family-numbers>";
+    }
+
+    typedef system-capability-map {
+        type bits {
+            bit other {
+                position 0;
+                description
+                    "Indicates that the system has capabilities other than those listed
+                     below.";
+            }
+            bit repeater {
+                position 1;
+                description
+                    "Indicates that the system has repeater capability.";
+            }
+            bit bridge {
+                position 2;
+                description
+                    "Indicates that the system has bridge capability.";
+            }
+            bit wlan-accesspoint {
+                position 3;
+                description
+                    "Indicates that the system has WLAN access point capability.";
+            }
+            bit router {
+                position 4;
+                description
+                    "Indicates that the system has router capability.";
+            }
+            bit telephone {
+                position 5;
+                description
+                    "Indicates that the system has telephone capability.";
+            }
+            bit docsis-cable-dev {
+                position 6;
+                description
+                    "Indicates that the system has DOCSIS Cable Device capability
+                     (IETF RFC 2669 & 2670).";
+            }
+            bit station-only {
+                position 7;
+                description
+                    "Indicates that the system has only station capability and nothing
+                     else.";
+            }
+        }
+        description
+            "This describes the system capabilities.";
+    }
+
+    typedef remote-operation-type {
+       type enumeration {
+          enum create {
+             value 1;
+             description
+                "Indicates that LLDP neighbor has been discovered";
+          }
+          enum delete {
+             value 2;
+             description
+                "Indicates that LLDP neighbor has been deleted";
+          }
+          enum update {
+             value 3;
+             description
+                "Indicates that LLDP neighbor information has been updated";
+          }
+       }
+    }
+
+    grouping man-address-index-group {
+        description
+            "Index definition for managemet address.";
+        leaf man-address-subtype {
+            type address-family;
+            description
+                "The type of managment address identifier encoded for the managment
+                 address.";
+        }
+        leaf man-address {
+            type string {
+            }
+            description
+                "The string value used to identify the management address component
+                 associated with the system.";
+        }
+    }
+
+    grouping man-address-group {
+        description
+            "Describes the management address of a system.";
+        leaf if-subtype {
+            type enumeration {
+                enum unknown {
+                    value 1;
+                    description
+                        "Represents the case where the interface is not known.";
+                }
+                enum if-index {
+                    value 2;
+                    description
+                        "Represents interface identifier based on the ifIndex MIB object.";
+                }
+                enum sys-port-num {
+                    value 3;
+                    description
+                        "Represents interface identifier based on the system port numbering
+                         convention.";
+                }
+            }
+            description
+                "The enumeration value that identifies the interface numbering
+                 method used for defining the interface number, associated with
+                 the system.";
+        }
+        leaf if-id {
+            type int32;
+            description
+                "The integer value used to identify the interface number regarding
+                 the management address component associated with the system.";
+        }
+        leaf address-oid {
+            type yang:object-identifier-128;
+            description
+                "The OID value used to identify the type of hardware component
+                 or protocol entity associated with the management address advertised
+                 by the system agent.";
+        }
+    }
+
+    grouping chassis-group {
+        description
+            "Describes the chassis information of a system.";
+        leaf chassis-id-subtype {
+            type enumeration {
+                enum chassis-component {
+                    description
+                        "Represents a chassis identifier based on the value of entPhysicalAlias
+                         object (defined in IETF RFC 4133) for a chassis component.";
+                }
+                enum interface-alias {
+                    description
+                        "Represents a chassis identifier based on the value of ifAlias
+                         object (defined in IETF RFC 2863) for an interface on the containing
+                         chassis.";
+                }
+                enum port-component {
+                    description
+                        "Represents a chassis identifier based on the value of entPhysicalAlias
+                         object (defined in IETF RFC 4133) for a port or backplane component.";
+                }
+                enum mac-address {
+                    description
+                        "Represents a chassis identifier based on the value of a unicast
+                         source address.";
+                }
+                enum network-address {
+                    description
+                        "Represents a chassis identifier based on a network address, associated
+                         with a particular chassis.";
+                }
+                enum interface-name {
+                    description
+                        "Represents a chassis identifier based on the value of ifName
+                         object (defined in IETF RFC 2863) for an interface on the containing
+                         chassis.";
+                }
+                enum local {
+                    description
+                        "Represents a chassis identifier based on a locally defined value.";
+                }
+            }
+            description
+                "Type of chassis id in a system.";
+        }
+        leaf chassis-id {
+            type string {
+            }
+            description
+                "The string value used to identify the chassis component associated
+                 with the system.";
+        }
+    }
+
+    grouping system-group {
+        description
+            "Describes the system and its capabilities.";
+        leaf system-name {
+            type string {
+            }
+            description
+                "The string value used to identify the system name of the system.";
+        }
+        leaf system-description {
+            type string {
+            }
+            description
+                "The string value used to identify the system description of the
+                 system.";
+        }
+        leaf system-capability-supported {
+            type system-capability-map;
+            description
+                "The bitmap value used to identify which system capabilities are
+                 supported on the system.";
+        }
+        leaf system-capability-enabled {
+            type system-capability-map;
+            description
+                "The bitmap value used to identify which system capabilities are
+                 enabled on the system.";
+        }
+    }
+
+    grouping port-group {
+        description
+            "Describes the port inforamtion of a system.";
+        leaf port-id-subtype {
+            type enumeration {
+                enum interface-alias {
+                    description
+                        "Represents a port identifier based on the ifAlias MIB object,
+                         defined in IETF RFC 2863.";
+                }
+                enum port-component {
+                    description
+                        "Represents a port identifier based on the value of entPhysicalAlias
+                         (defined in IETF RFC 4133) for a port component.";
+                }
+                enum mac-address {
+                    description
+                        "Represents a port identifier based on a unicast source address
+                         (encoded in network byte order and IEEE 802.3 canonical bit order).";
+                }
+                enum network-address {
+                    description
+                        "Represents a port identifier based on a network address, detected
+                         by the agent and associated with a particular port.";
+                }
+                enum interface-name {
+                    description
+                        "Represents a port identifier based on the ifName MIB object,
+                         defined in IETF RFC 2863.";
+                }
+                enum agent-circuit-id {
+                    description
+                        "Represents a port identifier based on the agent-local identifier
+                         of the circuit (defined in RFC 3046).";
+                }
+                enum local {
+                    description
+                        "Represents a port identifier based on a value locally assigned.";
+                }
+            }
+            description
+                "Type of port id.";
+        }
+        leaf port-id {
+            type string {
+            }
+            description
+                "The string value used to identify the port component associated
+                 with the system.";
+        }
+        leaf port-desc {
+            type string {
+            }
+            description
+                "The string value used to identify the description of the given
+                 port associated with the system.";
+        }
+    }
+
+    grouping dot3-mac-group {
+        description
+            "Describes the mac capabilities.";
+        leaf auto-neg-supported {
+            type boolean;
+            description
+                "The truth value used to indicate whether the given port (associated
+                 with the system) supports Auto-negotiation.";
+        }
+        leaf auto-neg-enabled {
+            type boolean;
+            description
+                "The truth value used to indicate whether port Auto-negotiation
+                 is enabled on the given port associated with the system.";
+        }
+        leaf auto-neg-advertised-cap {
+            type binary {
+                length "2";
+            }
+            description
+                "This object contains the value (bitmap) (defined in IETF RFC
+                 3636) which is associated with the given port on the system.";
+        }
+        leaf oper-mau-type {
+            type int32 {
+                range "0..2147483647";
+            }
+            description
+                "An integer value that indicates the operational MAU type of the
+                 given port on the system.";
+        }
+    }
+
+    grouping dot3-power-group {
+        description
+                "Describes the power capabilites.";
+        leaf port-class {
+            type enumeration {
+                enum p-class-pse {
+                    description
+                        "PSE class.";
+                }
+                enum p-class-pd {
+                    description
+                        "PD class.";
+                }
+            }
+            description
+                "The value that identifies the port Class of the given port associated
+                 with the system.";
+        }
+        leaf mdi-supported {
+            type boolean;
+            description
+                "The truth value used to indicate whether the MDI power is supported
+                 on the given port associated with the system.";
+        }
+        leaf mdi-enabled {
+            type boolean;
+            description
+                "The truth value used to identify whether MDI power is enabled
+                 on the given port associated with the system.";
+        }
+        leaf pair-controlable {
+            type boolean;
+            description
+                "The truth value is derived from the value of pethPsePortPowerPairsControlAbility
+                 object (defined in IETF RFC 3621) and is used to indicate whether
+                 the pair selection can be controlled on the given port associated
+                 with the system.";
+        }
+        leaf pairs {
+            type int8 {
+                range "1..2";
+            }
+            description
+                "This object contains the value of the pethPsePortPowerPairs object
+                 (defined in IETF RFC 3621) which is associated with the given
+                 port on the system.";
+        }
+        leaf class {
+            type int8 {
+                range "1..5";
+            }
+            description
+                "This object contains the value of the pethPsePortPowerClassifications
+                 object (defined in IETF RFC 3621) which is associated with the
+                 given port on the system.";
+        }
+    }
+
+    grouping dot3-link-agg-group {
+        description
+            "Link Aggregation information about a particular port component.";
+        leaf agg-status {
+            type bits {
+                bit capable {
+                    position 0;
+                    description
+                        "Specifies whether it is capable.";
+                }
+                bit enabled {
+                    position 1;
+                    description
+                        "Specifies if it is enabled.";
+                }
+            }
+            description
+                "The bitmap value contains the link aggregation capabilities and
+                 the current aggregation status of the link.";
+        }
+        leaf agg-port-id {
+            type union {
+                type int32 {
+                    range "1..2147483647";
+                }
+                type enumeration {
+                    enum not-supported {
+                        description
+                            "Agg not supported.";
+                    }
+                }
+            }
+            description
+                "This object contains the IEEE 802.3 aggregated port identifier,
+                 aAggPortID (IEEE 802.3-2002, 30.7.2.1.1), derived from the ifNumber
+                 of the ifIndex for the port component in link aggregation.";
+        }
+    }
+
+    grouping dot3-frame-size-group {
+        description
+            "Frame size information about a particular port component.";
+        leaf max-frame-size {
+            type int32 {
+                range "0..65535";
+            }
+            description
+                "An integer value indicating the maximum supported frame size
+                 in octets on the given port of the system.";
+        }
+    }
+
+    grouping dot1-port-vlan-group {
+        description
+            "Port vlan information about a particular port component.";
+        leaf port-vlan-id {
+            type union {
+                type int32 {
+                    range "1..4094";
+                }
+                type enumeration {
+                    enum not-supported {
+                        description
+                            "Port vlan not supported.";
+                    }
+                }
+            }
+            description
+                "The integer value used to identify the port's VLAN identifier
+                 associated with the system.";
+        }
+    }
+
+    grouping dot1-proto-vlan-key-group {
+        description
+            "Describes the indices for protocol vlan.";
+        leaf proto-vlan-id {
+            type union {
+                type int32 {
+                    range "1..4094";
+                }
+                type enumeration {
+                    enum not-supported {
+                        description
+                            "Protocol vlan not supported.";
+                    }
+                }
+            }
+            description
+                "The integer value used to identify the port and protocol VLANs
+                 associated with the given port associated with the system.";
+        }
+    }
+
+    grouping dot1-proto-vlan-group {
+        description
+            "Describes the protocol vlan.";
+        uses dot1-proto-vlan-key-group;
+        leaf proto-vlan-supported {
+            type boolean;
+            description
+                "The truth value used to indicate whether the given port (associated
+                 with the system) supports port and protocol VLANs.";
+        }
+        leaf proto-vlan-enabled {
+            type boolean;
+            description
+                "The truth value used to indicate whether the port and protocol
+                 VLANs are enabled on the given port associated with the system.";
+        }
+    }
+
+    grouping dot1-vlan-name-key-group {
+        description
+            "Describes the indices for vlan names.";
+        leaf vlan-id {
+            type int16 {
+                range "0..4094";
+            }
+            description
+                "The integer value used to identify the IEEE 802.1Q VLAN IDs with
+                 which the given port is compatible.";
+        }
+    }
+
+    grouping dot1-vlan-name-group {
+        description
+            "Describes the Vlan name.";
+        uses dot1-vlan-name-key-group;
+        leaf vlan-name {
+            type string {
+            }
+            description
+                "The string value used to identify VLAN name identified by the
+                 Vlan Id associated with the given port on the system.";
+        }
+    }
+
+    grouping dot1-protocol-key-group {
+        description
+            "Describes the protocol index.";
+        leaf protocol-index {
+            type int32 {
+                range "1..2147483647";
+            }
+            description
+                "This object represents an arbitrary local integer value used
+                 by this agent to identify a particular protocol identity.";
+        }
+    }
+
+    grouping dot1-protocol-group {
+        description
+            "Describes the protocols supported over the port.";
+        uses dot1-protocol-key-group;
+        leaf protocol-id {
+            type binary {
+            }
+            description
+                "The octet string value used to identify the protocols associated
+                 with the given port of the system.";
+        }
+    } 
+
+    container lldp-global-config {
+        description
+            "Global LLDP variables that could be configured.";
+        leaf admin-enabled {
+            type boolean;
+            default "true";
+            description
+                "Globally is LLDP administratively enabled or disabled.";
+        }
+        leaf msg-tx-interval {
+            type uint16 {
+                range "5..32768";
+            }
+            units seconds;
+            default "30";
+            description
+                "The interval at which LLDP frames are transmitted on behalf of
+                 this LLDP agent.";
+        }
+        leaf msg-tx-hold-multiplier {
+            type uint8 {
+                range "2..10";
+            }
+            default "4";
+            description
+                "The time-to-live value expressed as a multiple of the msg-tx-interval
+                 object.";
+        }
+        leaf reinit-delay {
+            type uint8 {
+                range "1..10";
+            }
+            units seconds;
+            default "2";
+            description
+                "Specifies the delay time in seconds for LLDP to re-initialize
+                 on any port. The range is 1 to 10 seconds; the default is 2 seconds.";
+        }
+        leaf tx-delay {
+            type uint16 {
+                range "1..8192";
+            }
+            units seconds;
+            default "2";
+            description
+                "The tx-delay indicates the delay (in units of seconds) between
+                 successive LLDP frame transmissions initiated by value/status
+                 changes in the LLDP local systems.";
+        }
+        leaf notification-interval {
+            type uint16 {
+                range "5..3600";
+            }
+            units seconds;
+            default "5";
+            description
+                "The interval in seconds within which only one notification could
+                 be sent.";
+        }
+        leaf preferred-remote-mgmt-interface {
+           type string;
+           must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]" +
+                "/oc-if:config/cn-oc-if:role = 'cn-oc-if:management'" +
+                "and . != 'mgmtbr0'" {
+                 error-message
+                    "The preferred-remote-mgmt-interface configuration must reference an existing remote management interface.
+                     mgmtbr0 cannot be chosen as preferred-remote-mgmt-interface.
+                     This interface cannot be removed while it is referenced by lldp-global-config preferred-remote-mgmt-interface";
+           }
+           description
+               "Preferred remote management IP interface.
+                If it has valid IP assigned to it, LLDP shall advertise IP address(es)
+                of this remote management interface in the Management Address TLV of outgoing LLDPDUs.";
+        }
+    }
+
+    container lldp-global-stats {
+        config false;
+        description
+            "Global LLDP statistics that could be read.";
+        leaf remote-last-change-time {
+            type yang:date-and-time;
+            description
+                "Systime when an entry is last created, modified or deleted for
+                 any learned remote system data.";
+        }
+        leaf remote-inserts {
+            type yang:zero-based-counter32;
+            description
+                "Counter to track the number of complete inserts or new learned
+                 entry in the remote system data.";
+        }
+        leaf remote-deletes {
+            type yang:zero-based-counter32;
+            description
+                "Counter to track the number of complete deletes or removal of
+                 learned entry in the remote system data.";
+        }
+        leaf remote-drops {
+            type yang:zero-based-counter32;
+            description
+                "Counter to track the number of incomplete inserts or deletes
+                 because of insufficient resources in the remote system data.";
+        }
+        leaf remote-ageouts {
+            type yang:zero-based-counter32;
+            description
+                "Counter to track the number of deletes in the remote system data
+                 beacuse of information timeliness interval expiry.";
+        }
+    }
+
+    container lldp-global-operational {
+        config false;
+        description
+            "Global operational variables and list that is local to the system.";
+        uses chassis-group;
+        uses system-group;
+
+        list local-managment-address {
+            key "man-address-subtype man-address";
+            description
+                "The list contains management address information on the local
+                 system known to this agent.";
+            uses man-address-index-group;
+            leaf man-address-len {
+                type int32;
+                description
+                    "The total length of the management address subtype and the management
+                     address fields in LLDP PDUs transmitted by the local LLDP agent.";
+            }
+            uses man-address-group;
+        }
+        leaf remote-management-interface {
+            type string;
+            description
+               "Specifies the active remote management interface.
+                LLDP advertises IP address of this remote interface in Management Address TLV of outgoing LLDPDUs.";
+        }
+    }
+
+    augment "/oc-if:interfaces/"
+          + "oc-if:interface/"
+          + "oc-if:config" {
+        when "cn-oc-if:type = 'ettp'";
+        description
+            "Augmenting openconfig-interface module to add configuration parameters for LLDP.";
+
+        container lldp-port-config {
+            description
+                "Per port configurable variables.";
+            leaf admin-status {
+                type enumeration {
+                    enum tx-only {
+                        description
+                            "The LLDP agent transmits LLDPframes on this port and it does
+                             not store any information about the remote systems connected.";
+                    }
+                    enum rx-only {
+                        description 
+                            "The LLDP agent receives, but it does not transmit LLDP frames
+                             on this port.";
+                    }
+                    enum tx-and-rx {
+                        description 
+                            "The LLDP agent transmits and receives LLDP frames on this port.";
+                    }
+                    enum disabled {
+                        description 
+                            "The LLDP agent does not transmit or receive LLDP frames on this
+                             port.";
+                    }
+                }
+                default tx-and-rx;
+                description
+                    "Defines the LLDP protocol configurational status on each port.";
+            }
+            leaf notify {
+                type boolean;
+                default "false";
+                description
+                    "Defines the state of LLDP notification for each port.";
+            }
+            leaf send-port-desc-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of port description tlv.";
+            }
+            leaf send-sys-name-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of system name tlv.";
+            }
+            leaf send-sys-desc-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of system description tlv.";
+            }
+            leaf send-sys-cap-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of system capabilities tlv.";
+            }
+
+            list management-address {
+                key "man-address-subtype man-address";
+                description
+                    "List of managment address tvls configured for each port.";
+                uses man-address-index-group;
+                leaf send-mgnt-address-tlv {
+                    type boolean;
+                    default "false";
+                    description
+                        "Controls to transmission of management address tlv for each management
+                         address.";
+                }
+            }
+            leaf man-add-local-ipv4 {
+                type boolean;
+                default "true";
+                description
+                    "Controls transmission of local interface ipv4 manament address in tlv.";
+            }
+            leaf man-add-local-ipv6 {
+                type boolean;
+                default "true";
+                description
+                    "Controls transmission of local interface ipv6 manament address in tlv.";
+            }
+            leaf man-add-remote-ipv4 {
+                type boolean;
+                default "true";
+                description
+                    "Controls transmission of remote interface ipv4 manament address in tlv.";
+            }
+            leaf man-add-remote-ipv6 {
+                type boolean;
+                default "true";
+                description
+                    "Controls transmission of remote interface ipv6 manament address in tlv.";
+            }
+        }
+
+        container dot1-port-config {
+            if-feature dot1-extension;
+            description
+                "Dot1 LLDP extension per port config.";
+            leaf send-port-vlan-tlv {
+                type boolean;
+                default "false";
+                description
+                    "Controls to transmission of dot1 port vlan tlv.";
+            }
+            list dot1-proto-vlan {
+                key "proto-vlan-id";
+                description
+                    "List of protocol vlans.";
+                uses dot1-proto-vlan-key-group;
+                leaf send-proto-vlan-tlv {
+                    type boolean;
+                    default "false";
+                    description
+                       "Controls to transmission of dot1 protocol vlan tlv.";
+                }
+            }
+            list dot1-vlan-name {
+                key "vlan-id";
+                description
+                    "List of vlan names.";
+                uses dot1-vlan-name-key-group;
+                leaf send-vlan-name-tlv {
+                    type boolean;
+                    default "false";
+                    description
+                        "Controls to transmission of dot1 vlan name tlv.";
+                }
+            }
+            list dot1-protocol {
+                key "protocol-index";
+                description
+                    "List of protocols.";
+                uses dot1-protocol-key-group;
+                leaf send-protocol-tlv {
+                    type boolean;
+                    default "false";
+                    description
+                        "Controls to transmission of dot1 protocol tlv.";
+                }
+            }
+        }
+
+        container dot3-port-config {
+            if-feature dot3-extension;
+            description
+                "Dot3 LLDP extension per port config.";
+            leaf send-mac-phy-status-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of dot3 mac phy status tlv.";
+            }
+            leaf send-power-via-mdi-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of dot3 power via mdi tlv.";
+            }
+            leaf send-link-aggregation-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of dot3 link aggregation tlv.";
+            }
+            leaf send-max-frame-size-tlv {
+                type boolean;
+                default "true";
+                description
+                    "Controls to transmission of dot3 max frame size tlv.";
+            }
+        }
+    }
+
+    augment "/oc-if:interfaces/"
+          + "oc-if:interface/"
+          + "oc-if:state" {
+        when "../config/cn-oc-if:type = 'ettp'" {
+          description
+           "Augment only if the interface type is ettp.";
+        }
+
+        description
+            "Augmenting openconfig-interface state module to add operational parameters for LLDP.";
+
+        container lldp-tx-stats {
+            description
+                "Frame transmit statistics.";
+            leaf total-frames {
+                type yang:counter32;
+                description
+                    "The number of LLDP frames transmitted by this LLDP agent on the
+                     indicated port.";
+            }
+        }
+
+        container lldp-rx-stats {
+            description
+                "Frame receive statistics.";
+            leaf total-discards {
+                type yang:counter32;
+                description
+                    "The number of LLDP frames received by this LLDP agent on the
+                     indicated port, and then discarded for any reason.";
+            }
+            leaf total-errors {
+                type yang:counter32;
+                description
+                    "The number of invalid LLDP frames received by this LLDP agent
+                     on the indicated port, while this LLDP agent is enabled.";
+            }
+            leaf total-frames {
+                type yang:counter32;
+                description
+                    "The number of valid LLDP frames received by this LLDP agent on
+                     the indicated port, while this LLDP agent is enabled.";
+            }
+            leaf total-tlv-discards {
+                type yang:counter32;
+                description
+                    "The number of LLDP TLVs discarded for any reason by this LLDP
+                     agent on the indicated port.";
+            }
+            leaf total-tlv-unrecognized {
+                type yang:counter32;
+                description
+                    "The number of LLDP TLVs received on the given port that are not
+                     recognized by this LLDP agent on the indicated port.";
+            }
+            leaf total-tlv-ageouts {
+                type yang:zero-based-counter32;
+                description
+                    "The counter that represents the number of age-outs that occurred
+                     on a given port.";
+            }
+        }
+
+        container lldp-port-operational {
+            description
+                "This table contains per port information associated with the
+                 local system.";
+            uses port-group;
+        }
+
+        container lldp-dot1-port-operational {
+            if-feature dot1-extension;
+            description
+                "Dot1 LLDP extension per port operational.";
+            uses dot1-port-vlan-group;
+            list dot1-proto-vlan {
+                key "proto-vlan-id";
+                description
+                    "Protocoal Vlan's supported on this port.";
+                uses dot1-proto-vlan-group;
+            }
+            list dot1-vlan-name {
+                key "vlan-id";
+                description
+                    "Vlan name's supported on this port.";
+                uses dot1-vlan-name-group;
+            }
+            list dot1-protocol {
+                key "protocol-index";
+                description
+                    "Protocols supported on this port.";
+                uses dot1-protocol-group;
+            }
+        }
+
+        container lldp-dot3-port-operational {
+            if-feature dot3-extension;
+            description
+                "Dot3 LLDP extension per port operational.";
+            uses dot3-mac-group;
+            uses dot3-power-group;
+            uses dot3-link-agg-group;
+            uses dot3-frame-size-group;
+        }
+    
+        container lldp-remote-port-operational {
+            description
+                "Per port varibales of the remote system known to this agent.";
+    
+            uses chassis-group;
+            uses port-group;
+            uses system-group;
+
+            list managment-address {
+                key "man-address-subtype man-address";
+                description
+                    "List of management address tlvs received from the remote system.";
+                uses man-address-index-group;
+                uses man-address-group;
+            }
+
+            list unknown-tlv {
+                key "tlv-type";
+                description
+                    "List of unknown tlvs received from the remote system.";
+                leaf tlv-type {
+                    type uint16 {
+                        range "9..126";
+                    }
+                    description
+                        "This object represents the value extracted from the type field
+                         of the TLV.";
+                }
+                leaf tlv-info {
+                    type binary {
+                    }
+                    description
+                        "This object represents the value extracted from the type field
+                         of the TLV.";
+                }
+            }
+
+            list org-def-info {
+                key "org-id sub-type org-index";
+                description
+                    "Organizationally defined information that is not recognized by
+                     the local agent.";
+                leaf org-id {
+                    type binary {
+                        length "3";
+                    }
+                    description
+                        "The Organizationally Unique Identifier (OUI), as defined in IEEE
+                         std 802-2001, is a 24 bit (three octets) globally unique assigned
+                         number referenced by various standards.";
+                }
+                leaf sub-type {
+                    type uint8 {
+                        range "1..255";
+                    }
+                    description
+                        "The integer value used to identify the subtype of the organizationally
+                         defined information received from the remote system.";
+                }
+                leaf org-index {
+                    type int32 {
+                        range "1..2147483647";
+                    }
+                    description
+                        "This object represents an arbitrary local integer value used
+                         by this agent to identify a particular unrecognized organizationally
+                         defined information instance.";
+                }
+                leaf org-info {
+                    type binary {
+                    }
+                    description
+                        "The string value used to identify the organizationally defined
+                         information of the remote system.";
+                }
+            }
+
+            container dot1-remote-entry {
+                if-feature dot1-extension;
+                config false;
+                description
+                    "Dot1 LLDP extension per remote entry operational.";
+                uses dot1-port-vlan-group;
+                list dot1-proto-vlan {
+                    key "proto-vlan-id";
+                    description
+                        "Protocol Vlan's of specific remote entry.";
+                    uses dot1-proto-vlan-group;
+                }
+                list dot1-vlan-name {
+                    key "vlan-id";
+                    description
+                        "Vlan name's of specific remote entry.";
+                    uses dot1-vlan-name-group;
+                }
+                list dot1-protocol {
+                    key "protocol-index";
+                    description
+                        "Protocol list of specific remote entry.";
+                    uses dot1-protocol-group;
+                }
+            }
+
+            container dot3-remote-entry {
+                if-feature dot3-extension;
+                config false;
+                description
+                    "Dot3 LLDP extension per remote entry operational.";
+                uses dot3-mac-group;
+                uses dot3-power-group;
+                uses dot3-link-agg-group;
+                uses dot3-frame-size-group;
+            }
+        }
+    }
+
+    notification remote-entry-change {
+        description
+            "A notification that is sent when the lldp-global-stats or remote-last-change-time
+             changes.";
+        container alarm {
+            description
+                "Data definitions related to a last remote change.";
+
+            leaf remote-inserts {
+                type yang:zero-based-counter32;
+                description
+                    "Counter to track the number of complete inserts or new learned
+                     entry in the remote system data.";
+            }
+            leaf remote-deletes {
+                type yang:zero-based-counter32;
+                description
+                    "Counter to track the number of complete deletes or removal of
+                     learned entry in the remote system data.";
+            }
+            leaf remote-drops {
+                type yang:zero-based-counter32;
+                description
+                    "Counter to track the number of incomplete inserts or deletes
+                     because of insufficient resources in the remote system data.";
+            }
+            leaf remote-ageouts {
+                type yang:zero-based-counter32;
+                description
+                    "Counter to track the number of deletes in the remote system data
+                     beacuse of information timeliness interval expiry.";
+            }
+        }
+    }
+
+    notification remote-entry-change-details {
+        description
+            "A notification that is sent when the neighbor is discovered/updated/deleted";
+        container alarm {
+            description
+                "Data definitions related to a last remote change.";
+
+            leaf remote-operation {
+               type remote-operation-type;
+               description
+                  "The enumeration value used to identify neighbor information change
+                   operation(create/delete/update)";
+            }
+            leaf local-port-id {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+               }
+               description
+                  "The string value used to identify the port component associated
+                   with the system.";
+            }
+            leaf remote-port-id {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:state/lldp-remote-port-operational/port-id";
+               }
+               description
+                  "The string value used to identify the port component associated
+                   with the remote";
+            }
+            uses chassis-group;
+
+            leaf system-name {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:state/lldp-remote-port-operational/system-name";
+               }
+               description
+                  "The string value used to identify the system name of the neighbor";
+            }
+        }
+    }
+
+    rpc clear-lldp-statistics {
+        description
+            "Administratively clear lldp statistics";
+    }
+}

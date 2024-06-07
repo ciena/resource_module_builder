@@ -1,0 +1,264 @@
+module ciena-subsystem-resource {
+  namespace "http://www.ciena.com/ns/yang/ciena-subsystem-resource";
+  prefix "ciena-res";
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description       
+    "This YANG module controls the resources assigned to 
+    various software subsystems.
+    
+    Copyright (c) 2019-2022 Ciena Corporation.  All rights 
+    reserved.
+
+    All information contained herein is, and remains
+    the property of Ciena Corporation. Dissemination of this 
+    information or reproduction of this material is strictly 
+    forbidden unless prior written permission is obtained from 
+    Ciena Corporation.";  
+
+  revision 2022-01-10 {
+    description
+      "Added subsystem 'platform' to configure additional cores to SAOS applications and OS.";
+  }
+
+  revision 2020-03-04 {
+    description
+      "Added worker thread configuration and state information.
+       Added subsystem restart RPC.";
+  }
+
+  revision 2019-04-03 {
+    description
+      "Initial version.
+      Add switch-subsystem-profile rpc";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  typedef subsystem-name {
+    description
+      "Name of subsystem";
+    type enumeration {
+      enum virtual-forwarding-plane {
+        description
+          "Virtual forwarding plane subsystem.";
+      }
+      enum platform {
+        description
+          "SAOS and OS subsystems.";
+      }
+    }
+  }
+
+  typedef cpu-profile-type {
+    description
+      "The profile type for cpu resource allocation";
+    type enumeration {
+      enum default-profile {
+        description
+          "The default cpu resource profile";
+      }
+      enum performance-profile {
+        description
+          "The cpu resource profile aims for high-performance";
+      }
+    }
+  }
+
+  grouping cpu-resource-state {
+    description
+      "Operation data for CPU resource.";
+    leaf profile {
+      description
+        "The profile used by susbsytem cpu resource allocation";
+      type cpu-profile-type;
+    }
+    list socket {
+      description
+        "List of CPU sockets";
+      key "socket-id";
+      leaf socket-id {
+        description
+          "CPU socket ID";
+        type uint32;
+      }
+      leaf-list cpu-id {
+        description
+          "List of CPU IDs";
+        type uint32;
+      }
+    }
+  }
+
+  /*
+   * subsystem resource configuration
+   */
+  container subsystems {
+    description
+      "Resource configuration for subsystems.";
+    list subsystem {
+      key "name";
+      description
+        "List of subsystems";
+      leaf name {
+        description
+          "Name of subsystem";
+        type subsystem-name;
+      }
+      container cpu-resource {
+        description
+          "CPU resource configuration";
+        list socket {
+          description
+            "List of CPU sockets";
+          key "socket-id";
+          leaf socket-id {
+            description
+              "CPU socket ID";
+            type uint32;
+          }
+          container cpu {
+            description
+              "CPU configuration";
+            leaf num-of-cores {
+              description
+                "Number of CPU cores assigned.";
+              type uint32;
+            }
+          }
+        }
+      }
+      container cpu-profile{
+        when "../name = 'virtual-forwarding-plane'";
+        description
+          "CPU profile configuration";
+        leaf profile {
+          description
+            "The profile type for CPU profile configuration";
+          type cpu-profile-type;
+        }
+      }
+      container worker-threads {
+        when "../name = 'virtual-forwarding-plane'";
+        description
+          "Worker thread configuration";
+        list worker-thread {
+          description
+            "List of worker threads";
+          key "thread-name";
+          leaf thread-name {
+            description
+              "Worker thread name.";
+            type string {
+              length "1..128";
+            } 
+          }
+          leaf-list cpu-id {
+            when "../../../name != 'virtual-forwarding-plane'";
+            description
+              "List of CPU IDs";
+            type uint8;
+          }
+        }
+      }
+    }
+  }
+
+  /*
+   * subsystem resource configuration state
+   */
+  container subsystems-state {
+    config false;
+    description
+      "Operation data for subsystem resource configuration";
+    list subsystem {
+      key "name";
+      leaf name {
+        description
+          "Name of subsystem";
+        type leafref {
+          path "../../../subsystems/subsystem/name";
+        }
+      }
+
+      leaf config-pending {
+        description
+          "Status of subsystem resource configuration. When true, the
+           system has outstanding configuration changes that require
+           a restart of the subsystem to activate";
+        type boolean;
+      }
+
+      container cpu {
+        description
+          "Operation data for CPU resource configuration.";
+        container active {
+          description
+            "CPU resource configuration in active use.";
+          uses cpu-resource-state;
+        }
+        container pending {
+          description
+            "CPU resource configuration that will be activated after a reboot.";
+          uses cpu-resource-state;
+        }
+      }
+
+      container worker-threads {
+        description
+          "Operational data for worker thread configuration.";
+        list worker-thread {
+          description
+            "List of worker threads that are in active use.";
+          key "thread-name";
+          leaf thread-name {
+            description
+              "Worker thread name.";
+            type string;
+          }
+          leaf-list cpu-id {
+            description
+              "List of CPU IDs.";
+            type uint8;
+          }
+        }
+      }
+    }
+  }
+
+  rpc subsystem-restart {
+    description
+      "Request to restart the subsystem.";
+    input {
+      leaf name {
+        type leafref {
+          path "../../subsystems/subsystem/name";
+        }
+        mandatory true;
+        description
+          "The name of the subsystem to be restarted.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of the restart operation.";
+      }
+    }
+  }
+}
+// end module

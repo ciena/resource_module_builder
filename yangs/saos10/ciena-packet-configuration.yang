@@ -1,0 +1,478 @@
+module ciena-packet-configuration {
+   namespace "http://www.ciena.com/ns/yang/ciena-packet-configuration";
+
+   prefix "cn-packet-config";
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+   import ciena-types {
+      prefix ciena;
+   }
+   import yuma-ncx {
+      prefix ncx;
+   }
+   import yumaworks-types {
+      prefix ywt;
+   }
+   import ietf-netconf-acm {
+      prefix nacm;
+   }
+   import ietf-inet-types {
+      prefix inet;
+   }
+   import ciena-tls-service-profile {
+      prefix ciena-tls-service-profile;
+   }
+   import openconfig-extensions {
+      prefix oc-ext;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's data definition for configuration file management
+       Copyright (c) 2019 Ciena Corporation.  All rights 
+       reserved. 
+
+       All information contained herein is, and remains the
+       property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained
+       from Ciena Corporation.";
+
+   revision "2023-02-17" {
+      description
+         "Added support for auto backup feature";
+   }
+   revision "2020-03-10" {
+      description
+         "Change leaf filename and remote-filename to use NcxFileName type.
+         Update pattern for leaf prefix to allow colon character";
+   }
+   revision "2019-10-06" {
+      description
+         "Added remote-filename, prefix and include-pkix-cetificates leafs";
+   }
+   revision "2019-07-17" {
+      description
+         "1.0";
+   }
+
+   typedef feature-type {
+      type enumeration {
+         enum show-software {
+            description
+               "Show software XML file";
+         }
+         enum show-component {
+            description
+               "Show component XML file";
+         }
+         enum show-running-config {
+            description
+               "Running config XML file";
+         }
+      }
+   }
+
+   typedef auto-backup-transfer-status {
+      type enumeration {
+	     enum idle {
+            description
+               "Feature is in idle state";
+         }
+         enum upload-inprogress {
+            description
+               "File transfer is in progress";
+         }
+         enum upload-success {
+            description
+               "File transfer succeeded";
+         }
+         enum upload-fail {
+            description
+               "File transfer failed";
+         }
+      }
+   }
+
+   typedef auto-backup-feature-state {
+      type enumeration {
+         enum idle {
+            description
+               "Auto-Backup is in idle state";
+         }
+         enum in-wait-time {
+            description
+               "Auto-Backup is in wait time";
+         }
+         enum producing-backup {
+            description
+               "Auto-Backup is in progress";
+         }
+         enum backed-up {
+            description
+               "Auto-Backup succeeded";
+         }
+         enum backup-failed {
+            description
+               "Auto-Backup failed";
+         }
+		 enum backup-deleted {
+            description
+               "Auto-Backup deleted";
+         }
+      }
+   }
+
+   rpc transfer-config {
+      nacm:default-deny-all;
+      description
+         "Start a file download or upload of configuration file";
+
+      input {
+         leaf filename {
+            type ywt:NcxFileName;
+            description
+               "Configuration file name";
+
+         }
+
+         leaf action {
+            mandatory true;
+            type enumeration {
+               enum download;
+               enum upload;
+            }
+            description
+               "Action to be performed on file:
+               download: Download operation
+               upload: Upload operation";
+         }
+
+         leaf url {
+            mandatory true;
+            type inet:uri;
+            description
+               "Destination URL for upload. 
+               Source URL for download.";
+
+         }
+
+         leaf username {
+            type string {
+               length "1..255";
+            }
+            description
+               "Username for authentication";
+         }
+
+         leaf password {
+            ncx:password;
+            type string {
+               length "1..255";
+            }
+            description
+               "Password for authentication";
+         }
+
+         leaf tls-service-profile {
+            type leafref {
+                  path "/ciena-tls-service-profile:tls-service-profiles/ciena-tls-service-profile:tls-service-profile-name";
+            }  
+            description
+               "The TLS Service Profile to be used when accepting
+               TLS connections.";
+         }
+
+         leaf remote-filename {
+            type ywt:NcxFileName;
+            description
+               "Remote file name";
+         }
+
+         leaf include-pkix-certificates {
+            type boolean;
+            default false;
+            description
+               "Include pkix certificates for transfer.
+               leaf remote-filename is required when using this parameter.
+               In case of upload, transfer all certificates from the device to remote server url.
+               For e.g. All certificates will be uploaded in <remote-filename>-certs.tar.gz file
+
+               In case of download, transfer all certificates from remote server url to device
+               For e.g. <remote-filename>-certs.tar.gz file will be downloaded and certificates
+               will be installed on the device.";
+         }
+
+         leaf prefix {
+            type string {
+               length "1..128";
+               pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+            }
+            description
+               "Add prefix string to remote-filename and certificates.
+               leaf remote-filename is required when using this parameter.
+               In case of upload, prefix will be added to the remote-filename and certificates.
+               For e.g. files and certificates uploaded will be <prefix><remote-filename> and
+               <prefix><remote-filename>-certs.tar.gz respectively.
+
+               In case of download, files having prefix to their remote-filename and certificates will be downloaded
+               to device and local filenames will exclude the prefix.
+               For e.g. files and certificates having names <prefix><remote-filename> and
+               <prefix><remote-filename>-certs.tar.gz will downloaded.
+               The name of configuration file downloaded will be local filename used. If local filename is not given
+               then remote-filename will be used excluding the prefix.";
+         }
+
+      }
+
+      output {
+         leaf transfer-status {
+            type enumeration {
+               enum success;
+               enum fail;
+               enum error;
+            }
+            description
+               "Status of file upload or download operation";
+         }
+
+         leaf transfer-status-message {
+            type string {
+               length "1..255";
+            }
+            description
+               "String describing transfer status of upload or 
+               download of configuration file";
+         }
+      }
+   }
+   container auto-backup {
+      description
+         "Top-level node for automatic upload of xml file";
+      container config {
+         description
+            "Configuration for auto backup";
+         list feature {
+            key "feature-name";
+            description
+               "Feature";
+            leaf feature-name {
+               type feature-type;
+               description
+                  "Feature name";
+            }
+            leaf admin-state {
+               type ciena:admin-state;
+               default "disabled";
+               description
+                  "Admin state of auto backup";
+            }
+            leaf prefix {
+               type string {
+                  length "1..21";
+                  pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+               }
+               description
+                  "Add prefix string to remote-filename";
+            }
+            leaf idle-time-interval {
+               type uint32 {
+                  range "600..1200";
+               }
+               units "seconds";
+               default 900;
+               description
+                  "The idle time interval after which system will upload the file to remote-server.";
+            }
+            leaf local-copy-count {
+               type uint8 {
+                  range "0..4";
+               }
+               default 0;
+               when "../feature-name='show-running-config'";
+               description
+                  "Number of local copies of auto-backup files";
+            }
+            list remote-server {
+               max-elements 1;
+               key "server-name";
+               description
+                  "Remote Server";
+               leaf server-name {
+                  type string {
+                     length "1..128";
+                     pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+                  }
+                  description
+                     "Remote server name";
+               }
+               leaf admin-state {
+                  type ciena:admin-state;
+                  default "enabled";
+                  description
+                     "Admin state of auto backup remote server";
+               }
+               leaf url {
+                  type inet:uri;
+                  mandatory true;
+                  description
+                     "Destination URL for upload";
+               }
+               leaf username {
+                  type string {
+                     length "1..255";
+                  }
+                  description
+                     "Username for remote server";
+               }
+               leaf password {
+                  type string;
+                  description
+                     "Password for remote server length: 1..32";
+               }
+               leaf tls-service-profile {
+                  type leafref {
+                     path "/ciena-tls-service-profile:tls-service-profiles/ciena-tls-service-profile:tls-service-profile-name";
+                  }
+                  description
+                     "The TLS Service Profile to be used when accepting TLS connections.";
+               }
+            }
+         }
+      }
+      container state {
+         config false;
+         description
+            "Statistics for auto backup";
+         list feature {
+            key "feature-name";
+            description
+               "Feature";
+            leaf feature-name {
+               type feature-type;
+               description
+                  "Feature name";
+            }
+            leaf feature-state {
+               type auto-backup-feature-state;
+               description
+                  "Feature state";
+            }
+            leaf last-update-time {
+               type string;
+               description
+                  "Timestamp for last change";
+            }
+            list remote-server {
+               key "server-name";
+               description
+                  "Remote Server";
+               leaf server-name {
+                  type string {
+                     length "1..128";
+                     pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+                  }
+                  description
+                     "Remote server name";
+               }
+               leaf status {
+                  type auto-backup-transfer-status;
+                  description
+                     "File transfer status";
+               }
+               leaf transfer-status-message {
+                  type string {
+                     length "1..255";
+                  }
+                  description
+                     "String describing transfer status of file";
+               }
+               leaf last-successful-transfer-time {
+                  type string;
+                  description
+                     "Timestamp for last successful transfer";
+               }
+               leaf successful-transfer-count {
+                  type yang:counter64;
+                  description
+                     "Total successful transfers";
+               }
+               leaf unsuccessful-transfer-count {
+                  type yang:counter64;
+                  description
+                     "Total unsuccessful transfers";
+               }
+            }
+         }
+      }
+   }
+   notification auto-backup-file-transfer-event {
+      description
+         "Event notifications for file transfer status of auto backup";
+      leaf server-name {
+         type string {
+            length "1..128";
+            pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+         }
+         description
+            "Remote server name";
+      }
+      leaf file-name {
+         type string {
+            length "1..128";
+            pattern '[a-z,A-Z,0-9,\-,_,\.,~,/,%,:]+';
+         }
+         description
+            "File name";
+      }
+      leaf url {
+         type inet:uri;
+         description
+            "Destination URL for upload.";
+      }
+      leaf status {
+         type auto-backup-transfer-status;
+         description
+            "File transfer status";
+      }
+      leaf transfer-status-message {
+         type string {
+            length "1..255";
+         }
+         description
+            "String describing transfer status of file";
+      }
+   }
+   notification auto-backup-feature-state-event {
+      description
+         "Event notification for autobackup feature state";
+      leaf feature-name {
+         type feature-type;
+         description
+            "Feature name";
+      }
+      leaf feature-state {
+         type auto-backup-feature-state;
+         description
+            "Feature state";
+      }
+	  leaf last-update-time {
+         type string;
+         description
+            "Timestamp for last change";
+      }
+   }
+}

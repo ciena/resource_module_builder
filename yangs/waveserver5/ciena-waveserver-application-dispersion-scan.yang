@@ -1,0 +1,158 @@
+module ciena-waveserver-application-dispersion-scan {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-application-dispersion-scan";
+  prefix app-ds;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Dispersion Scan application
+     support.";
+
+  revision 2020-07-11 {
+    description
+      "Updated range for to/from leafs in dispersion-scan-configs-group.";
+    reference
+      "Waveserver OS R2.0.2 user's guide.";
+  }
+  revision 2019-02-18 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the Dispersion Scan Application external data
+       model.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+
+  grouping dispersion-scan-configs-group {
+    description
+      "Input parameters from the last Dispersion Scan Test.";
+    leaf from {
+      ui:ui-name "From";
+      type int32 {
+        range "-44500..1000000";
+      }
+      units "nm";
+      description
+        "Polarization Mode Dispersion Lower limit <-44500..1000000>";
+    }
+
+    leaf to {
+      ui:ui-name "To";
+      type int32 {
+        range "-44500..1000000";
+      }
+      units "nm";
+      description
+        "Polarization Mode Dispersion Upper limit <-44500..1000000>";
+    }
+
+    leaf step {
+      ui:ui-name "Step";
+      type uint16 {
+        range "100|200|300|400|500|600|700|800|900|1000";
+      }
+      units "nm";
+      default "100";
+      description
+        "Polarization Mode Dispersion step Increments: <100|200|300|400|500|600|700|800|900|1000>";
+    }
+
+    leaf dwell {
+      ui:ui-name "Dwell";
+      type uint8 {
+        range "1..100";
+      }
+      units "sec";
+      default "1";
+      description
+        "Dispersion Scan dwell time in seconds <SECONDS: 1..100>";
+    }
+  }
+
+  rpc waveserver-application-dispersion-scan-start {
+    description
+      "Start a user-initiated Q-based pre-dispersion compensation scan on a line port.";
+    input {
+      leaf ptp-id {
+        ui:ui-name "Ptp ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The line port slot/ptp.";
+      }
+
+      uses dispersion-scan-configs-group;
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-dispersion-scan-stop {
+    description
+      "Stop a dispersion scan for a line port before it is complete.";
+    input {
+      leaf ptp-id {
+        ui:ui-name "Ptp ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The line port slot/ptp.";
+      }
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-dispersion-scan-show {
+    description
+      "Show the dispersion scan results for a line port.";
+    input {
+      leaf ptp-id {
+        ui:ui-name "Ptp ID";
+        type cienawstypes:name-string;
+        mandatory true;
+        description
+          "The line port slot/ptp.";
+      }
+    }
+
+    output {
+      uses cienawstypes:rpc-output;
+
+      uses dispersion-scan-configs-group;
+
+      uses cienawstypes:rpc-oper-status-group;
+
+      leaf pre-dispersion {
+        type uint32;
+        description
+          "TX dispersion precompensation value";
+      }
+
+      leaf q-factor {
+        type uint32;
+        description
+          "Optimized Q-Factor that is associated with the Tx pre-compensation value.";
+      }
+    }
+  }
+}

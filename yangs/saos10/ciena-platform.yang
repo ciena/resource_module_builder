@@ -1,0 +1,604 @@
+module ciena-platform {
+   yang-version 1.1;
+   namespace "http://www.ciena.com/ns/yang/ciena-platform";
+   prefix "ciena-ocp";
+
+  import openconfig-platform { prefix "oc-platform"; }
+  import ietf-netconf-acm { prefix "nacm"; }
+  import ietf-yang-types { prefix "yang"; }
+  import ciena-types { prefix ciena-types; }
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+   description       
+      "This YANG module defines the nodes
+      for openconfig-platform.yang related notifications.
+
+      Copyright (c) 2018 Ciena Corporation.  All rights 
+      reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this 
+      information or reproduction of this material is strictly 
+      forbidden unless prior written permission is obtained from 
+      Ciena Corporation.";
+
+   revision 2023-08-10 {
+        description
+          "Deprecating web-gui option from location-enum of mount location.";
+   }
+
+   revision 2023-04-26 {
+      description
+         "Added Power On Self Test component configuration and status.";
+       reference
+          "";
+     }
+
+   revision 2021-08-06 {
+      description
+         "Added FRU module state sensor notification event enum.";
+       reference
+          "";
+     }
+
+   revision 2020-11-23 {
+      description
+         "Added temp sensor notification event enum.";
+      reference
+         "";
+   }
+
+   revision 2020-05-10 {
+    description
+      "Added an additional component property list for each
+       component /oc-platform:components/oc-platform:component.";
+    reference "";
+   }
+
+   revision 2020-04-27 {
+      description
+         "Add component not detected event enum.";
+      reference
+         "";
+   }
+
+   revision 2020-01-10 {
+      description
+         "Removed import of yumaworks-extensions";
+      reference
+         "";
+   }
+
+   revision 2019-11-19 {
+      description
+         "Added enums web-gui and software-upgrade to location-enum.
+          Added a new augmentation for mfg-date leaf.";
+      reference
+         "";
+   }
+
+   revision 2019-08-06 {
+      description
+         "replace event-value in /ciena-ocp:component/ with event-data list
+         to produce multiple values";
+      reference
+         "";
+   }
+   revision 2019-06-24 {
+      description 
+      "Add USB mount and umount support. Also added usb-properties
+         /oc-platform:components/oc-platform:component";
+      reference
+      "";
+   }
+   revision 2019-01-31 {
+      description 
+         "Add POST success event";
+      reference
+         "";
+   }
+   revision 2018-11-06 {
+      description 
+      "Add fan max/min threshold recovery events and module restart event";
+      reference
+      "";
+   }
+   revision 2018-01-24 {
+      description 
+      "Initial revision";
+      reference
+      "";
+   }
+  
+  /*
+   * Typedefs
+   *
+   */
+   typedef component-event-type {
+      type enumeration {
+         enum temp-max-threshold-reached {
+            description
+               "Temperature went over the maximum temperature threshold.";
+         }
+         enum temp-min-threshold-reached {
+            description
+               "Temperature went below the minimum temperature threshold.";
+         }
+         enum temp-change {
+            description
+               "Temperature has changed";
+            }
+         enum fan-max-speed-threshold-reached {
+            description
+               "Fan maximum speed threshold has been reached.";
+         }
+         enum fan-min-speed-threshold-reached {
+            description
+               "Fan minimum speed threshold has been reached.";
+         }
+         enum fan-speed-change {
+            description
+               "Fan speed has changed.";
+         }
+         enum psu-not-detected {
+            description
+               "PSU is not detected on the chassis.";
+         }
+         enum psu-input-voltage-nil {
+            description
+               "PSU input voltage is nil.";
+         }
+         enum psu-input-current-nil {
+            description
+               "PSU input current is nil.";
+         }
+         enum psu-output-voltage-nil {
+            description
+               "PSU output voltage is nil.";
+         }
+         enum psu-output-current-nil {
+            description
+               "PSU output current is nil.";
+         }
+         enum battery-not-detected {
+            description
+               "Battery is not detected.";
+         }
+         enum post-failure {
+            description
+               "POST failed.";
+         }
+         enum component-detected {
+            description
+               "A component is detected, after being undetectable.";
+         }
+         enum fan-speed-max-threshold-recovery {
+            description
+               "Fan speed recovered from running over max threshold.";
+         }
+         enum fan-speed-min-threshold-recovery {
+            description
+               "Fan speed recovered from running under min threshold";
+         }
+         enum temp-max-threshold-recovery {
+            description
+               "Temperature sensor recovered from being over max threshold.";
+         }
+         enum temp-min-threshold-recovery {
+            description
+               "Temperature sensor recovered from being under min threshold.";
+         }
+         enum module-inserted {
+            description
+               "Fru module is inserted.";
+         }
+         enum module-removed {
+            description
+               "Fru module is removed.";
+         }
+         enum module-restart {
+            description
+               "Fru module will restart.";
+         }
+         enum post-successful {
+            description
+               "POST is successful.";
+         }
+         enum fan-module-notification{
+            description
+               "Fan status has changed.";
+         }
+         enum power-supply-notificaton{
+            description
+               "PSU state has changed.";
+         }
+         enum post-status{
+            description
+               "POST notification.";
+         }
+         enum component-not-detected {
+            description
+               "Component is not detected.";
+         }
+         enum temp-sensor-notification{
+            description
+               "Temperature sensor state has changed.";
+         }
+         enum  fru-module-notification{
+            description
+               "FRU module state has changed.";
+         }
+      }
+      description
+          "A generic type describing the type of event
+          equipment manager has triggered.";
+   }
+
+   feature component-post {
+      description
+         "Indicates that the device supports Power On Self Test (POST)";
+   }
+
+   feature macsec-self-test {
+      description
+         "Indicates that the device supports MACsec self test";
+   }
+
+   typedef post-component-type {
+      type enumeration {
+         enum macsec {
+            value 1;
+            if-feature macsec-self-test;
+            description
+               "POST for MACsec hardware";
+        }
+      }
+      description
+         "This enumeration lists the supported component types";
+   }
+
+   typedef failure-action-type {
+      type enumeration {
+         enum none {
+            description
+               "No action";
+         }
+         enum system-reboot {
+            description
+               "Reboot the device";
+         }
+      }
+      description
+         "This enumeration lists the supported failure actions";
+   }
+
+   typedef test-status-type {
+      type enumeration {
+         enum unknown {
+            description
+               "The test status could not be determined";
+         }
+         enum success {
+            description
+               "The test status determined to be successful";
+         }
+         enum failed {
+            description
+               "The test status determined to be failed";
+         }
+      }
+      description
+         "This enumeration list the supported test status";
+   }
+
+  
+  /*
+   * Configuration data nodes
+   */
+   notification components {
+      list component{
+         description
+            "list of component related to components notification.";
+         leaf name {
+            type string;
+            description
+               "Name of the component that triggered the notification.";
+         }
+         leaf event-type {
+            type component-event-type;
+            description
+               "Description of the notification.";
+         }
+         list component-event-data {
+            description
+               "list of component event data related to hardware events.";
+            key "name";
+            leaf name {
+               type string;
+               description
+                  "Key for event data.";
+            }
+            leaf value {
+               type string;
+               description
+                  "Value for the notification.";
+            }
+         }
+      }
+      description
+         "This notification defines hardware events.";
+   }
+  
+   rpc post {
+      description
+      "RPC for POST operations.";
+      output {
+         leaf status {
+            type string;
+            description
+               "Status of POST.";
+         }
+      }
+   }
+
+   typedef location-enum {
+      type enumeration {
+         enum host {
+            description
+               "Host machine";
+         }
+         enum ui {
+            description
+               "User interface subsystem";
+         }
+         enum telemetry {
+            description
+               "Telemetry subsystem";
+         }
+         enum dnfvi {
+            description
+               "DNFVI subsystem";
+         }
+         enum web-gui {
+            description
+               "Web-GUI subsystem";
+            status deprecated;
+         }
+         enum software-upgrade {
+            description
+               "Software upgrade subsystem";
+         }
+      }
+   }
+
+  rpc mount {
+      nacm:default-deny-all;
+      description
+        "Mount a device";
+      input {
+         leaf device {
+           type string;
+           description
+              "Device to mount.
+               For eg: sdb1";
+            mandatory true;
+         }
+         leaf permission {
+            type enumeration {
+               enum read-only {
+                  description
+                     "read only";
+               }
+               enum read-write {
+                  description
+                     "read write";
+               }
+            }
+            default read-only;
+            description
+               "Mount permission";
+         }
+         leaf mount-location {
+            type location-enum;
+            description
+               "Location for mounting device";
+            mandatory true;
+         }
+      }
+      
+      output {
+         leaf status {
+            type string;
+            description
+               "status string";
+         }
+         leaf mount-point {
+            type string;
+            description
+               "mount point where device is mounted";
+         }
+      }
+   }
+
+   rpc umount {
+      nacm:default-deny-all;
+      description
+         "Un-mount a device";
+      input {
+         leaf device {
+            type string;
+            description
+               "Device to mount.
+               For eg: sdb1";
+            mandatory true;
+         }
+         leaf mount-location {
+            type location-enum;
+            description
+              "Location from where device to be un-mounted";
+            mandatory true;
+         }
+      }
+      output {
+         leaf status {
+            type string;
+            description
+              "status string";
+         }
+      }
+   }
+
+   augment /oc-platform:components/oc-platform:component/oc-platform:state {
+      leaf mfg-date {
+         type ciena-types:date;
+         description
+            "System-supplied representation of the component's
+             manufacturing date.";
+      }
+   }
+
+   augment /oc-platform:components/oc-platform:component {
+      when "./config[contains(name, 'usb')]" {
+         description
+            "Properties specific to USB devices";
+      }
+      container usb-properties {
+         config false;
+         description
+           "USB device properties";
+         list usb-property {
+            description
+               "List of properties related to USB device";
+            key "device";
+            leaf device {
+               description
+                 "Name of device as listed under /dev";
+               type string;
+            }
+            list property {
+               description
+                 "List of property name and its value";
+               key "name";
+               uses oc-platform:platform-component-properties-config;
+            }
+         }
+      }
+   }
+
+   augment /oc-platform:components/oc-platform:component {
+      container component-properties {
+         description
+            "Custom properties for component in case new properties need
+            to be introduced.";
+         config false;
+         list component-property {
+            key "name";
+            description
+               "List of new/additional properties under a component.";
+            uses oc-platform:platform-component-properties-config;
+            uses oc-platform:platform-component-properties-state;
+         }
+      }
+   }
+
+   container chassis-macs{
+      config false;
+      description
+         "Show all the allocated MAC addresses in the chassis";
+      list mac-block {
+         description
+            "List of MAC blocks that has been allocated";
+         key 'name';
+         leaf name {
+            description
+               "Name of the entity being allocated the MAC block";
+            type string;
+         }
+         leaf base-mac {
+            description
+               "Base MAC address for the block";
+            type yang:mac-address;
+         }
+         leaf block-size {
+            description
+               "Size of the MAC block allocated";
+            type uint32;
+         }
+      }
+   }
+
+   container component-post {
+      if-feature component-post;
+      description
+         "POST related system variables";
+          
+      container components {
+         description
+            "Enclosing container for all components";
+      
+         list component {
+            key "name";
+            description
+               "List of POST components";
+ 
+            leaf name {
+               type post-component-type;
+               description
+                  "Name of the POST component";
+            }
+ 
+            leaf failure-action {
+               type failure-action-type;
+               default none;
+               description
+                  "Action to be taken when the test fails";
+            }
+ 
+            leaf enforce-now {
+               type empty;
+               description
+                  "Enforcing action immediately with the current test status";
+            }
+         }
+      }
+   }
+
+   container component-post-state {
+      config false;
+      description
+         "Operational variables";
+ 
+      container components {
+         description
+            "Enclosing container for all components";
+    
+         list component {
+            key "name";
+            description
+               "List of POST components";
+ 
+            leaf name {
+               type post-component-type;
+               description
+                  "Name of the POST component";
+            }
+ 
+            leaf test-status {
+               type test-status-type;
+               description
+                  "Current POST status";
+            }
+         }
+      }
+   }
+}

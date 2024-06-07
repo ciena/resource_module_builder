@@ -1,0 +1,120 @@
+/*
+ * File name : ciena-mpls-ping.yang
+ *
+ * Description: YANG model for MPLS ping
+ *
+ * Copyright (c) 2018  Ciena Corp. All Rights Reserved.
+ */
+
+module ciena-mpls-ping {
+    yang-version 1.1;
+    namespace "http://ciena.com/ns/yang/ciena-mpls-ping";
+    prefix "mpls-ping";
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-oam-options {
+        prefix oam-options;
+    }
+
+    organization
+         "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+         "This YANG module defines Ciena's specific implementation
+         for MPLS ping.
+
+         Copyright (c) 2018  Ciena Corporation.  All rights
+         reserved.
+
+         All information contained herein is, and remains the
+         property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained
+         from Ciena Corporation.";
+
+    revision "2020-01-30" {
+        description 
+             "Marking this yang model as deprecated, as a generic 
+              modelling approach will be used for both ip & mpls.";
+    }
+
+    revision "2019-06-05" {
+        description "Added support for L2VPN, BGP-LU, and SR pings.";
+    }
+
+    revision "2018-08-27" {
+        description "Initial version of MPLS ping datamodel.";
+    }
+
+    rpc ping-mpls-lsp {
+        status "deprecated";
+        input {
+           leaf fec-type {
+              type oam-options:mpls-fec-type;
+              mandatory true;
+              description
+                 "FEC type of the destination";
+           }
+           leaf destination{
+              type inet:ip-prefix;
+              mandatory true;
+              description
+                 "Destination address";
+           }
+           leaf source {
+              type inet:ip-address;
+              description
+                 "Source address";
+           }
+           uses oam-options:ping-base-input-options;
+           leaf backup {
+              when "../fec-type='sr-isis'";
+              type empty;
+              description
+                 "Backup Path";
+           }
+        }
+        output {
+           leaf return-code {
+              type oam-options:mpls-oam-return-code;
+              description
+                 "The response for an echo request";
+           }
+           uses oam-options:ping-base-output;
+        }
+    }
+    rpc ping-mpls-pseudowire {
+        status "deprecated";
+        input {
+           leaf pseudowire-name {
+              type string{
+                 length "1..255";
+              }
+              mandatory true;
+              description
+                 "Pseudowire Name";
+           }
+           uses oam-options:ping-base-input-options;
+        }
+        output {
+           leaf return-code {
+              type oam-options:mpls-oam-return-code;
+              description
+                 "The response for an echo request";
+           }
+           uses oam-options:ping-base-output;
+        }
+    }
+}

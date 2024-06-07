@@ -1,0 +1,257 @@
+module ciena-pro-usersession {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-usersession";
+  prefix usersession;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  import ciena-pro-aaa-common {
+    prefix common;
+  }
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "";
+  description
+    "holds user session information definitions that are commonly used across the system.";
+
+  revision 2021-05-31 {
+    ciena-common-version:string "0.2.0";
+    description
+      "Add RPC to get current user information.";
+  }
+  revision 2019-12-20 {
+    ciena-common-version:string "0.1.2";
+    description
+      "Add interface-id for interface-generated user session id.";
+  }
+  revision 2019-12-10 {
+    ciena-common-version:string "0.1.1";
+    description
+      "Fixing typos in descriptions.";
+  }
+  revision 2019-11-16 {
+    ciena-common-version:string "0.1.0";
+    description
+      "Add force-out-user RPC.";
+  }
+  revision 2018-12-27 {
+    description
+      "";
+    reference
+      "";
+  }
+
+  grouping current-user-info {
+    leaf name {
+      type common:user-name;
+      description
+        "The authenticated user name.";
+    }
+
+    leaf level {
+      type common:access-level;
+      description
+        "The access level that the user has.";
+    }
+
+    leaf address {
+      type ietf:ip-address;
+      description
+        "The source address that user comes from.";
+    }
+
+    leaf port {
+      type ietf:port-number;
+      description
+        "The source port that user comes from.";
+    }
+
+    leaf timestamp {
+      type common:string-maxl-32;
+      description
+        "The ctime style date and time string as timestamp of user session creation.";
+    }
+  }
+
+  grouping usersession-info {
+    leaf id {
+      type uint64;
+      description
+        "The session id that associates user session.";
+    }
+
+    leaf name {
+      type common:user-name;
+      description
+        "The authenticated user name.";
+    }
+
+    leaf level {
+      type common:access-level;
+      description
+        "The access level that the user has.";
+    }
+
+    leaf interface {
+      type common:access-interface;
+      description
+        "The interface that user comes in.";
+    }
+
+    leaf interface-id {
+      type uint64;
+      description
+        "The interface-specific user session identifier.";
+    }
+
+    leaf address {
+      type ietf:ip-address;
+      description
+        "The source address that user comes from.";
+    }
+
+    leaf port {
+      type ietf:port-number;
+      description
+        "The source port that user comes from.";
+    }
+
+    leaf timestamp {
+      type common:string-maxl-32;
+      description
+        "The ctime style date and time string as timestamp of user session creation.";
+    }
+
+    leaf authentication-method {
+      type common:authentication-type;
+      description
+        "The authentication method that the user used to login with.";
+    }
+  }
+
+  grouping usersession-data {
+    container user-session {
+      yang:alias "usersession-usersession";
+      uses usersession-info;
+    }
+  }
+
+  list usersession {
+    key "id";
+    config false;
+    uses usersession-info;
+  }
+
+  augment "/yang:yang-rpc-action/yang:input" {
+    uses usersession-data;
+  }
+
+  augment "/yang:yang-delivery" {
+    uses usersession-data;
+  }
+
+  rpc get-current-user {
+    description
+      "This RPC will return the current user information";
+
+    output {
+      uses current-user-info;
+
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc get-session-id {
+    description
+      "This RPC will return a number that represents an unique session id.
+       An increase-only number will be maintained by security-mgr to track sessions.";
+
+    output {
+      leaf id {
+        type uint64;
+        description
+          "Returned session id.";
+      }
+    }
+  }
+
+  rpc check-action-by-priv-level {
+    description
+      "This RPC will check an action against the permission represented by a privilege level.
+       The true result indicates the action is permitted, otherwise permission is denied.";
+    input {
+      leaf action {
+        type yang:yang-action;
+      }
+
+      leaf level {
+        type common:access-level;
+      }
+    }
+
+    output {
+      leaf result {
+        type boolean;
+      }
+    }
+  }
+
+  rpc force-out-user {
+    description
+      "Call to force-out a specific user session, all sessions for a user,
+       or all sessions. In all cases, a user cannot force-out its own session.";
+    input {
+      leaf session {
+        type uint64;
+        mandatory true;
+        description
+          "User session ID. This input needs to be specified to force-out specific session except own.
+           Specifying 0 as session ID will force-out all sessions except own.
+           Specifying 0 as session ID along with a user-name will force-out all sessions
+           for the specified user except own.";
+      }
+
+      leaf user {
+        type common:user-name;
+        description
+          "User-name. This input needs to be specified to force-out all sessions
+           for a specific user-name except own.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type common:string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

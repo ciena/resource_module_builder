@@ -1,0 +1,489 @@
+module ciena-pro-coherent-device-host {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:coherent-device-host";
+  prefix coherent-device-host;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang-types;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-types;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device {
+    prefix coherent-device;
+  }
+  import ciena-pro-coherent-device-transceiver-types {
+    prefix coherent-device-transceiver-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Wavelogic-agent host extensions to the external coherent-device model.";
+
+  revision 2023-11-01 {
+    description
+      "Initial version";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  typedef host-port-id-type {
+    type uint8;
+    description
+      "";
+  }
+
+  typedef host-connection-mode-enum {
+    type enumeration {
+      enum automatic {
+        description
+          "";
+      }
+      enum manual {
+        description
+          "";
+      }
+    }
+    default "automatic";
+    description
+      "";
+  }
+
+  grouping host-device-comms-config-group {
+    leaf mac-address {
+      type coherent-device-common-types:mac-address-string;
+      description
+        "The MAC address to be used by a Wavelogic device with proprietary EMI support.";
+    }
+    leaf ip-address {
+      type coherent-device-common-types:ip-address-with-subnet;
+      description
+        "IPv4 or IPv6 address to be assigned to a specific WaveLogic device with proprietary EMI support.";
+    }
+    leaf gateway {
+      type coherent-device-common-types:ip-address;
+      description
+        "The default gateway to be used by a WaveLogic device with proprietary EMI support.";
+    }
+    container emi-config {
+      leaf tx-polarity {
+        type boolean;
+        description
+          "The Tx polarity for EMI between the WaveLogic device and the host platform infrastructure.";
+      }
+      leaf rx-polarity {
+        type boolean;
+        description
+          "The Rx polarity for EMI between the WaveLogic device and the host platform infrastructure.";
+      }
+      leaf speed {
+        type enumeration {
+          enum 1G {
+            description
+              "";
+          }
+          enum 2.5G {
+            description
+              "";
+          }
+        }
+        description
+          "The speed for EMI between the WaveLogic device and the host platform infrastructure.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:config" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-config";
+    leaf host-port-id {
+      type host-port-id-type;
+      description
+        "Host specified integer identifier for a WaveLogic device. This is an internal
+         identifier for the device and associated with the wl-dev:transceiver/wl-dev:device-id
+         that is an externally understood identifier for this device with chassis level scope.
+         The host-port-id must only be unique to the slot in the chassis.
+
+         For pluggable devices, host-port-id is zero-based. It is must correspond to the value
+         for the faceplate port that the plug-controller learned from the host-provided template.
+         The host HAL layer service is also aware and maps to the actual physical hardware location.
+
+         For example, the device-id might be \"1-13\" to represent slot 1, port 13 whereas
+         the associated host-port-id for a WL5n pluggable is integer 12 (zero-based).
+
+         It is mandatory that the host must provide host-port-id when a coherent-devices/device/device-id
+         instance is created due to application of provisioning. Subsequent requests for that device-id
+         will have access to the value provided at create time.";
+    }
+    container host-device-config {
+      leaf media-host-connection-mode {
+        type host-connection-mode-enum;
+        description
+          "";
+      }
+      container comms-config {
+        uses host-device-comms-config-group;
+        description
+          "The comms config for a WaveLogic device with proprietary EMI support.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state";
+    leaf host-port-id {
+      type host-port-id-type;
+      description
+        "Host specified integer identifier for a WaveLogic device. This is an internal
+         identifier for the device and associated with the wl-dev:transceiver/wl-dev:device-id
+         that is an externally understood identifier for this device with chassis level scope.
+         The host-port-id must only be unique to the slot in the chassis.
+
+         For pluggable devices, host-port-id is zero-based. It is must correspond to the value
+         for the faceplate port that the plug-controller learned from the host-provided template.
+         The host HAL layer service is also aware and maps to the actual physical hardware location.
+
+         For example, the device-id might be \"1-13\" to represent slot 1, port 13 whereas
+         the associated host-port-id for a WL5n pluggable is integer 12 (zero-based).";
+    }
+    container host-device-config {
+      leaf media-host-connection-mode {
+        type host-connection-mode-enum;
+        description
+          "";
+      }
+      container comms-config {
+        uses host-device-comms-config-group;
+        description
+          "The comms config for a WaveLogic device with proprietary EMI support.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  typedef host-default-network-conditioning-signal-format-enum {
+    type enumeration {
+      enum 400G {
+        description
+          "";
+      }
+      enum 4x100G {
+        description
+          "";
+      }
+    }
+    description
+      "Type for host to indicate the signal structure for conditioning-type applied
+       when no host-interface servies are provisioned.";
+  }
+
+  typedef host-default-network-conditioning-type-enum {
+    type enumeration {
+      enum none {
+        description
+          "";
+      }
+      enum local-fault {
+        description
+          "";
+      }
+      enum remote-fault {
+        description
+          "";
+      }
+      enum idle {
+        description
+          "";
+      }
+      enum csf-lf {
+        description
+          "";
+      }
+      enum oci {
+        description
+          "";
+      }
+    }
+    description
+      "Type for host to indicate the line conditioning signal to be applied when
+       no host-interface services are provisioned.";
+  }
+
+  grouping media-interface-extensions-group {
+    leaf default-network-conditioning-signal-format {
+      type host-default-network-conditioning-signal-format-enum;
+      description
+        "";
+    }
+    leaf default-network-conditioning-type {
+      type host-default-network-conditioning-type-enum;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:config/coherent-device:media-interface" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-config-media-interface";
+    uses media-interface-extensions-group;
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:media-interface" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-media-interface";
+    uses media-interface-extensions-group;
+    description
+      "";
+  }
+
+  typedef hccs-threshold-dbq-type {
+    type decimal64 {
+      fraction-digits 2;
+      range "-1.00 .. 4.00";
+    }
+    description
+      "High Correction Count Second threshold in dBQ.";
+  }
+
+  grouping otsi-fec-wavelogic-hccs-threshold-group {
+    leaf high-correction-count-second-threshold {
+      type hccs-threshold-dbq-type;
+      units "dBQ";
+      default "0.00";
+      description
+        "The High Correction Count Second threshold in dBQ with range of -1.00 to 4.00.";
+    }
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:config/coherent-device:media-interface/coherent-device:otsi/coherent-device:fec/coherent-device:wavelogic" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-config-media-interface-otsi-fec-wavelogic";
+    uses otsi-fec-wavelogic-hccs-threshold-group;
+    description
+      "";
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:media-interface/coherent-device:otsi/coherent-device:fec/coherent-device:wavelogic" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-media-interface-otsi-fec-wavelogic";
+    uses otsi-fec-wavelogic-hccs-threshold-group;
+    description
+      "";
+  }
+
+  rpc host-coherent-device-inventory-update {
+    description
+      "This RPC is used by the host-platform to tell the Wavelogic Agent application
+       that there is a coherent device to be managed.
+
+       When present=true that means there is an expectation of a coherent device at this location.
+       The device may or may not have provisioning associated with it at this time.
+
+       When present=false it is an indication that there is no expectation of a device to be managed
+       at this location. It is valid for this device to have provisioning associated with it. It
+       will not be applied to the device unless the RPC has been called with present=true. This
+       may fail or cause other issues if the device that's present is not manageable by the
+       WaveLogic Agent.
+      ";
+    input {
+      leaf device-id {
+        type coherent-device-types:device-id-type;
+        mandatory true;
+        description
+          "";
+      }
+      leaf host-port-id {
+        when "../present = 'true'";
+        type host-port-id-type;
+        mandatory true;
+        description
+          "";
+      }
+      leaf device-type {
+        when "../present = 'true'";
+        type coherent-device-types:device-type-actual-type;
+        mandatory true;
+        description
+          "";
+      }
+      leaf form-factor {
+        type coherent-device-transceiver-types:transceiver-type-enum;
+        description
+          "Indicates the form factor of the coherent device - e.g., QSFP-DD, CFP2-DCO,
+           or a Ciena WaveLogic network interface card.";
+      }
+      leaf present {
+        type boolean;
+        mandatory true;
+        description
+          "";
+      }
+    }
+    output {
+      uses coherent-device-common-types:return-code;
+    }
+  }
+
+  notification coherent-device-active-diag-notification {
+    leaf timestamp {
+      type ietf-yang-types:date-and-time;
+      description
+        "The time the notification was published in RFC 3339 compliant string.";
+    }
+    leaf timestamp-seconds {
+      type uint32;
+      description
+        "The time the notification was published in seconds.";
+    }
+    anyxml diagnostics {
+      description
+        "Mounted in this node will be the ciena-pro-coherent-device:coherent-device
+         data tree with only list key nodes and the diagnostic containers populated.
+         If a diagnostic leaf is not present it should be assumed to be false/inactive
+         or inhibited and therefore appears in the inhibited defect subtree nodes.
+
+         This notification is published every second, after the hardware or software
+         PM Tick. THe notification contains the full set of correlated defects for each
+         managed device. A diagnostic defect is either active (value is true), or
+         inactive, masked by a higher-precedence condition, or inhibited (value is false).
+
+         The correlated defects are for the last second and they are not debounced.
+         The correlation function only reports the most critical defect for any single
+         condition.";
+    }
+    description
+      "";
+  }
+
+  notification coherent-device-inhibited-diag-notification {
+    leaf timestamp {
+      type ietf-yang-types:date-and-time;
+      description
+        "The time the notification was published in RFC 3339 compliant string.";
+    }
+    leaf timestamp-seconds {
+      type uint32;
+      description
+        "The time the notification was published in seconds.";
+    }
+    anyxml diagnostics {
+      description
+        "Mounted in this node is the ciena-pro-coherent-device:coherent-device
+         data tree with only list key nodes and the diagnostic containers populated.
+         If a diagnostic leaf is not present it should be assumed to be false/inactive
+         or not inhibited and therefore appears in the active notification and subtree.
+
+         This notification is published every second and it contains the full set of
+         correlated defects for each managed device that are currently inhibited due to
+         photonics alarm correlation.
+
+         The correlated defects are for the last second and they are not debounced.
+         The correlation function only reports the most critical defect for any single
+         condition.";
+    }
+    description
+      "";
+  }
+
+  notification coherent-device-instant-statistic-notification {
+    leaf timestamp {
+      type ietf-yang-types:date-and-time;
+      description
+        "The time the notification was published in RFC 3339 compliant string.";
+    }
+    leaf timestamp-seconds {
+      type uint32;
+      description
+        "The time the notification was published in seconds.";
+    }
+    leaf interval {
+      type coherent-device-common-types:coherent-device-statistic-interval-enum;
+      default "1-second";
+      description
+        "The interval for which the statistics carried in this notification cover.";
+    }
+    anyxml stats {
+      description
+        "Mounted in this node is the ciena-pro-coherent-device:coherent-device
+         data tree with only the list key nodes and statistic containers populated.
+         If a defined statistic is not present it should be assumed to be not applicable
+         to the current configuration of the entity. Otherwise, it is present with
+         a value for the interval covered by this notification.
+
+         This notification is published every second and it contains the full set of
+         statistics for each managed device over that period.
+
+         The statistic period is for the period roughly 1-second ago and the timestamp
+         in the data tree identifies when it was captured.";
+    }
+    description
+      "";
+  }
+
+  notification coherent-device-binned-statistic-notification {
+    leaf timestamp {
+      type ietf-yang-types:date-and-time;
+      description
+        "The time the notification was published in RFC 3339 compliant string.";
+    }
+    leaf timestamp-seconds {
+      type uint32;
+      description
+        "The time the notification was published in seconds.";
+    }
+    leaf interval {
+      type coherent-device-common-types:coherent-device-statistic-interval-enum;
+      default "10-second";
+      description
+        "The interval for which the statistics carried in this notification cover.";
+    }
+    anyxml stats {
+      description
+        "Mounted in this node is the ciena-pro-coherent-device:coherent-device
+         data tree with only the list key nodes and statistic containers populated.
+         If a defined statistic is not present it should be assumed to be not applicable
+         to the current configuration of the entity. Otherwise, it is present with
+         a value for the interval covered by this notification.
+
+         This notification is published every 10 seconds and it contains the full set of
+         statistics for each managed device over that period.
+
+         The statistic period is for the period roughly 11-secosds ago and the timestamp
+         in the data tree identifies when it was captured.";
+    }
+    description
+      "";
+  }
+}

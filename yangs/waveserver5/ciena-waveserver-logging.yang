@@ -1,0 +1,1405 @@
+module ciena-waveserver-logging {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-logging";
+  prefix log;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-system {
+    prefix system;
+  }
+
+  import ciena-waveserver-aaa {
+    prefix aaa;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines syslog configuration support for Ciena's Waveserver
+     Platform.";
+
+  revision 2021-10-17 {
+    description
+      "Added 'CRAFT' interface type to the command-log list.";
+    reference
+      "Waveserver OS R2.2 user's guide.";
+  }
+  revision 2021-06-02 {
+    description
+      "Added waveserver-logging-get-command-log rpc and read-only tail-length field,
+       Added tag, interface, command-operation, user-session-id, client,
+       and exit-reason to command-log/entry list.
+       Increased max length of command-log/entry/username to 64 chars.
+       Removed deprecated command-log/entry/terminal leaf (replaced by 'client').
+       Removed deprecated command-log/global-config/destination leaf.
+       Removed mandatory requirement for remaining destination leafs and marked for deprecation.
+       Updated event-log container: replace event-log/global-config with config, add event-log/tail,
+       and remove deprecated event-log/filter list.
+       Added waveserver-logging-event-log-clear and waveserver-logging-get-event-log rpcs.
+       Removed deprecated waveserver-logging-upload-logs rpc.
+       Updated syslog-severity and syslog-facility enum.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2020-02-21 {
+    description
+      "Changed the range for 'leaf-list slot-origin' from 1..3 to 1..8.";
+    reference
+      "Waveserver OS R2.0 user's guide.";
+  }
+  revision 2018-12-18 {
+    description
+      "Added 'command-log' support for configuring and retrieving local command logs.
+       Added 'event-log' support for configuring and retrieving local event logs and filters.
+       Added pattern definition for leaf 'trusted-fingerprint'.
+       Added rpc 'waveserver-logging-upload-logs'.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2018-10-09 {
+    description
+      "Added 'syslog-tls' support for secure syslog.";
+    reference
+      "Waveserver Ai R1.3 user's guide.";
+  }
+  revision 2018-03-28 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the logging external data model.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+
+  typedef log-destination {
+    type enumeration {
+      enum "flash" {
+        value 1;
+        description
+          "Identifies log entries stored in system flash persistence.";
+      }
+      enum "ram" {
+        value 2;
+        description
+          "Identifies log entries stored in system RAM.";
+      }
+    }
+    description
+      "A type describing a destination for a log entry or filter. This typedef
+       is deprecated for removal in a future release.";
+  }
+
+  typedef event-severity-bits {
+    type bits {
+      bit critical {
+        position 3;
+        description
+          "Critical Event Severity";
+      }
+      bit major {
+        position 4;
+        description
+          "Major Event Severity";
+      }
+      bit minor {
+        position 5;
+        description
+          "Minor Event Severity";
+      }
+      bit warning {
+        position 6;
+        description
+          "Warning Event Severity";
+      }
+      bit config {
+        position 7;
+        description
+          "Config Event Severity";
+      }
+      bit info {
+        position 8;
+        description
+          "Info Event Severity";
+      }
+      bit debug {
+        position 9;
+        description
+          "Debug Event Severity";
+      }
+    }
+    description
+      "Event Severity bits. Used for log filtering on one or more event
+       severity value(s).";
+  }
+
+  typedef syslog-severity-bits {
+    type bits {
+      bit emergency {
+        position 0;
+        description
+          "Emergency: system is unusable.";
+      }
+      bit alert {
+        position 1;
+        description
+          "Alert: action must be taken immediately.";
+      }
+      bit critical {
+        position 2;
+        description
+          "Critical: critical conditions.";
+      }
+      bit error {
+        position 3;
+        description
+          "Error: error conditions.";
+      }
+      bit warning {
+        position 4;
+        description
+          "Warning: warning conditions.";
+      }
+      bit notice {
+        position 5;
+        description
+          "Notice: normal but significant condition.";
+      }
+      bit info {
+        position 6;
+        description
+          "Informational: informational messages.";
+      }
+      bit debug {
+        position 7;
+        description
+          "Debug: debug-level messages.";
+      }
+    }
+    description
+      "Syslog severity bits.";
+    reference
+      "RFC 5424 - The Syslog Protocol";
+  }
+
+  typedef syslog-scope {
+    type enumeration {
+      enum "user" {
+        value 1;
+        description
+          "The collector was manually configured by the user.";
+      }
+      enum "dhcp" {
+        value 2;
+        description
+          "The collector was automatically configured via DHCP, option 7.";
+      }
+      enum "both" {
+        value 4;
+        description
+          "The collector was configured by both DHCP and user.";
+      }
+    }
+    description
+      "Syslog scope, or config state. Specifies whether the syslog configuration
+       data was originated by the user, or auto-created via DHCP, or both.";
+  }
+
+  typedef filter-name {
+    type string {
+      length "1..15";
+      pattern "[^!%,?*]+";
+    }
+    description
+      "A typedef for event-log filter names, which should not contain certain
+       special characters.";
+  }
+
+  typedef syslog-facility {
+    type enumeration {
+      enum "facility-kernel" {
+        description
+          "Facility kernel";
+      }
+      enum "facility-user" {
+        description
+          "Facility user";
+      }
+      enum "facility-mail" {
+        description
+          "Facility mail";
+      }
+      enum "facility-daemon" {
+        description
+          "Facility daemon";
+      }
+      enum "facility-auth" {
+        description
+          "Facility auth";
+      }
+      enum "facility-syslog" {
+        description
+          "Facility syslog";
+      }
+      enum "facility-lpr" {
+        description
+          "Facility lpr";
+      }
+      enum "facility-news" {
+        description
+          "Facility news";
+      }
+      enum "facility-uucp" {
+        description
+          "Facility uucp";
+      }
+      enum "facility-cron" {
+        description
+          "Facility cron";
+      }
+      enum "facility-authpriv" {
+        description
+          "Facility authpriv";
+      }
+      enum "facility-ftp" {
+        description
+          "Facility ftp";
+      }
+      enum "facility-ntp" {
+        description
+          "Facility ntp";
+      }
+      enum "facility-log-audit" {
+        description
+          "Facility audit";
+      }
+      enum "facility-log-alert" {
+        description
+          "Facility alart";
+      }
+      enum "facility-clock-daemon-2" {
+        description
+          "Facility clock-daemon-2";
+      }
+      enum "facility-local0" {
+        description
+          "Facility local0";
+      }
+      enum "facility-local1" {
+        description
+          "Facility local1";
+      }
+      enum "facility-local2" {
+        description
+          "Facility local2";
+      }
+      enum "facility-local3" {
+        description
+          "Facility local3";
+      }
+      enum "facility-local4" {
+        description
+          "Facility local4";
+      }
+      enum "facility-local5" {
+        description
+          "Facility local5";
+      }
+      enum "facility-local6" {
+        description
+          "Facility local5";
+      }
+      enum "facility-local7" {
+        description
+          "Facility local6";
+      }
+    }
+    description
+      "Numerical code representation of syslog facility";
+  }
+
+  typedef syslog-severity {
+    type enumeration {
+      enum "severity-emerg" {
+        description
+          "Severity emerg";
+      }
+      enum "severity-alert" {
+        description
+          "Severity alert";
+      }
+      enum "severity-critical" {
+        description
+          "Severity critical";
+      }
+      enum "severity-error" {
+        description
+          "Severity error";
+      }
+      enum "severity-warning" {
+        description
+          "Severity warning";
+      }
+      enum "severity-notice" {
+        description
+          "Severity notice";
+      }
+      enum "severity-info" {
+        description
+          "Severity info";
+      }
+      enum "severity-debug" {
+        description
+          "Severity debug";
+      }
+      enum "severity-none" {
+        description
+          "Severity none";
+      }
+      enum "severity-cleared" {
+        description
+          "Severity cleared";
+      }
+      enum "severity-indeterminate" {
+        description
+          "Severity indeterminate";
+      }
+      enum "severity-major" {
+        description
+          "Severity major";
+      }
+      enum "severity-minor" {
+        description
+          "Severity minor";
+      }
+      enum "severity-config" {
+        description
+          "Severity config";
+      }
+      enum "severity-internal" {
+        description
+          "Severity internal";
+      }
+    }
+    description
+      "Numerical code representation of syslog severity";
+  }
+
+  typedef syslog-sdname {
+    type enumeration {
+      enum "sd-event-id" {
+        description
+          "Structured-data event-id";
+      }
+      enum "sd-event-name" {
+        description
+          "Structured-data event-name";
+      }
+      enum "sd-time-format" {
+        description
+          "Structured-data time-format";
+      }
+      enum "sd-event-origin" {
+        description
+          "Structured-data event-origin";
+      }
+      enum "sd-event-type" {
+        description
+          "Structured-data event-type";
+      }
+      enum "sd-tag" {
+        description
+          "Structured-data tag name";
+      }
+      enum "sd-interface" {
+        description
+          "Structured-data interface";
+      }
+      enum "sd-client" {
+        description
+          "Structured-data client";
+      }
+      enum "sd-user" {
+        description
+          "Structured-data user name";
+      }
+      enum "sd-cmd-id" {
+        description
+          "Structured-data cmd-id name";
+      }
+      enum "sd-prefix" {
+        description
+          "Structured-data prefix";
+      }
+      enum "sd-target-ds" {
+        description
+          "Structured-data target ds";
+      }
+    }
+    description
+      "Numerical code representation of structured-data name";
+  }
+
+  typedef eventlog-data-type {
+    type enumeration {
+      enum "tail" {
+        value 1;
+        description
+          "Data from 30 most-recent event log records.";
+      }
+      enum "history" {
+        value 2;
+        description
+          "Data from history event log data store.";
+      }
+    }
+    description
+      "Event log data type";
+  }
+
+  typedef eventlog-data-format {
+    type enumeration {
+      enum "text" {
+        value 1;
+        description
+          "Data text string format.";
+      }
+      enum "json" {
+        value 2;
+        description
+          "Data in json format.";
+      }
+    }
+    description
+      "Event log output data format";
+  }
+
+  typedef eventlog-data-display {
+    type enumeration {
+      enum "brief" {
+        value 0;
+        description
+          "Log display brief format.";
+      }
+      enum "verbose" {
+        value 1;
+        description
+          "Log display verbose format.";
+      }
+    }
+    description
+      "Log display format: brief and verbose display";
+  }
+
+  grouping common-event-log-entry-group {
+    description
+      "Common group of event log entry attributes.";
+    leaf id {
+      type uint32;
+      description
+        "event identifier; value from number-of-entries in POH";
+    }
+
+    leaf version {
+      type uint32;
+      description
+        "event log version, always 1";
+    }
+
+    container priority {
+      description
+        "Priority of event-log";
+      leaf value {
+        type uint32;
+        description
+          "raw priority value, 8*facility + severity";
+      }
+
+      leaf facility {
+        type syslog-facility;
+        description
+          "Numerical code representation of syslog facility";
+      }
+
+      leaf severity {
+        type syslog-severity;
+        description
+          "Numerical code representation of syslog severity";
+      }
+    }
+
+    leaf timestamp {
+      type string {
+        length "0..32";
+      }
+      description
+        "The date and time the log entry was recorded, in
+         'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm' format.
+
+         The string format follows IETF yang date-and-time specifications, compliant
+         with RFC-6991. The base date and time portion of the string represents
+         Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates the
+         system-configured local timezone offset at the time the event was recorded, and not
+         necessarily when it was retrieved.
+
+         When system timezone is set to UTC or no time-offset value is provisioned,
+         the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+      reference
+        "RFC 3339: Date and Time on the Internet: Timestamps
+         RFC 6991: Common Yang Data Types";
+    }
+
+    leaf hostname {
+      type string {
+        length "0..256";
+      }
+      description
+        "hostname, or domain name or IP v4/v6 address";
+    }
+
+    leaf app-name {
+      type string {
+        length "0..64";
+      }
+      description
+        "application name";
+    }
+
+    leaf proc-id {
+      type uint32;
+      description
+        "pid of process that generates the event";
+    }
+
+    leaf msg-id {
+      type string {
+        length "0..32";
+      }
+      description
+        "message sequence number";
+    }
+
+    list structured-data {
+      key "sd-name";
+      description
+        "List of structured name";
+      leaf sd-name {
+        type syslog-sdname;
+        description
+          "name part: [name=value]...";
+      }
+
+      leaf value {
+        type string {
+          length "0..64";
+        }
+        description
+          "value part: [name=value]...";
+      }
+    }
+
+    leaf message {
+      type string {
+        length "0..1024";
+      }
+      description
+        "event message description";
+    }
+  }
+
+  grouping common-syslog-group {
+    description
+      "Common group of attributes for syslog configuration.";
+    leaf port {
+      type uint16 {
+        range "1..65535";
+      }
+      description
+        "Sets the remote port number for syslog UDP/TCP messages sent to the
+         syslog collector server. Default syslog UDP port is 514, while syslog
+         over TLS uses TCP port 6514 by default.";
+    }
+
+    leaf custom-prefix {
+      type string {
+        length "0..15";
+      }
+      description
+        "Optional prefix string to include in outgoing syslog messages. Default
+         is blank or empty string.";
+    }
+
+    leaf facility {
+      type uint8 {
+        range "0..23";
+      }
+      description
+        "Numerical code representation of the syslog facility or class of log
+         messages associated with this collector. Default is 3 (system daemon).";
+      reference
+        "RFC 5424 - The Syslog Protocol";
+    }
+
+    leaf severity {
+      type syslog-severity-bits;
+      description
+        "The severity or list of severities associated with this collector.";
+      reference
+        "RFC 5424 - The Syslog Protocol";
+    }
+  }
+
+  grouping common-syslog-collector-state-group {
+    description
+      "Common group of syslog collector state attributes.";
+    leaf ip-address {
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Operational IP address associated with the remote server, if
+         configured/available, or 'Unresolved' otherwise.";
+    }
+
+    leaf admin-state {
+      type cienawstypes:enabled-disabled-enum;
+      description
+        "Syslog collector administrative state.";
+    }
+
+    leaf operational-state {
+      type cienawstypes:up-down-enum;
+      config false;
+      description
+        "Syslog collector operational state.";
+    }
+  }
+
+  container waveserver-logging {
+    description
+      "Top level container for system logging configuration and operational data.";
+    container syslog {
+      description
+        "Syslog configuration and operational data.";
+      container global-config {
+        description
+          "Global syslog configuration data, including global defaults.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Global syslog administrative state.";
+        }
+
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Global syslog operational state.";
+        }
+
+        container defaults {
+          description
+            "Syslog global default configuration settings.";
+          uses common-syslog-group;
+        }
+      }
+
+      list collector {
+        key "address";
+        description
+          "List of remote syslog collectors.";
+        leaf address {
+          type cienawstypes:ipaddr-or-hostname;
+          description
+            "Configured IP address or Domain Name of the remote server.";
+        }
+
+        uses common-syslog-collector-state-group;
+
+        container config {
+          description
+            "Syslog collector configuration data. Unspecified attributes may be
+             ommited from this container, in which case the global default
+             values will be applied.";
+          uses common-syslog-group;
+        }
+
+        container operational {
+          config false;
+          description
+            "Syslog collector operational data. The config values will be used
+             whenever explicitly configured for the collector, otherwise the
+             global default values will be used.";
+          uses common-syslog-group;
+
+          leaf scope {
+            type syslog-scope;
+            config false;
+            description
+              "The source of the configuration for this collector. Specifies
+               whether the collector was user-created, auto-created via DHCP
+               (option 7), or both.";
+          }
+        }
+      }
+    }
+
+    container syslog-tls {
+      description
+        "Secure syslog TLS configuration and operational data.";
+      container global-config {
+        description
+          "Global syslog TLS configuration data, including global defaults.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Global syslog TLS administrative state.";
+        }
+
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Global syslog TLS operational state. If the syslog tls admin-state
+             is enabled and the certificate is installed, the operational state
+             will be 'up', otherwise it will be 'down'.";
+        }
+
+        leaf collector-timeout {
+          type uint16 {
+            range "1..30";
+          }
+          units "seconds";
+          description
+            "Global timeout period in seconds on responses from a syslog TLS server.";
+        }
+
+        leaf certificate-name {
+          type string {
+            length "0..32";
+          }
+          description
+            "Syslog TLS certificate name.";
+        }
+
+        leaf certificate-status {
+          type cienawstypes:string-maxl-254;
+          config false;
+          description
+            "Syslog TLS device certificate/key status string to indicate if the
+             certificate exists (irrespective of active or expired), in which
+             case the displayed result is OK. If the certificate doesn't exist,
+             the displayed result will be one of the appropriate error strings,
+             like no private key, no device certificate, etc.";
+        }
+
+        leaf certificate-fingerprint {
+          type string {
+            length "0..95";
+          }
+          config false;
+          description
+            "Syslog TLS device certificate fingerprint.";
+        }
+
+        leaf check-ip-host {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Check peer's specified ip or hostname against it's certificate.";
+        }
+
+        leaf check-fingerprint {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Check the fingerprint of the peer's certificate.";
+        }
+
+        container defaults {
+          description
+            "Global default configuration settings for syslog over TLS.";
+          uses common-syslog-group;
+        }
+      }
+
+      container ocsp-config {
+        description
+          "Secure syslog TLS Online Certificate Status Protocol (OCSP)
+           configuration attributes.";
+        uses system:common-ocsp-group;
+      }
+
+      list collector {
+        key "address";
+        description
+          "List of remote secure syslog collectors.";
+        leaf address {
+          type cienawstypes:ipaddr-or-hostname;
+          description
+            "Configured IP address or Domain Name of the remote server.";
+        }
+
+        uses common-syslog-collector-state-group;
+
+        container config {
+          description
+            "Syslog TLS collector configuration data. Unspecified attributes
+             may be ommited from this container, in which case the global
+             default values will be applied.";
+          uses common-syslog-group;
+
+          leaf trusted-dns {
+            type string {
+              length "0..255";
+            }
+            description
+              "Trusted dns name used to check peer's certificate. The
+               name should be fully qualified whenever possible, and can
+               accept a leading wildcard period.";
+          }
+
+          leaf trusted-fingerprint {
+            type string {
+              length "0|7|95";
+              pattern "(([0-9A-F]{2}[:]){31}([0-9A-F]{2}))?|(Not Set)";
+            }
+            description
+              "Trusted fingerprint for peer's certificate. The string should have
+               length of 95, except when it is empty or 'Not Set'.";
+          }
+        }
+
+        container operational {
+          config false;
+          description
+            "Syslog TLS collector operational data. The config values will be
+             used whenever explicitly configured for the collector, otherwise
+             the global default values will be used.";
+          uses common-syslog-group;
+
+          leaf last-transport-result {
+            type string {
+              length "0..255";
+            }
+            description
+              "Last transport error message, if applicable.";
+          }
+
+          leaf greylist-remaining {
+            type uint32;
+            units "seconds";
+            description
+              "Time remaining in greylist. A syslog TLS collector is added to the
+               greylist if a TLS session cannot be established between the NE and
+               the collector.";
+          }
+
+          container statistics {
+            description
+              "Container of statistics attributes for the syslog TLS collector.";
+            leaf connection-attempts {
+              type uint32;
+              description
+                "Number of connection attempts.";
+            }
+
+            leaf successful-connections {
+              type uint32;
+              description
+                "Number of successful connections.";
+            }
+
+            leaf failed-tcp-connections {
+              type uint32;
+              description
+                "Number of failed TCP connections.";
+            }
+
+            leaf failed-tls-connections {
+              type uint32;
+              description
+                "Number of failed TLS connections.";
+            }
+
+            leaf timeout-connections {
+              type uint32;
+              description
+                "Number of connection time-outs.";
+            }
+
+            leaf unexpected-closes {
+              type uint32;
+              description
+                "Number of unexpected connection closes.";
+            }
+
+            leaf closed-connections {
+              type uint32;
+              description
+                "Number of closed connections.";
+            }
+
+            leaf overflow-messages-dropped {
+              type uint32;
+              description
+                "Number of messages dropped due to overflow.";
+            }
+          }
+        }
+      }
+    }
+
+    container command-log {
+      description
+        "Configuration and operational data for the system command log collected
+         on the various management interfaces, including CLI and NBI (RESTCONF,
+         NETCONF, etc.).";
+      container global-config {
+        description
+          "Global command-log configuration and operational data.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Global command-log administrative state.";
+        }
+
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Global command-log operational state.";
+        }
+
+        leaf tail-length {
+          type uint32;
+          config false;
+          description
+            "Max number of entries in tail list.";
+        }
+      }
+
+      list entry {
+        key "sequence-id";
+        config false;
+        description
+          "List of command-log entries.";
+        leaf sequence-id {
+          type uint32;
+          description
+            "The unique index number of the command-log entry in the list.";
+        }
+
+        leaf local-date-time {
+          type cienawstypes:string-maxl-32;
+          description
+            "The date and time when the command executed and recorded in the
+             command-log, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm' format.
+
+             The string format follows IETF yang date-and-time specifications, compliant
+             with RFC-6991. The base date and time portion of the string represents
+             Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates
+             the system-configured local timezone offset at the time the event was recorded,
+             and not necessarily when it was retrieved.
+
+             When system timezone is set to UTC or no time-offset value is provisioned,
+             the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+          reference
+            "RFC 3339: Date and Time on the Internet: Timestamps
+             RFC 6991: Common Yang Data Types";
+        }
+
+        leaf tag {
+          type uint32;
+          description
+            "Unique correlation tag or user operation sequence ID provided by
+             the originating NBI server.";
+        }
+
+        leaf interface {
+          type enumeration {
+            enum "CLI" {
+              description
+                "CLI interface.";
+            }
+            enum "NETCONF" {
+              description
+                "NetConf interface.";
+            }
+            enum "REST" {
+              description
+                "REST interface.";
+            }
+            enum "GRPC" {
+              description
+                "gRPC/gNMI/gNOI interface.";
+            }
+            enum "SHELL" {
+              description
+                "Shell interface.";
+            }
+            enum "SCP" {
+              description
+                "SCP interface.";
+            }
+            enum "SFTP" {
+              description
+                "SFTP interface.";
+            }
+            enum "SNMP" {
+              description
+                "SNMP interface.";
+            }
+            enum "WEBSOCKET" {
+              description
+                "WebSocket interface.";
+            }
+            enum "WEBUI" {
+              description
+                "Webserver User Interface.";
+            }
+            enum "CRAFT" {
+              description
+                "Webserver Craft Interface.";
+            }
+          }
+          description
+            "Management interface type originating the transaction or user activity.";
+        }
+
+        leaf command-operation {
+          type enumeration {
+            enum "CREATE" {
+              description
+                "Operation type Create.";
+            }
+            enum "DELETE" {
+              description
+                "Operation type Delete.";
+            }
+            enum "SET" {
+              description
+                "Operation type Set or Edit.";
+            }
+            enum "RPC" {
+              description
+                "Operation type RPC.";
+            }
+            enum "GET" {
+              description
+                "Operation type Get.";
+            }
+            enum "SUBSCRIBE" {
+              description
+                "Operation type Subscribe.";
+            }
+            enum "LOGIN" {
+              description
+                "Operation type Login.";
+            }
+            enum "LOGOUT" {
+              description
+                "Operation type Logout.";
+            }
+            enum "BOOT" {
+              description
+                "Operation type Boot.";
+            }
+          }
+          description
+            "Original NBI operation corresponding to the current transaction or user activity.";
+        }
+
+        leaf user-session-id {
+          type uint32;
+          description
+            "The user session id.";
+        }
+
+        leaf username {
+          type string {
+            length "1..64";
+          }
+          description
+            "The username associated with the management interface session that
+             initiated the request represented by the command log entry, if
+             applicable. Some system-initiated actions are logged without an
+             associated user account, in which case this leaf may be empty.";
+        }
+
+        leaf privilege {
+          type aaa:user-access-level;
+          description
+            "The user privilege level associated with the management interface
+             session that initiated the request represented by the command log
+             entry, if applicable. Some system-initiated actions are logged
+             without an associated user account, in which case this leaf may be
+             omitted from the response.";
+        }
+
+        leaf client {
+          type string {
+            length "1..64";
+          }
+          description
+            "The client (terminal or IP port) originating the command.";
+        }
+
+        leaf exit-status {
+          type uint32;
+          description
+            "The internal status code returned by the system after executing
+             the specified command.";
+        }
+
+        leaf exit-reason {
+          type string;
+          description
+            "The internal error string by the system after executing the
+             specified command.";
+        }
+
+        leaf command-string {
+          type string;
+          description
+            "The content of the actual CLI command sent, or description of the
+             associated operation for other request types, such as NBI requests
+             or system operations. Note that REST/NETCONF/gNMI commands are not
+             logged verbatim in the command-log, however a record is kept of
+             configuration operation types on each of the paths that are
+             modified.";
+        }
+      }
+    }
+
+    container event-log {
+      description
+        "Configuration and operational data for system event logs.";
+      container config {
+        description
+          "Event-log configuration and operational data.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Event-log administrative state.";
+        }
+
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Event-log operational state.";
+        }
+
+        leaf tail-length {
+          type uint32;
+          config false;
+          description
+            "Max number of entries in tail list.";
+        }
+      }
+
+      list tail {
+        key "id";
+        config false;
+        description
+          "Tail list of event-log entries.";
+        uses common-event-log-entry-group;
+      }
+    }
+  }
+
+  rpc waveserver-logging-syslog-tls-clear-statistics {
+    description
+      "Clear syslog TLS statistics for all collectors.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-logging-syslog-tls-clear-collector-statistics {
+    description
+      "Clear syslog TLS statistics for a single specified collector.";
+    input {
+      leaf address {
+        type cienawstypes:ipaddr-or-hostname;
+        mandatory true;
+        description
+          "Configured IP address or Domain Name of the remote server.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-logging-command-log-clear {
+    description
+      "Clear the system command log.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-logging-event-log-clear {
+    description
+      "Clear the system event log.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-logging-get-event-log {
+    description
+      "Get history or tail event log records from data store.";
+    input {
+      leaf keyword {
+        type cienawstypes:string-maxl-64;
+        description
+          "Optional keyword search string to match in log entries.";
+      }
+
+      leaf type {
+        type eventlog-data-type;
+        description
+          "Event log type; default is tail type.";
+      }
+
+      leaf format {
+        type eventlog-data-format;
+        description
+          "Event log output format: log in text string or json format; default is text string.";
+      }
+
+      leaf display {
+        type eventlog-data-display;
+        description
+          "Event log output display length: brief or verbose display; default is brief display.";
+      }
+
+      leaf url {
+        type string {
+          length "0..512";
+        }
+        description
+          "Optional for history data, the URL specifying remote location to transfer history log to.
+           Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-logging-get-command-log {
+    description
+      "Get history or tail command log records from data store.";
+    input {
+      leaf keyword {
+        type cienawstypes:string-maxl-64;
+        description
+          "Optional keyword search string to match in log entries.";
+      }
+
+      leaf type {
+        type eventlog-data-type;
+        description
+          "Command log type: history or tail; default is tail type.";
+      }
+
+      leaf format {
+        type eventlog-data-format;
+        description
+          "Command log output format: log in text string or json format; default is text string.";
+      }
+
+      leaf display {
+        type eventlog-data-display;
+        description
+          "Command log output display length: brief or verbose display; default is brief display.";
+      }
+
+      leaf url {
+        type string {
+          length "0..512";
+        }
+        description
+          "Optional for command log data, the URL specifying remote location to transfer command log to.
+           Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

@@ -1,0 +1,774 @@
+module ciena-pseudowires {
+   namespace "http://ciena.com/ns/yang/ciena-pseudowires";
+   prefix cnoper;
+
+   import ietf-inet-types {
+      prefix inet;
+   }
+
+   import ietf-pseudowires {
+      prefix pw;
+   }
+
+   import ciena-l3-types {
+      prefix cnpw-l3-types;
+   }
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   organization
+       "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+         "This module contains the Ciena proprietary YANG deviations
+         of the standard pseudowire YANG module.
+         Copyright (c) 2019 Ciena Corporation.  All rights reserved.
+
+         All information contained herein is, and remains
+         the property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained from
+         Ciena Corporation.";
+
+   revision "2023-10-04" {
+      description
+            "1. Added l2vpn-service leaf to display attached L2VPN
+                under PW.
+             2. Added stats enabled and disabled counters for VPLS,VPWS
+                pseudowires.";
+   }
+
+
+   revision "2021-10-06" {
+      description
+            "1. Added AD-VPLS related parameters such as AGI, SAII
+                TAII and auto-discovered";
+   }
+
+   revision "2021-07-23" {
+      description
+            "1. Added Bad PDU Received Leaf In Pseudowire Status Message
+                And Pseudowire MAC Withdrawl Message Grouping
+             2. Added sibling pseudowire leaf in pseudowire list
+             3. Added up-time leaf in pseudowire list
+             4. Added notification for pseudowire-oper-state-change-event.";
+   }
+
+   revision "2020-09-28" {
+      description
+            "1. Added Manual Switchover
+             2. Added Grouping For Status Message
+                And Mac-withdrawl
+             3. Changed container to list For Status Message Statistics
+                And Mac-withdrawal Message Statistics
+             4. Added RPC For Clear Status Message Statistics
+                And Clear Mac-withdrawl Message Statistics 
+             5. Changed prefix cn-l3-types to cnpw-l3-types
+             6. Added Pseudowire Fault Reason";
+   }
+
+   revision "2020-02-25" {
+      description
+            "1. Added Tunnel name,type,source-ip
+                destination-ip
+             2. Added leaf operational fat";
+   }
+
+   revision "2019-03-03" {
+      description
+            "Initial version";
+   }
+
+   typedef pseudowire-status-type {
+       type enumeration {
+          enum pseudowire-forwarding {
+             value 0;
+             description
+                   "Pseudowire is forwarding";
+          }
+          enum pseudowire-not-forwarding {
+             value 1;
+             description
+                   "Pseudowire is not forwarding";
+          }
+          enum local-attachment-circuit-receive-fault {
+             value 2;
+             description
+                   "Local attachment circuit (ingress) receive fault";
+          }
+          enum local-attachment-circuit-transmit-fault {
+             value 3;
+             description
+                   "Local attachment circuit (egress) transmit fault";
+          }
+          enum local-PSN-facing-PW-receive-fault {
+             value 4;
+             description
+                   "Local PSN-facing PW (ingress) receive fault";
+          }
+          enum local-PSN-facing-PW-transmit-fault {
+             value 5;
+             description
+                   "Local PSN-facing PW (egress) transmit fault";
+          }
+          enum PW-preferential-forwarding-status {
+             value 6;
+             description
+                   "Pseudowire preferential forwarding status";
+          }
+          enum PW-request-switchover-status {
+             value 7;
+             description
+                   "Pseudowire request switchover status";
+          }
+       }
+       description
+             "Pseudowire status type, as registered in the IANA Pseudowire Status Code Registry";
+   }
+
+   typedef pseudowire-fault-reason {
+      type bits {
+         bit no-fault {
+            position 0;
+            description
+               "pseudowire no-fault";
+         }
+         bit tunnel-fault {
+            position 1;
+            description
+               "pseudowires tunnel-fault";
+         }
+         bit remote-status-fault {
+            position 2;
+            description
+               "pseudowire remote-status-fault";
+         }
+         bit mhopipbfd-fault {
+            position 3;
+            description
+               "pseudowire mhopipbfd-fault";
+         }
+         bit ac-fault {
+            position 4;
+            description
+               "pseudowire ac-fault";
+         }
+      }
+      description
+         "Type definition for oper fault reason values for pseudowire";
+   }
+
+   typedef pseudowire-oper-state-type {
+      type enumeration {
+         enum pseudowire-down {
+            value 0;
+            description
+               "Pseudowire operational state is down";
+         }
+         enum pseudowire-up {
+            value 1;
+            description
+               "Pseudowire operational state is up";
+         }
+      }
+   }
+   grouping tx-stats-collection-grouping {
+      description
+         "counters for tx statistics";
+
+          leaf tx-bytes {
+             type yang:counter64;
+             description "the number of bytes sent on the pseudowire";
+          }
+
+          leaf tx-packets {
+             type yang:counter64;
+             description "the number of packets sent on the pseudowire";
+          }
+
+          leaf dropped-tx-bytes {
+             type yang:counter64;
+             description
+                "the number of bytes sent on the pseudowire that were chosen to be dropped";
+          }
+
+          leaf dropped-tx-packets {
+             type yang:counter64;
+             description
+                "the number of packets sent on the pseudowire that were chosen to be dropped";
+          }
+   }
+
+   grouping rx-stats-collection-grouping {
+      description
+         "counters for rx statistics";
+
+          leaf rx-bytes {
+             type yang:counter64;
+             description "the number of bytes received on the pseudowire";
+          }
+
+          leaf rx-packets {
+             type yang:counter64;
+             description "the number of packets received on the pseudowire";
+          }
+
+          leaf dropped-rx-bytes {
+             type yang:counter64;
+             description
+                "the number of bytes received on the pseudowire that were chosen to be dropped";
+          }
+
+          leaf dropped-rx-packets {
+             type yang:counter64;
+             description
+                "the number of packets received on the pseudowire that were chosen to be dropped";
+          }
+   }
+
+   grouping status-message-grouping {
+      description
+         "counters for pseudowire status message statistics";
+
+          leaf status-message-sent {
+             type yang:counter32;
+             description
+                "Pseudowire status message sent";
+          }
+
+          leaf status-ack-message-sent {
+             type yang:counter32;
+             description
+                "Pseudowire status ack message sent";
+          }
+
+          leaf status-message-received {
+             type yang:counter32;
+             description
+                "Pseudowire status message received";
+          }
+
+          leaf status-ack-message-received {
+             type yang:counter32;
+             description
+                "Pseudowire status ack message received";
+          }
+
+          leaf status-bad-pdu-received {
+             type yang:counter32;
+             description
+                "Pseudowire status bad PDU received";
+          }
+   }
+
+   grouping mac-withdrawal-message-grouping {
+      description
+         "counters for pseudowire mac withdrawal message statistics";
+
+          leaf mw-message-sent {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal message sent";
+          }
+
+          leaf mw-message-received {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal message received";
+          }
+
+          leaf mw-ack-message-sent {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal ack message sent";
+          }
+
+          leaf mw-ack-message-received {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal message received";
+          }
+
+          leaf mw-message-sent-sequence-number {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal message sent sequence number";
+          }
+
+          leaf mw-message-received-sequence-number {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal message received sequence number";
+          }
+
+          leaf mw-bad-pdu-received {
+             type yang:counter32;
+             description
+                "Pseudowire MAC withdrawal bad PDU received";
+          }
+   }
+
+   container pseudowires-state{
+       config false;
+       description
+          "Pseudowire State Information.";
+
+       list pseudowire {
+          key "name";
+             description
+                   "Operational data for pseudowire";
+
+          leaf name {
+             type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+                }
+                description
+                      "Pseudowire name";
+          }
+
+          leaf index  {
+             type  uint32;
+                description
+                      "Index value of pseudowire";
+          }
+
+          leaf peer-ip {
+             type inet:ipv4-address;
+             description
+                   "peer IP address";
+          }
+
+          leaf oper-status {
+             type string;
+             description
+                   "Pseudowire operation status";
+          }
+
+          leaf in-label {
+             type  uint32;
+             description
+                   "pseudowire inlabel value";
+          }
+
+          leaf out-label  {
+             type  uint32;
+             description
+                   "pseudowire outlabel value";
+          }
+
+          leaf mode {
+             type string;
+             description
+                   "pseudowire mode as mesh or spoke";
+          }
+
+          leaf service-type {
+             type cnpw-l3-types:mpls-vpls-type;
+             description
+                   "service type value such as vlan or ethernet";
+          }
+
+          leaf protection-state  {
+             type  cnpw-l3-types:l2vpn-protection-type;
+             description
+                   "protection-state value for pseudowire";
+          }
+
+          leaf remote-pw-status  {
+             type pseudowire-status-type;
+             description
+                   "status of remote pseudowire";
+          }
+
+          leaf local-pw-status  {
+             type pseudowire-status-type;
+             description
+                   "pseudowire status of local node";
+          }
+
+          leaf remote-refresh-timer  {
+             type  uint32;
+             units seconds;
+             description
+                   "Refresh timer value for remote pseudowire";
+          }
+
+          leaf role {
+             type string;
+             description
+                   "Pseudowire role as primary or backup";
+          }
+
+          leaf type {
+             type string;
+             description
+                   "Pseudowire type as static or dynamic";
+          }
+          
+          leaf stats-collection {
+             type string;
+             description
+                "Pseudowire statistics are on/off per pseudowire";
+          }
+
+          leaf operational-cw {
+             type string;
+             description
+                "Pseudowire operational control-word";
+          }
+
+          leaf operational-cc {
+             type string;
+             description
+                "Pseudowire operational cc-type";
+          }
+
+          leaf tunnel-type {
+             type string;
+             description
+               "This defines different tunnel types";
+          }
+
+          leaf tunnel-name {
+             type string;
+             description
+                "User provided tunnel name over which pw was created";
+          }
+
+          leaf tunnel-source-ip {
+             type inet:ipv4-address;
+             description
+               "User provided tunnel source-ip";
+          }
+
+          leaf tunnel-destination-ip {
+             type inet:ipv4-address;
+             description
+                "User provided tunnel destination-ip";
+          }
+
+          leaf operational-fat {
+             type string;
+             description
+                "Pseudowire operational fat";
+          }
+          
+          leaf manual-switchover {
+             type boolean;
+             description
+                "Manual switchover On or Off";
+          }
+
+          leaf pw-fault-reason {
+             type pseudowire-fault-reason;
+             description
+                "Pseudowire fault reason like tunnel-fault, mhopipbfd-fault etc";
+          }
+
+          leaf sibling-pw {
+             type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+             }
+             description
+                "Sibling pseudowire name for protection pairs and MSPW segments";
+          }
+
+          leaf up-time {
+             type  string;
+             description
+                "Pseudowire up time";
+          }
+
+          leaf agi {
+             type  string;
+             description
+                "Pseudowire attachment group identifier";
+          }
+
+          leaf saii {
+             type  string;
+             description
+                "Pseudowire source attachment individual identifier";
+          }
+
+          leaf taii {
+             type  string;
+             description
+                "Pseudowire target attachment individual identifier";
+          }
+
+          leaf auto-discovered {
+             type  boolean;
+             description
+                "Pseudowire auto-discovered";
+          }
+
+          leaf l2vpn-service {
+             type  string;
+             description
+                "L2VPN service name attached with pseudowire";
+          }
+
+          container statistics {
+             description
+                "pseudowire statistics";
+
+             uses tx-stats-collection-grouping;
+             uses rx-stats-collection-grouping;
+          }
+       }
+
+       list status-message-statistic {
+          key "name";
+             description
+                "Pseudowire status message statistics";
+
+          leaf name {
+             type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+                }
+                description
+                   "Pseudowire name";
+          }
+
+          uses status-message-grouping;
+       }
+
+       list mac-withdrawal-message-statistic {
+          key "name";
+             description
+                "Pseudowire mac withdrawal message statistics";
+
+          leaf name {
+             type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+                }
+                description
+                   "Pseudowire name";
+          }
+
+          uses mac-withdrawal-message-grouping;
+       }
+
+       container pseudowire-count {
+          description
+                   "Pseudowires Count Information";
+
+          leaf total-vpls  {
+             type  uint32;
+             description
+                   "Total count of VPLS pseudowires";
+          }
+
+          leaf active-vpls  {
+             type  uint32;
+             description
+                   "Active count of VPLS pseudowires";
+          }
+
+          leaf inactive-vpls  {
+             type  uint32;
+             description
+                   "Inactive count of VPLS pseudowires";
+          }
+
+          leaf total-vpws  {
+             type  uint32;
+             description
+                   "Total count of VPWS pseudowires";
+          }
+
+          leaf active-vpws  {
+             type  uint32;
+             description
+                   "Active count of VPWS pseudowires";
+          }
+
+          leaf inactive-vpws  {
+             type  uint32;
+             description
+                   "Inactive count of VPWS pseudowires";
+          }
+
+          leaf stats-enabled-pseudowires-in-vpls {
+             type  uint32;
+             description
+                   "Count of Stats enabled pseudowires in VPLS";
+          }
+
+          leaf stats-disabled-pseudowires-in-vpls  {
+             type  uint32;
+             description
+                   "Count of Stats disabled pseudowires in VPLS";
+          }
+
+          leaf stats-enabled-pseudowires-in-vpws  {
+             type  uint32;
+             description
+                   "Count of Stats enabled pseudowires in VPWS";
+          }
+
+          leaf stats-disabled-pseudowires-in-vpws  {
+             type  uint32;
+             description
+                   "Count of Stats disabled pseudowires in VPWS";
+          }
+       }
+    }
+    rpc pseudowire-clear-statistics {
+       input {
+         choice clear-stats {
+            case pseudowire-name {
+              leaf pseudowire-name {
+                 type leafref {
+                    path "/pw:pseudowires/pw:pseudowire/pw:name";
+                 }
+              }
+              description
+                 "Clear stats for this pseudowire.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all pseudowires.";
+            }
+         }
+       }
+       output {
+           leaf response {
+              type string;
+              description
+                 "The response could be 'success', or the reason for pseudowire-clear-statistics failure";
+           }
+       }
+    }
+    rpc pseudowire-clear-status-message-statistics {
+       input {
+         choice clear-stats {
+            description
+               "provides pseudowire status message clear statistics option";
+            case pseudowire-name {
+              leaf pseudowire-name {
+                 type leafref {
+                    path "/pw:pseudowires/pw:pseudowire/pw:name";
+                 }
+                 description
+                    "Clear status message statistics for this pseudowire.";
+              }
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+                  description
+                     "Clear status message stats for all pseudowires.";
+               }
+            }
+         }
+       }
+       output {
+           leaf response {
+              type string;
+              description
+                 "The response could be 'success', or the reason for pseudowire-clear-status-message-statistics failure";
+           }
+       }
+    }
+    rpc pseudowire-clear-mac-withdrawal-message-statistics {
+       input {
+         choice clear-stats {
+            description
+            "provides pseudowire mac-withdrawl message clear statistics option";
+            case pseudowire-name {
+              leaf pseudowire-name {
+                 type leafref {
+                    path "/pw:pseudowires/pw:pseudowire/pw:name";
+                 }
+                 description
+                    "Clear mac withdrawal message statistics for this pseudowire.";
+              }
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+                  description
+                     "Clear mac withdrawal message stats for all pseudowires.";
+               }
+            }
+         }
+       }
+       output {
+           leaf response {
+              type string;
+              description
+                 "The response could be 'success', or the reason for pseudowire-clear-mac-withdrawal-message-statistics failure";
+           }
+       }
+    }
+
+    notification pseudowire-oper-state-change-event {
+        description
+            "This notification is sent when the operational state of a pseudowire changes.";
+
+        leaf pseudowire-name {
+            type leafref{
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+            }
+            mandatory true;
+            description
+                "Pseudowire name";
+        }
+
+        leaf peer-ip {
+            type inet:ipv4-address;
+            description
+                "Pseudowire peer IP";
+        }
+
+        leaf pseudowire-id {
+            type uint32;
+            description
+                "Pseudowire ID";
+        }
+
+        leaf oper-state {
+            type pseudowire-oper-state-type;
+            description
+                "Pseudowire operational status";
+        }
+
+        leaf reason {
+            type pseudowire-fault-reason;
+            description
+                "Notification error with code and subcode explaining why pseudowire state went down from up.
+                e.g tunnel fault";
+        }
+
+        leaf new-state {
+            type pseudowire-oper-state-type;
+            description
+                "Pseudowire new state when alarm is generated";
+        }
+
+        leaf old-state {
+            type pseudowire-oper-state-type;
+            description
+                "Pseudowire old state when alarm is generated";
+        }
+    }
+}

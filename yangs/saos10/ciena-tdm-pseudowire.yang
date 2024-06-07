@@ -1,0 +1,677 @@
+module ciena-tdm-pseudowire {
+
+  namespace "http://www.ciena.com/ns/yang/ciena-tdm-pseudowire";
+  prefix tdm-pw;
+
+  import ciena-types {
+    prefix ciena;
+  }
+
+  import ciena-packet-tdm-port {
+    prefix tdm-port;
+  }
+
+  import ietf-yang-types {
+    prefix yt;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+    Hanover, Maryland 21076
+    U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's data definition for the
+    management of TDM interfaces.
+
+    Copyright (c) 2019 Ciena Corporation.  All rights
+    reserved.
+
+    All information contained herein is, and remains
+    the property of Ciena Corporation. Dissemination of this
+    information or reproduction of this material is strictly
+    forbidden unless prior written permission is obtained from
+    Ciena Corporation.";
+
+  revision "2022-12-16" {
+    description
+      "Renamed mpls-exp to mpls-cos in list tdm-pseudowire";
+  }
+
+  revision "2022-07-06" {
+    description
+      "Added two new parameters mpls-exp and mpls-pw-name in list tdm-pseudowire";
+  }
+      
+  revision "2020-09-18" {
+    description
+      "Added TSOP emulation-type.";
+  }
+
+  revision "2019-10-17" {
+    description
+      "Initial version.";
+    reference
+      "Ciena Functional Specification.";
+  }
+
+  /*
+   * Typedefs
+   */
+
+  typedef tdm-pw-ref {
+    type leafref {
+      path "/tdm-pw:tdm-pseudowires/tdm-pw:tdm-pseudowire/tdm-pw:name";
+    }
+    description
+      "Reference to a tdm-pseudowire instance.";
+  }
+
+  typedef alarm-bit-map {
+    type bits {
+      bit ais {
+        position 0;
+        description 
+          "Alarm Indication Signal";
+      }
+      bit rfi {
+        position 1;
+        description 
+          "Remote Failure Indication";
+      }
+      bit rdi {
+        position 2;
+        description 
+          "Remote Defect Indication";
+      }
+      bit lops {
+        position 3;
+        description 
+          "Loss Of Packet Synchronization";
+      }
+      bit sef {
+        position 4;
+        description 
+          "Severely Errored Frames";
+      }
+      bit oof {
+        position 5;
+        description 
+          "Out of Frames";
+      }
+      bit ssrc-mismatch {
+        position 6;
+        description 
+          "Signal Source (SSRC) Mismatch";
+      }
+      bit len-mismatch {
+        position 7;
+        description 
+          "Length Mismatch";
+      }
+      bit lop {
+        position 8;
+        description 
+          "Loss of Pointer";
+      }
+      bit p-uneq {
+        position 9;
+        description 
+          "Path Unequipped";
+      }
+      bit ppm {
+        position 10;
+        description 
+          "Path Payload Mismatch";
+      }
+      bit idle {
+        position 11;
+        description 
+          "Idle Pattern";
+      }
+      bit overrun {
+        position 12;
+        description 
+          "Buffer Overrun";
+      }
+      bit underrun {
+       position 13;
+       description 
+         "Buffer Underrun";
+      }
+      bit rtp-misconfiguration {
+        position 14;
+        description 
+          "RTP Misconfiguration";
+      }
+      bit jitterbuffer-misconfiguration {
+        position 15;
+        description 
+          "Jitter Buffer Misconfiguration";
+      }
+      bit payloadsize-misconfiguration {
+        position 16;
+        description 
+          "Payload Size Misconfiguration";
+      }
+      bit channel-type-misconfiguration {
+        position 17;
+        description 
+          "Channel Type Misconfiguration";
+      }
+      bit emulation-type-misconfiguration {
+       position 18;
+       description 
+         "Emulation Type Misconfiguration";
+      }
+    }
+    description
+      "Bit map of alarms currently active on this TDM pseudowire.";
+  }
+
+  typedef tdm-tpid {
+    type enumeration {
+      enum 0x8100 {
+        description
+          "TPID value of 0x8100"; 
+      }
+      enum 0x88a8 {
+        description
+          "TPID value of 0x88a8"; 
+      }
+      enum 0x9100 {
+        description
+          "TPID value of 0x9100"; 
+      }
+    }
+    description
+      "TPID used in inner or outer tag on a TDM pseudowire.";
+  }
+
+  /*
+   * Config data
+   */
+
+  container tdm-pseudowires {
+    description
+      "TDM pseudowire configuration data.";
+
+    list tdm-pseudowire {
+      key "name";
+      description   
+        "TDM pseudowire name.";
+
+      leaf name {
+        type string;
+        description 
+          "A Name used to identify the TDM pseudowire.";
+      }
+
+      leaf parent-tdm-port {
+       type tdm-port:tdm-port-ref;
+       mandatory true;
+       description 
+         "Reference to the name of TDM port associated with this pseudowire";
+     }
+
+     leaf emulation-type {
+       type enumeration {
+         enum satop {
+           description
+             "Structure-Agnostic TDM over Packet (T1, E1, T3, E3).";
+         }
+         enum cesop {
+           description
+             "Circuit Emulation Service over Packet (NxDS0).";
+         }
+         enum cep {
+           description
+             "Circuit Emulation over Packet (SONET/SDH).";
+         }
+         enum tsop {
+           description
+             "Transparent SONET/SDH over Packet";
+         }
+       }
+       mandatory true;
+       description
+         "Specifies the encap type for the TDM pseudowire.";
+     }
+
+     leaf encapsulation {
+       type enumeration {
+         enum mef8 {
+           description
+             "MEF8.";
+         }
+         enum mpls {
+           description
+             "native MPLS.";
+         }
+         enum dry-martini {
+           description
+             "Dry Martini.";
+         }
+       }
+       mandatory true;
+       description
+         "Specifies the protocol for the TDM pseudowire.";
+     }
+
+      leaf-list channel {
+        type tdm-port:channel-id;
+        description 
+          "TDM channel, or set of channels. The user must supply at least one channel-id for the TDM pseudowire";
+      }
+
+      leaf channel-type {
+        type enumeration {
+          enum ds0-e0 {
+            description
+              "ds0-e0";
+          }
+          enum ds1-e1 {
+            description
+              "ds1-e1";
+          }
+          enum ds3-e3 {
+            description
+              "ds3-e3";
+          }
+          enum sts1-vc3 {
+            description
+              "sts1-vc3";
+          }
+          enum sts3c-vc4c {
+            description
+              "sts3c-vc4c";
+          }
+          enum sts12c-vc4-4c {
+            description
+              "sts12c-vc4-4c";
+          }
+          enum sts48c-vc4-16c {
+            description
+              "sts48c-vc4-16c";
+          }
+        }
+        mandatory true;
+        description
+          "TDM Channelization";
+      }
+
+      leaf rtp {
+        type ciena:on-off-state;
+        mandatory true;
+        description 
+          "RTP header present";
+      }
+
+      leaf admin-state {
+        type ciena:admin-state;
+        description
+          "Enable/disable the TDM pseudowire.";
+      }
+
+      leaf cvid {
+        when "../encapsulation='mef8'";
+        type uint32 {
+          range "1..4094";
+        }
+        description
+          "Customer Vlan ID";
+      }
+
+      leaf cpcp {
+        when ../cvid;
+        type uint32 {
+          range "0..7";
+        }
+        default 0;
+        description
+          "Customer Priority code point";
+      }
+
+      leaf ctpid {
+        when ../cvid;
+        type tdm-tpid;
+        description
+          "If this leaf is not set the c-tpid is inherited from tdm-global.";
+      }
+
+      leaf cas {
+        type ciena:on-off-state;
+        description 
+          "Channel assoc signalling. This leaf is only relevant when the pseudowire's associated TDM port instance is using a speed of DS1/E1";
+      }
+
+      leaf jitter-buffer-size {
+        type uint32 {
+          range "10..32000";
+        }
+        description
+          "Jitter buffer size in microseconds";
+      }
+
+      leaf payload-size {
+        type uint32 {
+          range "1..4000";
+        }
+         description
+           "Payload size.  This leaf is only relevant when the pseuowire's associated TDM port instance has a type that is NOT smart-sfp.";
+      }
+
+      leaf peer-mac {
+        when "../encapsulation='mef8'";
+        type yt:mac-address;
+        mandatory true;
+        description
+          "Destination MAC address. This leaf is manadatory when using MEF8 encapsulation.";
+      }
+      
+      leaf in-ecid {
+        when "../encapsulation='mef8'";
+        type uint32 {
+          range "1..65535";
+        }
+        mandatory true;
+        description
+          "In Ethernet Circuit Identifier (ECID). This leaf is mandatory when using MEF8 encapsulation.`";
+      }
+
+      leaf out-ecid {
+        when "../encapsulation='mef8'";
+        type uint32 {
+          range "1..65535";
+        }
+        mandatory true;
+        description
+          "Out Ethernet Circuit Identifier (ECID). This leaf is mandatory when using MEF8 encapsulation.";
+      }
+
+      leaf tdm-vid {
+        when "../encapsulation='mef8'";
+        type uint32 {
+          range "1..4094";
+        }
+        mandatory true;
+        description
+          "Outer tag.";
+      }
+
+      leaf tdm-pcp {
+        when "../encapsulation='mef8'";
+        type uint32 {
+          range "0..7";
+        }
+        default 7;
+        description
+          "Priority code point for outer tag";
+      }
+
+      leaf tdm-tpid {
+        when "../encapsulation='mef8'";
+        type tdm-tpid;
+        description
+          "If this leaf is not set the tpid in the outer tag is inherited from tdm-global.";
+      }
+
+      leaf mpls-pw-name {
+        when "../encapsulation='mpls'";
+        type string;
+        mandatory true;
+        description
+          "Leaf used to identify and map with the ethernet side pseudowire.";
+      }
+
+      leaf mpls-cos {
+        when "../encapsulation='mpls'";
+        type uint8 {
+          range "0..7";
+        }
+        description
+          "Priority code point for mpls";
+      }
+    }
+  }
+
+  container tdm-pseudowires-state {
+
+    config false;
+
+    list tdm-pseudowire {
+      key "name";
+      description   
+         "TDM pseudowire name.";
+
+      leaf name {
+        type string;
+        description 
+           "A Name used to identify the TDM pseudowire.";
+      }
+
+      leaf oper-state {
+        type ciena:up-down-state;
+        description
+          "Operational state of the pseudowire.";
+      }
+
+      leaf alarm-state {
+        type alarm-bit-map;
+        description
+          "Bit map of alarm conditions currently active on this TDM pseudowire.";
+      }
+
+      leaf payload-size {
+        type uint32;
+        description
+          "Operational payload size.";
+      }
+
+      leaf missing-packets {
+        type uint64;
+        description
+          "Number of missing PWE packets.";
+      }
+
+      leaf reorder-packets {
+        type uint64;
+        description
+          "Number of successfully reordered packets.";
+      }
+
+      leaf misordered-packets {
+        type uint64;
+        description
+          "Number of packets that could not be reordered or dropped.";
+      }
+
+      leaf malformed-packets {
+        type uint64;
+        description
+          "Number of packets with invalid payload size of header.";
+      }
+
+      leaf underrun-events {
+        type uint64;
+        description
+          "Number of PDV buffer empty events.";
+      }
+
+      leaf overrun-events {
+        type uint64;
+        description
+          "Number of PDV buffer full events.";
+      }
+
+      leaf errored-seconds {
+        type uint64;
+        description
+          "Errored seconds.";
+      }
+
+      leaf severely-errored-seconds {
+        type uint64;
+        description
+          "Severely errored seconds.";
+      }
+
+      leaf unavailable-seconds {
+        type uint64;
+        description
+          "Unavailable seconds.";
+      }
+
+      leaf loss-of-packet-seconds {
+        type uint64;
+        description
+          "Loss of packet seconds.";
+      }
+
+      leaf lbit-events {
+        type uint64;
+        description
+          "Number of L-bit set events.";
+      }
+
+      leaf rbit-events {
+        type uint64;
+        description
+          "Number of R bit set events.";
+      }
+
+      leaf mbit-events {
+        type uint64;
+        description
+          "Number of M bit set events (CESop Specific).";
+      }
+
+      leaf rx-packets {
+        type uint64;
+        description
+          "Number of valid packets received.";
+      }
+
+      leaf tx-packets {
+        type uint64;
+        description
+          "Number of valid packets transmitted.";
+      }
+
+      leaf errored-seconds-path {
+        type uint64;
+        description
+          "OC3/OC12 Path Errored Seconds (for Smart SFPs only).";
+      }
+
+      leaf severely-errored-seconds-path {
+        type uint64;
+        description
+          "OC3/OC12 Path Severely Errored Seconds (for Smart SFPs only).";
+      }
+
+      leaf unavailable-seconds-path {
+        type uint64;
+        description
+          "OC3/OC12 Path Unavailable Seconds (for Smart SFPs only).";
+      }
+
+      leaf code-violations-path {
+        type uint64;
+        description
+          "OC3/OC12 Path Code Violations (for Smart SFPs only).";
+      }
+
+      leaf fault-count-path {
+        type uint64;
+        description
+          "Path, Failure Count(for Smart SFPs only).";
+      }
+
+      leaf available-seconds-path {
+        type uint64;
+        description
+          "Path, Available seconds (for Smart SFPs only).";
+      }
+
+      leaf total-time-path {
+        type uint64;
+        description
+          "Path, Total time seconds (for Smart SFPs only).";
+      }
+    }
+    description
+      "TDM pseudowire operational data.";
+  }
+
+
+  /*
+   * RPCs
+   */
+  rpc tdm-pseudowire-clear-statistics {
+    description
+      "Clear the statistics/counters of the targeted TDM pseudowire.";
+
+    input {
+      leaf tdm-pseudowire-name {
+        type tdm-pw-ref;
+        mandatory "true";
+        description
+          "Name of a tdm-pseuowire to clear counters for.";
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of the clear statistics operation.";
+      }
+    }
+  }
+
+
+  /* 
+   * Notifications
+   */
+
+  notification oper-state-change {
+    leaf name {
+      type string;
+      description
+        "Name of the TDM pseudowire associated with this notification.";
+    }
+
+    leaf oper-state {
+      type ciena:up-down-state;
+      description
+        "Operational state of the pseudowire.";
+    }
+
+    description
+      "Change in the operational state of the TDM pseudowire.";
+  }
+
+  notification alarm-state-change {
+    leaf name {
+      type string;
+      description
+        "Name of the TDM pseudowire associated with this notification.";
+    }
+
+    leaf alarm-state {
+      type alarm-bit-map;
+      description
+        "Bit map of currently active alarms on this TDM pseudowire.";
+    }
+
+    description
+      "Alarm state change.";
+  }
+}

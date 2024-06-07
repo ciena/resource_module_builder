@@ -1,0 +1,245 @@
+module ciena-6500r-snmp-ra-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-snmp-ra-debug";
+  prefix snmp-ra-debug;
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This model captures debug RPCs for manipulating snmp-ra";
+
+  revision 2020-03-16 {
+    description
+      "Adding enum to query for diagnostic cache";
+    ciena-common-version:string "1.0.2";
+  }
+  revision 2020-03-05 {
+    description
+      "Removing snmp-debug rpc, as this is now all moved to separate logging buffers.";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2020-02-10 {
+    description
+      "Renaming some debug RPCs to have more accurate names.";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2019-09-04 {
+    description
+      "Initial Revision";
+  }
+
+  rpc push-config {
+    description
+      "Push the config database stored to the card";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc delete-config {
+    description
+      "wipe out the config cache, this will effectively set us back to a slated sate.";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc full-recollect {
+    description
+      "Sends a request to the caching queue to recollect all data";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc prov-change {
+    description
+      "Sends a request to the caching queue to rebuild caching messages and recollect all data";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+    }
+    output {
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc set-time {
+    input {
+      leaf value {
+        type uint32;
+        description
+          "The timing we want to set in ms";
+      }
+      leaf name {
+        type enumeration {
+          enum get-request {
+            description
+              "set the timeout for get requests, default is 500ms";
+          }
+          enum set-request {
+            description
+              "set the timeout for set requests, default is 1500ms";
+          }
+          enum caching-cadence {
+            description
+              "Set the cadence of the caching thread, 1000ms is default and makes 15s == 15s cadence,
+               2000ms will cause all cadences to be multipled by 2 so 15s cadence becomes a 30s query.";
+          }
+        }
+      }
+    }
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc get-cache {
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+      leaf cache {
+        type enumeration {
+          enum conf {
+            description
+              "config cache, data that we should push to the card";
+          }
+          enum operational {
+            description
+              "operational cache that we use to store data locally that is not set/read from a card";
+          }
+          enum persistent {
+            description
+              "persistent data read from the card and stored";
+          }
+          enum diagnostic {
+            description
+              "Diagnostic data (diag points), (snmp traps) caputured from the card";
+          }
+        }
+      }
+    }
+    output {
+      anyxml data {
+        description
+          "Full database from the card";
+      }
+      list return-code-list {
+        uses ciena-common-yang:return-code;
+      }
+    }
+  }
+
+  rpc publish-trap-card-notif {
+    description
+      "Publish a snmp trap in a standard notification (snmp-ra card ojbect)";
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The name of the card.";
+      }
+      leaf trap-name {
+        type string;
+        description
+          "The OID of the trap ie, swUpgradeNotification, this would be located in SNMP_RA_TRAP_OID_TRAP_OID_VBIDX in a packet capture";
+      }
+      list trap-data {
+        key "index";
+        leaf index {
+          type uint8;
+          description
+            "index of the oid value, check the defines in snmp-ra-trap.h to find the defines for your trap";
+        }
+        leaf value {
+          type string;
+          description
+            "string value of the data we would expect to recieve in a snmp trap";
+        }
+      }
+    }
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc update-presence {
+    description
+      "Query RLS manager for card presence and update the RA database";
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+}

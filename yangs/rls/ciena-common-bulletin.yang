@@ -1,0 +1,171 @@
+module ciena-common-bulletin {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-bulletin";
+  prefix status;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Model for services and framework to report status information
+     and messages to clients to help debug";
+
+  revision 2023-06-07 {
+    description
+      "Initial revision.";
+    version:version "version" {
+      version:string "0.1.0";
+    }
+  }
+
+  typedef severity {
+    description
+      "The severity of a notice.  This helps to sort and filter
+       notices that are not high priority from those that are
+       more important";
+    type enumeration {
+      enum info {
+        description
+          "Information only.  No action required";
+        value 1;
+      }
+      enum feature {
+        description
+          "A feature which can improve performance is disabled.";
+      }
+      enum optimization {
+        description
+          "An optimization opportunity has been detected.";
+      }
+      enum warning {
+        description
+          "A situation has been detected which may affect operations";
+      }
+      enum minor {
+        description
+          "A situation has been detected which affects operations in a minor way.";
+      }
+      enum major {
+        description
+          "A situation has been detected which affects operations in a significant way.
+           Other operations should not be affected.";
+      }
+      enum critical {
+        description
+          "A situation has been detected which operations.  Expected service cannot
+           be provided and other services may be affected";
+      }
+      enum fatal {
+        description
+          "Operations cannot continue due to a detected condition";
+      }
+    }
+  }
+
+  grouping notice {
+    leaf id {
+      description
+        "A string based identifier for this type of notice";
+      type string;
+    }
+    leaf value {
+      description
+        "An optional flag that indicates the current state value of the notice";
+      type boolean;
+      default "false";
+    }
+    leaf severity {
+      description
+        "An optional severity of a notice, to help classify the
+         importance of the posted notice";
+      type severity;
+    }
+    leaf message {
+      description
+        "An optional message to include with a notice to help better
+         describe the issue";
+      type string {
+        yang:stringptr "true";
+      }
+    }
+    leaf action {
+      description
+        "An optional recommended action to take to help address the
+         posted notice";
+      type string {
+        yang:stringptr "true";
+      }
+    }
+    leaf reference {
+      description
+        "An optional reference that can provide more detail for the
+         problem and more details actions that can be taken.";
+      type string {
+        yang:stringptr "true";
+      }
+    }
+    container tracking {
+      description
+        "Container that holds data related to the posting of the notice";
+      leaf first-time {
+        description
+          "First time the notice has been reported";
+        type ietf-yang:date-and-time;
+      }
+      leaf latest-time {
+        description
+          "The most recent time the notice has been reported";
+        type ietf-yang:date-and-time;
+      }
+      leaf count {
+        description
+          "The number of times the notice has been reported";
+        type uint32;
+        default "1";
+      }
+    }
+  }
+
+  grouping notices {
+    description
+      "A notice included in a bulletin.  Contains information for
+       implementors to enhance or correct operations";
+    list notice {
+      yang:alias "yang-notice";
+      key "id";
+      uses notice;
+    }
+  }
+
+  container bulletin {
+    config false;
+    description
+      "Container to report service bulletin information.";
+    list service {
+      description
+        "List of notices for a service.";
+      key "name";
+      leaf name {
+        type string;
+      }
+      container active {
+        uses notices;
+      }
+    }
+  }
+}

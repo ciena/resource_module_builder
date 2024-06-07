@@ -1,0 +1,289 @@
+module ciena-6500r-slots-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-slots-debug";
+  prefix ciena-6500r-slots-debug;
+
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-6500r-otdr {
+    prefix otdr;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform slot model";
+
+  revision 2024-03-15 {
+    description
+      "Add set-slot-debug-data and get-remote-data RPCs.";
+    ciena-common-version:string "0.5.0";
+  }
+  revision 2023-09-18 {
+    description
+      "Add slots-debug container";
+    ciena-common-version:string "0.4.0";
+  }
+  revision 2023-01-26 {
+    description
+      "Add add-delete-hardware-facilities rpc.";
+    ciena-common-version:string "0.3.0";
+  }
+  revision 2022-11-22 {
+    description
+      "Changed type of launch-power in card-if-start-otdr-trace rpc.";
+    ciena-common-version:string "0.2.0";
+  }
+  revision 2022-10-25 {
+    description
+      "Added card-if-start-otdr-trace, card-if-stop-otdr-trace rpcs.";
+    ciena-common-version:string "0.1.0";
+    reference
+      "RLS 3.1";
+  }
+  revision 2021-05-21 {
+    description
+      "Added slot-secure-erase rpc.";
+    ciena-common-version:string "0.0.2";
+  }
+  revision 2020-10-21 {
+    description
+      "Added rpc audit-line-monitors";
+    ciena-common-version:string "0.0.1";
+  }
+  revision 2019-09-17 {
+    description
+      "Initial revision";
+  }
+
+  container slots-debug {
+    description
+      "Debug flags that need to be saved in NVS";
+    leaf audit-out-of-range-alarms-required {
+      type boolean;
+      description
+        "Flag indicating if the out-of-range defined-alarms data needs to be audited (true) or audit already done (false).
+         This is a one-time audit on upgrade into RLS 3.1.60+";
+      default "false";
+    }
+  }
+
+  rpc trigger-alarm-worker {
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc trigger-prov-worker {
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc trigger-tod-worker {
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc trigger-autoprov-worker {
+    output {
+      leaf result {
+        type enumeration {
+          enum success;
+          enum failed;
+        }
+      }
+    }
+  }
+
+  rpc audit-line-monitors {
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        description
+          "The slot to audit";
+        mandatory true;
+      }
+    }
+  }
+
+  rpc slot-secure-erase {
+    input {
+      leaf slot {
+        type ciena-6500r-types:object-name;
+        mandatory true;
+        description
+          "The name of the slot.";
+      }
+      leaf no-boot {
+        type boolean;
+        description
+          "Flag that indicates if a card should be rebooted after the secure-erase operation is complete.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc card-if-start-otdr-trace {
+    description
+      "Instructs a card to start an OTDR trace measurement.";
+    input {
+      leaf resource {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Resource to start otdr trace";
+      }
+      leaf trace-type {
+        type otdr:card-if-trace-type_t;
+        mandatory true;
+        description
+          "The type of trace to be measured";
+      }
+      leaf launch-power {
+        type otdr:launch-power_t;
+        description
+          "The type of launch power";
+      }
+      leaf event-range {
+        type uint32 {
+          range "0..128000";
+        }
+        units "m";
+        default "0";
+        description
+          "OTDR Event Range (m)";
+      }
+      leaf insertion-loss {
+        type ciena-pro-optical-types:loss-dB-1-precision;
+        default "0.0";
+        description
+          "Additional insertion loss added to the configured insertion loss";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc card-if-stop-otdr-trace {
+    description
+      "Instructs a card to stop an OTDR trace measurement.";
+    input {
+      leaf resource {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Resource to stop otdr trace";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc add-delete-hardware-facilities {
+    description
+      "This rpc can be used to bypass validation to add/delete hardware facilities";
+    input {
+      leaf resource {
+        type instance-identifier;
+        mandatory true;
+        description
+          "resource that includes slot name and facility name to be added or deleted.";
+      }
+      leaf action {
+        type enumeration {
+          enum create;
+          enum delete;
+        }
+        mandatory true;
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc set-slot-debug-data {
+    description
+      "This RPC can be used to set card data that cannot normally be updated with a regular set request.";
+    input {
+      leaf resource {
+        type instance-identifier;
+        description
+          "Resource that includes slot name or facility name.";
+      }
+      anyxml data {
+        description
+          "This data tree represents card specific data to be updated.";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+
+  rpc get-remote-data {
+    description
+      "This RPC can be used to get remote data via a specified domain/service.";
+    input {
+      leaf path {
+        type instance-identifier;
+        description
+          "Path to get from the remote domain/service";
+      }
+      leaf domain {
+        type string;
+        description
+          "Remote domain to get data from";
+      }
+      leaf service {
+        type string;
+        description
+          "Remote service to get data from";
+      }
+    }
+    output {
+      uses yang:rpc-result-common;
+      anyxml data {
+        description
+          "The data returned from the remote domain/service.";
+      }
+    }
+  }
+}

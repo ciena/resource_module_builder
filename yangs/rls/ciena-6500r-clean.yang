@@ -1,0 +1,98 @@
+module ciena-6500r-clean {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-clean";
+  prefix clean;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's clean objects for the 6500r platform";
+
+  revision 2020-11-30 {
+    description
+      "6500r Release 2.3 -
+       Added the force-clean option";
+    ciena-common-version:string "0.3.0";
+  }
+  revision 2020-07-24 {
+    description
+      "6500r Release 2.1 -
+       Added the no-boot parameter";
+    ciena-common-version:string "0.2.0";
+  }
+  revision 2020-06-30 {
+    description
+      "6500r Release 2.1-
+       Added secure-wipe RPC support";
+    ciena-common-version:string "0.1.0";
+  }
+  revision 2018-05-24 {
+    description
+      "6500r Release 1.0-
+       First release";
+    ciena-common-version:string "0.0.0";
+  }
+
+  typedef clean-type {
+    type enumeration {
+      enum FACTORY {
+        value 0;
+        description
+          "Factory reset/clean operation";
+      }
+      enum SLAT {
+        value 1;
+        description
+          "Slat reset/clean operation";
+      }
+      enum SECURE-WIPE {
+        value 2;
+        description
+          "Secure-wipe operation";
+      }
+    }
+  }
+
+  rpc trigger-clean {
+    input {
+      leaf slot {
+        type string;
+        description
+          "Which slot is to be cleaned.  'CTM' is the only supported option for now.";
+      }
+      leaf type {
+        type clean-type;
+        description
+          "Type of cleaning operation";
+      }
+      leaf no-boot {
+        type boolean;
+        description
+          "Should the card be held in the clean state after completion instead of rebooted";
+      }
+      leaf force-clean {
+        type boolean;
+        description
+          "Force clean if shelf upgrade is in progress";
+      }
+    }
+    output {
+      leaf result {
+        type boolean;
+      }
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

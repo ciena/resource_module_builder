@@ -1,0 +1,229 @@
+module ciena-pro-equipment {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-equipment";
+  prefix pro-equipment;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's equipment object.";
+
+  revision 2020-08-01 {
+    description
+      "Initial version";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+  }
+
+  typedef power-source-type {
+    type enumeration {
+      enum DC;
+      enum AC;
+    }
+  }
+
+  grouping equipment-base {
+    leaf name {
+      type ciena-pro-types:object-name;
+    }
+    leaf pec {
+      type ciena-pro-types:pec-code;
+      description
+        "Product Equipment Code";
+    }
+    leaf c-type {
+      type string;
+      description
+        "c-type";
+    }
+    leaf type {
+      type string;
+    }
+    leaf model {
+      type string;
+      description
+        "Model";
+    }
+    leaf description {
+      type string;
+      description
+        "Description";
+    }
+    leaf label {
+      type string;
+      description
+        "Operator identifier for equipment description.";
+    }
+    uses ciena-pro-types:admin-state;
+    uses ciena-pro-types:operational-state;
+    leaf ui-name {
+      type string;
+      description
+        "Short form name, for use in a user interface.";
+    }
+    leaf serial-number {
+      type string;
+      config false;
+      description
+        "The serial number string for the equipment.";
+    }
+    leaf manufacturing-date {
+      type ietf-yang:date-and-time;
+      config false;
+      description
+        "The date of manufacture of the equipment.";
+    }
+    leaf hardware-release {
+      type string;
+      config false;
+      description
+        "Release Level";
+    }
+    leaf common-language-equipment-identifier {
+      type string {
+        length "1..32";
+      }
+      config false;
+      description
+        "Common language equipment identifier";
+    }
+    leaf uptime {
+      type string {
+        length "1..16";
+      }
+      config false;
+      description
+        "Cumulative uptime since the unit was last restarted (warm or cold), in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS).";
+    }
+    leaf age {
+      type string {
+        length "1..16";
+      }
+      config false;
+      description
+        "Cumulative in-service time elapsed since manufacture, in the format: days:hours:minutes:seconds (DDDD:HH:MM:00).";
+    }
+    leaf powered-uptime {
+      type string {
+        length "1..16";
+      }
+      config false;
+      description
+        "Cumulative time since the equipment was last powered on, in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS).";
+    }
+    leaf power-source-type {
+      type power-source-type;
+      config false;
+      description
+        "Input power type, i.e. DC or AC";
+    }
+    container current-power {
+      leaf value {
+        type int32;
+        units "W";
+        description
+          "Current power value";
+      }
+      leaf measurement-type {
+        type enumeration {
+          enum measured;
+          enum estimated;
+          enum unknown;
+        }
+        description
+          "Flag to indicate if current power is measured, estimated or unknown.";
+      }
+      config false;
+    }
+    leaf current-temperature {
+      type int32;
+      units "celsius";
+      config false;
+      description
+        "Current equipment temperature in celsius";
+    }
+    leaf average-temperature {
+      type int32;
+      units "celsius";
+      config false;
+      description
+        "Average equipment temperature in celsius";
+    }
+    container fan-speed {
+      leaf value {
+        type int32;
+        units "rpm";
+        description
+          "Current fan speed value";
+      }
+      leaf measurement-type {
+        type enumeration {
+          enum measured;
+          enum estimated;
+          enum unknown;
+        }
+        description
+          "Flag to indicate if fan speed is measured, estimated or unknown.";
+      }
+      config false;
+    }
+  }
+
+  grouping equipment-diagnostic {
+    leaf active {
+      type boolean;
+      description
+        "Active, carrying traffic";
+    }
+    leaf failed {
+      type boolean;
+      description
+        "Equipment Failed";
+    }
+    leaf hardware-subsystem-fail {
+      type boolean;
+      description
+        "Equipment hardware subsystem fail";
+    }
+    leaf software-subsystem-fail {
+      type boolean;
+      description
+        "Equipment software subsystem fail";
+    }
+    leaf hi-temp-warning {
+      type boolean;
+      description
+        "High temperature warning";
+    }
+    leaf hi-temp {
+      type boolean;
+      description
+        "High temperature";
+    }
+  }
+
+  grouping equipment {
+    uses equipment-base;
+    container diagnostic {
+      uses equipment-diagnostic;
+      config false;
+    }
+  }
+}

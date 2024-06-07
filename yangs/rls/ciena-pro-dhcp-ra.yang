@@ -1,0 +1,125 @@
+module ciena-pro-dhcp-ra {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-dhcp-ra";
+  prefix ciena-pro-dhcp-ra;
+
+  import openconfig-relay-agent {
+    prefix oc-ra;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's 6500r platform dhcp";
+
+  revision 2019-10-08 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Initial revision";
+  }
+
+  grouping dhcp-relay-agent-ztp-config {
+    description
+      "DHCP relay agent ztp config";
+    leaf enabled {
+      type boolean;
+      default "true";
+      description
+        "When it is enabled, the DHCP relay agent serves
+         ZTP through unnumbered interfaces";
+    }
+  }
+
+  grouping dhcp-relay-agent-ztp-state {
+    description
+      "DHCP relay agent ztp state";
+    leaf dhcp-client-id {
+      type string;
+      description
+        "The latest DHCP client ID sent by the DHCP client";
+    }
+
+    leaf release {
+      type string;
+      description
+        "The release number sent by the ZTP client";
+    }
+
+    leaf transaction-id {
+      type uint32;
+      description
+        "The latest transaction ID sent by the DHCP client";
+    }
+
+    leaf status {
+      type enumeration {
+        enum "IN-PROGRESS" {
+          description
+            "The DHCP relay agent is serving DHCP client";
+        }
+        enum "COMPLETED" {
+          description
+            "The DHCP relay agent serves DHCP client successfully";
+        }
+        enum "ERROR" {
+          description
+            "The DHCP relay agent serves DHCP client with errors";
+        }
+      }
+      description
+        "The status of the DHCP transaction";
+    }
+
+    leaf error-message {
+      type string;
+      description
+        "The error message reported by the DHCP relay agent";
+    }
+  }
+
+  grouping dhcp-relay-agent-ztp-top {
+    description
+      "Top-level grouping for zero touch provisioning (ztp)
+       on DHCP relay agent ";
+    container ztp {
+      description
+        "The container is used for ztp on DHCP relay agent ";
+      container config {
+        description
+          "Configuration data for ZTP on DHCP relay agent";
+        uses dhcp-relay-agent-ztp-config;
+      }
+
+      container state {
+        config false;
+        description
+          "Operational state data for ZTP on DHCP relay agent";
+        uses dhcp-relay-agent-ztp-config;
+
+        uses dhcp-relay-agent-ztp-state;
+      }
+    }
+  }
+
+  augment "/oc-ra:relay-agent/oc-ra:dhcp/oc-ra:interfaces/oc-ra:interface" {
+    description
+      "ztp configuration for interface";
+    uses dhcp-relay-agent-ztp-top;
+  }
+
+  augment "/oc-ra:relay-agent/oc-ra:dhcpv6/oc-ra:interfaces/oc-ra:interface" {
+    description
+      "ztp configuration for interface";
+    uses dhcp-relay-agent-ztp-top;
+  }
+}

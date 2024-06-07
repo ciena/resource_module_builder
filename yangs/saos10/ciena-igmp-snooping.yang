@@ -1,0 +1,964 @@
+module ciena-igmp-snooping {
+    namespace "http://www.ciena.com/ns/yang/ciena-igmp-snooping";
+
+    prefix "igmp-snooping";
+
+    import ietf-yang-types {
+        prefix yang;
+    }
+    import ietf-inet-types {
+        prefix inet;
+    }
+    import ietf-pseudowires {
+        prefix pw;
+    }
+    import ciena-mef-fd {
+        prefix "mef-fd";
+    }
+    import ciena-mef-fp {
+        prefix "mef-fp";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+        Hanover, Maryland 21076
+        U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This module contains the YANG definition for Ciena's global
+        configuration of Internet Group Management Protocol (IGMP),
+        IGMP Snooping, Proxy and Multicast features.
+
+        Copyright (c) 2016-2022 Ciena Corporation.  All rights reserved.
+
+        All information contained herein is, and remains
+        the property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained from
+        Ciena Corporation.";
+						 
+    revision "2021-09-09" {
+       description
+           "Changed the name of multicast-services container to igmp-snooping.
+            Changed the name of igmp-snooping container to igmp-snooping-config.
+            Changed the name of multicast-services-state container to igmp-snooping-state.
+            Changed the name of type-def state to igmp-state.
+            Added interface-list-ref and interface-leaf-ref.
+            Added a must clause in the key fd-name under igmp-snooping-config.
+            Modified static-group-exclude-interface to use grouping interface-list-ref.
+            Modified default-router-interface in igmp-snooping-config container to use grouping interface-leaf-ref.
+            Modified router-interface and report-send-interface in igmp-snooping-state container to use grouping
+            interface-leaf-ref. 
+            Changed the list group-members into two seperate lists namely fp-group-member and pw-group-member. 
+            Changed the range of robustness value from previous 1-7 to 1-5.
+            Changed the rpc operation name clear-statistics to igmp-snooping-clear-statistics.
+            Renamed group-source-records to group-source-record. 
+            Removed leafs server-interface, server-topology, fork-mode and umf-state. 
+            Removed identity server-topology-mode and rpc operation debug-event-logging.
+            Removed leafs global-admin-state, admin-state and oper-state.
+            Changed the identity multicast-service-state to identity igmp-snooping-state.
+            Changed the leaf name of type in the group-information List to group-type.
+            Changed the leaf name of state in the group-information List to group-state.
+            Modifed the rpc igmp-snooping-clear-statistics by modifying fd-name leaf-ref.
+            Added new leaf join-messages-discarded.
+            Updated the description section of end-ip-address leaf.";
+       reference
+          "None.";
+    }
+
+    revision "2016-03-21" {
+        description
+            "Initial Version.";
+        reference
+            "RFC 1112: Host Extensions for IP Multicasting (IGMPv1)
+            RFC 2236: Internet Group Management Protocol, Version 2
+            (IGMPv2)
+            RFC 3376: Internet Group Management Protocol, Version 3
+            (IGMPv3)
+            RFC 4604: Using Internet Group Management Protocol Version 3
+            (IGMPv3) and Multicast Listener Discovery Protocol
+            Version 2 (MLDv2) for Source-Specific Multicast
+            IETF magma snoop, draft-ietf-magma-snoop-12.txt: 
+            Considerations for IGMP and MLD Snooping Switches
+            IETF magma igmp proxy, draft-ietf-magma-igmp-proxy-6.txt:
+            IGMP/MLD Proxying";
+    }
+
+    /*
+     * Type definitions
+     */
+
+   typedef igmp-state {
+        type enumeration {
+            enum disable {
+                description
+                    "Disable IGMP snooping.";
+            }
+            enum enable {
+                description
+                    "Enable IGMP snooping.";
+            }
+        }
+        description     
+            "State of IGMP snooping.";
+    }
+
+    identity igmp-compatibility-mode {
+        description
+            "Base identity IGMP version based compatibility mode.";
+    }
+
+    identity  v1 {
+        base igmp-compatibility-mode;
+        description
+            "IGMP version v1.";
+    }
+
+    identity v2 {
+        base igmp-compatibility-mode;
+        description
+            "IGMP version v2.";
+    }
+
+    identity v3 {
+        base igmp-compatibility-mode;
+        description
+            "IGMP version v3.";
+    }
+
+    identity igmp-snooping-state {
+        description
+            "Base identity of the current state of the 
+             IGMP snooping.";
+    }
+
+    identity active {
+        base igmp-snooping-state;
+        description
+            "Specify the group is active.";
+    }
+
+    identity query {
+        base igmp-snooping-state;
+        description
+            "Specify that the query message has been sent.";
+    }
+
+    identity active-linger {
+        base igmp-snooping-state;
+        description
+            "Specify that the member count is zero and the 
+            leave message is not sent to upstream router.";
+    }
+
+    identity linger {
+        base igmp-snooping-state;
+        description
+            "Specify that the member count is zero and the 
+            leave message is sent to upstream router.";
+    }
+
+    identity multicast-traffic-source {
+        description
+            "Base identity of the source for this multicast 
+            group traffic.";
+    }
+
+    identity router {
+        base multicast-traffic-source;
+        description
+            "Represents the multicast router.";
+    }
+
+    identity server {
+        base multicast-traffic-source;
+        description
+            "Represents the actual multicast server from where
+            traffic is originated.";
+    }
+
+    identity multicast-service-type {
+        description
+            "Base identity of the type of the multicast group.";
+    }
+
+    identity  static {
+        base multicast-service-type;
+        description
+            "Represents the static multicast group.";
+    }
+
+    identity dynamic {
+        base multicast-service-type;
+        description
+            "Represents the dynamic multicast group.";
+    }
+
+    identity filter-mode {
+        description
+            "Base identity of IGMPv3 source address filter mode
+            for the multicast group.";
+    }
+
+    identity  include {
+        base filter-mode;
+        description
+            "Include membership.";
+    }
+
+    identity exclude {
+        base filter-mode;
+        description
+            "Include membership.";
+    }
+
+    identity igmp-leave-mode {
+        description
+            "Base identity of the IGMP leave mode for multicast service.";
+    }
+
+    identity fast {
+        base igmp-leave-mode;
+        description
+            "Fast leave.";
+    }
+
+    identity inquisitive {
+        base igmp-leave-mode;
+        description
+            "Inquisitive leave.";
+    }
+
+    grouping fd-ref {
+        description
+            "Represents a forwarding domain.";
+
+        leaf fd-name {
+            type leafref {
+                path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+            }
+            description
+                "A reference to a forwarding domain.";
+        }
+    }
+    
+    grouping interface-list-ref {
+        description
+            "Represents an interface.";
+        leaf-list fp-name {
+            type mef-fp:fp-ref;
+               description
+                  "A reference to a flow point.";
+        }
+
+        leaf-list pw-name {
+            type pw:pseudowire-ref;
+               description
+                  "A reference to a pseudowire.";
+        }
+    }
+			 
+    grouping interface-leaf-ref {
+	description
+            "Represents a choice between leaf-ref interface.";
+        choice leaf-type {
+            description
+                "Represents a choice between fp and pw.";
+
+            case fp-name {
+                leaf fp-name {
+                    type mef-fp:fp-ref;
+                    description
+                        "A reference to a flow point.";
+                }
+            }
+            case pw-name {
+                leaf pw-name {
+                    type pw:pseudowire-ref;
+                    description
+                        "A reference to a pseudowire.";
+                }
+            }
+        }
+    }
+			 
+    //
+    // Data definitions related to IGMP
+    //
+
+    container igmp-snooping {
+        description
+            "IGMP snooping.";
+
+        leaf global-snoop-state {
+            type igmp-state;
+            default disable;
+            description
+                "Specifies the IGMP global snooping state.";
+        }
+
+        list instance {
+            key "fd-name";
+               description   
+                "Specifies a list of IGMP snooping instances.";
+            leaf fd-name{
+               type leafref {
+                  path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+               }
+               must "(/mef-fd:fds/mef-fd:fd[mef-fd:name=current()]/mef-fd:mode='vpls')" {
+                   error-message "FD mode is not VPLS or FD is in use";
+               }
+               description
+                  "Represents a forwarding domain.";  			   
+            }
+
+            leaf snoop-state {
+                type igmp-state;
+                default enable;
+                description 
+                    "Specifies the admin state of snooping for 
+                    an instance .";
+            }
+
+            container igmp-snooping-config {
+                description   
+                    "Specifies the configuration parameters for IGMP snooping.";
+
+                 leaf active-linger-timeout {
+                    type uint32 {
+                        range "0..300";
+                    }
+                    units "seconds";
+                    default "30";
+                    description
+                        "Specifies the active linger timeout.";
+                }
+
+                container default-router-interface {
+                    uses interface-leaf-ref;
+                    description
+                        "Specify the default router interface.";
+                }
+
+                leaf last-member-query-interval {
+                    type uint32 {
+                        range "10..100";
+                    }
+                    units "deci-seconds(Tenths of a sec)";
+                    default "10";
+                    description
+                        "Specify the last membership query interval.";
+                }
+                leaf leave-mode {
+                    type identityref {
+                        base igmp-leave-mode;
+                    }
+                    default fast;
+                    description
+                        "Specify the IGMP leave mode.";
+                }
+
+                leaf linger-timeout {
+                    type uint32 {
+                        range "10..300";
+                    }
+                    units "seconds";
+                    default "120";
+                    description
+                        "Specify the amount of time that a multicast filter is
+                        in place after the last host has left. In essence it
+                        configures how long to filter the traffic after all
+                        the hosts have left the group. This can tune the system
+                        as to how long the router has to remove the stream from
+                        the subnet.";
+                }
+
+                leaf priority {
+                    type uint32 {
+                        range "0..7";
+                    }
+                    default 7;
+                    description
+                        "Specifies the priority of IGMP packets.";
+                }
+
+                leaf querier-compatibility-mode {
+                    type identityref {
+                        base igmp-compatibility-mode;
+                    }
+                    default v3;
+                    description
+                        "Specifies the query engine compatibility mode.";
+                }
+
+                leaf query-delay {
+                    type uint32 {
+                        range "1..100";
+                    }
+                    units "deci-seconds(Tenths of a sec)";
+                    default "10";
+                    description
+                        "Specifies the time to wait before sending the next
+                        group specific query downstream.";
+                }
+
+                leaf query-engine-state {
+                    type enumeration {
+                        enum off {
+                            description
+                                "Query engine off.";
+                        }
+                        enum on {
+                            description
+                                "Query engine on.";
+                        }
+                    }
+                    default off;
+                    description
+                        "Specifies the query engine state for a given
+                        IGMP snooping instance. ";
+                }
+
+                leaf query-interval {
+                    type uint32 {
+                        range "10..31744";
+                    }
+                    units "seconds";
+                    default "125";
+                    description 
+                        "The interval period between each general query
+                        sent to the router. This parameter specifies how 
+                        often to repeat the group specific query.  
+                        Default value is 125 seconds.  Note that the actual 
+                        rate may be slower when the switch becomes busy, 
+                        so this parameter should be thought of as a 
+                        minimum time interval.";
+                }
+
+                leaf query-source-ip-address {
+                    type inet:ipv4-address;
+                    description
+                        "This represents the source IP address for the IGMP snooping.";
+                }
+
+
+                leaf query-response-interval {
+                    type uint32 {
+                        range "10..31744";
+                    }
+                    units "deci-seconds(Tenths of a sec)";
+                    default "100";
+                    description
+                        "The amount of time to receive a membership
+                        report after a query message is sent.
+                        This value goes directly into the query packet.";
+                }
+
+                leaf rapid-recovery-mode {
+                    type enumeration {
+                        enum off {
+                            description
+                                "Does not generate and accept query packets with
+                                zero source IP address.";
+                        }
+                        enum on {
+                            description
+                                "Generates and accepts query packets with zero
+                                source IP address.";
+                        }
+                    }
+                    default off;
+                    description
+                        "Specifies whether the rapid recovery mode is set to on
+                        or off.";
+                }
+
+                leaf robustness {
+                    type uint32 {
+                        range "1..5";
+                    }
+                    default 2;
+                    description
+                        "Specify the number of replies to send for
+                        each multicast group.";
+                }
+
+                container router-group-address {
+                    description
+                        "Specify a range of multicast group addresses that are
+                        originated from router. If it is undefined, all leave,
+                        join messages are forwarded to router. If it is defined,
+                        leave/join messages are filtered.";
+
+                    leaf start-ip-address {
+                        type inet:ipv4-address;
+                        description
+                            "Specify a start multicast address.";
+                    }
+
+                    leaf end-ip-address {
+                        type inet:ipv4-address;
+                        description
+                            "Specify an end multicast address.
+                             Start-ip must be specified with end-ip for the range to take effect.";
+                    }
+                }
+
+                leaf router-query-interval {
+                    type uint32 {
+                        range "10..31744";
+                    }
+                    units "seconds";
+                    default "250";
+                    description
+                        "Specify the router query interval for IGMP snooping.";
+                }
+            }
+
+            container static-groups {
+                description
+                    "Specify the static multicast group(s).";
+                leaf-list address {
+                    type inet:ipv4-address;
+                    description
+                        "Specifies the IP address of static multicast group.";
+                }
+            }
+
+            container static-group-exclude-interface {
+                description
+                    "Specify the list of interfaces excluded from a static multicast group.";
+                uses interface-list-ref;
+            }
+        }
+    }
+
+    container igmp-snooping-state {
+        config false;
+        description
+            "IGMP snooping state data";
+
+        list instance-info {
+            key "fd-name";
+            description
+                "Specifies a list of IGMP snooping instances.";
+            uses fd-ref;
+
+            container igmp-snooping-state {
+                description
+                    "Specifies the operational parameters for IGMP Snooping.";
+
+                leaf operational-state {
+                    type igmp-state;
+                    description
+                        "Represents the operational state of snooping on the
+                        IGMP snooping.";
+                }
+
+                leaf router-source-mac-address {
+                    type yang:mac-address;
+                    description
+                        "Specifies the router's MAC address.";
+                }
+
+                leaf router-source-ip-address {
+                    type inet:ipv4-address;
+                    description
+                        "Specifies the router's IP address.";
+                }
+
+                container router-interface {
+                    uses interface-leaf-ref;
+                    description
+                        "Specifies the interface from where router queries
+                        are coming.";
+                }
+
+                container report-send-interface {
+                    uses interface-leaf-ref;
+                    description
+                        "Specifies the interface to where IGMP reports are sent.
+                        Not always the same as the router interface.";
+                }
+
+                leaf router-compatibility-mode {
+                    type identityref {
+                        base igmp-compatibility-mode;
+                    }
+                    description
+                        "Specifies the IGMP version of the router.";
+                }
+
+                leaf report-send-interface-is-mesh-pw {
+                    type enumeration {
+                        enum no {
+                            description
+                                "Interface is not mesh pseudowire.";
+                        }
+                        enum yes {
+                            description
+                                "Interface is mesh pseudowire.";
+                        }
+                        enum undefined {
+                            description
+                                "Undefined.";
+                        }
+                    }
+                    description
+                        "Specifies whether the current report send interface is
+                        a mesh pseudowire or not.";
+                }
+            }
+
+            list group-information {
+                key "address";
+                description
+                    "Specifies the list of all multicast groups.";
+
+                leaf address {
+                    type inet:ipv4-address;
+                    description 
+                        "The multicast group IP address.";
+                }
+
+                leaf group-state {
+                    type identityref {
+                        base igmp-snooping-state;
+                    }
+                    description 
+                        "The current state of the IGMP snooping.";
+                }
+
+                leaf group-type {
+                    type identityref {
+                        base multicast-service-type;
+                    }
+                    description 
+                        "The type of the multicast group.";
+                }
+
+                leaf source {
+                    type identityref {
+                        base multicast-traffic-source;
+                    }
+                    description 
+                        "The source for this multicast group traffic.";
+                }
+
+                leaf member-count {
+                    type uint32;
+                    description 
+                        "Number of member interfaces of multicast group.";
+                }
+
+                leaf up-time {
+                    type yang:timeticks;
+                    description
+                        "Specify the time when a multicast group is discovered,
+                        in seconds.";
+                }
+
+                leaf group-compatibility-mode {
+                    type identityref {
+                        base igmp-compatibility-mode;
+                    }
+                    description 
+                        "Represents the group compatibility mode for group based
+                        on the lowest version of IGMP membership report recieved
+                        for this multicast group.";
+                }
+
+                leaf group-timer {
+                    type yang:timeticks;
+                    description
+                        "Specify the time left (seconds) before we decide that
+                        there are no more members of a group.";
+                }
+
+                leaf igmpv1-host-present-timer {
+                    type yang:timeticks;
+                    description 
+                        "Specify the timeout period of an IGMPv1 host. It is the
+                        remaining time (seconds) from now, before the group
+                        compatibility mode switches back to v2/v3 on the group.";
+                }
+
+                leaf igmpv2-host-present-timer {
+                    type yang:timeticks;
+                    description
+                        "Specify the timeout period of an IGMPv2 host. It is the
+                        remaining time (seconds) from now, before the group
+                        compatibility mode switches back to v3 on this group.";
+                }
+
+                leaf source-filter-mode  {
+                    type identityref {
+                        base filter-mode;
+                    }
+                    description 
+                        "The IGMPv3 source address filter mode for the multicast
+                        group.";
+                }
+
+                leaf number-of-source-addresses {
+                    type uint32;
+                    description 
+                        "Number of source addresses for this multicast group.";
+                }
+
+                list group-source-record {
+                    key "source-ip-address"; 
+                    description   
+                        "Specify dynamic multicast source information.";
+
+                    leaf source-ip-address {
+                        type inet:ipv4-address;
+                        description 
+                            "The IP address of source record for the IGMPv3
+                            multicast group.";
+                    }
+
+                    leaf source-timer {
+                        type yang:timeticks;
+                        description 
+                            "Specify the time left to delete source address record
+                            from the source table, in seconds";
+                    }
+                }
+            }
+
+            list fp-group-member {
+                key "address fp-name";
+                description   
+                    "Specify all interface members of multicast group.";
+
+                leaf address {
+                    type inet:ipv4-address;
+                    description
+                        "The multicast group IP address.";
+                }
+                leaf fp-name {
+                    type mef-fp:fp-ref;
+                    description 
+                        "Name of flow point";
+                }
+            }
+			
+            list pw-group-member {
+                key "address pw-name";
+                description   
+                    "Specify all PW interface members of multicast group.";
+
+                leaf address {
+                     type inet:ipv4-address;
+                     description
+                         "The multicast group IP address.";
+                }
+                leaf pw-name {
+                     type pw:pseudowire-ref;
+                     description 
+                         "Reference to a pseudowire";
+                }
+            }
+         
+            container packet-statistics {
+                description
+                    "Specifies the packet statistics parameters.";
+
+                leaf static-group-count {
+                    type uint16;
+                    description 
+                        "The total number of static multicast groups.";
+                }
+
+                leaf dynamic-group-count {
+                    type uint16;
+                    description 
+                        "The total number of dynamic mcast groups.";
+                }
+
+                leaf router-group-count {
+                    type uint16;
+                    description
+                        "Active multicast groups of the router which require
+                        query reply.";
+                }
+
+                leaf linger-group-count {
+                    type uint16;
+                    description
+                        "The total number of groups in linger state.";
+                }
+
+                leaf total-group-members {
+                    type uint16;
+                    description
+                        "The total number of group members for all groups in
+                        a IGMP snooping instance.";
+                }
+
+                leaf join-messages-received {
+                    type yang:counter32;
+                    description 
+                        "Number of join messages received.";
+                }
+
+                leaf leave-messages-received {
+                    type yang:counter32;
+                    description 
+                        "Number of leave messages received.";
+                }
+
+                leaf version3-membership-reports-received {
+                    type yang:counter32;
+                    description 
+                        "Number of IGMPv3 membership reports recieved.";
+                }
+
+                leaf version3-membership-IsIn-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership IS_IN reports recieved.";
+                }
+
+                leaf version3-membership-IsEx-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership IS_EX reports recieved.";
+                }
+
+                leaf version3-membership-ToIn-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership TO_IN reports recieved.";
+                }
+
+                leaf version3-membership-ToEx-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership TO_EX reports recieved.";
+                }
+
+                leaf version3-membership-allow-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership Allow reports recieved.";
+                }
+
+                leaf version3-membership-block-reports-received {
+                    type yang:counter32;
+                    description
+                        "Number of v3 membership Block reports recieved.";
+                }
+
+                leaf query-messages-received {
+                    type yang:counter32;
+                    description 
+                        "Number of queries received.";
+                }
+
+                leaf query-messages-discarded {
+                    type yang:counter32;
+                    description 
+                        "Number of queries discarded.";
+                }
+
+                leaf router-query-timeouts {
+                    type yang:counter32;
+                    description 
+                        "Number of timeouts waiting for the router to 
+                        send query.";
+                }
+
+                leaf query-reply-timeouts {
+                    type yang:counter32;
+                    description
+                        "Specifies the number of query reply timeouts.
+                        Timeouts sending reports to the router.";
+                }
+
+                leaf join-messages-discarded {
+                    type yang:counter32;
+                    description
+                        "Number of join messages discarded on an interface.";
+                }
+
+                leaf bad-checksum-messages-received {
+                    type yang:counter32;
+                    description 
+                        "Number of packets received with bad
+                        IP checksum.";
+                }
+
+                leaf l2-l3-mismatch-packets-received {
+                    type yang:counter32;
+                    description 
+                        "Number of IGMP Layer2 / Layer 3 mismatch packets
+                        received.";
+                }
+
+                leaf unknown-packet-type-received {
+                    type yang:counter32;
+                    description
+                        "Number of unknown (unknown type ) IGMP
+                        packets received.";
+                }
+
+                leaf resource-exceeded {
+                    type yang:counter32;
+                    description
+                        "Specifies the number of resource exceeded errors.";
+                }
+
+                leaf query-with-source-ip-zero-discarded {
+                    type yang:counter32;
+                    description 
+                        "Specifies the number of queries discarded with a 
+                        zero source IP because of rapid-recovery off.";
+                }
+
+                leaf compatibility-mode-discards {
+                    type yang:counter32;
+                    description 
+                        "For products that support IGMPv3, this object specifies
+                        the total number of frames discarded because of
+                        compatibility mode mismatches. Products that do not
+                        support IGMPv3 will not return this object.";
+                }
+            }
+        }
+    }
+
+    //
+    // RPCs
+    //
+
+    rpc igmp-snooping-clear-statistics {
+        description
+            "Administratively clears the statistics of a group.";
+
+        input {
+           leaf fd-name {
+            type leafref {
+                path "/igmp-snooping:igmp-snooping/igmp-snooping:instance/igmp-snooping:fd-name";
+            }
+        }
+       }
+
+        output {
+           leaf errstr {
+              type string;
+              description
+                  "Error message from the device if RPC failed.";
+           }
+        }
+    }
+
+} /* end of module */

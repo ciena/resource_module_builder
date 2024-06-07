@@ -1,0 +1,408 @@
+module ciena-ddy-diag {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddy-diag";
+  prefix diag;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+
+  organization
+    "Ciena";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Diag commands";
+
+  revision 2023-10-24 {
+    description
+      "Add capability to check if the leak detector is enabled";
+    ciena-common-version:string "1.8.0";
+  }
+  revision 2023-06-29 {
+    description
+      "Add suppress-sensitive level specifier option for capture-diag-data and diag-data RPCs.";
+    ciena-common-version:string "1.7.0";
+  }
+  revision 2022-11-12 {
+    description
+      "Add memory error";
+    ciena-common-version:string "1.6.0";
+  }
+  revision 2022-05-30 {
+    description
+      "Add heap usage";
+    ciena-common-version:string "1.5.0";
+  }
+  revision 2022-05-24 {
+    description
+      "Add memory diag options";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-01-24 {
+    description
+      "Allow suppression of code location in the log";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-01-10 {
+    description
+      "Add internal queue monitoring facility";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2020-01-20 {
+    description
+      "Add RPC to get diag data";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2018-03-07 {
+    description
+      "Initial Revision.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  typedef log-level {
+    type enumeration {
+      enum debug;
+      enum info;
+      enum notice;
+      enum warning;
+      enum err;
+      enum critical;
+    }
+  }
+
+  typedef leak-checker-type {
+    type enumeration {
+      enum lsan;
+      enum mtwo;
+    }
+  }
+
+  typedef leak-type {
+    type enumeration {
+      enum direct;
+      enum indirect;
+    }
+  }
+
+  identity command-timeout {
+    base yang:error-code;
+    description
+      "Command timeout";
+  }
+
+  identity already-running {
+    base yang:error-code;
+    description
+      "Diag cmd already in progress";
+  }
+
+  identity no-handler-found {
+    base yang:error-code;
+    description
+      "Handler not found";
+  }
+
+  grouping diag-data-collection-options {
+    container options {
+      yang:alias "diag-data-options";
+      description
+        "Data collection options supported by individual services. This container should be augmented with additional supported
+          options if needed";
+      leaf collection-dir {
+        description
+          "Directory to save the collected data";
+        type string;
+      }
+      leaf safe-commands-only {
+        description
+          "Flag to limit the execution to safe command(s) only. Non-safe command cannot be run on a production system";
+        type boolean;
+      }
+      leaf suppress-sensitive {
+        description
+          "Level of sensitive-leaf suppression for diag-data.";
+        type yang:suppress-sensitive;
+      }
+    }
+  }
+
+  list log-module-list {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "Name of log module";
+    }
+    leaf log-level {
+      type diag:log-level;
+      description
+        "Module log level ";
+    }
+  }
+
+  grouping memory-leak {
+    leaf total-leak-size {
+      description
+        "Total size of the memory leak";
+      type uint64;
+    }
+    leaf current-heap-usage {
+      description
+        "Current size of the heap. It includes all malloc requested that are not released";
+      type uint64;
+    }
+    leaf current-heap-free-size {
+      description
+        "Percentage of the total system heap that is free list. Any future allocation request will get it from here";
+      type uint64;
+    }
+    leaf leak-checker {
+      description
+        "Type of the leak checker used";
+      type leak-checker-type;
+      config false;
+    }
+    leaf leak-checker-enabled {
+      description
+        "Indicates if the leak checker is enabled";
+      type boolean;
+      config false;
+    }
+    list memory-leaks {
+      key "id";
+      leaf id {
+        description
+          "Id is derived from the back-trace hash";
+        type uint32;
+      }
+      leaf back-trace {
+        description
+          "Backtace of the leak";
+        type string {
+          yang:stringptr "true";
+        }
+      }
+      leaf leak-type {
+        type leak-type;
+      }
+      leaf size {
+        description
+          "Aggregate leak size";
+        type uint32;
+      }
+      leaf number-of-objects {
+        description
+          "Total number of leak objects";
+        type uint32;
+      }
+    }
+  }
+
+  grouping memory-error {
+    list memory-errors {
+      key "id";
+      leaf id {
+        description
+          "Id is derived from the memory error hash";
+        type uint32;
+      }
+      leaf data {
+        description
+          "Reported error";
+        type string {
+          yang:stringptr "true";
+        }
+      }
+    }
+  }
+
+  grouping memory {
+    container memory {
+      description
+        "Memory leak and address related issues";
+      leaf supression-file {
+        type string;
+        description
+          "Suppression file to suppress memory related warning";
+      }
+      leaf log-directory {
+        type string;
+        description
+          "Location of memory related logs";
+        default "/var/log/asan";
+      }
+      leaf enable-comprehensive-check {
+        type boolean;
+        default "false";
+        description
+          "Enable/disable comprehensive checking. When enabled it may contribute to the execution time for the
+           current process";
+      }
+      uses memory-leak;
+      uses memory-error;
+    }
+  }
+
+  grouping queue {
+    list queue-list {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "Name of the queue";
+      }
+      leaf dropped {
+        type uint64;
+        description
+          "Number of dropped messages";
+      }
+      leaf total-message-count {
+        type uint64;
+        description
+          "The total number of enqueued messages.This includes the dropped messages. This can be used to determine the message rate";
+      }
+      leaf current-message-count {
+        type uint32;
+        description
+          "Number of messages currently in the queue";
+      }
+      leaf current-utilization {
+        type decimal64 {
+          fraction-digits 2;
+        }
+        description
+          "Current queue utilization";
+      }
+      leaf utilization-hwm {
+        type decimal64 {
+          fraction-digits 2;
+        }
+        description
+          "High watermark of the queue utilization";
+      }
+    }
+  }
+
+  container ddy-diag {
+    container options {
+      container logs {
+        leaf suppress-code-location {
+          type boolean;
+          description
+            "Conceal the function name and the line number from the log";
+        }
+      }
+    }
+    uses queue;
+    uses memory;
+  }
+
+  rpc capture-diag-data {
+    description
+      "Captures service diag data. This RPC is an external interface of a domain for
+       collecting diag data";
+    input {
+      leaf blocking {
+        type boolean;
+        description
+          "If set true, diag data collection is performed serially else it is performed in parallel";
+        default "false";
+      }
+      list services {
+        description
+          "If no service name is provided,  all registered services are invoked.  When service name(s) are
+           specified and blocking is set, the order of invocation is maintained";
+        leaf name {
+          type string;
+          description
+            "Service name";
+        }
+        leaf timeout {
+          type uint32;
+          description
+            " Timeout";
+          units "ms";
+          default "10000";
+        }
+        uses diag-data-collection-options;
+      }
+    }
+    output {
+      list services {
+        key "name";
+        description
+          "Service(s) return code";
+        leaf name {
+          type string;
+          description
+            "Service name";
+        }
+        uses yang:return-code;
+      }
+    }
+  }
+
+  rpc diag-data {
+    description
+      "Service diag handler";
+    input {
+      uses diag-data-collection-options;
+    }
+    output {
+      uses yang:return-code;
+    }
+  }
+
+  rpc scan-memory-leak {
+    description
+      "Scan for memory leak";
+    input {
+      leaf clear-history {
+        description
+          "Clear the previous history prior to scanning";
+        type boolean;
+      }
+    }
+    output {
+      uses yang:return-code;
+      leaf number-of-leaks {
+        description
+          "Number of leaks found";
+        type uint32;
+      }
+      leaf leak-size {
+        description
+          "Aggregate leak size found on the last scan";
+        type uint64;
+      }
+    }
+  }
+
+  rpc scan-memory-error {
+    description
+      "Scan for memory error";
+    input {
+      leaf clear-history {
+        description
+          "Clear the previous history prior to scanning";
+        type boolean;
+      }
+    }
+    output {
+      uses yang:return-code;
+      leaf number-of-memory-errors {
+        description
+          "Number of error found";
+        type uint32;
+      }
+    }
+  }
+}

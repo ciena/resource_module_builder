@@ -1,0 +1,251 @@
+module ciena-common-dirsvc {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-common-dirsvc";
+  prefix ciena-common-dirsvc;
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-ddy-msg {
+    prefix ciena-ddy-msg;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This model describe the directory service interface.";
+
+  revision 2023-04-10 {
+    description
+      "Added augment for deployment data";
+    ciena-common-version:string "1.4.0";
+  }
+  revision 2022-02-02 {
+    description
+      "Change the description of the force attribute in restart rpc";
+    ciena-common-version:string "1.3.0";
+  }
+  revision 2022-02-02 {
+    description
+      "Make strings pointers to save memory";
+    ciena-common-version:string "1.2.1";
+  }
+  revision 2021-11-19 {
+    description
+      "Add option for the launch directory";
+    ciena-common-version:string "1.2.0";
+  }
+  revision 2021-03-25 {
+    description
+      "Add force option to start domains that are not dir-service managed";
+  }
+  revision 2021-03-18 {
+    description
+      "Allow graceful shutdown of a domain";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2019-08-02 {
+    description
+      "Add a few domain-instance attributes.";
+  }
+  revision 2018-02-12 {
+    description
+      "Initial version.";
+    ciena-common-version:string "1.0.0";
+  }
+
+  list domain-instance {
+    key "instance-name";
+    leaf instance-name {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      description
+        "Name of the domain instance";
+    }
+    leaf pid {
+      type int32;
+      description
+        "Process identifier";
+    }
+    leaf uptime {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      description
+        "Cumulative time since the domain was last started, in the format: years-days-hours-minutes-seconds (YY-DDD-HH-MM-SS)";
+    }
+    leaf unexpected-restarts {
+      type uint32;
+    }
+    leaf working-dir {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      description
+        "Working directory of this domain instance.";
+    }
+    leaf start-command {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      description
+        "Command used to start this domain instance.";
+    }
+  }
+  container dir-svc-options {
+    leaf launch-directory {
+      type string {
+        ciena-common-yang:stringptr "true";
+      }
+      description
+        "Location of the launch directory. If set all the managed domain will be created off this launch directory.
+         Dir-svc picks up this option when it is set in the dir-svc domains.xml file";
+      default "/tmp/ddf";
+    }
+  }
+
+  augment "/ciena-ddy-msg:domains" {
+    container depo-data {
+      description
+        "This is used to add deployment data to a domain. If set, dir-svc will add this
+         data to domains.xml of the specified domain.";
+      anyxml data;
+    }
+  }
+
+  rpc start-domain {
+    description
+      "Request the directory server to start a domain instance.";
+    input {
+      leaf instance-name {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "Name of the domain instance to start. If name is omitted, all domains are started.";
+      }
+      leaf force {
+        type boolean;
+        description
+          "Force the starting of a domain, even if it it not managed by directory service";
+      }
+    }
+    output {
+      leaf error-code {
+        type boolean;
+        description
+          "set to true if request was successful (even if no data is returned)";
+      }
+      leaf error-string {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "human readable string indicating error details";
+      }
+    }
+  }
+
+  rpc stop-domain {
+    description
+      "Request the directory server to stop a domain instance.";
+    input {
+      leaf instance-name {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "Name of the domain instance to stop. If name is omitted, all domains are stopped.";
+      }
+      leaf force {
+        type boolean;
+        default "true";
+        description
+          "Hard kill. Terminate the process without the graceful shutdown";
+      }
+    }
+    output {
+      leaf error-code {
+        type boolean;
+        description
+          "set to true if request was successful (even if no data is returned)";
+      }
+      leaf error-string {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "human readable string indicating error details";
+      }
+    }
+  }
+
+  rpc restart-domain {
+    description
+      "Request the directory server to restart a domain instance.";
+    input {
+      leaf instance-name {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "Name of the domain instance to restart. If name is omitted, all domains are restarted.";
+      }
+      leaf force {
+        type boolean;
+        default "true";
+        description
+          "Hard kill. Terminate the process without the graceful shutdown";
+      }
+    }
+    output {
+      leaf error-code {
+        type boolean;
+        description
+          "set to true if request was successful (even if no data is returned)";
+      }
+      leaf error-string {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "human readable string indicating error details";
+      }
+    }
+  }
+
+  rpc generate-domain-file {
+    description
+      "Request the directory server to generate a domain file for a domain.";
+    input {
+      leaf domain-name {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        mandatory true;
+        description
+          "Name of the domain instance.";
+      }
+      leaf file-path {
+        type string {
+          ciena-common-yang:stringptr "true";
+        }
+        description
+          "Location of generated domain file to be saved. If empty, default path will be used.";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

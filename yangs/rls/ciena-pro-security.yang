@@ -1,0 +1,272 @@
+module ciena-pro-security {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-security";
+  prefix ciena-pro-security;
+
+  import ciena-pro-aaa-common {
+    prefix ciena-pro-aaa-common;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines common security status and support objects";
+
+  revision 2020-10-22 {
+    ciena-common-version:string "0.3.0";
+    description
+      "Make model platform independent";
+  }
+  revision 2020-08-14 {
+    ciena-common-version:string "0.2.0";
+    description
+      "Adding console port to interface enumeration";
+  }
+  revision 2019-12-20 {
+    ciena-common-version:string "0.1.2";
+    description
+      "user-name set to length of 1..41";
+  }
+  revision 2019-12-18 {
+    ciena-common-version:string "0.1.2";
+    description
+      "Intrusion lockout timeout can be zero. Zero means intruded users will not be locked.";
+  }
+  revision 2019-12-10 {
+    ciena-common-version:string "0.1.1";
+    description
+      "Fixing typos in descriptions.";
+  }
+  revision 2019-08-26 {
+    ciena-common-version:string "0.1.0";
+    description
+      "Add gRPC to the interface enumeration leaf.";
+  }
+  revision 2018-09-25 {
+    description
+      "Initial version";
+  }
+
+  container security-config {
+    description
+      "Security related common configuration";
+    container banner {
+      description
+        "Banner configuration parameters";
+      leaf login-banner {
+        type string {
+          length "1..2542";
+        }
+        description
+          "The console login message displayed before the login prompt,
+           i.e., before a user logs into the system.";
+      }
+
+      leaf fixed-banner {
+        type string {
+          length "1..492";
+        }
+        config false;
+        description
+          "The fixed console login message displayed before the login prompt,
+           i.e., before a user logs into the system.";
+      }
+
+      leaf motd-banner {
+        type string {
+          length "1..512";
+        }
+        description
+          "The console message displayed after a user logs into the
+           system.  They system may append additional standard
+           information such as the current system date and time, uptime,
+           last login timestamp, etc.";
+      }
+    }
+
+    container intrusion {
+      description
+        "Top-level Intrusion Container.";
+      uses ciena-pro-types:admin-state {
+        description
+          "Intrusion administrative state.";
+        refine "admin-state" {
+          default "Enabled";
+        }
+      }
+
+      leaf intrusion-threshold {
+        type uint8 {
+          range "2..20";
+        }
+        description
+          "The threshold for the allowed number of invalid login attempts
+           before raising intrusion alarm.";
+      }
+
+      leaf lockout-duration {
+        type uint16 {
+          range "0..7200";
+        }
+        units "seconds";
+        description
+          "The lockout duration in seconds. Zero means no lock out.";
+      }
+
+      list user {
+        key "user-name authentication-method";
+        config false;
+        max-elements 300;
+        description
+          "List of users with invalid login attempts";
+        leaf user-name {
+          type string {
+            length "1..41";
+          }
+          description
+            "The username entered by the user.";
+        }
+
+        leaf source-ip-address {
+          type ciena-pro-aaa-common:string-maxl-64;
+          description
+            "Source IP address.";
+        }
+
+        leaf tcp-port {
+          type ietf:port-number;
+          description
+            "Source TCP Port.";
+        }
+
+        leaf interface {
+          type enumeration {
+            enum "cli" {
+              description
+                "User is from CLI interface.";
+            }
+            enum "netconf" {
+              description
+                "User is from NETCONF interface.";
+            }
+            enum "rest" {
+              description
+                "User is from REST interface.";
+            }
+            enum "grpc" {
+              description
+                "User is from gRPC interface.";
+            }
+            enum "scp-sftp" {
+              description
+                "User is from SCP or SFTP interface.";
+            }
+            enum "debug" {
+              description
+                "User is from debug interface.";
+            }
+            enum "console" {
+              description
+                "User is from console port.";
+            }
+          }
+          description
+            "Interface from which a user's invalid login attempts were made.";
+        }
+
+        leaf timer-id {
+          type int64;
+          units "seconds";
+          description
+            "The timer ID that gets updated when user entry is added or edited.";
+        }
+
+        leaf timestamp {
+          type ciena-pro-aaa-common:string-maxl-32;
+          description
+            "The ctime style date and time string as timestamp of user intrusion entry.";
+        }
+
+        leaf invalid-logins-count {
+          type uint32;
+          description
+            "The number of invalid login attempts for a particular user.";
+        }
+
+        leaf authentication-method {
+          type ciena-pro-aaa-common:authentication-type;
+          description
+            "The authentication method for a particular username.";
+        }
+
+        leaf user-intruded {
+          type boolean;
+          default "false";
+          description
+            "Identifies if user has failed a number of consecutive authentication attempts equal to threshold.";
+        }
+      }
+    }
+  }
+
+  rpc unlock-user {
+    description
+      "Requests a user to be unlocked, returns the status of the request.";
+    input {
+      leaf user-name {
+        type ciena-pro-aaa-common:user-name;
+        description
+          "The user to be unlocked.";
+      }
+
+      leaf authentication-method {
+        type ciena-pro-aaa-common:authentication-type;
+        description
+          "The authentication method of the user to be unlocked.";
+      }
+    }
+
+    output {
+      leaf status {
+        type enumeration {
+          enum "success" {
+            description
+              "User unlocking succeeded.";
+          }
+          enum "failure" {
+            description
+              "User unlocking failed.";
+          }
+        }
+        description
+          "The user unlocking status.";
+      }
+
+      leaf reason-string {
+        type string {
+          length "0..79";
+        }
+        description
+          "Return code description";
+      }
+    }
+  }
+}

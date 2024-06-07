@@ -1,0 +1,1151 @@
+module ciena-pro-translation-mapper {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-translation-mapper";
+  prefix mapper;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: 7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A
+     Phone: +1 800-921-1144
+     Fax:   +1 410-694-5750";
+  description
+    "Schema for a valid model map file.
+
+     A model map is a relationship between two models of data. There are many
+     ways of representing the same piece of information and the model map is
+     designed as a simple way of declaratively describing how to transform from
+     one data model into another.
+
+     The model map works by declaring portions of the data that are equivalent.
+     A tool (babel) can use these equivalencies to transform datasets between
+     representations.
+    ";
+
+  revision 2023-10-23 {
+    description
+      "Add 'lookup' translations.";
+    version:version "version" {
+      version:string "1.13.0";
+    }
+  }
+  revision 2022-07-15 {
+    description
+      "Add some missing elements and fix typos";
+    version:version "version" {
+      version:string "1.12.0";
+    }
+  }
+  revision 2022-06-29 {
+    description
+      "Add support for handlers (both simple and vectorized)";
+    version:version "version" {
+      version:string "1.11.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2021-12-09 {
+    description
+      "Make all strings stringptrs instead";
+    version:version "version" {
+      version:string "1.10.1";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2021-12-06 {
+    description
+      "Add bitfield discriminator checks";
+    version:version "version" {
+      version:string "1.10.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2021-04-12 {
+    description
+      "Add leaf-only container mappings";
+    version:version "version" {
+      version:string "1.9.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2021-03-23 {
+    description
+      "Add substitution regex support";
+    version:version "version" {
+      version:string "1.8.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-12-17 {
+    description
+      "Add combiner-calculate field to multiple-mappings";
+    version:version "version" {
+      version:string "1.7.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-11-26 {
+    description
+      "Adding contains-key-in-output field to handlers-mapping";
+    version:version "version" {
+      version:string "1.6.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-10-19 {
+    description
+      "Adding multiple to native-equivalents";
+    version:version "version" {
+      version:string "1.5.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-08-25 {
+    description
+      "Add table-driven discriminators";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-07-14 {
+    description
+      "Add support for manual handlers";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2020-02-12 {
+    description
+      "Add support for datetime conversions";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2019-06-21 {
+    description
+      "Add support for reverse conditions in discriminator.";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2019-04-30 {
+    description
+      "Added support for non-mapped nodes.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2019-01-14 {
+    description
+      "Added support for discriminators.";
+    version:version "version" {
+      version:string "0.2.0";
+    }
+    reference
+      "See documentation";
+  }
+  revision 2018-08-08 {
+    description
+      "Initial";
+    version:version "version" {
+      version:string "0.1.0";
+    }
+    reference
+      "";
+  }
+
+  typedef model-name-string {
+    type string {
+      length "0..255";
+    }
+  }
+
+  typedef string-ptr {
+    type string {
+      common-yang:stringptr "true";
+    }
+  }
+
+  typedef limited-string {
+    type string {
+      length "1..255";
+    }
+  }
+
+  grouping model-map-root {
+    description
+      "Top-level root of a model map. All model map definitions start here.";
+    leaf name {
+      type model-name-string;
+      description
+        "Name of this model map. This should be a human-readable string
+         containing an identifier that represents the external model.
+         Examples: opent, openconfig";
+    }
+    leaf description {
+      type string-ptr;
+      description
+        "Human-readable description of the model map.";
+    }
+    leaf documentation {
+      type string-ptr;
+      description
+        "String intended to provide documentation of this model map.";
+    }
+    list sub-tree {
+      key "name";
+      description
+        "A sub-tree is a group of relationships for a portion of a model tree.
+         Model relationships are dependent on mapping leafs of a tree. In some
+         cases, the path to a leaf is sufficient to determine which leaf it maps
+         to; however, in other cases, list instances may also play a role.
+
+         For example, consider the following models:
+
+         // Consolidated model
+         +--rw components* [id]
+            +--rw id            uint8
+            +--rw properties
+               +--rw part-number?   string
+
+         // Flat model
+         +--rw cpu
+         |  +--rw part-number?   string
+         +--rw cards* [id]
+            +--rw id             uint32
+            +--rw part-number?   string
+
+         The consolidated model has CPUs and Cards under the same list, whereas
+         the flat model has a container for a singular CPU and a list of cards.
+         In each case the component has a part number, but the part-number
+         property in the consolidated model maps to both the /cpu/part-number
+         and /cards/part-number properties in the flat model.
+
+         Sub trees resolve the mapping relationship ambiguity by allowing for
+         discrimination between the cases by checking the component id. The
+         function that separates the cases is called a discriminator.
+        ";
+      leaf name {
+        type string {
+          length "1..255";
+        }
+        description
+          "Name for the sub-tree.";
+      }
+      uses discriminators;
+      list equivalents {
+        key "ext-path";
+        description
+          "A list of paths and transforms to form equivalent views of the same
+           set of data. The list is viewed from the perspective of the external
+           model, so the keys of the list are the external paths and each list
+           element contains the constants/transforms to form an equivalent
+           native representation.";
+        leaf ext-path {
+          type string-ptr;
+          description
+            "A path to a leaf in an external model.
+
+             The path in an external model as it would appear in an XPath
+             expression. The path may have namespace prefixes but prefixes are
+             only mandatory when there would be a collision without them. There
+             should be no keys or XPath functions/comparisons in this leaf.
+
+             Examples (OpenConfig):
+
+              # Basic leaf path
+              /components/component/name
+
+              # Same as above but with a module prefix
+              /openconfig-system:components/component/name
+
+              # A nested list example
+              /components/component/subcomponents/subcomponent/name
+
+              # Interfaces is an example of a mandatory path since
+              # openconfig-interfaces imports ietf-interfaces:
+              /openconfig-interfaces:interfaces/...
+              /ietf-interfaces:interfaces/...
+            ";
+        }
+        choice map-type {
+          description
+            "What kind of mapping exists for this leaf";
+          case constant {
+            uses constant-mapping;
+          }
+          case one-to-one {
+            uses native-one-to-one-mapping;
+          }
+          case store {
+            uses store-mapping;
+          }
+          case multiple {
+            uses native-multiple-mapping;
+          }
+          case not-implemented {
+            uses not-implemented-mapping;
+          }
+          case handlers {
+            uses handlers-mapping;
+          }
+        }
+        list behaviour {
+          description
+            "Special behaviour options for this particular transformation.";
+          key "tag";
+          leaf tag {
+            description
+              "To be populated with more options later";
+            type enumeration {
+              enum native-drop;
+              enum external-drop;
+            }
+          }
+        }
+      }
+      list native-equivalents {
+        key "nat-path";
+        description
+          "A list of paths and transforms to form equivalent views of the same
+           set of data. The list is viewed from the perspective of the native
+           model, so the keys of the list are the native paths and each list
+           element contains the constants/transforms to form an equivalent
+           native representation.";
+        leaf nat-path {
+          type string-ptr;
+          description
+            "A path to a leaf in a native model.
+             TODO: include comments about the format of internal pathing
+            ";
+        }
+        choice map-type {
+          description
+            "What kind of mapping exists for this leaf";
+          case constant {
+            uses constant-mapping;
+          }
+          case handlers {
+            uses handlers-mapping;
+          }
+          case multiple {
+            uses external-multiple-mapping;
+          }
+        }
+      }
+    }
+    uses module-passthrough;
+  }
+
+  grouping discriminator-conditions {
+    choice condition {
+      description
+        "One of a set of conditions that evaluate to true/false when matched
+         against the value of the leaf in path.";
+      leaf equals {
+        type union {
+          type uint32;
+          type int32;
+          type boolean;
+          type limited-string;
+        }
+        description
+          "An exact value to compare against the value of the leaf that is
+           pointed to by path. Note that the type must also match.";
+      }
+      leaf regex-match {
+        type string-ptr;
+        description
+          "A regular expression to match against the value of the leaf. The
+           condition is considered satisfied if a match is found. The Python
+           regex flavor is used here.";
+      }
+      container lookup {
+        description
+          "Lookup data from an object (container/list) to perform the test
+           against";
+        leaf query {
+          type instance-identifier;
+          description
+            "The path the query for data. For lists, this should end with the
+             leaf that is the key. The element indexes will be compared and
+             element with the index equal to the value of 'path' will be
+             selected.";
+        }
+        leaf match-leaf {
+          type string-ptr;
+          description
+            "The path (relative to query) to use as the condition leaf.";
+        }
+        leaf service {
+          type string-ptr;
+          description
+            "The service to query the table from.";
+        }
+      }
+      list bitfield {
+        key "bits";
+        description
+          "Test for set bit positions in an integer";
+        leaf bits {
+          type string-ptr;
+          description
+            "An expression similar to a YANG 'range' statement. Accepts
+             just a single value (e.g. '4') or a range (e.g. '0..3'). The
+             ranges are inclusive. i.e. '0..3' means bits 0, 1, 2, and 3.";
+        }
+        choice bitcheck-type {
+          case equals {
+            leaf equals {
+              type string-ptr;
+              description
+                "Numerical representation to check against. Encoded as a string
+                 representing either a decimal, hexadecimal, or binary value.
+                 Examples: '7', '0x7', '0b111'";
+            }
+          }
+          case range {
+            leaf range {
+              type string-ptr;
+              description
+                "A range of valid values, using the same syntax as the YANG range
+                 statement. Examples: '4..5', '0 | 7 .. 14'.";
+            }
+          }
+        }
+      }
+      container handlers {
+        leaf handler-name {
+          type string-ptr;
+          description
+            "Base name of the handlers, to which the _path, and _value
+             suffixes will be appended when searching for the handlers
+             upon loading the plugin";
+        }
+        leaf plugin-name {
+          type string-ptr;
+          description
+            "Name of the python plugin in which manual handler functions
+             are defined. The module must exist within the ddybabel.plugins
+             namespace package.";
+        }
+        leaf call-interface {
+          type enumeration {
+            enum python-basic {
+              description
+                "Requires a handler with the following signature:
+
+                 `[NAME]_discriminator(data: YangContainer, root: YangContainer, lookup_path: Path) -> bool`
+
+                 Where [NAME] is the name provided in `handler-name` above.
+
+                 Only one of `data` or `lookup_path` will be passed in on
+                 each call. If `data` is present, then the handler is being
+                 called by translate-data and if lookup_path is passed in
+                 then the handler is being called by translate-filter.
+
+                 The handler should return a bool representing whether the
+                 subtree represented by `data` passes the discriminator check.";
+            }
+            enum python-vector {
+              description
+                "Requires a handler with the following signature:
+
+                 `[NAME]_discriminator(data: YangList, root: YangContainer, lookup_path: Path) -> List[bool]`
+
+                 Where [NAME] is the name provided in `handler-name` above.
+
+                 Only one of `data` or `lookup_path` will be passed in on
+                 each call. If `data` is present, then the handler is being
+                 called by translate-data and if lookup_path is passed in
+                 then the handler is being called by translate-filter.
+
+                 The handler should return a list of bools representing whether
+                 each item in the list passes the discriminator check. The length
+                 of the returned list must be the same length as the input data.";
+            }
+          }
+          default "python-basic";
+          description
+            "The call interface type. This determines the number and types of the
+             arguments that the handler is expected to take.";
+        }
+      }
+    }
+  }
+
+  grouping discriminators {
+    description
+      "How to tell sub-trees apart
+       A discriminator is generally required for a sub-tree. If one is
+       not specified, then it is considered to be the default case and
+       the mapping is assumed to apply regardless of list instances.";
+    container discriminator {
+      description
+        "How to tell sub-trees apart";
+      list conditions {
+        key "path";
+        description
+          "A list of conditions that must all evaluate True (an AND relationship)
+           for the overall discriminator to evaluate to True.
+
+           This list of conditions is only applied in the external -> native direction,
+           to add conditions for the native -> external direction, use 'reverse-conditions'.
+          ";
+        leaf path {
+          type string-ptr;
+          description
+            "The path that the condition matches";
+        }
+        uses discriminator-conditions;
+        leaf if-missing {
+          type boolean;
+          default "false";
+          description
+            "How to evaluate this condition if the leaf path/value is missing from
+             the input data.";
+        }
+      }
+      list reverse-conditions {
+        key "path";
+        description
+          "A list of conditions that must all evaluate True (an AND relationship)
+           for the overall discriminator to evaluate to True.
+
+           This list of conditions is only applied in the native -> external direction,
+           to add conditions for the external -> native direction, use 'conditions'.
+          ";
+        leaf path {
+          type string-ptr;
+          description
+            "The path that the condition matches";
+        }
+        uses discriminator-conditions;
+        leaf if-missing {
+          type boolean;
+          default "false";
+          description
+            "How to evaluate this condition if the leaf path/value is missing from
+             the input data.";
+        }
+      }
+    }
+  }
+
+  grouping constant-mapping {
+    description
+      "The value of this leaf is a constant that should be inserted as a
+       result during a GET or rejected as an error in a SET if it doesn't
+       match the constant";
+    container constant {
+      description
+        "Holder for the constant value information";
+      leaf value {
+        type union {
+          type uint32;
+          type int32;
+          type boolean;
+          type limited-string;
+        }
+        description
+          "This leaf holds a literal that will be reported on a GET and ignored
+           on a SET (create/update/delete). The value may be specified as a
+           literal if it is an int/uint/boolean, otherwise it must be specified
+           as a string. The value will be coerced to the correct YANG type.";
+      }
+    }
+  }
+
+  grouping one-to-one-mapping {
+    description
+      "The leaf maps to _one_ internal leaf. The value of the external
+       leaf is mapped to the value of the internal leaf by a transform.";
+    choice path-type {
+      description
+        "What is the path type (container or leaf)";
+      case container {
+        uses container-options;
+      }
+      case leaf {
+        uses transforms;
+      }
+    }
+  }
+
+  grouping native-one-to-one-mapping {
+    description
+      "The leaf maps to _one_ internal leaf. The value of the external
+       leaf is mapped to the value of the internal leaf by a transform.";
+    leaf native-path {
+      type string-ptr;
+      description
+        "The native node that is equivalent to the external path. This node
+         is used as the destination for conversion from the external model
+         to the internal model and as the source for the reverse operation.";
+    }
+    uses one-to-one-mapping;
+  }
+
+  grouping external-one-to-one-mapping {
+    description
+      "The leaf maps to _one_ internal leaf. The value of the external
+       leaf is mapped to the value of the internal leaf by a transform.";
+    leaf external-path {
+      type string-ptr;
+      description
+        "The native node that is equivalent to the external path. This node
+         is used as the destination for conversion from the external model
+         to the internal model and as the source for the reverse operation.";
+    }
+    uses one-to-one-mapping;
+  }
+
+  grouping container-options {
+    container container {
+      description
+        "Holds options related to container level mappings.";
+      choice container-type {
+        case container-proper {
+          leaf intersection {
+            type boolean;
+            default "false";
+            description
+              "Whether to create mappings for the child leafs and containers which are
+               common between the external and native containers, in the case that
+               the external and native containers are not identical (for example, if
+               the external container is missing a leaf present in the native container).
+               This option is incompatible with 'leaves-only'.";
+          }
+        }
+        case leaf-macro {
+          leaf leaves-only {
+            type boolean;
+            default "false";
+            description
+              "Whether to create a mapping for the container objects or just
+               the leaves.  Normally, container mappings map the leaves and
+               the containers so that containers with meaning (presence
+               containers) can be translated correctly.  If this leaf is 'true'
+               then the container mappings are disabled and just the leaves are
+               mapped. This option is incompatible with 'intersection'.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping store-mapping {
+    description
+      "The leaf is not a constant but should be stored on a SET and the
+       stored value should be returned on a GET.";
+    leaf store {
+      type boolean;
+      description
+        "'true' indicates that the value should be stored.";
+    }
+  }
+
+  grouping handlers-mapping {
+    container handlers {
+      description
+        "Handlers used to perform a manual transformation.";
+      leaf handler-name {
+        type string-ptr;
+        description
+          "Base name of the handlers, to which the _path, and _value
+           suffixes will be appended when searching for the handlers
+           upon loading the plugin";
+      }
+      leaf plugin-name {
+        type string-ptr;
+        description
+          "Name of the python plugin in which manual handler functions
+           are defined. The module must exist within the ddybabel.plugins
+           namespace package.";
+      }
+      leaf contains-key-in-output {
+        type boolean;
+        default "false";
+      }
+    }
+  }
+
+  grouping native-multiple-mapping {
+    description
+      "The external leaf requires the values of multiple internal leafs
+       to complete the conversion. For example, assume there is a model
+       that contains port information as a 'physical-rate' combination
+       but the mapped model contains those as two leafs:
+
+       Eg:
+        External model (single leaf):
+          /ports/port-type = 'RJ45-10G'
+        Internal model (two leafs):
+          /slot/port/rate = 10G
+          /slot/port/connector-type = RJ-45
+      ";
+    leaf combiner-fstring {
+      type string-ptr;
+      description
+        "A format string that describes how to combine the multiple values
+         into one.";
+    }
+    leaf combiner-calculate {
+      type string-ptr;
+    }
+    leaf combiner-bitfield {
+      type string-ptr;
+      description
+        "A format string that describes how to combine multiple bit sets
+         into one.";
+    }
+    list multiple {
+      key "name";
+      leaf name {
+        type string-ptr;
+      }
+      uses native-one-to-one-mapping;
+    }
+  }
+
+  grouping external-multiple-mapping {
+    description
+      "The native leaf requires the values of multiple external leafs
+       to complete the conversion. For example, assume there is a model
+       that contains port information as a 'physical-rate' combination
+       but the mapped model contains those as two leafs:
+
+       Eg:
+        Internal model (single leaf):
+          /ports/port-type = 'RJ45-10G'
+        External model (two leafs):
+          /slot/port/rate = 10G
+          /slot/port/connector-type = RJ-45
+      ";
+    leaf combiner-fstring {
+      type string-ptr;
+      description
+        "A format string that describes how to combine the multiple values
+         into one.";
+    }
+    leaf combiner-calculate {
+      type string-ptr;
+    }
+    list multiple {
+      key "name";
+      leaf name {
+        type string-ptr;
+      }
+      uses external-one-to-one-mapping;
+    }
+  }
+
+  grouping not-implemented-mapping {
+    description
+      "The leaf is not mapped from external to internal. Additional
+       parameters can control what happens to these leaves on translation.";
+    container not-implemented {
+      presence "If this container is present, then the leaf is not mapped.";
+      description
+        "A presence container for controlling whether a leaf is mapped between
+         native and external representations. If this container is present in
+         the data, then there is no mapping. By default, this means that the
+         leaf data is dropped during a translation request.";
+      leaf translate-data-passthrough {
+        type boolean;
+        default "false";
+        description
+          "Whether the mapped leaf should be copied or dropped during
+           a translate-data RPC invocation. If 'true', then the leaf
+           will be copied directly from input to output without any
+           attempt at translation. If 'false', then the leaf will not
+           be translated and will not appear in the output.";
+      }
+      leaf translate-filter-passthrough {
+        type boolean;
+        default "false";
+        description
+          "Whether the mapped leaf should be copied or dropped during
+           a translate-filter RPC invocation. If 'true', then the leaf
+           will be copied directly from input to output without any
+           attempt at translation. If 'false', then the leaf will not
+           be translated and will not appear in the output.";
+      }
+      leaf comment {
+        type string-ptr;
+        description
+          "A comment about why this leaf is not mapped. Expected reasons
+           are 'not-yet-reviewed', 'missing in internal model', etc.";
+      }
+    }
+  }
+
+  grouping transforms {
+    list transform {
+      common-yang:alias "babel-transform";
+      key "index";
+      description
+        "Container indicating that the contents are transforms. Transforms
+         are the methods that are used to convert data between the internal
+         and external models.";
+      leaf index {
+        type uint32;
+        description
+          "Index for the transform; not useful on its own.";
+      }
+      uses transform-arithmetic;
+      uses transform-datetime;
+      uses transform-dictionary;
+      uses transform-lookup;
+      uses transform-regex;
+    }
+  }
+
+  grouping transform-dictionary {
+    choice dict-direction {
+      case directionless {
+        list dictionary {
+          key "ext-value";
+          description
+            "Handlers used to perform a dictionary-lookup transformation.
+             A dictionary transformation lists all of the input/output pairs
+             for each value that a leaf node can take. During runtime the
+             input value is used to simply look up the output value in the
+             dictionary. There are no defaults, so this transform requires
+             that all values be listed.";
+          leaf ext-value {
+            type union {
+              type int64;
+              type int32;
+              type uint64;
+              type uint32;
+              type limited-string;
+            }
+            description
+              "External value to map to internal";
+          }
+          leaf nat-value {
+            type union {
+              type int64;
+              type int32;
+              type uint64;
+              type uint32;
+              type limited-string;
+            }
+            description
+              "Native value to map to external";
+          }
+        }
+      }
+      case direction {
+        container dictionary-directional {
+          leaf to-nat-default {
+            type union {
+              type int64;
+              type int32;
+              type uint64;
+              type uint32;
+              type limited-string;
+            }
+            description
+              "Default value to use if the input is not found";
+          }
+          leaf to-ext-default {
+            type union {
+              type int64;
+              type int32;
+              type uint64;
+              type uint32;
+              type limited-string;
+            }
+            description
+              "Default value to use if the input is not found";
+          }
+          list to-external {
+            key "nat-value";
+            leaf ext-value {
+              type union {
+                type int64;
+                type int32;
+                type uint64;
+                type uint32;
+                type limited-string;
+              }
+              description
+                "External value to map to internal";
+            }
+            leaf nat-value {
+              type union {
+                type int64;
+                type int32;
+                type uint64;
+                type uint32;
+                type limited-string;
+              }
+              description
+                "Native value to map to external";
+            }
+          }
+          list to-native {
+            key "ext-value";
+            leaf ext-value {
+              type union {
+                type int64;
+                type int32;
+                type uint64;
+                type uint32;
+                type limited-string;
+              }
+              description
+                "External value to map to internal";
+            }
+            leaf nat-value {
+              type union {
+                type int64;
+                type int32;
+                type uint64;
+                type uint32;
+                type limited-string;
+              }
+              description
+                "Native value to map to external";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping transform-lookup-directional {
+    description
+      "Lookup data from an object (container/list) to perform a
+       dictionary-style mapping against dynamic data.
+
+       The lookup assumes that you have a table that holds the mapping between
+       an input value and an output one. For example, if you want to translate
+       between a leaf X, with dynamic values and a leaf Y, also with dynamic
+       values, then you can have a service with the following table:
+
+       list x-to-y {
+        key X;
+        leaf X    { type string; }
+        leaf Y    { type string; }
+       }
+
+       In this case, you can populate the list x-to-y with pairs:
+
+       {X: a, Y: l}
+       {X: b, Y: m}
+       {X: c, Y: n}
+       ...
+
+       Then you can use this lookup to get the translations from this list with:
+
+        query:             /x-to-y/X
+        equivalent-leaf:   Y
+        service:           lookup-service
+
+       And the procedure for the lookup will be that when translation reaches
+       the leaf that this lookup is attached to, then the translator will query
+       for the path /x-to-y/X=INPUT_VALUE. If there is a match then the same
+       list element will be checked for the equivalent-leaf (Y) and that value
+       will be used as the output value for this translation.
+      ";
+    leaf query {
+      type instance-identifier;
+      description
+        "The path the query for data. For lists, this should end with the
+         leaf that is the key of the element that holds the mapped data.
+         The element indexes will be compared and selected.";
+    }
+    leaf equivalent-leaf {
+      type string-ptr;
+      description
+        "The path (relative to query list element) to use as the output leaf value.";
+    }
+    leaf service {
+      type string-ptr;
+      description
+        "The service to query the table from.";
+    }
+  }
+
+  grouping transform-lookup {
+    container lookup {
+      container to-native {
+        uses transform-lookup-directional;
+      }
+      container to-external {
+        uses transform-lookup-directional;
+      }
+    }
+  }
+
+  grouping transform-regex {
+    container regex {
+      description
+        "Handlers used to perform a dictionary-lookup transformation.
+         A dictionary transformation lists all of the input/output pairs
+         for each value that a leaf node can take. During runtime the
+         input value is used to simply look up the output value in the
+         dictionary. There are no defaults, so this transform requires
+         that all values be listed.";
+      choice native {
+        case fstring {
+          leaf to-native-fstr {
+            type string-ptr;
+          }
+        }
+        case regex {
+          leaf to-native-regex {
+            type string-ptr;
+          }
+        }
+        case substitution {
+          container to-native-sub {
+            leaf pattern {
+              type string-ptr;
+              description
+                "The input pattern to match for the substitution";
+            }
+            leaf replacement {
+              type string-ptr;
+              description
+                "What to replace the input pattern with";
+            }
+          }
+        }
+      }
+      choice extern {
+        case fstring {
+          leaf to-extern-fstr {
+            type string-ptr;
+          }
+        }
+        case regex {
+          leaf to-extern-regex {
+            type string-ptr;
+          }
+        }
+        case substitution {
+          container to-extern-sub {
+            leaf pattern {
+              type string-ptr;
+              description
+                "The input pattern to match for the substitution";
+            }
+            leaf replacement {
+              type string-ptr;
+              description
+                "What to replace the input pattern with";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping transform-datetime {
+    container datetime {
+      description
+        "Handlers used to perform a dictionary-lookup transformation.
+         A dictionary transformation lists all of the input/output pairs
+         for each value that a leaf node can take. During runtime the
+         input value is used to simply look up the output value in the
+         dictionary. There are no defaults, so this transform requires
+         that all values be listed.";
+      choice native {
+        case scale {
+          leaf nat-scale {
+            type enumeration {
+              enum seconds;
+              enum microseconds;
+              enum nanoseconds;
+            }
+          }
+        }
+        case format {
+          leaf nat-format {
+            type string-ptr;
+          }
+        }
+      }
+      choice extern {
+        case scale {
+          leaf ext-scale {
+            type enumeration {
+              enum seconds;
+              enum microseconds;
+              enum nanoseconds;
+            }
+          }
+        }
+        case format {
+          leaf ext-format {
+            type string-ptr;
+          }
+        }
+      }
+    }
+  }
+
+  grouping transform-arithmetic {
+    container arithmetic {
+      description
+        "to do";
+      leaf to-native-arithmetic {
+        type string-ptr;
+      }
+      leaf to-extern-arithmetic {
+        type string-ptr;
+      }
+    }
+  }
+
+  grouping module-passthrough {
+    description
+      "Modules that are supported both externally and natively.";
+    list passthrough-modules {
+      key "name";
+      description
+        "A list of modules that are 'passthrough', meaning that they're
+         supported in both the native and external interfaces. Passthrough
+         modules implement a direct input-to-output copy during translation";
+      leaf name {
+        type string-ptr;
+        description
+          "Name of the YANG module";
+      }
+    }
+  }
+
+  uses model-map-root;
+}

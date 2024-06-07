@@ -1,0 +1,597 @@
+module ciena-waveserver-application-otdr {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-application-otdr";
+  prefix app-otdr;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Optical Time Domain
+     Reflectometer (OTDR) application support.";
+
+  revision 2019-09-13 {
+    description
+      "Added Auto OTDR Tracing.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  revision 2019-03-25 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the OTDR Application external data model for
+       performing Optical Time Domain Reflectometer testing on CMD modules.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  typedef otdr-direction {
+    type enumeration {
+      enum tx {
+        description
+          "Facility Tx fiber for OTDR test";
+      }
+      enum rx {
+        description
+          "Facility Rx fiber for OTDR test";
+      }
+    }
+    description
+      "Direction of OTDR test TX or RX.";
+  }
+
+  typedef otdr-trace-type {
+    type enumeration {
+      enum office {
+        description
+          "fibre cable range from faceplate to 8km.";
+      }
+      enum short {
+        description
+          "fibre cable range from 8km to 20km.";
+      }
+      enum long {
+        description
+          "fibre cable range beyond 20km.";
+      }
+      enum manual {
+        description
+          "fibre cable range defined in a user provisioned OTDR Profile.";
+      }
+    }
+    ui:ui-name "Trace Type";
+      description
+        "The OTDR Type of trace: office, short, long or manual";
+  }
+
+
+  grouping otdr-profile-group {
+    description
+      "Optical Time Domain Reflectometer Profile.";
+    leaf description {
+      type cienawstypes:string-maxl-32;
+      ui:ui-name "Description";
+      description
+        "A description of the OTDR Profile.";
+    }
+    leaf measure-time {
+      type uint8 {
+        range "1..180";
+      }
+      units "sec";
+      ui:ui-name "Measure time";
+      description
+        "Measure time in seconds Range <1..180>";
+    }
+    leaf pulse-width {
+      type uint16 {
+        range "10|30|100|300|1000|3000|10000|20000";
+      }
+      units "ns";
+      ui:ui-name "Pulse width";
+      description
+        "Pulse width in nano-seconds Range  <10|30|100|300|1000|3000|10000|20000>";
+    }
+    leaf distance {
+      type uint32 {
+        range 10..128000;
+      }
+      units "m";
+      ui:ui-name "Distance";
+      description
+        "Distance in meters Range <10..128000>";
+    }
+  }
+
+  grouping otdr-trace-instance {
+    description
+      "A Trace instance.";
+    leaf trace-file {
+      type cienawstypes:string-maxl-254;
+      ui:ui-name "TX Trace Filename";
+      description
+        "Trace report filename containing a OTDR test's report data in TX direction.";
+    }
+    leaf start-time-stamp {
+      type cienawstypes:name-string;
+      ui:ui-name "Trace Start Time Stamp";
+      description
+        "Trace start time.";
+    }
+    leaf stop-time-stamp {
+      type cienawstypes:name-string;
+      ui:ui-name "Trace Stop Time Stamp";
+      description
+        "Trace stop time.";
+    }
+    leaf abort-reason {
+      type cienawstypes:name-string;
+      ui:ui-name "Abort Reason";
+      description
+        "Reason if trace aborted.";
+    }
+    leaf trigger-reason {
+      type cienawstypes:name-string;
+      ui:ui-name "Trigger Reason";
+      description
+        "Reason for starting trace.";
+    }
+    leaf driver-response {
+      type cienawstypes:name-string;
+      ui:ui-name "Driver Response";
+      description
+        "Driver Response.";
+    }
+    leaf number-of-events {
+      type uint8;
+      ui:ui-name "Number of Events";
+      description
+        "The number of Events during the trace.";
+    }
+    leaf latest-trace-instance {
+      type boolean;
+      ui:ui-name "Latest Trace Instance";
+      description
+        "Boolean Flag to state whether this is the latest trace for given direction, trace-type and trace-instance.";
+    }
+    leaf operational-status {
+      type cienawstypes:name-string;
+      ui:ui-name "Trace Operational Status";
+      description
+        "Operational Status of an OTDR Trace.";
+    }
+    leaf profile-id {
+      type cienawstypes:name-string;
+      ui:ui-name "OTDR Profile Index";
+      description
+        "Unique ID of an OTDR Profile: <1..16>, office, short, long.";
+    }
+  }
+
+  grouping otdr-trace-key-event {
+    description
+      "Details associated with an optical impairment of the fiber link detected from an OTDR trace.";
+    leaf event-spacing {
+      type cienawstypes:decimal-1-dig;
+      units "ns";
+      ui:ui-name "Event Spacing";
+      description
+        "The time taken for an OTDR pulse to reach the target link.";
+    }
+    leaf computed-distance {
+      type cienawstypes:decimal-1-dig;
+      units "meters";
+      ui:ui-name "Computed Distance";
+      description
+        "The estimated distance traveled by the OTDR pulse to the target link.";
+    }
+    leaf slope {
+      type cienawstypes:decimal-3-dig;
+      units "dB/km";
+      ui:ui-name "Slope";
+      description
+        "The attenuation coefficient characteristic of the fiber.";
+    }
+    leaf loss {
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      ui:ui-name "Loss";
+      description
+        "The estimated attenuation loss determined at the target link.";
+    }
+    leaf reflectance {
+      type cienawstypes:decimal-3-dig;
+      units "dB";
+      ui:ui-name "Reflectance";
+      description
+        "The estimated reflectance of the target link.";
+    }
+    leaf event-type {
+      type enumeration {
+        enum LOSS {
+          description
+            "An impairment predominantely characterized by attenuation loss.";
+        }
+        enum REFL {
+          description
+            "An impairment predominantely characterized by reflectance.";
+        }
+        enum SAT {
+          description
+            "An impairment predominantely characterized by saturation.";
+        }
+      }
+      ui:ui-name "Event Type";
+      description
+        "The characterization of an impairment: LOSS, REFL, SAT";
+    }
+  }
+
+
+  container waveserver-application-otdr {
+    ui:ui-name "OTDR";
+    description
+      "Optical Time Domain Reflectometer (OTDR) configuration data.";
+
+    list profile {
+      ui:ui-name "OTDR Profile List";
+      key "profile-id";
+      description
+        "Configuration data for the OTDR Profiles";
+      leaf profile-id {
+        type cienawstypes:name-string;
+        ui:ui-name "OTDR Profile Index";
+        description
+          "Unique ID of an OTDR Profile: <1..16>, office, short, long. Only profile-ids <2..16> can be created/deleted.";
+      }
+      uses otdr-profile-group;
+    }
+
+    list traces {
+      ui:ui-name "OTDR Traces";
+      key "ptp-id";
+      config false;
+      description
+        "OTDR traces for a specific PTP";
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp";
+      }
+      list direction {
+        ui:ui-name "Trace Direction";
+        key "trace-direction";
+        config false;
+        description
+          "The direction in which the trace was performed.";
+        leaf trace-direction {
+          type otdr-direction;
+          mandatory true;
+          ui:ui-name "Direction";
+          description
+            "The direction of the test: tx or rx";
+        }
+        list type {
+          ui:ui-name "Trace Type";
+          key "trace-type";
+          config false;
+          description
+            "The type of trace that was performed.";
+          leaf trace-type {
+            type otdr-trace-type;
+            mandatory true;
+            ui:ui-name "Trace Type";
+            description
+              "The type of trace: office, short, long or manual";
+          }
+          list instance {
+            ui:ui-name "Trace Instance";
+            key "trace-instance";
+            config false;
+            description
+              "The details of a trace.";
+            leaf trace-instance {
+              type cienawstypes:name-string;
+              mandatory true;
+              ui:ui-name "Trace Instance";
+              description
+                "Unique identifier of a trace type in a specific direction: <1 .. 10>, baseline or latest.";
+            }
+            uses otdr-trace-instance;
+            list key-event {
+              ui:ui-name "Key Event";
+              key "key-event-index";
+              config false;
+              description
+                "The details of a key event.";
+              leaf key-event-index {
+                type uint8 {
+                  range "1..60";
+                }
+                mandatory true;
+                ui:ui-name "Key Event";
+                description
+                  "Unique identifier of a Key Event for a given trace.";
+              }
+              uses otdr-trace-key-event;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+
+  rpc waveserver-application-otdr-start {
+    description
+      "Start an OTDR test on a line port.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp";
+      }
+      leaf profile-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "profile-id";
+        description
+          "Unique ID of an OTDR Profile: <1..16>, office, short, long or auto.";
+      }
+      leaf direction {
+        type otdr-direction;
+        mandatory true;
+        ui:ui-name "direction";
+        description
+          "The Facility Tx/Rx fiber for the OTDR test";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-otdr-stop {
+    description
+      "Stop an OTDR test on a line port before it completes.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp.";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+  rpc waveserver-application-otdr-show-status {
+    description
+      "Show the status of the OTDR tests on a line port";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp.";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+
+      leaf rx-profile-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "RX OTDR Profile Index";
+        description
+          "Unique ID of an OTDR Profile in the RX direction: <1..16>, office, short, long";
+      }
+      leaf rx-profile-measure-time {
+        type uint8 {
+          range "1..180";
+        }
+        units "sec";
+        ui:ui-name "Measure time";
+        description
+          "Measure time in seconds Range <1..180>";
+      }
+      leaf rx-profile-pulse-width {
+        type uint16 {
+          range "10|30|100|300|1000|3000|10000|20000";
+        }
+        units "ns";
+        ui:ui-name "Pulse width";
+        description
+          "Pulse width in nano-seconds Range  <10|30|100|300|1000|3000|10000|20000>";
+      }
+      leaf rx-profile-distance {
+        type uint32 {
+          range 10..128000;
+        }
+        units "m";
+        ui:ui-name "Distance";
+        description
+          "Distance in meters Range <10..128000>";
+      }
+      leaf rx-profile-description {
+        ui:ui-name "Profile Description";
+        type cienawstypes:string-maxl-256;
+        description
+          "Profile description of OTDR test in the RX direction.";
+      }
+      leaf rx-start-time {
+        ui:ui-name "RX OTDR test start time";
+        type cienawstypes:string-maxl-64;
+        description
+          "The start time of the OTDR test in the RX direction";
+      }
+      leaf rx-trace-status {
+        ui:ui-name "RX OTDR test trace status";
+        type cienawstypes:string-maxl-64;
+        description
+          "The trace status of the OTDR test in the RX direction";
+      }
+      leaf rx-reason-initiated {
+        ui:ui-name "RX OTDR test start reason";
+        type cienawstypes:string-maxl-64;
+        description
+          "The reason to start the OTDR test in the RX direction";
+      }
+      leaf rx-trace-file {
+        type cienawstypes:string-maxl-254;
+        ui:ui-name "RX Trace Filename";
+        description
+          "Trace report filename containing an OTDR test's report data in RX direction.";
+      }
+      leaf tx-profile-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "TX OTDR Profile Index";
+        description
+          "Unique ID of an OTDR Profile in the TX direction: <1..16>, office, short, long";
+      }
+      leaf tx-profile-measure-time {
+        type uint8 {
+          range "1..180";
+        }
+        units "sec";
+        ui:ui-name "Measure time";
+        description
+          "Measure time in seconds Range <1..180>";
+      }
+      leaf tx-profile-pulse-width {
+        type uint16 {
+          range "10|30|100|300|1000|3000|10000|20000";
+        }
+        units "ns";
+        ui:ui-name "Pulse width";
+        description
+          "Pulse width in nano-seconds Range  <10|30|100|300|1000|3000|10000|20000>";
+      }
+      leaf tx-profile-distance {
+        type uint32 {
+          range 10..128000;
+        }
+        units "m";
+        ui:ui-name "Distance";
+        description
+          "Distance in meters Range <10..128000>";
+      }
+      leaf tx-profile-description {
+        ui:ui-name "TX OTDR Profile Description";
+        type cienawstypes:string-maxl-256;
+        description
+          "Profile description of OTDR test in the TX direction.";
+      }
+      leaf tx-start-time {
+        ui:ui-name "TX OTDR test start time";
+        type cienawstypes:string-maxl-32;
+        description
+          "The start time of the OTDR test in the TX direction";
+      }
+      leaf tx-trace-status {
+        ui:ui-name "TX OTDR test trace status";
+        type cienawstypes:string-maxl-32;
+        description
+          "The trace status of the OTDR test in the TX direction";
+      }
+      leaf tx-reason-initiated {
+        ui:ui-name "TX OTDR test start reason";
+        type cienawstypes:string-maxl-64;
+        description
+          "The reason to start the OTDR test in the TX direction";
+      }
+      leaf tx-trace-file {
+        type cienawstypes:string-maxl-254;
+        ui:ui-name "TX Trace Filename";
+        description
+          "Trace report filename containing a OTDR test's report data in TX direction.";
+      }
+    }
+  }
+
+  rpc waveserver-application-otdr-upload {
+    description
+      "Upload the logs of an OTDR test on a line port";
+    input {
+      uses cienawstypes:rpc-log-upload-group;
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp";
+      }
+      leaf direction {
+        type otdr-direction;
+        mandatory true;
+        ui:ui-name "Direction";
+        description
+          "The direction of the test: tx or rx";
+      }
+      leaf trace-type {
+        type otdr-trace-type;
+        mandatory true;
+        ui:ui-name "Trace Type";
+        description
+          "The type of trace: office, short, long or manual";
+      }
+      leaf trace-instance {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "Trace Instance";
+        description
+          "Unique identifier of a trace type in a specific direction: <1 .. 10>, baseline or latest";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+  rpc waveserver-application-otdr-create-baseline {
+    description
+      "Start the office,short and long OTDR traces in the given direction.
+       The traces in both TX and RX are started if direction is omitted.";
+    input {
+      leaf ptp-id {
+        type cienawstypes:name-string;
+        mandatory true;
+        ui:ui-name "PTP ID";
+        description
+          "The line port slot/ptp";
+      }
+      leaf direction {
+        type otdr-direction;
+        ui:ui-name "Direction";
+        description
+          "The direction of the test RX or TX. Test is run in both directions if omitted.";
+      }
+    }
+    output {
+      uses cienawstypes:rpc-output;
+    }
+  }
+
+}

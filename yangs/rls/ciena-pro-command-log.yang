@@ -1,0 +1,444 @@
+module ciena-pro-command-log {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-command-log";
+  prefix log;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ietf-inet-types {
+    prefix ietf-inet;
+  }
+  import ciena-pro-security-types {
+    prefix security-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines commands log support.";
+
+  revision 2023-08-08 {
+    description
+      "Added return-code-list based on strings instead of using
+       ciena-common-yang's return-code-list.
+       String version of return codes used to report instances which may
+       not externally parsable. Some errors may contain references to
+       models used internally, and namespace references may not be
+       available when the normal definitions are used.";
+    version:version "version" {
+      version:string "1.4.0";
+    }
+  }
+  revision 2023-03-21 {
+    description
+      "Added identity subscribe";
+    version:version "version" {
+      version:string "1.3.0";
+    }
+  }
+  revision 2023-03-14 {
+    description
+      "Added access-control leaf in command-log config";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2023-02-01 {
+    description
+      "Added identity restconf and websocket.
+        Added exit-reason leaf in command-log-info";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2022-03-14 {
+    description
+      "Command log Data Model
+       The initial definition of the command log data model.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity interface-type {
+    description
+      "Base identity for interface type";
+  }
+
+  identity cli {
+    description
+      "CLI interface";
+    base interface-type;
+  }
+
+  identity netconf {
+    description
+      "Netconf interface";
+    base interface-type;
+  }
+
+  identity rest {
+    description
+      "REST interface";
+    base interface-type;
+  }
+
+  identity restconf {
+    description
+      "RESTCONF interface";
+    base interface-type;
+  }
+
+  identity websocket {
+    description
+      "WebSocket interface";
+    base interface-type;
+  }
+
+  identity grpc {
+    description
+      "gRPC interface";
+    base interface-type;
+  }
+
+  identity debug {
+    description
+      "SSH server debug port";
+    base interface-type;
+  }
+
+  identity sftp {
+    description
+      "SFTP interface";
+    base interface-type;
+  }
+
+  identity console {
+    description
+      "Console interface";
+    base interface-type;
+  }
+
+  identity command-operation-type {
+    description
+      "Base identity for command operation type";
+  }
+
+  identity CREATE {
+    description
+      "Create operation";
+    base command-operation-type;
+  }
+
+  identity DELETE {
+    description
+      "Delete operation";
+    base command-operation-type;
+  }
+
+  identity SET {
+    description
+      "Set operation";
+    base command-operation-type;
+  }
+
+  identity RPC {
+    description
+      "RPC operation";
+    base command-operation-type;
+  }
+
+  identity GET {
+    description
+      "Get operation";
+    base command-operation-type;
+  }
+
+  identity LOGIN {
+    description
+      "Login operation";
+    base command-operation-type;
+  }
+
+  identity LOGOUT {
+    description
+      "Logout operation";
+    base command-operation-type;
+  }
+
+  identity SUBSCRIBE {
+    description
+      "Subscription operation";
+    base command-operation-type;
+  }
+
+  typedef up-down-enum {
+    type enumeration {
+      enum down {
+        description
+          "Object is down/disabled/failed.";
+      }
+      enum up {
+        description
+          "Object is up/operational.";
+      }
+    }
+    description
+      "Down and Up enum toggle used in Ciena defined modules.";
+  }
+
+  typedef enabled-disabled-enum {
+    type enumeration {
+      enum disabled {
+        description
+          "Object or attribute is disabled.";
+      }
+      enum enabled {
+        description
+          "Object or attribute is enabled.";
+      }
+    }
+    description
+      "Enabled and Disabled enum toggle used in Ciena defined modules.";
+  }
+
+  grouping return-code {
+    leaf instance {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "The instance to which the error code applies.";
+    }
+    leaf error {
+      type string;
+    }
+    leaf action {
+      type yang:yang-action;
+      description
+        "The action performed for which the error code applies.";
+    }
+    leaf error-str {
+      type string;
+      mandatory false;
+      description
+        "A string description of the error code.";
+    }
+  }
+
+  grouping command-result {
+    description
+      "List of errors in case of command failure and status of command";
+    list return-code-list {
+      uses return-code;
+    }
+    leaf status {
+      type yang:yang-status;
+    }
+  }
+
+  grouping command-log-info {
+    leaf start-date-time {
+      type ietf-yang:date-and-time;
+      description
+        "The date and time when the command executed and recorded in the
+         command-log, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm' format.
+
+         The string format follows IETF yang date-and-time specifications, compliant
+         with RFC-6991. The base date and time portion of the string represents
+         Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates
+         the system-configured local timezone offset at the time the event was recorded,
+         and not necessarily when it was retrieved.
+
+         When system timezone is set to UTC or no time-offset value is provisioned,
+         the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+      reference
+        "RFC 3339: Date and Time on the Internet: Timestamps
+         RFC 6991: Common Yang Data Types";
+    }
+    leaf end-date-time {
+      type ietf-yang:date-and-time;
+      description
+        "The date and time when the command executed and recorded in the
+         command-log, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm' format.
+
+         The string format follows IETF yang date-and-time specifications, compliant
+         with RFC-6991. The base date and time portion of the string represents
+         Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates
+         the system-configured local timezone offset at the time the event was recorded,
+         and not necessarily when it was retrieved.
+
+         When system timezone is set to UTC or no time-offset value is provisioned,
+         the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+      reference
+        "RFC 3339: Date and Time on the Internet: Timestamps
+         RFC 6991: Common Yang Data Types";
+    }
+    leaf tag {
+      type uint64;
+      description
+        "Unique correlation tag or user operation sequence ID provided by
+         the originating NBI server.";
+    }
+    leaf interface {
+      type identityref {
+        base interface-type;
+      }
+      description
+        "Management interface type originating the transaction or user activity.";
+    }
+    leaf command-operation {
+      type identityref {
+        base command-operation-type;
+      }
+      description
+        "Original NBI operation corresponding to the current transaction or user activity.";
+    }
+    leaf user-session-id {
+      type uint64;
+      description
+        "The user session id.";
+    }
+    leaf username {
+      type security-types:user-name;
+      description
+        "The username associated with the management interface session that
+         initiated the request represented by the command log entry, if
+         applicable. Some system-initiated actions are logged without an
+         associated user account, in which case this leaf may be empty.";
+    }
+    leaf privilege {
+      type security-types:access-level;
+      description
+        "The user privilege level associated with the management interface
+         session that initiated the request represented by the command log
+         entry, if applicable. Some system-initiated actions are logged
+         without an associated user account, in which case this leaf may be
+         omitted from the response.";
+    }
+    leaf address {
+      type ietf-inet:ip-address;
+      description
+        "The source address that user comes from.";
+    }
+    leaf port {
+      type ietf-inet:port-number;
+      description
+        "The source port that user comes from.";
+    }
+    leaf command-string {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "The content of the actual CLI command sent, or description of the
+         associated operation for other request types, such as NBI requests
+         or system operations. Note that REST/NETCONF/gNMI commands are not
+         logged verbatim in the command-log, however a record is kept of
+         configuration operation types on each of the paths that are
+         modified.";
+    }
+    leaf exit-reason {
+      type string {
+        yang:stringptr "true";
+      }
+      description
+        "The internal error string by the system after executing the
+         specified command.";
+    }
+  }
+
+  grouping command-log-status {
+    container command-status {
+      description
+        "Show the status of command executed. In case of failure it may
+         also contain the error list.";
+      uses command-result;
+    }
+  }
+
+  container command-log {
+    description
+      "Configuration and operational data for the system command log collected
+       on the various management interfaces, including CLI and NBI (RESTCONF,
+       NETCONF, etc.).";
+    container config {
+      description
+        "Command-log configuration data.";
+      leaf admin-state {
+        type enabled-disabled-enum;
+        description
+          "Command-log administrative state.";
+        default "enabled";
+      }
+      leaf access-control {
+        type enabled-disabled-enum;
+        description
+          "Indicates whether to enable limiting of command-logs for users
+           having access-level other than diag and super. If enabled, users
+           other than diag and super will only see the commands executed by
+           them.";
+        default "enabled";
+      }
+    }
+    container operational {
+      config false;
+      description
+        "Command-log operational data.";
+      leaf operational-state {
+        type up-down-enum;
+        description
+          "Command-log operational state.";
+      }
+      leaf max-entries {
+        type uint32;
+        description
+          "Maximum number of command-log entry in the list.";
+      }
+      leaf num-entries {
+        type uint32;
+        description
+          "Total number of the command-log entry in the list.";
+      }
+      leaf last-sequence-id {
+        type uint32;
+        description
+          "Latest index number of the command-log entry in the list.";
+      }
+    }
+    list entry {
+      config false;
+      key "sequence-id";
+      description
+        "List of command-log entries.";
+      leaf sequence-id {
+        type uint32;
+        description
+          "The unique index number of the command-log entry in the list.";
+      }
+      uses command-log-info;
+      uses command-log-status;
+    }
+  }
+
+  rpc command-log-clear {
+    description
+      "Clear the system command log.";
+    output {
+      uses yang:rpc-result-common;
+    }
+  }
+}

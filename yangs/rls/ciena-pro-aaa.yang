@@ -1,0 +1,1080 @@
+module ciena-pro-aaa {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-aaa";
+  prefix ciena-pro-aaa;
+
+  import ciena-pro-aaa-common {
+    prefix common;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines the Authentication, Authorization and Accounting (AAA)
+     security functionality.";
+
+  revision 2021-03-05 {
+    ciena-common-version:string "0.4.6";
+    description
+      "Add batch-id to tacacs-authorize and tacacs-accounting RPC";
+  }
+  revision 2021-02-25 {
+    ciena-common-version:string "0.4.5";
+    description
+      "Add command status enum to tacacs-accounting RPC";
+  }
+  revision 2020-11-13 {
+    ciena-common-version:string "0.4.4";
+    description
+      "Add task-id to tacacs-accounting RPC";
+  }
+  revision 2020-11-05 {
+    ciena-common-version:string "0.4.3";
+    description
+      "Add tacacs authorization and accounting provisioning and RPC";
+  }
+  revision 2020-10-22 {
+    ciena-common-version:string "0.4.2";
+    description
+      "Make model platform independent";
+  }
+  revision 2020-09-18 {
+    ciena-common-version:string "0.4.1";
+    description
+      "Add radius-counts container and get-counts-aaa RPC";
+  }
+  revision 2020-07-21 {
+    ciena-common-version:string "0.4.0";
+    description
+      "Introduce configurable system user";
+  }
+  revision 2020-06-22 {
+    ciena-common-version:string "0.3.2";
+    description
+      "Remove default value of RADIUS port and update leaf description, as udp-port is key in server list.";
+  }
+  revision 2020-06-10 {
+    ciena-common-version:string "0.3.1";
+    description
+      "Update RADIUS key and secret maximum lengths to 128 and 256 characters respectively.";
+  }
+  revision 2020-04-06 {
+    ciena-common-version:string "0.3.0";
+    description
+      "Added RADIUS configuration support.";
+  }
+  revision 2020-04-06 {
+    ciena-common-version:string "0.2.10";
+    description
+      "Updated default values related to password expiry.";
+  }
+  revision 2020-03-18 {
+    ciena-common-version:string "0.2.9";
+    description
+      "Set min-element to 1 for user leaf list under local users";
+  }
+  revision 2020-03-16 {
+    ciena-common-version:string "0.2.8";
+    description
+      "Updated description of password-warning-period.";
+  }
+  revision 2020-01-29 {
+    ciena-common-version:string "0.2.7";
+    description
+      "Changed max-elements and range in authentication-method to describe the current implementation of priority/auth type";
+  }
+  revision 2020-01-27 {
+    ciena-common-version:string "0.2.6";
+    description
+      "Adding the hash to the secret description";
+  }
+  revision 2020-01-06 {
+    ciena-common-version:string "0.2.5";
+    description
+      "Adding password-last-changed and password-expiry to local users.";
+  }
+  revision 2019-12-19 {
+    ciena-common-version:string "0.2.4";
+    description
+      "Adding new leaf for user called confirm-password.";
+  }
+  revision 2019-12-18 {
+    ciena-common-version:string "0.2.3";
+    description
+      "Adding new leaf for change-password RPC confirm-new-password.";
+  }
+  revision 2019-12-10 {
+    ciena-common-version:string "0.2.2";
+    description
+      "Fixing typos in descriptions.";
+  }
+  revision 2019-10-30 {
+    ciena-common-version:string "0.2.1";
+    description
+      "Setting default and mandatory fields.";
+  }
+  revision 2019-09-05 {
+    ciena-common-version:string "0.2.0";
+    description
+      "Using common access levels (diag and initial).";
+  }
+  revision 2019-08-22 {
+    ciena-common-version:string "0.1.0";
+    description
+      "Adding password expiry/warning config attributes";
+  }
+  revision 2018-04-25 {
+    description
+      "Initial version AAA module";
+  }
+
+  typedef account-flag {
+    type enumeration {
+      enum "start" {
+        description
+          "Indicate that this is a task start record";
+      }
+      enum "stop" {
+        description
+          "Indicate that this is a task stop record";
+      }
+      enum "watchdog" {
+        description
+          "Indicate that this is a task update record";
+      }
+    }
+    description
+      "TACACS+ Accounting Flag";
+  }
+
+  typedef string-maxl-40 {
+    type string {
+      length "2..40";
+    }
+    description
+      "Standard string that has a max length of 40 characters.";
+  }
+
+  typedef string-maxl-64 {
+    type string {
+      length "0..64";
+    }
+    description
+      "Standard string that has a max length of 64 characters.";
+  }
+
+  typedef string-maxl-128 {
+    type string {
+      length "8..128";
+    }
+    description
+      "Standard string that has a max length of 128 characters.";
+  }
+
+  typedef string-maxl-256 {
+    type string {
+      length "0..256";
+    }
+    description
+      "Standard string that has a max length of 256 characters.";
+  }
+
+  typedef string-maxl-512 {
+    type string {
+      length "0..512";
+    }
+    description
+      "Standard string that has a max length of 512 characters.";
+  }
+
+  typedef enabled-disabled-enum {
+    type enumeration {
+      enum "enabled" {
+        description
+          "enabled state.";
+      }
+      enum "disabled" {
+        description
+          "disabled state.";
+      }
+    }
+    description
+      "enabled or disabled type.";
+  }
+
+  typedef up-down-enum {
+    type enumeration {
+      enum "up" {
+        description
+          "up state.";
+      }
+      enum "down" {
+        description
+          "down state.";
+      }
+    }
+    description
+      "up or down type.";
+  }
+
+  typedef ipaddr-or-hostname {
+    type string {
+      length "1..63";
+    }
+    description
+      "IP address or hostname string.";
+  }
+
+  typedef radius-scope-enum {
+    type enumeration {
+      enum "authentication" {
+        description
+          "RADIUS authentication scope.";
+      }
+    }
+    description
+      "RADIUS server scope.";
+  }
+
+  typedef username {
+    type string {
+      length "2..40";
+    }
+    description
+      "User name string that has a range of 2 to 40 characters.
+       Valid character includes alphanumeric and '-', '_', '.'";
+  }
+
+  typedef pwd-rules-enum {
+    type enumeration {
+      enum "standard" {
+        description
+          "Standard local password rules. The following requirements are specific to standard password rules:
+           - a password must have at least one alphabetic character and at least one numeric or special character
+           - a password cannot contain the associated user ID";
+      }
+      enum "complex" {
+        description
+          "Complex local password rules. The following requirements are specific to complex password rules:
+           - a password must have at least three of the following combinations
+                - upper case alphabetic character
+                - lower case alphabetic character
+                - numeric character
+                - special character
+           - a password must not include UID or Reverse of UID
+           - a password must not contain more than 3 of the same char consecutively";
+      }
+    }
+    default "complex";
+    description
+      "Local password rules. The following requirements are common between all local password rules
+       - a password is case sensitive
+       - a password must have at least 8 characters
+       - a password must have less than or equal to 128 characters
+       - a password is a combination of alphabetic (A to Z, a to z), numeric (0 to 9), and/or special characters
+          - supported special characters are: ! \" # $ % ` ( ) * + - . / < = > [ ] ^ _ ' { | } ~
+              - When you use the FTP/SFTP server with the Release Management application, the password cannot
+              contain the character @ (at sign)
+       - a password cannot contain a semicolon(;), colon(:), ampersand(&), comma(,), space( ), question mark(?) or any control characters.";
+  }
+
+  grouping radius-counts {
+    description
+      "RADIUS authentication and accounting event counts.";
+    list radius-server-counts {
+      config false;
+      max-elements 10;
+      description
+        "RADIUS event counts for each server.";
+      leaf retried-access-requests {
+        type uint64;
+        description
+          "Retransmitted Access-Request messages.";
+      }
+
+      leaf access-accepts {
+        type uint64;
+        description
+          "Received Access-Accept messages.";
+      }
+
+      leaf access-rejects {
+        type uint64;
+        description
+          "Received Access-Reject messages.";
+      }
+
+      leaf timeout-access-requests {
+        type uint64;
+        description
+          "Access-Request messages that have timed-out, requiring retransmission.";
+      }
+
+      leaf access-requests {
+        type uint64;
+        description
+          "Sent Access-Request messages.";
+      }
+
+      leaf malformed-responses {
+        type uint64;
+        description
+          "Received messages which is not a valid RADIUS response.";
+      }
+
+      leaf bad-authenticators {
+        type uint64;
+        description
+          "Received responses with an invalid Authenticator.";
+      }
+
+      leaf accounting-requests {
+        type uint64;
+        description
+          "Sent Accounting-Request messages.";
+      }
+
+      leaf accounting-responses {
+        type uint64;
+        description
+          "Received Accounting-Response messages.";
+      }
+    }
+  }
+
+  grouping tacacs-counts {
+    description
+      "TACACS+ authentication, authorization, and accounting event counts.";
+    list tacacs-server-counts {
+      config false;
+      max-elements 10;
+      description
+        "TACACS+ aaa counts for each server.";
+      leaf access-requests {
+        type uint64;
+        description
+          "TACACS+ access requests.";
+      }
+
+      leaf access-retransmissions {
+        type uint64;
+        description
+          "TACACS+ access retransmissions.";
+      }
+
+      leaf access-accepts {
+        type uint64;
+        description
+          "TACACS+ access accepts.";
+      }
+
+      leaf access-rejects {
+        type uint64;
+        description
+          "TACACS+ access rejects.";
+      }
+
+      leaf malformed-responses {
+        type uint64;
+        description
+          "TACACS+ malformed responses.";
+      }
+
+      leaf bad-tx-authenticators {
+        type uint64;
+        description
+          "TACACS+ bad authorization requests.";
+      }
+
+      leaf bad-rx-authenticators {
+        type uint64;
+        description
+          "TACACS+ bad authorization responses.";
+      }
+
+      leaf timeouts {
+        type uint64;
+        description
+          "TACACS+ timeouts.";
+      }
+
+      leaf unknown-types {
+        type uint64;
+        description
+          "TACACS+ unknown message types.";
+      }
+
+      leaf bad-header-sequences {
+        type uint64;
+        description
+          "TACACS+ bad header sequences.";
+      }
+    }
+  }
+
+  container security-aaa {
+    description
+      "Security AAA configuration and operational data. Defines authentication,
+       authorization and accounting services.";
+    container authentication {
+      description
+        "Global authentication configuration.";
+      list authentication-method {
+        key "priority";
+        max-elements 2;
+        description
+          "Ordered list of authentication methods for user login attempts,
+           indexed by priority. If an authentication attempt fails using the
+           first method, the next defined method will be attempted, until all
+           specified authentication methods have been tried, at which point the
+           user will be denied access. By default, this list will have a single
+           entry with type 'local'.";
+        leaf priority {
+          type uint8 {
+            range "1..2";
+          }
+          description
+            "Authentication priority, indicating the order in which each of the
+             authentication providers will be consulted.";
+        }
+
+        leaf type {
+          type enumeration {
+            enum "local" {
+              description
+                "Authentication based on local user list.";
+            }
+            enum "radius" {
+              description
+                "Remote authentication via RADIUS, if configured/enabled.";
+            }
+            enum "tacacs" {
+              description
+                "Remote authentication via TACACS+, if configured/enabled.";
+            }
+          }
+          default "local";
+          description
+            "The authentication method / provider type.";
+        }
+      }
+    }
+
+    container local {
+      description
+        "Local authentication configuration.";
+      leaf password-rules {
+        type pwd-rules-enum;
+        description
+          "Local password rules with default complex.";
+      }
+
+      leaf password-expiry-period {
+        type uint16 {
+          range "0..999";
+        }
+        default "0";
+        description
+          "Local password expiry period. The number of days after which
+           the password is no longer valid. The value must be from 0 to 999 days.
+           The default value is 0.
+           0 means Password expiry is disabled";
+      }
+
+      leaf password-warning-period {
+        type uint16 {
+          range "0..14";
+        }
+        default "0";
+        description
+          "Local password warning period. The number of days before password
+           expiration that a warning message appears when a user logs in to
+           the network element.
+           The value must be from 0 to 14 days.
+           The default value is 0.
+           0 means Password expiry warning is disabled";
+      }
+
+      list user {
+        key "user-name";
+        min-elements 1;
+        max-elements 200;
+        description
+          "List of local user accounts used for local authentication.";
+        leaf user-name {
+          type username;
+          description
+            "The configured username for this local user.
+             - Must be unique across the list of configured local users.
+             - Must be 2 to 40 characters long
+             - Must NOT begin with numeric character or be just numbers
+             - Only support following characters:
+                * Alpha numeric [a..z][A..Z][0-9]
+                * Special characters underscore, dash and period";
+        }
+
+        leaf password {
+          type string-maxl-128;
+          description
+            "The user password, supplied as cleartext. This is a write-only
+             attribute that should not be stored nor returned on user retrieval.
+             The password will be encrypted via one-way hash function and stored
+             only in its encrypted format. The hashed password string can be
+             retrieved via the 'secret' attribute.";
+        }
+
+        leaf confirm-password {
+          type string-maxl-128;
+          mandatory true;
+          description
+            "The confirmation of the password.";
+        }
+
+        leaf secret {
+          type string-maxl-256;
+          description
+            "The hashed user password string, supplied as a SHA512 value. This
+             should only be configured at user creation time, and will be ignored
+             if the user account already exists. If the hash is generated outside of the
+             NBI, the hashed password will not be validated against local password rules.";
+        }
+
+        leaf password-last-changed {
+          type string-maxl-64;
+          config false;
+          description
+            "When the user last changed their password.";
+        }
+
+        leaf password-expiry {
+          type string-maxl-64;
+          config false;
+          description
+            "When the user's password expires. A blank value indicates the password never expires.";
+        }
+
+        leaf access-level {
+          type enumeration {
+            enum "limited" {
+              description
+                "User has limited (mostly read-only) privileges. Limited user shall
+                 - be a read only user with access to retrieve most of the system configurations.
+                 - NOT be able to retrieve most of  security configurations, except their own user and user session information.
+                 - be able to change their own password";
+            }
+            enum "admin" {
+              description
+                "User has administrative privileges. Admin user shall
+                 - be able to perform all the capabilities of limited user
+                 - be able to provision most of the system configurations
+                 - NOT be able to retrieve and provision most of  security configurations,
+                  except retrieve their own user and user session information
+                 - be able to change their own password";
+            }
+            enum "super" {
+              description
+                "User has superuser privileges. Super user shall
+                 - be able to perform all the capabilities of admin and limited user
+                 - be able to perform all retrieval and provisioning of security related configurations
+                   (Configuring  and retrieving users, user sessions, TACACS+, banners, ssh, intrusion ...)
+                 - be able to execute RPC ";
+            }
+            enum "diag" {
+              description
+                "User has debug shell access. Diag user shall
+                 - be able to perform all the capabilities of super user
+                 - be able to execute the CLI command diag-shell";
+            }
+            enum "initial" {
+              description
+                "User has very limited access. Initial user shall
+                 - only be able to change their own password
+                 - Note: can not create a user with initial access level, only used for default user.";
+            }
+          }
+          default "limited";
+          description
+            "The access-level or role assigned to the local user.";
+        }
+      }
+
+      leaf system-user {
+        type leafref {
+          path "../user/user-name";
+        }
+        mandatory true;
+      }
+    }
+
+    container tacacs {
+      description
+        "Top-level TACACS+ container.";
+      container global-config {
+        description
+          "Global TACACS+ configuration attributes.";
+        leaf admin-state {
+          type enabled-disabled-enum;
+          default "enabled";
+          description
+            "TACACS+ administrative state.";
+        }
+
+        leaf operational-state {
+          type up-down-enum;
+          config false;
+          description
+            "TACACS+ operational state.";
+        }
+
+        leaf authentication-admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "TACACS+ authentication administrative state.";
+        }
+
+        leaf authorization-admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "TACACS+ authorization administrative state.";
+        }
+
+        leaf accounting-admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "TACACS+ accounting administrative state.";
+        }
+
+        leaf timeout {
+          type uint16 {
+            range "1..30";
+          }
+          units "seconds";
+          default "6";
+          description
+            "Global timeout period in seconds on responses from a TACACS+ server.";
+        }
+
+        leaf key {
+          type string {
+            length "0|2..64";
+          }
+          description
+            "The non-encrypted key that can be configured to generate a shared
+             secret between the authentication server and the device. This string
+             is clear-text and will not be retrievable nor stored directly on the
+             device. Specifying a zero-length string will clear the key value.";
+        }
+
+        leaf key-min-length {
+          type uint16 {
+            range "2..64";
+          }
+          default "8";
+          description
+            "The minimum secret key length in bytes.";
+        }
+
+        leaf secret {
+          type string {
+            length "0|4..128";
+          }
+          description
+            "The encrypted shared secret key used between the authentication
+             server and the device. Specifying a zero-length string will clear
+             the shared secret value.";
+        }
+      }
+
+      list server {
+        key "address";
+        max-elements 10;
+        description
+          "Global list of TACACS+ servers to use for AAA functions.";
+        leaf address {
+          type ipaddr-or-hostname;
+          description
+            "Configured IP address or Domain Name of the remote TACACS+ server.";
+        }
+
+        leaf ip-address {
+          type string-maxl-64;
+          config false;
+          description
+            "Operational IP address associated with the remote NTP server,
+             if configured/available, or 'Unresolved' otherwise.";
+        }
+
+        leaf admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "TACACS+ server administrative state.";
+        }
+
+        leaf operational-state {
+          type up-down-enum;
+          config false;
+          description
+            "TACACS+ server operational state.";
+        }
+
+        leaf priority {
+          type uint8 {
+            range "1..8";
+          }
+          mandatory true;
+          description
+            "TACACS+ server priority.";
+        }
+
+        leaf tcp-port {
+          type uint16 {
+            range "1..65535";
+          }
+          default "49";
+          description
+            "TACACS+ server TCP Port. Default value is 49.";
+        }
+
+        leaf source-address {
+          type string-maxl-64;
+          config false;
+          description
+            "Source IP address used in messages to the TACACS+ server.";
+        }
+      }
+    }
+
+    container radius {
+      description
+        "Top-level RADIUS container.";
+      container global-config {
+        description
+          "Global RADIUS configuration attributes.";
+        leaf admin-state {
+          type enabled-disabled-enum;
+          default "enabled";
+          description
+            "RADIUS administrative state.";
+        }
+
+        leaf authentication-admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "RADIUS authentication administrative state.";
+        }
+
+        leaf timeout {
+          type uint16 {
+            range "1..15";
+          }
+          units "seconds";
+          default "6";
+          description
+            "Global timeout period in seconds on responses from a RADIUS server.";
+        }
+
+        leaf key {
+          type common:string-maxl-128;
+          description
+            "The non-encrypted key that can be configured to generate a shared
+             secret between the authentication server and the device. This string
+             is clear-text and will not be retrievable nor stored directly on the
+             device. Specifying a zero-length string will clear the key value.";
+        }
+
+        leaf key-min-length {
+          type uint16 {
+            range "1..128";
+          }
+          default "8";
+          description
+            "The minimum secret key length in bytes.";
+        }
+
+        leaf secret {
+          type common:string-maxl-256;
+          description
+            "The encrypted shared secret key used between the authentication
+             server and the device. Specifying a zero-length string will clear
+             the shared secret value.";
+        }
+
+        leaf retries {
+          type uint8 {
+            range "0..3";
+          }
+          default "3";
+          description
+            "Number of attempts to contact each configured RADIUS server upon
+             failures to receive the expected server response.";
+        }
+      }
+
+      list server {
+        key "address udp-port";
+        max-elements 10;
+        description
+          "Global list of RADIUS servers.";
+        leaf address {
+          type common:ipaddr-or-fqdn;
+          description
+            "Configured IP address or FQDN of the remote RADIUS server.";
+        }
+
+        leaf admin-state {
+          type enabled-disabled-enum;
+          default "disabled";
+          description
+            "RADIUS server administrative state.";
+        }
+
+        leaf priority {
+          type uint8 {
+            range "1..8";
+          }
+          mandatory true;
+          description
+            "RADIUS server priority.";
+        }
+
+        leaf udp-port {
+          type uint16 {
+            range "1..65535";
+          }
+          description
+            "RADIUS server UDP port. The standard port for RADIUS authentication is 1812.";
+        }
+
+        leaf scope {
+          type radius-scope-enum;
+          default "authentication";
+          description
+            "RADIUS server scope.";
+        }
+      }
+    }
+  }
+
+  rpc get-counts-aaa {
+    description
+      "Retrieves remote authentication counts.";
+    input {
+      leaf type {
+        type enumeration {
+          enum "radius" {
+            description
+              "RADIUS event counts.";
+          }
+          enum "tacacs" {
+            description
+              "TACACS+ event counts.";
+          }
+        }
+        mandatory true;
+        description
+          "Authentication type: radius or tacacs.";
+      }
+
+      leaf ip-address {
+        type common:ipaddr-or-fqdn;
+        description
+          "The IP address of the TACACS+ or RADIUS server for which to get event counts.";
+      }
+    }
+
+    output {
+      container counts {
+        description
+          "Event counts for the specified remote authentication method.";
+        choice type {
+          case radius {
+            uses radius-counts;
+          }
+
+          case tacacs {
+            uses tacacs-counts;
+          }
+        }
+      }
+    }
+  }
+
+  rpc change-password {
+    description
+      "Requests a user's password to be changed.";
+    input {
+      leaf user-name {
+        type common:user-name;
+        mandatory true;
+        description
+          "The user who is password being changed.";
+      }
+
+      leaf old-password {
+        type common:user-password;
+        mandatory true;
+        description
+          "The old password that is going to be replaced with the new password.";
+      }
+
+      leaf new-password {
+        type common:user-password;
+        mandatory true;
+        description
+          "The new password that will replace the old password.";
+      }
+
+      leaf confirm-new-password {
+        type common:user-password;
+        mandatory true;
+        description
+          "The confirmation of the new password that will replace the old password.";
+      }
+    }
+
+    output {
+      leaf status {
+        type enumeration {
+          enum "success" {
+            description
+              "User password change succeeded.";
+          }
+          enum "failure" {
+            description
+              "User password change failed.";
+          }
+        }
+        description
+          "The user password change status.";
+      }
+
+      leaf reason-string {
+        type string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc tacacs-authorize {
+    description
+      "TACACS+ authorization";
+    input {
+      leaf session-id {
+        type uint32;
+        description
+          "The session id that associates TACACS+ user session.";
+      }
+
+      leaf cmd {
+        type string-maxl-512;
+        description
+          "Command to be authorized.";
+      }
+
+      leaf batch-id {
+        type uint32;
+        description
+          "Batch id for batch command correlation.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "authorization return status code: 0 is pass; non-zero is rejected/failure";
+      }
+
+      leaf return-string {
+        type string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc tacacs-accounting {
+    description
+      "TACACS+ accounting";
+    input {
+      leaf session-id {
+        type uint32;
+        description
+          "The session id that associates TACACS+ user session.";
+      }
+
+      leaf task-id {
+        type uint32;
+        description
+          "Task id for accounting packets.";
+      }
+
+      leaf batch-id {
+        type uint32;
+        description
+          "Batch id for batch command correlation.";
+      }
+
+      leaf flag {
+        type account-flag;
+        description
+          "Flag to indicate the accounting record type.";
+      }
+
+      leaf cmd {
+        type string-maxl-512;
+        description
+          "Command to be recorded.";
+      }
+
+      leaf cmd-status {
+        type enumeration {
+          enum "undetermined" {
+            description
+              "Command undetermined status.";
+          }
+          enum "success" {
+            description
+              "Command success status.";
+          }
+          enum "failure" {
+            description
+              "Command failure status.";
+          }
+        }
+        description
+          "Command status to be recorded.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "accounting return status code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string-maxl-256;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

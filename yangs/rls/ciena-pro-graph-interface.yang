@@ -1,0 +1,198 @@
+module ciena-pro-graph-interface {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-graph-interface";
+  prefix graph-interface;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's topo graph interface for the 6500r-Series platform";
+
+  revision 2020-10-07 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "RLS 2.1 module creation";
+  }
+
+  typedef channel-bitmap-type {
+    type binary {
+      length "104";
+    }
+    description
+      "Array of bit to represent channel. Each bit represents a bin of 12.5 GHz wide. The lowest frequency of the first bin is 185900.0GHz. Covers frequency range between 185900.0GHz and 196300.0GHz";
+  }
+
+  grouping upstream-channel-status {
+    description
+      "Upstream state.";
+    leaf channel-occupancy {
+      type channel-bitmap-type;
+      description
+        "List of provisioned channel";
+    }
+
+    leaf channel-fault {
+      type channel-bitmap-type;
+      description
+        "List of service affected channel";
+    }
+
+    leaf channel-degrade {
+      type channel-bitmap-type;
+      description
+        "List of potentially service affected channel";
+    }
+
+    container derived-info {
+      description
+        "Info derived from the state above to make it human readable";
+      leaf all-channel-faulty {
+        type boolean;
+      }
+
+      leaf all-channel-degraded {
+        type boolean;
+      }
+
+      leaf no-channel-provisioned {
+        type boolean;
+      }
+    }
+  }
+
+  list network-channel-status {
+    key "name";
+    description
+      "Interface object to for Network Channel Status.";
+    leaf name {
+      type instance-identifier;
+      description
+        " This is instance id of this object.";
+    }
+
+    container local {
+      description
+        "List of local fault";
+      leaf all-channel-fault {
+        type boolean;
+        description
+          "True if all channels are faulted (service affecting fault).";
+      }
+
+      leaf all-channel-degrade {
+        type boolean;
+        description
+          "True if all channels are degraded (potentially service affecting fault).";
+      }
+
+      list channel {
+        key "center-frequency";
+        description
+          "List of channel fault.";
+        leaf center-frequency {
+          type ciena-6500r-types:frequency;
+          description
+            "Center frequency of the Network Media Channel.";
+        }
+
+        leaf fault {
+          type boolean;
+          description
+            "True if the channel reports a service affecting fault.";
+        }
+
+        leaf degrade {
+          type boolean;
+          description
+            "True if the channel reports a potentially service affecting fault.";
+        }
+      }
+    }
+
+    container upstream {
+      description
+        "Upstream state.";
+      uses upstream-channel-status;
+    }
+  }
+
+  rpc get-upstream-fault {
+    description
+      "Request faults that changed after last incarnation";
+    input {
+      leaf last-incarnation {
+        type uint32;
+        description
+          "Last incarnation known to the caller";
+      }
+    }
+
+    output {
+      leaf incarnation {
+        type uint32;
+        description
+          "Latest incarnation";
+      }
+
+      list fault {
+        leaf source {
+          type instance-identifier;
+          description
+            "Port identifier";
+        }
+
+        uses upstream-channel-status;
+      }
+    }
+  }
+
+  rpc get-channels {
+    description
+      "Returns a list of channels on a given port";
+    input {
+      leaf port {
+        type instance-identifier;
+        description
+          "Port identifier";
+      }
+    }
+
+    output {
+      list channel {
+        leaf center-freq {
+          type ciena-6500r-types:frequency;
+          description
+            "Center frequency";
+        }
+
+        leaf spectral-width {
+          type ciena-6500r-types:frequency;
+          description
+            "Spectral width";
+        }
+      }
+
+      uses ciena-common:rpc-result-common;
+    }
+  }
+}

@@ -1,0 +1,395 @@
+module ciena-multicast {
+    namespace "http://ciena.com/ns/yang/ciena-multicast";
+    prefix "mcast";
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+    
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ietf-routing-types {
+        prefix rt-types;
+    }
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import ietf-yang-types {
+        prefix "yang";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module contains the YANG definitions of multicast routing level
+         configurations and states as per Ciena SW Functional Specification.docx.
+
+         Copyright (c) 2022  Ciena Corporation.  All rights reserved.
+
+         All information and intellectual property contained in this
+         YANG module (Specification) is, and remains the property
+         of Ciena Corporation. Ciena retains all title and ownership
+         in the Specification, including any revisions.
+
+         Ciena grants all interested parties that access the
+         Specification with the intent to use or distribute ('you') a
+         non-exclusive, no-cost license to use and distribute
+         unmodified copies of the Specification solely in connection
+         with the management of Ciena products sold by or on
+         behalf of Ciena, provided this copyright notice and license
+         appear on all copies. Ciena may rescind or modify this
+         license at any time.
+
+         This Specification is supplied 'as is', and Ciena makes no
+         warranty, either express or implied, as to the use, operation,
+         condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.";
+
+
+    revision "2022-07-28" {
+        description
+            "Initial Version.";
+    }
+
+    feature pim-per-vrf {
+        description
+            "Support running PIM protocol on each VRF";
+    }
+
+    feature route-threshold-notification {
+       description
+           "Support notification when the number of routes in the route table
+            has reached or exceeded the user-configurable threshold.";
+    }
+
+    feature packet-forwarding-ttl-threshold {
+       description
+           "Forward packets out an interface only if the packet ttl value is
+            equal to or exceeds a user-configurable minimum number.";
+    }
+
+    container multicast {
+        description
+            "Global multicast routing configurations";
+
+        list vrf {
+            key "vrf";
+            description
+                "The Virtual Routing and Forwarding (VRF) instances.";
+
+            leaf vrf {
+                description
+                    "The name of the VRF instance";
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+            }
+
+            leaf route-limit {
+                type uint32 {
+                    range "1..2000";
+                }
+                default "2000";
+                description
+                    "The maximum number of multicast routes that can be added to
+                     the multicast routing table.";
+            }
+
+            leaf route-threshold {
+                if-feature route-threshold-notification;
+                type uint32;
+                description
+                    "The threshold of routes in the multicast routing table,
+                     if exceeded, will cause a warning message to be generated.
+                     This threshold value must be less than the route-limit value.";
+            }
+
+            leaf ttl-threshold {
+                if-feature packet-forwarding-ttl-threshold;
+                type uint8;
+                default "1";
+                description
+                    "TTL threshold of packets being forwarded out an interface. Only
+                     multicast packets with TTL greater than or equal to threshold
+                     are forwarded.";
+            }
+
+            container ipv4 {
+                description
+                    "Support for ipv4 multicast protocols";
+                leaf enable {
+                    type boolean;
+                    default "false";
+                    description
+                        "Enable or disable multicast routing capability.";
+                }
+
+                container statistics {
+                    leaf rpf-enable {
+                        type boolean;
+                        default "false";
+                        description
+                            "Enable or disable rpf statistics collection.";
+                    }
+
+                    leaf non-rpf-enable {
+                        type boolean;
+                        default "false";
+                        description
+                            "Enable or disable non-rpf statistics collection.";
+                    }
+                }
+            }
+        } 
+    }
+
+    grouping statistics-grouping {
+        description
+            "Mrib Control Plane Statistics.";
+
+        leaf rpf-match-packets {
+            type yang:counter64;
+            description
+                "Count of RPF match traffic statistics.";
+        }
+
+        leaf rpf-match-octets {
+            type yang:counter64;
+            description
+                "Count of RPF match traffic statistics in octets.";
+        }
+
+        leaf rpf-miss-packets {
+            type yang:counter64;
+            description
+                "Count of RPF miss traffic statistics.";
+        }
+
+        leaf rpf-miss-octets {
+            type yang:counter64;
+                description
+                    "Count of RPF miss traffic statistics in octets.";
+        }
+
+    }
+
+    grouping ipv4-mroute-state {
+        description
+            "IPv4 multicast routing table";
+        list mroutes {
+            key "vrf group-address source-address";
+
+            leaf vrf {
+               type string;
+               description
+                   "The VPN routing/forwarding instance";
+            }
+
+            leaf group-address {
+                type rt-types:ipv4-multicast-group-address;
+                description
+                    "The multicast group IP address.";
+            }
+
+            leaf source-address {
+                type rt-types:ipv4-multicast-source-address;
+                description
+                    "The source IP address.";
+            }
+
+            leaf uptime {
+                type string;
+                description
+                    "The length of time the route has existed in the multicast
+                     routing table in weeks:days:hours:minutes:seconds notation.";
+            }
+
+            leaf owner {
+                type string;
+                description
+                    "The protocol from which the multicast route was learned.";
+            }
+
+            leaf incoming-intf {
+                type string;
+                description
+                    "Name of the interface on which packets are received.";
+            }
+
+            leaf-list outgoing-intfs {
+                type string;
+                description
+                    "List of the route's outgoing interface names.";
+            }
+
+            container statistics {
+                description
+                    "Mroute statistics counters.";
+                uses statistics-grouping;
+            }
+        }
+    }
+
+    container multicast-state {
+        description
+            "Multicast operational state";
+        config false;
+        container ipv4 {
+            uses ipv4-mroute-state;
+            container global-statistics {
+                leaf installed-route-count {
+                    type yang:counter64;
+                    description
+                        "The total count of accepted multicast routes.";
+                }
+
+                leaf rejected-route-count {
+                    type yang:counter64;
+                    description
+                        "The total count of rejected multicast routes.";
+                }
+            }
+        }
+    }
+
+    rpc multicast-clear-mroutes {
+        description
+            "Rpc to delete all multicast route table entries.";
+        input  {
+            leaf vrf {
+                if-feature pim-per-vrf;
+                type string;
+                default "default";
+                description
+                    "The name of the Virtual Routing and Forwarding instance.";
+            }
+
+            leaf pim-mode {
+                type  cn-l3-types:pim-mode-type;
+                description
+                    "Either SM, DM or SMDM";
+            }
+
+            leaf group-address {
+                type rt-types:ipv4-multicast-group-address;
+                description
+                    "The multicast group IP address.";
+            }
+
+            leaf source-address {
+                type inet:ipv4-address;
+                description
+                    "The source IP address.";
+            }
+
+            leaf afi {
+                 type  cn-l3-types:vrf-afi-type;
+                description
+                    "The IP address family, either ipv4 or ipv6.";
+            }
+        }
+
+        output {
+            leaf response {
+                type string;
+                description
+                  "The response can be either 'success' or the reason for the failure.";
+            }
+        }
+    }
+
+    rpc multicast-clear-mroute-statistics {
+        description
+            "Rpc to delete multicast statistics.";
+        input  {
+            leaf vrf {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                default "default";
+                description
+                    "The name of the Virtual Routing and Forwarding instance.";
+            }
+
+            leaf group-address {
+                type rt-types:ipv4-multicast-group-address;
+                description
+                    "The multicast group IP address.";
+            }
+
+            leaf source-address {
+                type inet:ipv4-address;
+                description
+                    "The source IP address.";
+            }
+
+        }
+
+        output {
+            leaf response {
+                type string;
+                description
+                  "The response can be either 'success' or the reason for the failure.";
+            }
+        }
+    }
+
+    notification mroute-events {
+        description
+            "Creation, deletion and rejection of mroutes.";
+        container ipv4 {
+            description
+                "Notifications for IPv4 Multicast Routes.";
+            list mroute {
+                key "vrf group-address source-address";
+                description
+                    "The Multicast Route in MIB.";
+                leaf vrf {
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    description
+                        "The name of the Virtual Routing and Forwarding instance.";
+                }
+
+                leaf group-address {
+                    type rt-types:ipv4-multicast-group-address;
+                    description
+                        "The multicast group IP version4 address.";
+                }
+
+                leaf source-address {
+                    type inet:ipv4-address;
+                    description
+                        "The source IP version4 address.";
+                }
+           
+                leaf event-type {
+                    type cn-l3-types:mroute-event-type;
+                    description
+                       "The type of event for the mroute.";
+                }
+
+                leaf reason {
+                    type string;
+                    description
+                       "Details of the mroute event.";
+                }
+            }
+        }
+    }
+}

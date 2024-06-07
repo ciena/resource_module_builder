@@ -1,0 +1,1071 @@
+module ciena-waveserver-spli {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-spli";
+  prefix spli;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines configuration and operational data for the Service
+     Photonic Layer Interoperability (SPLI) subsystem on Ciena's Waveserver
+     platform. SPLI is a Ciena proprietary software feature that enables
+     coordination and communication between service layers, line-side optics
+     and a connected photonic line system, such as 6500 optical channel
+     multiplexer/de-multiplexer (CMD).";
+
+  revision 2021-10-07 {
+    description
+      "Added leaf 'loopback-test-result' to adjacency local status
+       and leaf 'loopback-test-request' to adjacency remote status.";
+    reference
+      "Waveserver OS R2.2 user's guide.";
+  }
+  revision 2021-05-20 {
+    description
+      "Waveserver OS 2.1 SPLI yang support - initial revision";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+
+  typedef spli-match-type {
+    type enumeration {
+      enum "mux-demux" {
+        description
+          "mux-demux";
+      }
+      enum "transmitter" {
+        description
+          "transmitter";
+      }
+      enum "third-party" {
+        description
+          "third-party";
+      }
+      enum "OTS" {
+        description
+          "OTS (Optical Transmission Section), which implies matches between cards
+           in an OTS or photonics cloud (e.g. WSS to WSS, LIM to OPM)";
+      }
+      enum "none" {
+        description
+          "none";
+      }
+    }
+    description
+      "SPLI match type.";
+  }
+
+  typedef spli-config-type {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Config type unknown.";
+      }
+      enum "pending" {
+        value 1;
+        description
+          "Pending.";
+      }
+      enum "service-termination-point" {
+        value 2;
+        description
+          "Service Termination Point.";
+      }
+      enum "service-regeneration-point" {
+        value 3;
+        description
+          "Service Regeneration Point.";
+      }
+      enum "fault" {
+        value 255;
+        description
+          "CP fault (missing, mismatch, or fail).";
+      }
+    }
+    description
+      "SPLI config type.";
+  }
+
+  typedef modem-type {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "unknown";
+      }
+      enum "none" {
+        value 1;
+        description
+          "none";
+      }
+      enum "wlaimdm" {
+        value 14;
+        description
+          "WLAIMDM";
+      }
+      enum "wlaiopsmdm" {
+        value 15;
+        description
+          "WLAIOPSMDM";
+      }
+      enum "wl5ncfp2dcotype1" {
+        value 16;
+        description
+          "WL5NCFP2DCOTYPE1";
+      }
+      enum "wl5ncfp2dcotype1h" {
+        value 17;
+        description
+          "WL5NCFP2DCOTYPE1H";
+      }
+      enum "wl5e" {
+        value 18;
+        description
+          "WL5E";
+      }
+    }
+    description
+      "SPLI modem type.";
+  }
+
+  typedef spli-tx-tuning-unit {
+    type enumeration {
+      enum "null" {
+        value 0;
+        description
+          "Tx tuning configuration is unitialized";
+      }
+      enum "nm" {
+        value 1;
+        description
+          "Tx tuning configuration is NM, refers to wavelength";
+      }
+      enum "thz" {
+        value 2;
+        description
+          "Tx tuning configuration is THZ, refers to frequency";
+      }
+    }
+    description
+      "SPLI Tx Tuning Configuration.";
+  }
+
+  typedef spli-link-optimization-mode {
+    type enumeration {
+      enum "standard" {
+        value 0;
+        description
+          "Standard";
+      }
+      enum "snr-tolerant" {
+        value 1;
+        description
+          "SNR";
+      }
+      enum "fast-tracking" {
+        value 2;
+        description
+          "fast-tracking";
+      }
+      enum "spectral-efficiency" {
+        value 3;
+        description
+          "Spectral";
+      }
+      enum "latency" {
+        value 4;
+        description
+          "Low Latency";
+      }
+      enum "narrow" {
+        value 5;
+        description
+          "Narrow";
+      }
+      enum "non-linear" {
+        value 6;
+        description
+          "Non Linear";
+      }
+      enum "foreign" {
+        value 7;
+        description
+          "Foreign";
+      }
+      enum "reserved-1" {
+        value 8;
+        description
+          "Reserve1";
+      }
+      enum "reserved-2" {
+        value 9;
+        description
+          "Reserve2";
+      }
+      enum "reserved-3" {
+        value 10;
+        description
+          "Reserve3";
+      }
+      enum "custom" {
+        value 11;
+        description
+          "Custom";
+      }
+      enum "unknown" {
+        value 255;
+        description
+          "Unknown";
+      }
+    }
+    description
+      "SPLI link optimization mode defines.";
+  }
+
+  typedef spli-tx-tuning-mode {
+    type enumeration {
+      enum "normal" {
+        value 0;
+        description
+          "Normal";
+      }
+      enum "accelerated" {
+        value 1;
+        description
+          "Accelerated";
+      }
+      enum "fast" {
+        value 2;
+        description
+          "Fast";
+      }
+      enum "unknown" {
+        value 99;
+        description
+          "Unknown";
+      }
+    }
+    description
+      "SPLI Tx tuning modes.";
+  }
+
+  typedef spli-channel-contention-detection {
+    type enumeration {
+      enum "disabled" {
+        value 0;
+        description
+          "Channel Contention Detection Avoidance is disabled";
+      }
+      enum "enabled" {
+        value 1;
+        description
+          "Channel Contention Detection Avoidance is enabled";
+      }
+      enum "unknown" {
+        value 255;
+        description
+          "Channel Contention Detection Avoidance is unknown";
+      }
+    }
+    description
+      "SPLI Tx Channel Contention Detection Avoidance.";
+  }
+
+  typedef spli-tx-power-reduction {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Unknown";
+      }
+      enum "off" {
+        value 1;
+        description
+          "Off (i.e. Tx power reduction state is disabled)";
+      }
+      enum "on-provisioned" {
+        value 2;
+        description
+          "On Provisioned (i.e. Tx power reduction state is enabled)";
+      }
+      enum "on-channel-contention" {
+        value 3;
+        description
+          "On Channel Contention (i.e. Tx Channel Contention is detected)";
+      }
+    }
+    description
+      "SPLI Tx Power Reduction.";
+  }
+
+  typedef spli-tx-pre-compensation-mode {
+    type enumeration {
+      enum "auto" {
+        value 0;
+        description
+          "Auto";
+      }
+      enum "fixed" {
+        value 1;
+        description
+          "Fixed";
+      }
+      enum "expert" {
+        value 2;
+        description
+          "Expert, never supported";
+      }
+      enum "search" {
+        value 3;
+        description
+          "Search";
+      }
+      enum "unknown" {
+        value 255;
+        description
+          "Unknown";
+      }
+    }
+    description
+      "SPLI Tx pre-compensation mode.";
+  }
+
+  typedef spli-line-system-type {
+    type enumeration {
+      enum "color" {
+        value 0;
+        description
+          "Color";
+      }
+      enum "colorless" {
+        value 1;
+        description
+          "Colorless";
+      }
+      enum "contentionless" {
+        value 2;
+        description
+          "Contentionless";
+      }
+      enum "cscolor" {
+        value 3;
+        description
+          "CsColor";
+      }
+      enum "cscolorless" {
+        value 4;
+        description
+          "CsColorless";
+      }
+      enum "unknown" {
+        value 99;
+        description
+          "Unknown";
+      }
+    }
+    description
+      "SPLI line system type.";
+  }
+
+  typedef spli-loopback-test-result {
+    type enumeration {
+      enum "loopbacktest-nil" {
+        value 0;
+        description
+          "Default loopback test result";
+      }
+      enum "loopbacktest-ack" {
+        value 1;
+        description
+          "Acknowledge";
+      }
+      enum "loopbacktest-nomismatch" {
+        value 2;
+        description
+          "Loopback test pass with no fault present";
+      }
+      enum "loopbacktest-mismatch" {
+        value 3;
+        description
+          "Loopback test fail with fiber-mismatch connection fault";
+      }
+      enum "loopbacktest-other" {
+        value 4;
+        description
+          "Other";
+      }
+      enum "loopbacktest-indeterminate" {
+        value 5;
+        description
+          "Loopback test fail with module in operational fault state";
+      }
+      enum "loopbacktest-RxLos" {
+        value 6;
+        description
+          "Loopback test fail with Rx Loss of signal fault";
+      }
+      enum "loopbacktest-RxLoch" {
+        value 7;
+        description
+          "Loopback test fail with Rx Loss of channel fault";
+      }
+      enum "loopbacktest-RxLoc" {
+        value 8;
+        description
+          "Loopback test fail with Rx Loss of clock fault";
+      }
+      enum "loopbacktest-RxLof" {
+        value 9;
+        description
+          "Loopback test fail with Rx Loss of frame fault";
+      }
+      enum "loopbacktest-RxPreFecSf" {
+        value 10;
+        description
+          "Loopback test fail with Pre FEC OTU signal fail fault";
+      }
+      enum "loopbacktest-RxSd" {
+        value 11;
+        description
+          "Loopback test fail with OTU signal degrade fault";
+      }
+      enum "loopbacktest-RxLom" {
+        value 12;
+        description
+          "Loopback test fail with Loss of multiframe fault";
+      }
+      enum "loopbacktest-Na" {
+        value 13;
+        description
+          "Loopback test fail with module does not support Test Mode";
+      }
+      enum "loopbacktest-RxPwrOOR" {
+        value 14;
+        description
+          "Loopback test fail with Rx power out of range fault";
+      }
+      enum "loopbacktest-LfOOR" {
+        value 15;
+        description
+          "Loopback test fail with Laser fequency out of range fault";
+      }
+      enum "loopbacktest-RxInactive" {
+        value 16;
+        description
+          "Loopback test not run on active receiver";
+      }
+    }
+    description
+      "SPLI loopback test result.";
+  }
+
+  grouping spli-adjacency-remote-information-group {
+    description
+      "Common group of remote adjacency information attributes (e.g. remote shelf/slot/port).";
+    leaf shelf-tid {
+      type string {
+        length "0..24";
+      }
+      description
+        "Remote adjacency shelf TID value.";
+    }
+
+    leaf shelf-id {
+      type uint8;
+      description
+        "Remote adjacency shelf ID value.";
+    }
+
+    leaf shelf-ip {
+      type cienawstypes:ipv4-address;
+      description
+        "Remote adjacency shelf IPv4 address.";
+    }
+
+    leaf slot {
+      type uint8;
+      description
+        "Remote adjacency slot value.";
+    }
+
+    leaf subslot {
+      type uint8;
+      description
+        "Remote adjacency subslot value.";
+    }
+
+    leaf port {
+      type uint8;
+      description
+        "Remote adjacency port value.";
+    }
+
+    leaf subport {
+      type uint8;
+      description
+        "Remote adjacency subport value.";
+    }
+  }
+
+  grouping spli-adjacency-common-modem-status-group {
+    description
+      "Common group of local/remote adjacency modem status attributes.";
+    leaf tx-tuning-unit {
+      type spli-tx-tuning-unit;
+      description
+        "Tx Tuning configuration (NM or THZ, refers to wavelength or frequency).";
+    }
+
+    leaf wavelength {
+      type cienawstypes:decimal-2-dig-small;
+      units "nm";
+      description
+        "The transmitter wavelength value (actual value for local adjacency, or
+         desired value for remote adjacency).";
+    }
+
+    leaf frequency {
+      type cienawstypes:decimal-1-dig;
+      units "GHz";
+      description
+        "The transmitter frequency value (actual value for local adjacency, or
+         desired value for remote adjacency).";
+    }
+
+    leaf tx-power {
+      type cienawstypes:decimal-2-dig-small;
+      units "dBm";
+      description
+        "The optical transmit power value (actual value for local adjacency, or
+         desired value for remote adjacency).";
+    }
+
+    leaf laser-centering-mode {
+      type boolean;
+      description
+        "Laser centering mode.";
+    }
+
+    leaf laser-centering-range {
+      type cienawstypes:decimal-1-dig;
+      units "GHz";
+      description
+        "Laser centering range.";
+    }
+
+    leaf tx-tuning-mode {
+      type spli-tx-tuning-mode;
+      description
+        "Tx tuning mode.";
+    }
+
+    leaf tx-power-reduction {
+      type spli-tx-power-reduction;
+      description
+        "Tx Power Reduction.";
+    }
+
+    leaf tx-pre-compensation-mode {
+      type spli-tx-pre-compensation-mode;
+      description
+        "Tx pre-compensation mode.";
+    }
+
+    leaf tx-precompensation-value {
+      type int32;
+      units "ps/nm";
+      description
+        "Tx Pre-compensation value.";
+    }
+
+    leaf tx-path-dispersion-value {
+      type int32;
+      description
+        "Tx path dispersion value.";
+    }
+
+    leaf link-optimization-mode {
+      type spli-link-optimization-mode;
+      description
+        "Link optimization mode.";
+    }
+
+    leaf channel-contention-detection {
+      type spli-channel-contention-detection;
+      description
+        "Tx channel contention detection avoidance.";
+    }
+  }
+
+  grouping spli-adjacency-common-fault-group {
+    description
+      "Common group of local/remote adjacency fault attributes.";
+    leaf rx-fault {
+      type boolean;
+      description
+        "Whether this SPLI adjacency has detected an Rx fault.";
+    }
+
+    leaf is-OCh-down {
+      type boolean;
+      description
+        "Whether this SPLI adjacency has detected OCh being down.";
+    }
+
+    leaf is-OCh-degrade {
+      type boolean;
+      description
+        "Whether this SPLI adjacency has detected OCh being degraded.";
+    }
+
+    leaf slc-port-fault {
+      type boolean;
+      description
+        "Whether or not there is a Site-Level Correlation (SLC) port fault
+         present.";
+    }
+
+    leaf slc-channel-fault {
+      type boolean;
+      description
+        "Whether or not there is a Site-Level Correlation (SLC) channel fault
+         present.";
+    }
+  }
+
+  container waveserver-spli {
+    description
+      "Waveserver SPLI top level container.";
+    container global-config {
+      description
+        "Waveserver SPLI global configuration and operational data.";
+      leaf admin-state {
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Specifies whether SPLI is enabled globally at the chassis level.";
+      }
+
+      leaf operational-state {
+        type cienawstypes:up-down-enum;
+        config false;
+        description
+          "Operational state of chassis level SPLI.";
+      }
+
+      leaf node-name {
+        type string {
+          length "0..64";
+        }
+        config false;
+        description
+          "Waveserver node name.";
+      }
+
+      leaf ip-address {
+        type cienawstypes:ipv4-address;
+        config false;
+        description
+          "IP Address of the SPLI interface at the chassis level.";
+      }
+    }
+
+    list remote-database {
+      key "index";
+      config false;
+      description
+        "List of SPLI remote database entries.";
+      leaf index {
+        type uint8;
+        description
+          "SPLI remote database entry index.";
+      }
+
+      leaf key {
+        type string {
+          length "0..64";
+        }
+        description
+          "SPLI remote database entry key.";
+      }
+
+      leaf key-format {
+        type enumeration {
+          enum "null" {
+            description
+              "Key format is null.";
+          }
+          enum "TID-ShelfID" {
+            description
+              "Key is in TID-ShelfID format.";
+          }
+          enum "TID-Bay" {
+            description
+              "Key is in TID-Bay format.";
+          }
+          enum "IP" {
+            description
+              "Key is in IP address format.";
+          }
+        }
+        description
+          "SPLI remote database entry key format.";
+      }
+
+      leaf ip-address {
+        type cienawstypes:ipv4-address;
+        description
+          "SPLI remote database entry IPv4 address.";
+      }
+
+      leaf comms-type {
+        type enumeration {
+          enum "nil" {
+            description
+              "Unknown/unsupported communication type.";
+          }
+          enum "UDP" {
+            description
+              "Communication via UDP socket.";
+          }
+          enum "TCP" {
+            description
+              "Communication via TCP socket.";
+          }
+          enum "TCP/SSH" {
+            description
+              "Communication via SSH over TCP/IP. This is the typical supported
+               configuration for Waveserver SPLI.";
+          }
+          enum "UDP_TCP" {
+            description
+              "Communication via TCP or UDP socket.";
+          }
+          enum "UDP_TCP/SSH" {
+            description
+              "Communication via SSH over TCP or UDP.";
+          }
+        }
+        description
+          "Communications type with the remote SPLI master system.";
+      }
+
+      leaf comms-state {
+        type enumeration {
+          enum "initializing" {
+            description
+              "The communication connection is initializing between the local system (e.g. waveserver as SPLI slave)
+               and the remote system (e.g. 6500 shelf as SPLI master).";
+          }
+          enum "requested" {
+            description
+              "The communication connection is requested";
+          }
+          enum "1-way-connection-started" {
+            description
+              "A 1-way communication connection is started";
+          }
+          enum "2-way-connection-started" {
+            description
+              "A 2-way communication connection is started";
+          }
+          enum "2-way-connection-established" {
+            description
+              "A 2-way communication connection has been successfully established
+               between the local system (e.g. waveserver as SPLI slave)
+               and the remote system (e.g. 6500 shelf as SPLI master).";
+          }
+        }
+        description
+          "Communication state with the remote SPLI master system.";
+      }
+
+      leaf status {
+        type enumeration {
+          enum "unreliable" {
+            description
+              "Remote database entry status is unreliable or stale. Can be
+               caused by loss of SPLI communication with the photonics shelf,
+               and will result in an 'Adjacency Discovery Unreliable' alarm
+               against the Chassis.";
+          }
+          enum "reliable" {
+            description
+              "Remote database entry is reliable, meaning the 2-way connection
+               has been established between the local system and the remote
+               photonics shelf.";
+          }
+        }
+        description
+          "Status of SPLI connection with remote system.";
+      }
+
+      leaf match-count {
+        type uint16;
+        description
+          "Number of adjacency matches.";
+      }
+
+      leaf-list connected-ptp-id {
+        type string {
+          length "0..32";
+        }
+        description
+          "List of the PTP ID(s) to which this SPLI database entry is connected. If
+           this SPLI database entry is not connected to any PTP (i.e. match-count is 0),
+           this leaf will not be returned.";
+      }
+    }
+
+    list ptp-config {
+      key "ptp-id";
+      config false;
+      description
+        "SPLI PTP configuration and operational data. The PTP list is read-only from
+         this module, and populated automatically when waveserver-ptp objects are
+         provisioned. The PTP SPLI admin-state can be enabled or disabled via the
+         /waveserver-ptps/ptps/state/spli-management leaf.";
+      leaf ptp-id {
+        type string {
+          length "0..32";
+        }
+        description
+          "Waveserver PTP ID, in <slot>-<port> (1-based) format.";
+      }
+
+      leaf admin-state {
+        type cienawstypes:enabled-disabled-enum;
+        description
+          "Whether SPLI is enabled or disabled on this PTP.";
+      }
+
+      leaf operational-state {
+        type cienawstypes:up-down-enum;
+        config false;
+        description
+          "SPLI operational status on this PTP.";
+      }
+
+      leaf match {
+        type boolean;
+        config false;
+        description
+          "Whether adjacency match is found on this PTP.";
+      }
+
+      leaf duplicate-match {
+        type boolean;
+        config false;
+        description
+          "Whether duplicate adjacency match is found on this PTP.";
+      }
+    }
+
+    list adjacency {
+      key "ptp-id";
+      config false;
+      description
+        "Operational data for the SPLI adjacency. On the Waveserver platform, each line side (modem) PTP
+         may be associated with a SPLI adjacency instance.";
+      leaf ptp-id {
+        type string {
+          length "0..32";
+        }
+        description
+          "The ID of the local line PTP associated with this SPLI adjacency
+           instance.";
+      }
+
+      container local {
+        description
+          "Waveserver SPLI adjacency local details.";
+        leaf match-type {
+          type spli-match-type;
+          description
+            "Match type of the SPLI adjacency.";
+        }
+
+        leaf config-type {
+          type spli-config-type;
+          description
+            "Config type of the SPLI adjacency, which maps to the odu-termination
+             mode of the connected Waveserver line port object.";
+        }
+
+        leaf modem-type {
+          type modem-type;
+          description
+            "Modem type of the line port.";
+        }
+
+        leaf modulation-scheme {
+          type string {
+            length "0..32";
+          }
+          description
+            "Modulation scheme of the line port (actual value for local adjacency).";
+        }
+
+        leaf equipment-code {
+          type string {
+            length "0..14";
+          }
+          description
+            "Ciena Item Number of the Waveserver HW module.";
+        }
+
+        leaf frequency-resolution {
+          type cienawstypes:decimal-1-dig;
+          units "GHz";
+          description
+            "Modem transmitter frequency resolution, in GHz.";
+        }
+
+        container status {
+          description
+            "A sub-container for the local adjacency status (e.g. modem-specific attributes data
+             and fault status data.";
+          uses spli-adjacency-common-modem-status-group;
+
+          uses spli-adjacency-common-fault-group;
+
+          leaf tx-tuned {
+            type boolean;
+            description
+              "Whether this line PTP is Tx Tuned.";
+          }
+
+          leaf tx-signal-bandwidth-3db {
+            type cienawstypes:decimal-1-dig;
+            units "GHz";
+            description
+              "Tx Signal bandwidth 3db";
+          }
+
+          leaf tx-signal-bandwidth-10db {
+            type cienawstypes:decimal-1-dig;
+            units "GHz";
+            description
+              "Tx Signal bandwidth 10db";
+          }
+
+          leaf tx-min-spectral-width {
+            type cienawstypes:decimal-1-dig;
+            units "GHz";
+            description
+              "Tx Minimum spectral width";
+          }
+
+          leaf loopback-test-result {
+            type spli-loopback-test-result;
+            description
+              "Loopback test result";
+          }
+        }
+      }
+
+      container remote {
+        description
+          "Waveserver SPLI adjacency remote details. Only applicable when the
+           adjacency is in matched state.";
+        leaf match-type {
+          type spli-match-type;
+          description
+            "Match type of the SPLI adjacency.";
+        }
+
+        leaf modulation-scheme {
+          type string {
+            length "0..32";
+          }
+          description
+            "Modulation scheme of the line port (desired value for remote adjacency).";
+        }
+
+        leaf far-end-endpoint {
+          type string {
+            length "0..64";
+          }
+          description
+            "The provisioned far end endpoint.";
+        }
+
+        uses spli-adjacency-remote-information-group;
+
+        container status {
+          description
+            "A sub-container for the remote adjacency status (e.g. modem-specific attributes data
+             and fault status data.";
+          uses spli-adjacency-common-modem-status-group;
+
+          uses spli-adjacency-common-fault-group;
+
+          leaf force-wavelength {
+            type boolean;
+            description
+              "Whether the wavelength is forced.";
+          }
+
+          leaf line-system-type {
+            type spli-line-system-type;
+            description
+              "Line system type";
+          }
+
+          leaf expected-restoration-time {
+            type uint16;
+            units "seconds";
+            description
+              "Expected link restoration time, in seconds. Prevents the laser from
+               dithering for a given period of time after traffic loss in order to
+               minimize re-acquisition time. Default is 10 seconds.";
+          }
+
+          leaf loopback-test-request {
+            type boolean;
+            description
+              "Loopback test request";
+          }
+        }
+      }
+
+      container remote-duplicate {
+        description
+          "Waveserver SPLI adjacency remote duplicate details. Only applicable when the
+           adjacency is in duplicate match state.";
+        uses spli-adjacency-remote-information-group;
+      }
+    }
+  }
+
+  rpc waveserver-spli-delete-unreliable-db-entries {
+    description
+      "Delete all unreliable/stale SPLI database entries.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "Return code: 0 is successful; non-zero is failure";
+      }
+
+      leaf return-string {
+        type string {
+          length "0..254";
+        }
+        description
+          "Return code description";
+      }
+    }
+  }
+}

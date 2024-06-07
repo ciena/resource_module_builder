@@ -1,0 +1,760 @@
+module ciena-oam-trace {
+    yang-version 1.1;
+    namespace
+        "http://ciena.com/ns/yang/ciena-oam-trace";
+    prefix
+        "oam-trace";
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+    import ciena-oam-options {
+        prefix oam-options;
+    }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+
+    import ietf-pseudowires {
+        prefix "pw";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific
+         implementation for traceroute. It includes
+         IP traceroute, LSP traceroute and Pseudowire
+         traceroute.
+
+         Copyright (c) 2022  Ciena Corporation.  All rights
+         reserved.
+
+         All information and intellectual property contained in this
+         YANG module (Specification) is, and remains the property
+         of Ciena Corporation. Ciena retains all title and ownership
+         in the Specification, including any revisions.
+
+         Ciena grants all interested parties that access the
+         specification with the intent to use or distribute ('you') a
+         non-exclusive, no-cost license to use and distribute
+         unmodified copies of the Specification solely in connection
+         with the management of Ciena products sold by or on
+         behalf of Ciena, provided this copyright notice and license
+         appear on all copies. Ciena may rescind or modify this
+         license at any time.
+
+         This Specification is supplied 'as is', and Ciena makes no
+         warranty, either express or implied, as to the use, operation,
+         condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.";
+
+
+    revision "2023-02-28" {
+        description
+            "Initial Version of traceroute data model.
+             Added when statement for interface leaf and added support
+             for RSVP-TE FEC.
+             Added new leaf in trace-results to display local node errors
+             and added validations for various parameters.
+             Removed leafref for sr-policy parameters to support traceroute on ANR SR-Policy.";
+    }
+
+    /* Groupings */
+    grouping oam-trace-session-data {
+        leaf target-fec-type  {
+            type oam-options:oam-target-fec-type;
+            description
+                "Target fec type";
+        }
+        leaf vrf-name {
+            when "../target-fec-type = 'vrf-fec'";
+            type leafref {
+                path "/vrf:vrf/vrf:vrfName";
+            }
+            description
+                "VRF name";
+        }
+        leaf pseudo-wire {
+            when "../target-fec-type = 'pseudowire-fec'";
+            type leafref {
+                path "/pw:pseudowires/pw:pseudowire/pw:name";
+            }
+            description
+                "Pseudowire Name";
+        }
+        leaf tunnel-name {
+            when "../target-fec-type = 'scrt-fec' or
+                  ../target-fec-type = 'rsvp-te-fec'";
+            type string;
+            description
+                "Tunnel Name";
+        }
+        leaf tunnel-src {
+            when "../target-fec-type = 'scrt-fec' or
+                  ../target-fec-type = 'rsvp-te-fec'";
+            type inet:ip-address;
+            description
+                "Tunnel Source Ip Address";
+        }
+        leaf tunnel-dst {
+            when "../target-fec-type = 'scrt-fec' or
+                  ../target-fec-type = 'rsvp-te-fec'";
+            type inet:ip-address;
+            description
+                "Tunnel Destintion Ip Address";
+        }
+        leaf destination {
+            when "../target-fec-type = 'ip-fec' or
+                  ../target-fec-type = 'vrf-fec'";
+            type string;
+            description
+                "IP address or host name of the destination.";
+        }
+        leaf destination-ip-prefix {
+            when "../target-fec-type != 'ip-fec' or
+                  ../target-fec-type != 'vrf-fec' or
+                  ../target-fec-type != 'scrt-fec' or
+                  ../target-fec-type != 'rsvp-te-fec'";
+            type inet:ip-prefix;
+            description
+                "Destination Ip prefix for ldp/sr-isis/sr-ospf/bgp-lu lsp";
+        }
+        leaf backup {
+            when "../target-fec-type = 'sr-ospf-fec' or
+                  ../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type boolean;
+            description
+                "It will be used to trace backup LSP path";
+        }
+
+        uses oam-options:oam-trace-base-config-params;
+        leaf interface {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+            }
+            description
+                "Source interface name";
+        }
+        leaf tos {
+            when "../target-fec-type = 'ip-fec' or
+                  ../target-fec-type = 'vrf-fec'";
+            type uint8;
+            default 0;
+            description
+                "Type-of-service in probe packets, currently not supported.";
+
+        }
+        leaf segment {
+            when "../target-fec-type = 'pseudowire-fec'";
+            type uint8 {
+                range "1..255";
+            }
+            default 30;
+            description
+                "Segment number corresponding to the target PW hop
+                 in the MSPW path. This value is filled in TTL of
+                 PW label header and in TTL-TLV value of echo
+                 request.";
+        }
+        leaf policy-name {
+            when "../target-fec-type = 'sr-policy-fec'";
+            type string {
+                length "0..255";
+            }
+            description
+                "SR policy name.";
+        }
+        leaf color {
+            when "../target-fec-type = 'sr-policy-fec'";
+            type uint32 {
+                range "1..4294967295";
+            }
+            description
+                "Color associated with the SR policy.";
+        }
+        leaf endpoint {
+            when "../target-fec-type = 'sr-policy-fec'";
+            type inet:ip-address;
+            description
+                "SR policy end point IP address.";
+        }
+        leaf echo-dest-ip {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type string;
+            description
+                "Echo destination IP of address range 127/8 is used to exercise
+                 specific ECMP path in the network.";
+        }
+        leaf multipath-ip-bit-mask {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type uint8;
+            must ". = 16 or . = 32 or . = 64" {
+                error-message "multipath-ip-bit-mask value should be 16 or 32 or 64";
+            }
+            description
+                "Multi path IP info type bitmask for ECMP tree trace";
+        }
+        leaf numeric {
+            when "../target-fec-type = 'ip-fec' or
+                  ../target-fec-type = 'vrf-fec'";
+            type oam-options:oam-numeric;
+            default off;
+            description
+                "To resolve IP addresses to host names";
+        }
+        description
+            "Oam Trace Session data";
+    }
+
+    grouping oam-trace-config {
+        leaf target-fec-type  {
+            type oam-options:oam-target-fec-type;
+            description
+                "Target fec type";
+        }
+        choice target-fec {
+            case vrf-fec {
+                leaf vrf-name {
+                    when "../target-fec-type = 'vrf-fec'";
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    mandatory true;
+                    description
+                        "VRF name";
+                }
+                leaf vrf-dst {
+                    when "../target-fec-type = 'vrf-fec'";
+                    type string;
+                    mandatory true;
+                    description
+                        "VRF Destination IP or hostname";
+                }
+                description
+                    "Traceroute type VPN";
+            }
+            case target-ip {
+                leaf destination {
+                    when "../target-fec-type = 'ip-fec'";
+                    type string;
+                    mandatory true;
+                    description
+                        "Destination IP or hostname";
+                }
+                description
+                    "Traceroute type IP";
+            }
+            case ldp-fec {
+                leaf ldp {
+                    when "../target-fec-type = 'ldp-fec'";
+                    type inet:ip-prefix;
+                    mandatory true;
+                    description
+                        "LDP FEC";
+                }
+                description
+                    "Traceroute FEC type LDP";
+            }
+            case bgp-lu-fec {
+                leaf bgp-lu {
+                    when "../target-fec-type = 'bgp-lu-fec'";
+                    type inet:ip-prefix;
+                    mandatory true;
+                    description
+                        "BGP LU FEC";
+                }
+                description
+                    "Traceroute FEC type BGP-LU";
+            }
+            case sr-isis-fec {
+                leaf sr-isis {
+                    when "../target-fec-type = 'sr-isis-fec'";
+                    type inet:ip-prefix;
+                    mandatory true;
+                    description
+                        "SR ISIS FEC";
+                }
+                description
+                    "Traceroute FEC type SR-ISIS";
+            }
+            case sr-ospf-fec {
+                leaf sr-ospf {
+                    when "../target-fec-type = 'sr-ospf-fec'";
+                    type inet:ip-prefix;
+                    mandatory true;
+                    description
+                        "SR OSPF FEC";
+                }
+                description
+                    "Traceroute FEC type SR-OSPF";
+            }
+            case tunnel-fec {
+                leaf tunnel-name {
+                    when "../target-fec-type = 'scrt-fec' or
+                          ../target-fec-type = 'rsvp-te-fec'";
+                    type string;
+                    mandatory true;
+                    description
+                        "Tunnel Name";
+                }
+                leaf tunnel-src {
+                    when "../target-fec-type = 'scrt-fec' or
+                          ../target-fec-type = 'rsvp-te-fec'";
+                    type inet:ip-address;
+                    mandatory true;
+                    description
+                        "Tunnel Source Address";
+                }
+                leaf tunnel-dst {
+                    when "../target-fec-type = 'scrt-fec' or
+                          ../target-fec-type = 'rsvp-te-fec'";
+                    type inet:ip-address;
+                    mandatory true;
+                    description
+                        "Tunnel Destination Address";
+                }
+                description
+                    "Traceroute FEC type SCRT";
+            }
+            case pw {
+                leaf pseudo-wire {
+                    when "../target-fec-type = 'pseudowire-fec'";
+                    type leafref {
+                        path "/pw:pseudowires/pw:pseudowire/pw:name";
+                    }
+                    mandatory true;
+                    description
+                        "Pseudowire Name";
+                }
+                description
+                    "Traceroute FEC type pseudowire";
+            }
+            case sr-policy-fec {
+                leaf policy-name {
+                    when "../target-fec-type = 'sr-policy-fec' and not(../color or ../endpoint)";
+                    type string {
+                         length "0..255";
+                    }
+                    description
+                        "SR policy name.
+                         Policy name is mutually exclusive with color and endpoint.";
+                }
+                leaf color {
+                    when "../target-fec-type = 'sr-policy-fec' and (../endpoint) and not(../policy-name)";
+                    type uint32 {
+                        range "1..4294967295";
+                    }
+                    description
+                        "Color associated with the SR policy.
+                         Color and endpoint are mutually exclusive with policy name.";
+                }
+                leaf endpoint {
+                    when "../target-fec-type = 'sr-policy-fec' and (../color) and not(../policy-name)";
+                    type inet:ip-address;
+                    description
+                    "SR policy end point IP address.
+                     Endpoint and color are mutually exclusive with policy name.";
+                }
+                description
+                    "Traceroute FEC type sr-policy";
+            }
+            description
+                "Choice for FEC type in traceroute";
+        }
+        leaf backup {
+            when "../target-fec-type = 'sr-ospf-fec' or
+                  ../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type boolean;
+            default false;
+            description
+                "It will be used to trace backup LSP path";
+        }
+
+        //Traceroute base parameters
+        uses oam-options:oam-trace-base-config-params;
+
+        leaf interface {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+            }
+            description
+                "Source interface name";
+        }
+        leaf tos {
+            when "../target-fec-type = 'ip-fec' or
+                  ../target-fec-type = 'vrf-fec'";
+            type uint8;
+            default 0;
+            description
+                "Type-of-service in probe packets, currently not supported.";
+        }
+        leaf segment {
+            when "../target-fec-type = 'pseudowire-fec'";
+            type uint8 {
+                range "1..255";
+            }
+            default 30;
+            description
+                "Segment number corresponding to the target PW hop
+                 in the MSPW path. This value is filled in TTL of
+                 PW label header and in TTL-TLV value of echo
+                 request.";
+        }
+        leaf echo-dest-ip {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type string {
+                pattern '127\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]'  +
+                        '?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' +
+                        '\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)';
+            }
+            description
+                "Echo destination IP of address range 127/8 is used to exercise
+                 specific ECMP path in the network.";
+        }
+        leaf multipath-ip-bit-mask {
+            when "../target-fec-type = 'sr-isis-fec' or
+                  ../target-fec-type = 'bgp-lu-fec' or
+                  ../target-fec-type = 'ldp-fec' ";
+            type uint8;
+            must ". = 16 or . = 32 or . = 64" {
+                error-message "multipath-ip-bit-mask value should be 16 or 32 or 64";
+            }
+            description
+                "Multi path IP info type bitmask for ECMP tree trace";
+        }
+        leaf numeric {
+            when "../target-fec-type = 'ip-fec' or
+                  ../target-fec-type = 'vrf-fec'";
+            type oam-options:oam-numeric;
+            default off;
+            description
+                "To resolve IP addresses to host names";
+        }
+        description
+            "Trace Configuration";
+    }
+
+    grouping oam-trace-results {
+        leaf operational-state {
+            type oam-options:operational-state;
+            description
+                "Operational state of the traceroute test.";
+        }
+        description
+            "Trace Results Information";
+    }
+
+    grouping oam-mpls-trace-path-results {
+        leaf path-index {
+            type uint8;
+            description
+                "Path Number.";
+        }
+        leaf echo-destination {
+            type inet:ip-address;
+            description
+                "Multicast ip corresponding to available ECMP path.";
+        }
+        description
+            "Result information of MPLS path";
+    }
+
+    grouping oam-mpls-trace-hop-results {
+        leaf hop-index {
+            type uint8;
+            description
+                "Hop Number.";
+        }
+        leaf return-code {
+            type oam-options:oam-return-code;
+            description
+                "The Return Code set in the echo reply. This is as per IANA defined error codes.";
+        }
+        leaf ip-address {
+            type inet:ip-address;
+            description
+               "IP address of the host";
+        }
+        leaf-list label {
+            type uint32;
+            description
+                "Downstream label";
+        }
+        leaf multipaths {
+            type uint8;
+            description
+                "Number of ECMP paths present on responder node.";
+        }
+        leaf rtt {
+            type decimal64 {
+                fraction-digits 3;
+            }
+            units milliseconds;
+            description
+                "The round-trip-time (RTT) received.";
+        }
+        leaf result-type {
+            type oam-options:oam-result-type;
+            description
+                "The probe result success/failure or any other error.";
+        }
+        description
+            "MPLS trace Hop's Result Information";
+    }
+
+    grouping oam-ip-trace-hop-results {
+        leaf hop-index {
+            type uint8;
+            description
+                "Hop Number.";
+        }
+        description
+            "IP trace Hop's Result Information";
+    }
+
+
+    grouping oam-ip-trace-probe-results {
+        leaf probe-index {
+            type uint8;
+            description
+                "Probe index";
+        }
+        leaf ip-address {
+            type inet:ip-address;
+            description
+                "IP address of the host";
+        }
+        leaf host-name {
+            type string;
+            description
+                "Domain name of the host";
+        }
+        leaf rtt {
+            type decimal64 {
+                fraction-digits 3;
+            }
+            units milliseconds;
+            description
+                "The round-trip-time (RTT) received.";
+        }
+        leaf result-type {
+            type oam-options:oam-result-type;
+            description
+                "The probe result success/failure or any other error.";
+        }
+        description
+            "IP trace probe's Result Information";
+    }
+
+    container oam-trace-sessions {
+        config false;
+        description
+            "Multiple instances of trace tests.";
+        list oam-trace-session {
+            key "trace-session-id";
+            description
+                "Trace test";
+
+            leaf trace-session-id {
+                type uint8;
+                description
+                    "Auto-generated session id for a trace session.";
+            }
+
+            container oam-trace-config-params {
+                uses oam-trace-session-data;
+                description
+                    "Configures trace type and its parameters";
+            }
+
+            container trace-results {
+                description
+                    "Traceroute test result information.";
+
+                uses oam-trace-results;
+
+                container mpls-trace-path-results {
+                    when "../../oam-trace-config-params/target-fec-type != 'vrf-fec' or
+                          ../../oam-trace-config-params/target-fec-type != 'ip-fec'";
+                    description
+                        "Result information of each MPLS path";
+
+                    leaf mpls-trace-start-status {
+                        type oam-options:oam-result-type;
+                        description
+                            "Local error on initiator node for MPLS traceroute
+                             if it has failed to execute else success.";
+                    }
+
+                    leaf mpls-trace-paths-completed {
+                        type uint8;
+                        description
+                            "Number of paths traversed for MPLS trace session.";
+                    }
+
+                    list mpls-trace-path-result {
+                        key "path-index";
+                        description
+                            "Result info of each MPLS path";
+
+                        uses oam-mpls-trace-path-results;
+
+                        container mpls-trace-hop-results {
+                            description
+                                "Result information of each hop of MPLS path.";
+
+                            list mpls-trace-hop-result {
+                                key "hop-index";
+                                description
+                                    "Result info of each hop of MPLS path.";
+
+                                uses oam-mpls-trace-hop-results;
+                            }
+                        }
+                    }
+                }
+                container ip-trace-path-results {
+                    when "../../oam-trace-config-params/target-fec-type = 'vrf-fec' or
+                          ../../oam-trace-config-params/target-fec-type = 'ip-fec'";
+                    description
+                        "Result information of IP path";
+
+                    leaf ip-trace-start-status {
+                        type oam-options:oam-result-type;
+                        description
+                            "Local error on initiator node for IP traceroute
+                             if it has failed to execute else success.";
+                    }
+
+                    leaf ip-trace-hops-completed {
+                        type uint8;
+                        description
+                            "Number of hops traversed for IP trace session.";
+                    }
+
+                    container ip-trace-hop-results {
+                        description
+                            "Result information of each hop of IP path.";
+
+                        list ip-trace-hop-result {
+                            key "hop-index";
+                            description
+                                "Result info of each hop of IP path.";
+
+                            uses oam-ip-trace-hop-results;
+
+                            container ip-trace-probe-results {
+                                description
+                                    "Result information of each test probe.";
+
+                                list ip-trace-probe-result {
+                                    key "probe-index";
+                                    description
+                                        "Result info of each test probe";
+
+                                    uses oam-ip-trace-probe-results;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    //rpc to start traceroute session
+    rpc start-trace {
+        description
+            "RPC to start traceroute";
+        input {
+            uses oam-trace-config;
+        }
+        output {
+            leaf trace-session-id {
+                type uint8;
+                description
+                    "Auto-generated trace-session-id on
+                     the basis of input options.";
+            }
+            leaf response {
+                type oam-options:oam-response-type;
+                description
+                    "Status of the executed rpc. Success/Failure Message.";
+            }
+        }
+    }
+
+    //rpc to delete traceroute session
+    rpc delete-trace {
+        description
+            "RPC to delete traceroute";
+        input {
+            leaf trace-session-id {
+                type uint8;
+                description
+                    "Auto-generated session id.";
+            }
+        }
+        output {
+            leaf response {
+                type oam-options:oam-response-type;
+                description
+                    "Status of the executed rpc. Success/Failure Message.";
+            }
+        }
+    }
+
+    //rpc to cancel the running traceroute session
+    rpc cancel-trace {
+        description
+            "RPC to cancel traceroute";
+        input {
+            leaf trace-session-id {
+                type uint8;
+                description
+                    "Auto-generated session id.";
+            }
+        }
+        output {
+            leaf response {
+                type oam-options:oam-response-type;
+                description
+                    "Status of the executed rpc. Success/Failure Message.";
+            }
+        }
+    }
+}

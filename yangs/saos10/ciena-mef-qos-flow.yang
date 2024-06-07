@@ -1,0 +1,236 @@
+module ciena-mef-qos-flow {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-qos-flow";
+    prefix "flow";
+    
+    import ciena-mef-classifier {
+        prefix "classifier";
+    }
+    
+    import ciena-mef-meter-profile {
+        prefix "meter";
+    }
+    
+    import ciena-mef-logical-port {
+        prefix "mef-logical-port";
+    }
+    
+    import ciena-mef-fp {
+        prefix "mef-fp";
+    }
+    
+    organization
+        "Ciena Corporation";
+ 
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                 U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines the QoS Flow.";
+    
+    revision "2020-10-01" {
+       description
+          "Updated stats for QoS Flows.";
+    }
+    revision 2016-02-03 {
+        description "Initial revision";
+    }
+    
+/*
+ * typedefs
+ */
+    typedef qos-flow-ref {
+        type leafref {
+            path "/flow:qos-flows/flow:qos-flow/flow:name";
+        }
+        description
+            "This type is used by the data models that needs to reference
+             configured QoS flows.";
+    }
+
+/*
+ * groupings
+ */
+   grouping qos-flow-state-data {
+       list qos-flow {
+          key "name";
+          description
+             "The operational data for this QoS flow.";
+
+          leaf name {
+             type string;
+             description
+                "A string that identifies the QoS flow.";
+          }
+
+          leaf rxAcceptedBytes {
+             type uint64;
+             description
+                "Ingress accepted byte count";
+          }
+
+          leaf rxAcceptedFrames {
+             type uint64;
+             description
+                "Ingress accepted frame count";
+          }
+
+          leaf rxYellowBytes {
+             type uint64;
+             description
+                "Ingress yellow byte count";
+          }
+
+          leaf rxYellowFrames {
+             type uint64;
+             description
+                "Ingress yellow frame count";
+          }
+          leaf rxDroppedBytes {
+             type uint64;
+             description
+                "Ingress dropped byte count";
+          }
+
+          leaf rxDroppedFrames {
+             type uint64;
+             description
+                "Ingress dropped frame count";
+          }
+       }
+   }
+
+    container qos-flows {
+        description
+            "List of QoS flows. Each QoS flow is a sub-division of parent-interfaces primarily intended for the purpose of ingress metering and/or hierarchical ingress metering.";
+
+        list qos-flow {
+            key "name";
+
+            description
+                "Sub-divisions of parent-interfaces primarily intended for the purpose of ingress metering and/or hierarchical ingress metering.";
+            
+            leaf name {
+                type string;
+                
+                description
+                    "A unique string that is either system assigned or assigned
+                     by the user but does not change over its life.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "A more detailed description that an operator can use
+                     to describe the flow.";
+            }
+            
+            leaf-list classifier-list {
+                type classifier:classifier-ref;
+                description
+                    "A reference to a list of classifier entries.";
+            }
+            
+            leaf classifier-list-precedence {
+                type uint32;
+                description
+                    "A precedence value for the qos flow. Lower values take
+                     precedence over higher values";
+            }
+            
+            leaf meter-profile {
+                type meter:meter-ref;
+                description
+                    "A reference to a Meter Profile.";
+            }
+            
+            choice parent-interface {
+                case logical-port {     
+                    leaf parent-port {
+                        type mef-logical-port:logical-port-ref;
+
+                        description
+                           "Used when the parent of a qos-flow is a logical-port.";
+                    }
+                }
+                
+                case fp {
+                    leaf parent-fp {
+                        type mef-fp:fp-ref;
+
+                        description
+                           "Used when the parent of a qos-flow is a flow-point.";
+                    }
+                }
+            }
+
+            leaf stats-collection {
+               type enumeration {
+                  enum on;
+                  enum off;
+               }
+               description
+                  "Determines whether stats collection will be turned on or not for a qos-flow";
+            }
+        }
+    }
+        
+    /*
+    * State.
+    */
+    container qos-flow-state {
+       config false;
+
+       description
+          "QoS Flow operational data for all QoS Flows.";
+
+       uses qos-flow-state-data;  
+
+    } // end qos-flow-state
+
+    /*
+    * RPC
+    */
+    rpc qos-flows-clear-statistics {
+       description 
+         "An RPC operation to clear the statistics for one or all QoS Flows.";
+
+       input {
+          choice clear-scope {
+             case qos-flow {
+                leaf qos-flow {
+                   type flow:qos-flow-ref;
+                   description
+                     "Name of the qos-flow.";
+                }
+                description
+                   "Clear stats for this qos-flow.";
+             }
+
+             case all {
+                leaf all {
+                   type empty;
+                   description
+                     "All qos-flows.";
+                }
+                description
+                   "Clear stats for all qos-flows.";
+             }
+             description
+                "Clear statistics for one or all QoS Flows.";
+          }
+       }
+       output {
+          leaf status {
+             type string;
+             description
+                "Status of the clear statistics operation.";
+          }
+       }
+    } // end rpc clear-statistics
+}

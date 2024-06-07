@@ -1,0 +1,652 @@
+module ciena-mef-access-flow {
+   namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-access-flow";
+   prefix "acl";
+
+   import ciena-mef-classifier {
+      prefix "classifier";
+   }
+
+   import ciena-mef-logical-port {
+      prefix "mef-logical-port";
+   }
+
+   import ciena-mef-fp {
+      prefix "mef-fp";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+       "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+       U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Access Flows and Access Profiles.";
+
+   revision 2023-07-25 {
+      description
+         "Aligning Description for leaves default-filter-stats-collection and stats-collection.
+          Hiding base-access-profile parameter for an access-profile.
+          Adding enum description of logging leaf for acl-logging.";
+   }
+
+   revision 2023-04-06 {
+      description
+         "Added ACL logging enable/disable for access-profile and access-flow
+          level and for default filter rules.
+          Added IP-ACL statistics collection get/clear support.
+          Added ACL logging global configuration support.
+          Disabled ACL logging";
+   }
+
+   revision 2021-04-06 {
+      description
+         "Added descriptions";
+   }
+
+   revision 2020-02-17 {
+      description
+         "Refactored access-profiles container to use access-flow-config
+          and classifier-group groupings.";
+   }
+
+   revision 2016-02-03 {
+      description
+         "Initial revision";
+   }
+
+ /*
+  * typedefs
+  */
+   typedef access-flow-ref {
+      type leafref {
+         path "/acl:access-flows/acl:access-flow/acl:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          configured Access flows.";
+   }
+
+   typedef acl-action-ref {
+      type leafref {
+         path "/acl:acl-actions/acl:acl-action/acl:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          configured ACL actions.";
+   }
+
+   typedef custom-destination-ref {
+      type leafref {
+         path "/acl:acl-custom-destinations/acl:acl-custom-destination/acl:name";
+      }
+      description
+         "This type is used by the data models that needs to reference
+          custom destinations for ACLs.";
+   }
+
+   typedef access-profile-ref {
+      type leafref {
+         path "/acl:access-profiles/acl:access-profile/acl:name";
+      }
+      description
+         "This type is used by the data models that need to reference
+          configured Access profiles.";
+   }
+   typedef access-profile-flow-ref {
+      type leafref {
+         path "/acl:access-profiles/acl:access-profile/acl:access-flow/acl:name";
+      }
+      description
+         "This type is used by the data models that need to reference
+          configured Access Flow within an Access Profile.";
+   }
+
+   grouping  acl-destination {
+      choice destination {
+         case logical-port-list {
+            leaf-list logical-port {
+               type mef-logical-port:logical-port-ref;
+               description
+                  "One or more logical-ports which act as destination for the acl-action (e.g. mirror/redirect)";
+            }
+            description
+                "One or more logical-ports which act as destination for the acl-action (e.g. mirror/redirect)";
+         }
+
+         case flow-point-list {
+            leaf-list flow-point {
+               type mef-fp:fp-ref;
+               description
+                  "One or more flow-points which act as destination for the acl-action (e.g. mirror/redirect)";
+            }
+            description
+               "One or more flow-points which act as destination for the acl-action (e.g. mirror/redirect)";
+         }
+
+         case custom-list {
+            leaf-list custom {
+               type acl:custom-destination-ref;
+               description
+                  "One or more custom destinations which act as destination for the acl-action (e.g. mirror/redirect)";
+            }
+            description
+               "One or more custom destinations which act as destination for the acl-action (e.g. mirror/redirect)";
+         }
+      }
+   }
+
+   grouping custom-acl-action {
+      list acl-action {
+         key "name";
+
+         description
+             "A list of ACL-actions, where each ACL-action specifies the action of the classified flow.";
+
+         leaf name {
+            type string;
+
+            description
+               "A unique string that is either system assigned or assigned
+                by the user but does not change over its life.";
+         }
+
+         leaf description {
+            type string;
+            description
+               "A more detailed description that an operator can use
+                to describe the action.";
+         }
+
+         leaf action {
+            type enumeration {
+               enum redirect {
+                  description
+                     "Redirect the classified flow to one or more ports/flow-points etc.";
+               }
+               enum ingress-mirror {
+                  description
+                     "Ingress-Mirror the classified flow to one or more ports/flow-points etc.";
+               }
+            }
+            description
+               "Specifies an action for this acl action";
+         }
+
+         uses acl:acl-destination;
+      }
+   }
+
+/*
+ * features
+ */
+   feature acl-logging {
+     description
+       "Support acl-logging feature for an access-profile.";
+   }
+
+   feature base-access-profile {
+      description
+         "Support base-access-profile for an access-profile.";
+   }
+
+   grouping access-flow-config {
+      leaf description {
+         type string;
+         description
+            "A more detailed description that an operator can use 
+             to describe the flow.";
+      }
+
+      leaf classifier-list-precedence {
+         type uint32;
+         description
+            "A precedence value for the access flow. Lower values take
+             precedence over higher values";
+      }
+
+      leaf filter-action {
+         type enumeration {
+            enum deny {
+               description 
+                  "Drop traffic for traffic that matches this specific access-flow-rule.
+                   This may be augmented with specific actions in the action list for this traffic flow";
+            }
+            enum allow {
+               description
+                  "Do not drop traffic for traffic that matches this specific access-flow-rule.
+                   This may be augmented with specific actions in the action list for this traffic flow";
+            }
+         }
+         description
+            "Specifies the filter-action for this Access-Flow/ACL-Rule";
+      }
+
+      leaf stats-collection {
+         type enumeration {
+            enum on {
+              description "Stats collection turned on";
+            }
+            enum off {
+              description "Stats collection turned off";
+            }
+         }
+         default off;
+         description
+            "Determines whether stats collection will be turned on or not for an access-flow";
+      }
+      leaf logging {
+         if-feature acl-logging;
+         type enumeration {
+            enum enable {
+               description "Access flow logging enabled";
+            }
+            enum disable {
+               description "Access flow logging disabled";
+            }
+         }
+         default disable;
+         description
+            "Determines whether ACL logging will be enabled or not for an access-flow";
+      }
+   }
+
+
+   /*
+    * Configuration.
+    */
+
+   container acl-custom-destinations {
+      description
+         "List of custom destinations. A given ACL rule may be redirecting/mirroring to one or more destinations.";
+
+      list acl-custom-destination {
+         key "name";
+
+         description
+            "A list of ACL-customized-destinations that the classified flows may be directed to.";
+
+         leaf name {
+            type string;
+
+            description
+               "A unique string that is either system assigned or assigned
+                by the user but does not change over its life.";
+         }
+
+         leaf description {
+            type string;
+            description
+               "A more detailed description that an operator can use
+                to describe the custom destination.";
+         }
+
+         leaf destination {
+            type enumeration {
+               enum voltha-agent {
+                  description
+                     "Redirect the classified flow to a voltha-agent application.";
+               }
+            }
+            description
+               "Specifies an application name for this acl destination";
+         }
+      }
+   }
+
+   container acl-actions {
+
+      uses acl:custom-acl-action;
+
+      description
+         "List of ACL actions.";
+
+   }
+
+   container access-flows {
+      description
+         "List of access-flow configuration entries. Each entry defines an ACL rule specific to an interface.";
+
+      list access-flow {
+         key "name";
+
+         description
+            "List of access-flow configuration entries. Each entry defines an ACL rule specific to an interface.";
+
+         leaf name {
+            type string;
+
+            description
+               "A unique string that is either system assigned or assigned
+                by the user but does not change over its life.";
+         }
+
+         uses access-flow-config;
+
+         leaf-list classifier-list {
+            type classifier:classifier-ref;
+            description
+               "A reference to a list of classifier entries.";
+         }
+
+         choice parent-interface {
+
+            case none {
+               leaf none {
+                  type empty;
+                  description
+                     "When the Access-Flow is an ACL rule in an Access-Profile, use none.
+                      In this case, the access-profile is referenced by a parent-interface instead.";
+               }
+               description
+                  "When the Access-Flow is an ACL rule in an Access-Profile, use none.
+                   In this case, the access-profile is referenced by a parent-interface instead.";
+            }
+
+            case logical-port {
+               leaf-list parent-port {
+                  type mef-logical-port:logical-port-ref;
+                  description
+                     "This is used when the Access-Flow is an ACL rule that is not part of an Access-Profile.
+                      In this case, the parent-interface defines the port that the Access-Flow applies to";
+               }
+               description
+                  "This is used when the Access-Flow is an ACL rule that is not part of an Access-Profile.
+                   In this case, the parent-interface defines the port that the Access-Flow applies to";
+            }
+
+            case flow-point {
+               leaf-list parent-fp {
+                  type mef-fp:fp-ref;
+                  description
+                     "This is used when the Access-Flow is an ACL rule that is not part of an Access-Profile.
+                      In this case, the parent-interface defines the flow-point that the Access-Flow applies to";
+               }
+               description
+                  "This is used when the Access-Flow is an ACL rule that is not part of an Access-Profile.
+                   In this case, the parent-interface defines the flow-point that the Access-Flow applies to";
+            }
+         }
+
+         leaf-list augment-action {
+               type acl:acl-action-ref;
+               description
+                   "A list of Actions that may augment the filter-action of the Access-Flow/ACL-Rule.";
+         }
+      }
+   }
+
+   container access-profiles {
+      description
+         "List of access-profile configuration templates. 
+          Each profile defines a list of ACL rules that can be applied to multiple interfaces.";
+
+      list access-profile {
+         key "name";
+ 
+         leaf name {
+            type string;
+
+            description
+               "A unique string that is either system assigned or assigned
+                by the user but does not change over its life.";
+         }
+
+         leaf description {
+            type string;
+            description
+               "A more detailed description that an operator can use
+               to describe the profile.";
+         }
+
+         leaf base-access-profile {
+            if-feature base-access-profile;
+            type acl:access-profile-ref;
+            description
+               "An Access Profile should be able to refer to another Access Profile and inherit its properties";
+         }
+
+         leaf type {
+            type enumeration {
+               enum flow-point {
+                 description "This access-profile will attach to a flow-point";
+               }
+               enum IP-interface {
+                 description "This access-profile will attach to an IP interface";
+               }
+            }
+            description
+               "Type of interface this access-profile will attach to";
+         }
+
+         leaf default-filter-action {
+
+            type enumeration {
+               enum deny {
+                  description 
+                     "Drop traffic for all other traffic that does not match a specific access-flow-rule but
+                      classifies to this Access-Profile";
+               }
+               enum allow {
+                  description
+                     "Do not drop traffic for all other traffic that does not match a specific access-flow-rule but
+                      classifies to this Access-Profile";
+               }
+            }
+            description
+               "Specifies the default filter-action for this Access-Profile";
+         }
+
+         leaf stats-collection {
+            type enumeration {
+               enum on {
+                 description "Stats collection turned on";
+               }
+               enum off {
+                 description "Stats collection turned off";
+               }
+            }
+            default off;
+            description
+               "Determines whether stats collection will be turned on or not for an instance of access-profile";
+         }
+         leaf default-filter-stats-collection {
+            type enumeration {
+               enum on {
+                  description "Stats collection turned on";
+               }
+               enum off {
+                  description "Stats collection turned off";
+               }
+            }
+            default off;
+            description
+               "Determines whether stats collection will be turned on or not for default filter of access-profile";
+         }
+         leaf logging {
+            if-feature acl-logging;
+            type enumeration {
+               enum enable {
+                  description "Enables logging for an access-profile instance";
+               }
+               enum disable {
+                  description "Disables logging for an access-profile instance";
+               }
+            }
+            default disable;
+            description
+               "Determines whether logging will be enabled or not for an instance of access-profile";
+         }
+         leaf default-filter-logging {
+            if-feature acl-logging;
+            type enumeration {
+               enum enable {
+                  description "Enables logging for default filter of an access-profile";
+               }
+               enum disable {
+                  description "Disables logging for default filter of an access-profile";
+               }
+            }
+            default disable;
+            description
+               "Determines whether logging will be enabled or not for default filter of access-profile";
+         }
+
+         list access-flow {
+            key "name";
+
+            leaf name {
+               type string;
+               description
+                  "Access-Flow name";
+            }
+
+            uses access-flow-config;
+            
+            uses classifier:classifier-group;
+
+            description
+               "A list of ACL rules, Access-Flows that are part of an access-profile.
+                Each ACL-rule/Access-Flow specifies classifiers, precedence and actions independently";
+         }
+
+         description
+            "A list of all access-profile configuration entries.";
+      }
+   }
+   container acl-logging {
+      description
+          "Configures ACL logging global parameters ";
+      if-feature acl-logging;
+      leaf acl-logging-timer {
+         type uint32 {
+            range "60..300";
+         }
+         units seconds;
+         default 60;
+         description
+            "Logging interval in seconds after which packets hitting ACL will be logged.";
+      }
+   }
+
+   /*
+    * State.
+    */
+   grouping access-flows-state-group {
+
+      description
+         "Access Flow operational data for all Access Flows.";
+
+      list access-flow {
+         key "name";
+         description
+            "The operational data for this Access-Flow.";
+
+         leaf name {
+            type string;
+            description
+               "A string that identifies the Access-Flow.";
+         }
+
+         leaf hitBytes {
+            type uint64;
+            description
+               "Byte count of frames that hit the Access-Flow";
+         }
+
+         leaf hitFrames {
+            type uint64;
+            description
+               "Frame count of frames that hit the Access-Flow";
+         }
+      }
+   }
+   container access-flows-state {
+      config false;
+
+      description
+         "Access Flow operational data for all Access Flows.";
+      uses acl:access-flows-state-group;
+
+   }
+    /*
+    * Statistics.
+    */
+   container access-profiles-state {
+      config false;
+
+      description
+         "Access Profile statistics data for all Access Profiles.";
+
+      list access-profile {
+         key "profilename";
+         description
+            "The statistics data for this Access-Profile.";
+
+         leaf profilename {
+            type string;
+            description
+               "A string that identifies this Access-Profile.";
+         }
+         uses acl:access-flows-state-group;
+
+      }
+   }
+   /*
+    * RPC
+    */
+   rpc clear-access-profile-statistics {
+      description "An RPC operation to clear the statistics for one or all Access Profiles and one or all Access Flows within an Access Profile.";
+
+      input {
+         choice clear-scope {
+
+            case access-flow {
+               leaf access-profile-flow {
+                  type acl:access-profile-ref;
+               }
+               leaf access-flow {
+                  type acl:access-profile-flow-ref;
+               }
+               description
+                  "Clear stats for this Access Flow of this Access Profile.";
+            }
+            case access-profile {
+               leaf access-profile {
+                  type acl:access-profile-ref;
+               }
+               description
+                  "Clear stats for this Access Profile.";
+            }
+            case access-profile-default {
+               leaf access-profile-default {
+                  type acl:access-profile-ref;
+               }
+               description
+                  "Clear stats of default rule of this Access Profile.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all Access Flows of all Access Profiles.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string;
+            description
+               "Status of the clear statistics operation.";
+         }
+      }
+   }
+}

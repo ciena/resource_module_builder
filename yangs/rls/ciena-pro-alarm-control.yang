@@ -1,0 +1,163 @@
+module ciena-pro-alarm-control {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-alarm-control";
+  prefix alarm-control;
+
+  import ciena-common-yang {
+    prefix ciena-yang;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-alarm {
+    prefix alarm;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules enhances the ciena-pro-alarm module with additional RPCs and
+     capabilities that are normally reserved for privileged applications and users,
+     such as the ability to raise and clear alarms.";
+
+  revision 2022-10-06 {
+    description
+      "Enhance raise-alarm to include PM TCA data.";
+    version:version "version" {
+      version:string "2.2.0";
+    }
+  }
+  revision 2020-06-06 {
+    description
+      "Redefine the raise-alarm input to be a grouping.  Allows the same definition
+       to be easily used by other yang constructs.";
+    version:version "version" {
+      version:string "2.1.0";
+    }
+  }
+  revision 2019-11-19 {
+    description
+      "Add option to specify the alarm level when raising an alarm";
+    version:version "version" {
+      version:string "2.0.0";
+    }
+  }
+  revision 2019-03-20 {
+    description
+      "Split module alarm into several pieces:  alarm, alarm-template, alarm-control";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping raise-alarm-grouping {
+    leaf requested-state {
+      type alarm:alarm-state;
+      description
+        "A flag to allow the calling application to deliberately raise an inhibited
+         alarm.  This will be applied iff the template alarm-state is enabled.";
+    }
+    leaf resource {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Resource for which the alarm is being raised";
+    }
+    leaf template-name {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Alarm template to select";
+    }
+    leaf level {
+      type identityref {
+        base alarm:alarm-level;
+      }
+      description
+        "Which level of alarm severity and service affect data to use when raising
+         the alarm.  Not necessary if an alarm does not have specified alarm levels.";
+    }
+    leaf additional-info {
+      type alarm:alarm-additional-info-string;
+      mandatory false;
+      description
+        "Additional information supplied by system to be included with the alarm being
+         raised.";
+    }
+    leaf-list physical-references {
+      type instance-identifier;
+      ordered-by user;
+      description
+        "List of instance identifiers that provide additional identification criteria
+         to identify physical components related to or impacted by an alarm.";
+    }
+  }
+
+  grouping clear-alarm-grouping {
+    leaf resource {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Resource for which the alarm is being cleared";
+    }
+    leaf template-name {
+      type instance-identifier;
+      mandatory true;
+      description
+        "Alarm template to select; may be omitted if doing a bulk clear of
+         all alarms for a given resource.";
+    }
+  }
+
+  grouping raise-tca-grouping {
+    uses raise-alarm-grouping;
+    anydata tca-data {
+      mandatory false;
+      description
+        "PM threshold crossing alert data.";
+    }
+  }
+
+  rpc raise-alarm {
+    input {
+      uses raise-alarm-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc clear-alarm {
+    input {
+      uses clear-alarm-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc raise-tca {
+    input {
+      uses raise-tca-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+
+  rpc clear-tca {
+    input {
+      uses clear-alarm-grouping;
+    }
+    output {
+      uses ciena-yang:rpc-result-common;
+    }
+  }
+}

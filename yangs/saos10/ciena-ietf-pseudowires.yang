@@ -1,0 +1,370 @@
+module ciena-ietf-pseudowires {
+    namespace "http://ciena.com/ns/yang/ciena-ietf-pseudowires";
+    prefix cnpw;
+
+    import ietf-pseudowires {
+        prefix pw;
+    }
+
+    import ciena-l3-types {
+       prefix cn-l3-types;
+    }
+
+    import ietf-inet-types {
+       prefix "inet";
+    }
+
+    organization
+      "Ciena Corporation";
+
+    contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+       Hanover, Maryland 21076
+   U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+    description
+       "This module contains the Ciena proprietary YANG deviations
+        of the standard pseudowire YANG module.
+        Copyright (c) 2018-2022 Ciena Corporation.  All rights reserved.
+
+        All information contained herein is, and remains
+        the property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained from
+        Ciena Corporation.";
+
+    revision "2023-03-17" {
+        description
+           "Added range to color leaf of pseudowire SR policy";
+    }
+
+    revision "2022-03-21" {
+        description
+           "1. Removal of augmented then deviated pseudowire leaves
+               vccv-ability and vlan-tpid
+            2. Added pw-admin-state";
+    }
+
+    revision "2021-09-24" {
+        description
+           "Added fallback option for PWE";
+    }
+
+    revision "2020-09-28" {
+        description
+           "1. Added reversion-hold-time and pw-reversion
+            2. Added multi-segment pseudowire identifier
+            3. Added ignore-mtu-mismatch
+            4. Added tunnel-color for SR tunnel
+            5. Added pw-end-node-ip";
+    }
+
+
+    revision "2020-02-25" {
+        description
+           "Added Tunnel name,type,source-ip
+            and destination-ip for tunnels";
+    }
+ 
+    revision "2019-11-15" {
+        description
+           "Added CC Type support";
+        reference
+           "RFC 5085";
+    }
+
+    revision "2019-11-05" {
+        description
+           "Added fat-capability parameter to support R and T bit individually";
+        reference
+           "RFC 6391";
+    }
+
+    revision "2018-11-12" {
+        description
+           "Initial version";
+    }
+
+    /* Identity */
+    identity role-of-pw {
+        description
+              "Role of pseudowire";
+    }
+    identity primary {
+        base "role-of-pw";
+        description
+      "Role of PW is primary";
+    }
+    identity backup {
+        base "role-of-pw";
+        description
+     "Role of PW is backup";
+    }
+
+    typedef pw-role-type {
+        type identityref {
+           base "role-of-pw";
+        }
+        description
+      "Describes the role of Pseudowire as primary or backup";
+    }
+
+    typedef pseudowire-cctype{
+        type bits {
+            bit cctype-1 { position 0;}
+            bit cctype-2 { position 1;}
+            bit cctype-3 { position 2;}
+            bit cctype-4 { position 3;}
+        }
+    }
+
+    augment /pw:pseudowires/pw:pseudowire {
+      description
+         "Adding additional parameters to ietf-pseduowires yang file";
+      // CIENA addition:
+      leaf role {
+         type pw-role-type;
+         default primary;
+         description
+            "Mention the pseudowire role as primary or backup";
+      }
+
+      leaf protect {
+         type boolean;
+         default "false";
+         description
+            "This attribute should be enabled if there is a protection required.";
+      }
+
+      leaf primary-pw {
+         when "../role = 'cnpw:backup'";
+         type leafref {
+            path "/pw:pseudowires/pw:pseudowire/pw:name";
+         }
+         description
+            "Mention the primary pseudowire name";
+      }
+
+
+      leaf mode {
+         type cn-l3-types:pseudowire-mode;
+         default "mesh";
+         description
+            "Specify the pseudowire mode as mesh or spoke or switching";
+      }
+
+      leaf stats-collection {
+         type enumeration {
+           enum off {
+             description
+                "Specifies counter status on pseudowire is off";
+           }
+           enum on {
+             description
+                "Specifies counter status on pseudowire is on";
+           }
+         }
+         default "off";
+         description
+           "Turn on/off statistics collection on the pseudowires";
+      }
+
+      leaf pw-loadbalance {
+         type enumeration {
+            enum "disabled" {
+              value 0;
+              description "Load balancing disabled";
+            }
+            enum "fat-pw" {
+              value 1;
+              description "Load balance using FAT label below PW label";
+            }
+            enum "entropy" {
+              value 2;
+              description "Load balance using ELI/EL above PW label";
+            }
+         }
+         default "disabled";
+         description "PW load balancing";
+      }
+
+      leaf fat-capability {
+         when "../pw-loadbalance = 'fat-pw'" {
+           description "The fat-capability value is only applicable to the fat-pw type loadbalance";
+         }
+         type enumeration {
+            enum "tx-rx" {
+              value 0;
+              description "Enable FAT label receiving and transmitting both capability";
+            }
+            enum "rx" {
+              value 1;
+              description "Enable FAT label receiving capability";
+            }
+            enum "tx" {
+              value 2;
+              description "Enable FAT label transmitting capability";
+            }
+         }
+         default tx-rx;
+         description "FAT pseudowire capability for negotiation";
+      }
+
+      leaf cc-types  {
+         type pseudowire-cctype;
+         description
+            "Use this attribute to set the CC Type for pseudowire signalling
+             where each bit represent the CC Type in accordance with RFC 5085";
+      }
+
+      leaf tunnel-type {
+         type cn-l3-types:tunnel-type;
+         description
+            "This is an enumeration which defines different tunnel types";
+      }
+ 
+      leaf tunnel-name {
+         type string;
+         description
+            "User provided tunnel name over which PW needs to be created";
+      }
+     
+      leaf tunnel-source-ip {
+         type inet:ipv4-address;
+         description
+            "User provided tunnel source-ip";
+      }
+
+      leaf tunnel-destination-ip {
+         type inet:ipv4-address;
+         description
+            "User provided tunnel destination-ip";
+      }
+ 
+      leaf reversion-hold-time {
+         when "../role = 'cnpw:primary'";
+         type  uint16 {
+            range "0..3600";
+         }
+         units seconds;
+         default 30;
+         description
+            "Reversion hold timer.";
+      }
+
+      leaf pw-reversion {
+         when "../role = 'cnpw:primary'";
+         type enumeration {
+           enum none {
+             description
+                "This field value is ignored.";
+           }
+           enum disabled {
+             description
+                "Specifies PW-reversion is disabled on particular pseudowire.";
+           }
+           enum enabled {
+             description
+                "Specifies PW-reversion is enabled on particular pseudowire.";
+           }
+         }
+         default none;
+         description
+           "Specifies PW-reversion on particular pseudowire 
+            and it will overwrite the values which has been 
+            configured at l2 vpn vc-mode-revertive field.";
+      }
+
+      leaf ms-pw-identifier {
+         when "../mode = 'switching'";
+         type uint32;
+         description
+            "User provided multi-segment pseudowire identifier for association of two segments";
+      }
+
+      leaf ignore-mtu-mismatch {
+         type boolean;
+         default "false";
+         description
+            "This attribute should be enabled if MTU mismatch needs to be ignored.";
+      }
+
+      leaf tunnel-color {
+         type uint32 {
+            range "1..4294967295";
+         }
+         description 
+            "User provided tunnel-color for SR tunnel";
+      }      
+
+      leaf pw-end-node-ip {
+         when "../mode != 'switching'";
+         type inet:ipv4-address;
+         description
+            "User provided pseudowire path end node IP address";
+      }
+
+      leaf fallback {
+         type enumeration {
+            enum disable {
+               description
+                  "Specifies fallback as disable";
+            }
+            enum enable {
+               description
+                  "Specifies fallback as enable";
+            }
+         }
+         default "disable";
+         description
+            "Fallback enable is used when the SR policy is down.
+            The service will still continue to be up, but
+            will fall back to labeled IGP shortest path.
+            By default, the value is set to disable.";
+      }
+
+      leaf pw-admin-state {
+         type enumeration {
+            enum disable {
+               description
+                  "Specifies PW admin state is disabled on particular pseudowire.";
+            }
+            enum enable {
+               description
+                  "Specifies PW admin state is enabled on particular pseudowire.";
+            }
+         }
+         default "enable";
+         description
+            "Specifies PW admin state on particular pseudowire and by default admin state is enabled.";
+      }
+    }
+    augment /pw:pseudowires/pw:pseudowire/pw:pw-type/pw:configured-pw/pw:configured-pw {
+       description
+          "Adding additional parameters to ietf-pseduowires yang file";
+
+       leaf pw-status  {
+          type boolean;
+          default false;
+          description
+             "Enable (true) or disable (false) for static PW-status";
+       }
+
+       leaf pw-status-refresh-timer {
+          units seconds;
+          type  uint16 {
+             range "0..65535";
+          }
+          default "600";
+          description
+             "PW status refresh timer is in seconds.After which a PW status is transmitted
+              periodically if an AC fault has occurred.
+              The range is <0-65535>. Default is 600 seconds.";
+       }
+
+    }
+}

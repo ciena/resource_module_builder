@@ -1,0 +1,165 @@
+module ciena-vrf {
+    namespace   "urn:ciena:params:xml:ns:yang:ciena:ciena-vrf";
+    prefix "vrf";
+
+    import ietf-inet-types {
+      prefix inet;
+    }
+
+    import ciena-l3-types {
+      prefix cn-l3-types;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's VPN Routing/Forwarding model.
+
+         Copyright (c) 2018-2022  Ciena Corporation.  All rights
+         reserved.
+
+         All information and intellectual property contained in this
+         YANG module (Specification) is, and remains the property
+         of Ciena Corporation. Ciena retains all title and ownership
+         in the Specification, including any revisions.
+
+         Ciena grants all interested parties that access the
+         Specification with the intent to use or distribute ('you') a
+         non-exclusive, no-cost license to use and distribute
+         unmodified copies of the Specification solely in connection
+         with the management of Ciena products sold by or on
+         behalf of Ciena, provided this copyright notice and license
+         appear on all copies. Ciena may rescind or modify this
+         license at any time.
+
+         This Specification is supplied 'as is', and Ciena makes no
+         warranty, either express or implied, as to the use, operation,
+         condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.";
+
+    revision "2023-02-01" {
+        description
+           "Added range to color leaf of VRF SR policy";
+    }
+
+    revision "2022-07-06" {
+        description
+           "Added segment routing SRv6.
+            Added role and isolate-mgmt option for VRF.
+            Removing max-elements from VRF config.";
+    }
+
+    revision "2020-12-22" {
+        description "Added color and fallback for SR policy.";
+    }
+
+    revision "2016-10-29" {
+        description "Modifications to auto-generate clis.";
+    }
+
+    grouping vrf-grouping {
+         list vrf {
+            key "vrfName";
+            description
+               "Virtual Routing Forwarding (VRF) Instance";
+            leaf vrfName  {
+               type  string {
+                  length "1..15";
+               }
+               description "Routing Forwarding Instance Name";
+            }
+
+            leaf description  {
+               type  string {
+                  length "0..255";
+               }
+               description 
+                "Description of VRF";
+            }
+
+            leaf role {
+               type enumeration {
+                  enum management {
+                     description
+                        "Specifies VRF role as management";
+                  }
+                  enum data {
+                     description
+                        "Specifies VRF role as data";
+                  }
+               }
+               description
+                  "To set the operational role of the VRF [default: data].";
+            }
+
+            leaf isolate-mgmt {
+               description
+                  "Activate the complete isolation of management VRF.";
+               type boolean;
+               when "../role[. = 'management']" {
+                  description
+                     "Activate the complete isolation of VRF having role set as management.";
+               }
+            }
+
+            container sr-policy {
+              description
+                "Segment Routing (SR) Policy";
+              leaf color {
+                type uint32 {
+                  range "1..4294967295";
+                }
+                description
+                  "Color associated with the SR policy";
+              }
+
+              leaf fallback {
+                type enumeration {
+                  enum enable {
+                    description
+                      "Specifies fallback as enable";
+                  }
+                  enum disable {
+                    description
+                      "Specifies fallback as disable";
+                  }
+                }
+                default "enable";
+                description
+                  "Fallback enable is used when the SR policy is down.
+                   The service will still continue to be UP, but
+                   will fall back to labeled IGP shortest path.";
+              }
+            }
+           
+            container segment-routing-srv6 {
+              description
+                "Segment Routing SRv6";
+
+              leaf locator {
+                type inet:ipv6-address;
+                description
+                  "IPv6 address";
+              }
+
+              leaf sid-type {
+                type cn-l3-types:sr-sidtype-grouping;
+                description
+                  "SR SID type as u-sid or classic-sid";
+              }
+            }
+        }
+    }
+
+    uses vrf-grouping;
+}

@@ -1,0 +1,127 @@
+module ciena-twamp-saos 
+{
+   namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-twamp-saos";
+   prefix "ciena-twamp-saos";
+
+   import ietf-twamp 
+   {
+      prefix "ietf-twamp";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+               Hanover, Maryland 21076
+               U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's TWAMP
+       config extensions on the SAOS platform";
+
+
+   revision 2020-12-10 {
+      description
+        "Added new leaf - connectivity mode";
+
+      reference
+         ietf-twamp-yang;
+   }
+
+   revision "2018-10-05" {
+      description
+         "initial version";
+
+      reference
+         ietf-twamp-yang;
+   }
+
+
+   /* 
+    * augmentations 
+    */
+
+   augment "/ietf-twamp:twamp/ietf-twamp:server" {
+   description
+      "Augmentation for configuration data.";
+
+      leaf connectivity-mode {
+         type enumeration {
+            enum standard {
+               description
+                 "Indicates TWAMP will accept incoming sessions from any subnet";
+            }
+            enum restricted {
+               description
+                 "Indicates TWAMP will only accept sessions where the src/dest IP are in the same subnet";
+            }
+         }
+         default standard;
+         description
+            "Some customers require a non-standard behavior where TWAMP runs 
+             only within a single subnet.  This leaf allows us to select restricted mode
+             to accomplish this non-standard behavior.  The default is standard mode, 
+             where TWAMP is willing to accept sessions across different subnets.";
+      }
+   }
+
+   
+
+
+   /*
+    * RPC Operations
+    */
+   rpc  twamp-clear-ctrl-connection {
+      description
+         "Clear the targeted ctrl-connection.
+          The ctrl-connection is uniquely identified by the 4-tuple:
+          client IP, client TCP port, server IP, server TCP port.";
+
+      input {
+         leaf client-ip {
+            type leafref {
+               path "/ietf-twamp:twamp/ietf-twamp:server/ietf-twamp:ctrl-connection/ietf-twamp:client-ip";
+            }
+            mandatory "true";
+            description
+               "client IP address of the ctrl-connection to clear.";
+         }
+         leaf client-tcp-port {
+            type leafref {
+               path "/ietf-twamp:twamp/ietf-twamp:server/ietf-twamp:ctrl-connection/ietf-twamp:client-tcp-port";
+            }
+            mandatory "true";
+            description
+               "client TCP port of the ctrl-connection to clear.";
+         }
+         leaf server-ip {
+            type leafref {
+               path "/ietf-twamp:twamp/ietf-twamp:server/ietf-twamp:ctrl-connection/ietf-twamp:server-ip";
+            }
+            mandatory "true";
+            description
+               "server IP address of the ctrl-connection to clear.";
+         }
+         leaf server-tcp-port {
+            type leafref {
+               path "/ietf-twamp:twamp/ietf-twamp:server/ietf-twamp:ctrl-connection/ietf-twamp:server-tcp-port";
+            }
+            mandatory "true";
+            description
+               "server TCP port of the ctrl-connection to clear.";
+         }
+      }
+      output {
+         leaf status {
+            type string;
+         description
+            "Status of the clear operation.";
+         }
+      }
+   }
+}

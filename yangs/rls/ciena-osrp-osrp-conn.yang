@@ -1,0 +1,305 @@
+module ciena-osrp-osrp-conn {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-osrp-osrp-conn";
+  prefix osrp-conn;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-osrp-types {
+    prefix ciena-osrp-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's osrp - mc/nmc conn object for the 6500r platform";
+
+  revision 2021-01-19 {
+    ciena-common-version:string "1.7.0";
+    description
+      "added ase-hold-off timer.";
+  }
+  revision 2021-01-05 {
+    ciena-common-version:string "1.6.1";
+    description
+      "removed fetch-controller-state from nmcconn and added no-fault as default for rx-proxy status.";
+  }
+  revision 2020-12-16 {
+    ciena-common-version:string "1.6.0";
+    description
+      "'osrp-mcconn/id' renamed to 'osrp-mcconn/mc-key'.
+       'osrp-mcconn/label' field added.
+       'osrp-mcconn/osrp-nmcconn/id' renamed to 'osrp-mcconn/osrp-nmcconn/nmc-key'.";
+  }
+  revision 2020-12-14 {
+    ciena-common-version:string "1.5.0";
+    description
+      "added rx-acquisition-hold-off timer.";
+  }
+  revision 2020-12-11 {
+    ciena-common-version:string "1.4.0";
+    description
+      "added channel controller state field in nmc-connection.";
+  }
+  revision 2020-10-18 {
+    ciena-common-version:string "1.3.1";
+    description
+      "leaf-list mc-element and nmc-element changed to list.";
+  }
+  revision 2020-10-15 {
+    ciena-common-version:string "1.3.0";
+    description
+      "Added mcconn/mc-element and mcconn/nmcconn/nmc-element list.";
+  }
+  revision 2020-10-07 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Addition of conn type field.";
+  }
+  revision 2020-05-11 {
+    ciena-common-version:string "1.0.1";
+    description
+      "Reference to correct types.";
+  }
+  revision 2020-03-18 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0
+       YANG cleanup.";
+  }
+
+  grouping nmc-connection {
+    description
+      "Specifies rx proxy and mux/demux channel controller status.";
+    leaf name {
+      type ciena-osrp-types:osrp-local-nmc-ckt-name;
+      mandatory true;
+      description
+        "Name of Network Media Channel Connection (NMCCONN).";
+    }
+
+    leaf nmc-key {
+      type ciena-osrp-types:osrp-local-nmc-ckt-id;
+      mandatory true;
+      description
+        "Identifier of Network Media Channel Connection.";
+    }
+
+    list nmc {
+      key "element";
+      leaf element {
+        type instance-identifier;
+        description
+          "NMC identifier.";
+      }
+    }
+
+    leaf center-freq {
+      type ciena-osrp-types:frequency-mhz;
+      mandatory true;
+      description
+        "Center frequency of Network Media Channel Connection.";
+    }
+
+    leaf spectral-width {
+      type ciena-osrp-types:frequency-mhz;
+      mandatory true;
+      description
+        "Spectral Width of NMC. It's minumum value is 12.5GHz.";
+    }
+
+    leaf owner {
+      type ciena-osrp-types:conn-owner;
+      mandatory true;
+      description
+        "Owner of Network Media Channel Connection.";
+    }
+
+    leaf label {
+      type string {
+        length "0..64";
+      }
+      description
+        "Label of Network Media Channel Connection.";
+    }
+
+    leaf transmission-mode {
+      type ciena-osrp-types:transmission-mode;
+      description
+        "transmission mode.";
+    }
+
+    leaf link-optimization-mode {
+      type ciena-osrp-types:link-optimization-mode;
+      description
+        "link optimization mode.";
+    }
+
+    leaf dispersion {
+      type ciena-osrp-types:chromatic-dispersion;
+      description
+        "Path Chromatic Dispersion.";
+    }
+
+    leaf rx-acquisition-hold-off {
+      type ciena-osrp-types:timeperiod-msec;
+      default "200000";
+      description
+        "Rx acquisition hold-off time (expected-restoration time).";
+    }
+
+    leaf ase-hold-off {
+      type ciena-osrp-types:timeperiod-msec;
+      default "30000";
+      description
+        "ASE hold-off time.";
+    }
+
+    uses channel-controller-state;
+  }
+
+  grouping ciena-osrp-osrp-conn-mount {
+    list osrp-mcconn {
+      key "name";
+      leaf name {
+        type ciena-osrp-types:osrp-local-mc-ckt-name;
+        description
+          "Name of Media Channel Connection (MCCONN).";
+      }
+
+      leaf mc-key {
+        type ciena-osrp-types:osrp-local-mc-ckt-id;
+        mandatory true;
+        description
+          "Identifier of Media Channel Connection.";
+      }
+
+      leaf from {
+        type ciena-osrp-types:osrp-port-identifier;
+        mandatory true;
+        description
+          "From Port Identifier.";
+      }
+
+      leaf to {
+        type ciena-osrp-types:osrp-port-identifier;
+        mandatory true;
+        description
+          "To Port Identifier.";
+      }
+
+      leaf min-freq {
+        type ciena-osrp-types:frequency-mhz;
+        mandatory true;
+        description
+          "Minimum Frequency of Media Channel Connection.";
+      }
+
+      leaf max-freq {
+        type ciena-osrp-types:frequency-mhz;
+        mandatory true;
+        description
+          "Maximum Frequency of Media Channel Connection.";
+      }
+
+      leaf low-freq-deadband {
+        type ciena-osrp-types:frequency-mhz;
+        description
+          "Lower Edge Spacing.";
+      }
+
+      leaf high-freq-deadband {
+        type ciena-osrp-types:frequency-mhz;
+        description
+          "Higher Edge Spacing.";
+      }
+
+      leaf label {
+        type string {
+          length "0..64";
+        }
+        description
+          "Label of Media Channel Connection.";
+      }
+
+      leaf owner {
+        type ciena-osrp-types:conn-owner;
+        mandatory true;
+        description
+          "Owner of Media Channel Connection.";
+      }
+
+      list mc {
+        key "element";
+        leaf element {
+          type instance-identifier;
+          description
+            "MC identifier.";
+        }
+      }
+
+      leaf node-name {
+        type ciena-osrp-types:node-name;
+        description
+          "Name of OSRP Node which created this conn.";
+      }
+
+      leaf type {
+        type ciena-osrp-types:channel-type;
+        description
+          "Type of channel, dynamic or permanent.";
+      }
+
+      list osrp-nmcconn {
+        key "name";
+        uses nmc-connection;
+      }
+    }
+  }
+
+  grouping ciena-osrp-osrp-conn-mount-actions;
+
+  grouping channel-controller-state {
+    list channel-controller-status {
+      key "instance-name";
+      leaf instance-name {
+        type string;
+        description
+          "Specifies instance name of the corresponding channel controller.";
+      }
+
+      leaf operational-state {
+        type ciena-osrp-types:channel-operational-state;
+        description
+          "Specifies current operational state of channel controller.";
+      }
+
+      leaf additional-info {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Specifies additional info about channel controller status.";
+      }
+    }
+
+    container rx-status {
+      leaf status {
+        type ciena-osrp-types:rx-proxy-status;
+        default "no-fault";
+        description
+          "Specifies rx-proxy current status.";
+      }
+    }
+  }
+
+  uses ciena-osrp-osrp-conn-mount;
+}

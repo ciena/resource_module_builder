@@ -1,0 +1,342 @@
+module ciena-waveserver-topology {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-topology";
+  prefix topology;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Topology representation.";
+
+  revision 2020-10-12 {
+    description
+      "Removing deprecated leafs network-inventory/primary-chassis-id,
+         network-inventory/network-primary and network-inventory/enrolled.
+       Renaming leaf network-inventory/adjacency/interface-id to
+         network-inventory/adjacency/local-interface-id and changing from a leafref
+         to a string.
+       Changing leaf network-inventory/adjacency/neighbor-chassis-id from a leafref
+         to a string.
+       Replacing leaf network-inventory/link-local-address with a list of
+       management-addresses.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2019-12-31 {
+    description
+      "Adding link-local-address into topology-adjacency-attribute-group.";
+    reference
+      "Waveserver OS R2.0 user's guide.";
+  }
+  revision 2019-06-03 {
+    description
+      "Initial revision introducing basic topology support.";
+    reference
+      "Waveserver Ai R1.5 user's guide.";
+  }
+
+  typedef topology-management-address-subtype {
+    type enumeration {
+      enum "reserved" {
+        description
+          "reserved/unknown.";
+      }
+      enum "ipv4" {
+        description
+          "IP version 4.";
+      }
+      enum "ipv6" {
+        description
+          "IP version 6.";
+      }
+      enum "ipv6-link-local" {
+        description
+          "IP version 6 link local.";
+      }
+    }
+    description
+      "Management address subtype based on ianaAddressFamilyNumbers
+       module of the IETF RFC 3232 on-line database.";
+  }
+
+  grouping topology-inventory-attribute-group {
+    ui:ui-name "Commited Software Version";
+    description
+      "Common attributes of network inventory.";
+    leaf network-id {
+      ui:ui-name "Network Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify the sub-network domain in which this chassis is managed.";
+    }
+
+    leaf network-name {
+      ui:ui-name "Network Name";
+      type string {
+        length "0..64";
+      }
+      description
+        "A name to uniquely identify the sub-network domain in which this chassis is managed.";
+    }
+
+    leaf site-id {
+      ui:ui-name "Site Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify the site where this chassis is located.";
+    }
+
+    leaf site-name {
+      ui:ui-name "Site Name";
+      type string {
+        length "0..64";
+      }
+      description
+        "A name to uniquely identify the site where this chassis is located.";
+    }
+
+    leaf group-id {
+      ui:ui-name "Group Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify a group of chassis within a site.";
+    }
+
+    leaf group-name {
+      ui:ui-name "Group Name";
+      type string {
+        length "0..64";
+      }
+      description
+        "A name to uniquely identify a group of chassis within a site.";
+    }
+
+    leaf chassis-id {
+      ui:ui-name "Chassis Identifier";
+      type cienawstypes:mac-string;
+      description
+        "MAC address of the chassis.";
+    }
+
+    leaf member-id {
+      ui:ui-name "Member Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      config false;
+      description
+        "An integer to uniquely identify a chassis within a commonly managed group.";
+    }
+
+    leaf member-name {
+      ui:ui-name "Member Name";
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "A name to uniquely identify a chassis within a commonly managed group.";
+    }
+
+    leaf chassis-type {
+      ui:ui-name "Chassis Type";
+      type cienawstypes:chassis-type;
+      config false;
+      description
+        "The type of the chassis.";
+    }
+
+    leaf primary-chassis-id {
+      ui:ui-name "Primary Chassis Identifier";
+      type cienawstypes:mac-string;
+      config false;
+      description
+        "Chassis MAC address of the primary node within the management domain.";
+    }
+
+    leaf host-name {
+      ui:ui-name "Host Name";
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Hostname of the chassis.";
+    }
+
+    leaf connectivity-state {
+      ui:ui-name "Connectivity State";
+      type cienawstypes:up-down-enum;
+      config false;
+      description
+        "The connectivity state of the cluster member.
+         A reachable member shall have conn state UP, while
+         An unreachable member shall have conn state DOWN.";
+    }
+
+    leaf active-sw-version {
+      ui:ui-name "Active Software Version";
+      type string {
+        length "1..64";
+      }
+      description
+        "The active software version of the chassis.";
+    }
+
+    leaf committed-sw-version {
+      type string {
+        length "1..64";
+      }
+      description
+        "The committed software version of the chassis.";
+    }
+  }
+
+  grouping topology-adjacency-attribute-group {
+    description
+      "Common attributes of topology inventory's adjacency attributes.";
+    leaf local-interface-id {
+      ui:ui-name "Local Interface Identifier";
+      type string {
+        length "0..16";
+      }
+      config false;
+      description
+        "Interface ID of the local ILAN Port which is connected to the neighbor chassis.";
+    }
+
+    leaf neighbor-member-id {
+      ui:ui-name "Neighbor Member Identifier";
+      type uint8 {
+        range "0..254";
+      }
+      config false;
+      description
+        "An integer to uniquely identify the neighbor chassis.";
+    }
+
+    leaf neighbor-host-name {
+      ui:ui-name "Neighbor Host Name";
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Hostname of the neighbor chassis.";
+    }
+
+    leaf neighbor-chassis-id {
+      ui:ui-name "Neighbor Chassis Identifier";
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "MAC address of the neighbor chassis";
+    }
+
+    leaf neighbor-interface-id {
+      ui:ui-name "Neighbor Interface Identifier";
+      type cienawstypes:string-maxl-16;
+      config false;
+      description
+        "Interface ID of the ILAN Port on the neighbor chassis which is connected to the this chassis.";
+    }
+  }
+
+  grouping management-address-group {
+    description
+      "group of chassis's management address data.";
+    container management-addresses {
+      description
+        "The management addresses associated with the Waveserver node
+         that may be used to reach higher layer entities to assist
+         discovery by network management.";
+      list address {
+        key "address";
+        description
+          "The list of management addresses.";
+        leaf address {
+          type string {
+            length "1..255";
+          }
+          description
+            "The management address associated with the node.";
+        }
+
+        leaf address-type {
+          type topology-management-address-subtype;
+          description
+            "Management address subtype.";
+        }
+      }
+    }
+  }
+
+  container waveserver-topology {
+    ui:ui-name "topology";
+    description
+      "Waveserver topology attributes and operational data.";
+    list network-inventory {
+      ui:ui-name "Network Inventory";
+      key "chassis-id";
+      config false;
+      description
+        "Summary of the network elements discovered in the network topology, such as NDP discovered chassis on the ILAN.";
+      uses topology-inventory-attribute-group;
+
+      uses management-address-group;
+
+      list adjacency {
+        ui:ui-name "Adjacency";
+        key "local-interface-id";
+        config false;
+        description
+          "A list of neighbor node attributes adjacent to this chassis.";
+        uses topology-adjacency-attribute-group;
+      }
+    }
+  }
+
+  rpc waveserver-topology-delete-network-inventory {
+    description
+      "Delete a network element from network inventory list for the specified instance.";
+    input {
+      leaf chassis-id {
+        ui:ui-name "Chassis Identifier";
+        type cienawstypes:mac-string;
+        mandatory true;
+        description
+          "MAC address of the chassis.";
+      }
+    }
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

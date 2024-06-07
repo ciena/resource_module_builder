@@ -1,0 +1,491 @@
+module ciena-licensing {
+  namespace "urn:ciena:params:xml:ns:yang:ciena:ciena-licensing";
+
+  prefix "ciena-licensing";
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import ciena-types {
+    prefix "ciena-types";
+  }
+
+  import yuma-ncx {
+    prefix "ncx";
+  }
+
+  organization "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's licensing service properties
+     and functions.
+
+     Copyright (c) 2022  Ciena Corporation.  All rights
+     reserved.
+
+     All information contained herein is, and remains the
+     property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained
+     from Ciena Corporation.";
+
+  revision "2022-08-26" {
+    description
+      "1.6. In this revision, a configurable server-enable leaf was added into
+       license-server-config container. By default, this leaf is enabled. The
+       server-enable leaf in the license-client-config is now a global status
+       that takes precedent over the individual server's status.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2022-01-31" {
+    description
+      "1.5. In this revision, configurable registration-id in license-client-config
+       container is added. The primary-server and backup leaves were added to the
+       license-server-config and license-server-state lists. The refresh-time leaf's
+       default value has also been changed to 72 hours.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2021-02-18" {
+    description
+      "1.4. In this revision, a new list has been created to display
+      duplicate license features.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2019-06-06" {
+    description
+      "1.3. In this revision, refresh-time has been added to the license server
+      config. This leaf will be used to configure the time interval in which
+      the license syncs up with the external license server.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2019-03-11" {
+    description
+      "1.2. In this revision, pending-count has been added to the license properties.
+      This leaf will indicate how many pending licenses still need to acquired.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2018-02-20" {
+    description
+      "1.1. In this revision configurable registration-id in license-management-config
+      container is removed and is added in the license-management-state container
+      for operational get.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision "2017-04-28" {
+    description
+      "1.0";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  typedef license-source-enum {
+    type enumeration {
+      enum "pre-installed";
+      enum "local" ;
+      enum "served";
+	  enum "unknown";
+    }
+  }
+
+  typedef license-type-enum {
+    type enumeration {
+      enum "trial" ;
+      enum "subscription" ;
+      enum "perpetual" ;
+    }
+  }
+
+  typedef license-validity-state {
+    type enumeration {
+      enum "valid";
+      enum "expired";
+      enum "invalid" ;
+    }
+  }
+
+  typedef server-high-availability-state {
+    type enumeration {
+      enum "standby" ;
+      enum "active";
+    }
+  }
+
+  typedef protocol-type {
+    type enumeration {
+      enum "https" ;
+      enum "http";
+    }
+  }
+
+  typedef string-max-16 {
+    type string {
+      length "1..16";
+    }
+  }
+
+  typedef string-max-30 {
+    type string {
+      length "1..30";
+    }
+  }
+
+  typedef string-max-64 {
+    type string {
+      length "1..64";
+    }
+  }
+
+  typedef string-max-128 {
+    type string {
+      length "1..128";
+    }
+  }
+
+  typedef string-max-256 {
+    type string {
+      length "1..256";
+    }
+  }
+
+  grouping feature-information {
+    leaf description {
+      description
+        "The license feature description.";
+      type string-max-256;
+    }
+
+    leaf version {
+      description
+        "The license feature version.";
+      type string-max-16;
+    }
+
+    leaf source {
+      description
+        "The field provides the information about where the
+        license key is from. The default is unknown.";
+      type license-source-enum;
+      default "unknown";
+    }
+  }
+
+  grouping feature-properties {
+    description
+      "Properties of a license feature";
+    leaf host-id {
+      description
+        "This field is host id. If it is floating, it means
+        this license feature can be acquired by any device.
+        For node-locked license feature, this field contains
+        a device id string.";
+      type string-max-64;
+    }
+
+    leaf type {
+      description
+        "This field is the type of license feature. A trial
+        license and subscrition license expire in certain
+        time period. The default is empty.";
+      type license-type-enum;
+    }
+
+    leaf state {
+      description
+        "The license feature current status information.
+        This could be valid/expired/invalid. The default is
+        empty.";
+      type license-validity-state;
+    }
+
+    leaf count {
+      description
+        "The total number of licenses that can be acquired for
+        this license feature.";
+      type uint32;
+    }
+
+    leaf acquired-count {
+      description
+        "The license feature checked out count value.";
+      type uint32;
+    }
+
+    leaf notice {
+      description
+        "The license feature notice string.";
+      type string-max-128;
+    }
+
+    container expiration {
+      description
+        "The license expiry related information.";
+
+      leaf expiration-date {
+        description
+          "The license expiry date.";
+        type string-max-128;
+      }
+
+      leaf last-renewal-date {
+        description
+          "The most recent license renewal date.";
+        type string-max-128;
+      }
+
+      leaf time-remaining {
+        description
+          "The license feature remaining time to expiry
+          along with the units (days hours minutes seconds).";
+        type string-max-128;
+      }
+    }
+
+    container issuer {
+      description
+        "The license issuer related information.";
+
+      leaf issuer-name {
+        description
+          "The license feature issuer name.";
+        type string-max-128;
+      }
+
+      leaf issued-date {
+        description
+          "The license feature issued date.";
+        type string-max-128;
+      }
+    }
+
+    leaf pending-count {
+      description
+        "The number of pending licenses to be acquired.";
+      type uint32;
+    }
+  }
+
+  // license-management configuration data
+  container license-management-config {
+    description
+      "License management config information.";
+    container license-client-config {
+      description
+        "Licensing management client information";
+
+      leaf registration-id {
+        description
+          "The license registration ID. The default is empty.";
+        type string-max-30;
+      }
+
+      leaf server-enable {
+        description
+          "The license server enable or disable.";
+        type ciena-types:admin-state;
+        default "enabled";
+      }
+    }
+
+    list license-server-config {
+      description
+        "The license server information.";
+      max-elements "2";
+      key "hostname";
+
+      leaf hostname {
+        description
+          "The host name or resolved ipv4/ipv6 address of the
+          license server.";
+        type inet:uri;
+      }
+
+      leaf server-port {
+        description
+          "The license server port number.";
+        type inet:port-number;
+        default "7071";
+      }
+
+      leaf protocol {
+        description
+          "The protocol for server connection.";
+        type protocol-type;
+        default "https";
+      }
+
+      leaf refresh-time {
+        when "../backup = 'false'";
+        description
+          "The license server refresh time interval.";
+        type uint32 {
+           range "1 .. 72";
+        }
+        units "hours";
+        default 72;
+      }
+
+      leaf backup {
+        description
+          "The license server's role in being either a primary or backup server.";
+        type boolean;
+        default false;
+        ncx:user-write "create";
+      }
+
+      leaf primary-server {
+        when "../backup = 'true'";
+        description
+          "The primary license server to which this server acts as a backup.";
+        type leafref {
+          path "/license-management-config/license-server-config/hostname";
+        }
+        mandatory true;
+      }
+
+      leaf server-enable {
+        description
+          "The license server enable or disable.";
+        type ciena-types:admin-state;
+        default "enabled";
+      }
+    }
+  }
+  // license-management operational data
+  container license-management-state {
+    description
+      "Licensing management information";
+    config false;
+
+    container license-client-state {
+      description
+        "Licensing management client information";
+
+      leaf oper-state {
+        description
+          "This field is the operation state of the license client
+           and is not modifiable.";
+        type ciena-types:oper-state;
+      }
+
+      leaf registration-id {
+        description
+          "The license registration id.";
+        type string-max-64;
+      }
+
+      list license-feature {
+        description
+          "All the license feature inventory list.";
+        key "feature-name";
+
+        leaf feature-name {
+          description
+            "The license feature name.";
+          type string-max-128;
+        }
+
+        uses feature-information;
+
+        container properties {
+          description
+            "The license feature property information.";
+          uses feature-properties;
+        }
+
+        list feature-instance {
+           description
+             "List of license feature properties with the same feature-name";
+           key "index";
+
+           leaf index {
+              description
+                "The index of the license-feature in the list.";
+              type uint32;
+           }
+           uses feature-information;
+           uses feature-properties;
+        }
+      }
+    }
+    list license-server-state {
+      description
+        "Licensing server management information";
+
+      key "hostname";
+
+      leaf hostname {
+        description
+          "The host name or resolved ipv4/ipv6 address of the
+           license server.";
+        type leafref {
+          path "/license-management-config/license-server-config/hostname";
+        }
+      }
+
+      leaf server-port {
+        description
+          "The license server port number.";
+        type leafref {
+          path "/license-management-config/license-server-config/server-port";
+        }
+      }
+
+      leaf server-active-state {
+        description
+          "The license server active/standby state.";
+        type server-high-availability-state;
+      }
+
+      leaf server-oper-state {
+        description
+          "The license server operational state and/or reachability.";
+        type ciena-types:oper-state;
+      }
+
+      leaf refresh-time {
+        description
+          "The active license server refresh time interval.";
+        type leafref {
+          path "/license-management-config/license-server-config/refresh-time";
+        }
+      }
+
+      leaf backup {
+        description
+          "The license server's role in being either a primary or backup server.";
+        type leafref {
+          path "/license-management-config/license-server-config/backup";
+        }
+      }
+
+      leaf primary-server {
+        description
+          "The primary license server to which this server acts as a backup.";
+        type leafref {
+          path "/license-management-config/license-server-config/primary-server";
+        }
+      }
+    }
+  }
+}

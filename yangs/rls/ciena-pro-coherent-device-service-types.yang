@@ -1,0 +1,155 @@
+module ciena-pro-coherent-device-service-types {
+  namespace "urn:ciena:ns:yang:coherent-device-service-types";
+  prefix coherent-device-service-types;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Service definitions for coherent devices.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  typedef service-id-type {
+    type uint8;
+    description
+      "";
+  }
+
+  typedef service-mode-enum {
+    type enumeration {
+      enum 100GE {
+        description
+          "A 100GE service";
+      }
+      enum 200GE {
+        description
+          "A 200GE service";
+      }
+      enum 400GE {
+        description
+          "A 400GE service";
+      }
+      enum OTU4 {
+        description
+          "An OTU4 service";
+      }
+      enum OTUCN {
+        description
+          "An OTUCn service for the purpose of ODUCn regeneration application.";
+      }
+      enum none {
+        description
+          "The host-side interface service-type has not been assigned and ise unused. This value
+           may not be seen as a product may omit the attribute when it is not configured.";
+      }
+      enum unknown {
+        description
+          "The host-side interface service-type mode is not known.";
+      }
+    }
+    description
+      "WaveLogic device host-side interface mode. A WaveLogic device supports multiple independent services.
+       This type represents at a high-level the client service protocol carried over the WaveLogic media-side.";
+  }
+
+  typedef service-interface-type-enum {
+    type enumeration {
+      enum ethernet {
+        description
+          "";
+      }
+      enum otu {
+        description
+          "";
+      }
+      enum otucn {
+        description
+          "";
+      }
+    }
+    description
+      "";
+  }
+
+  grouping service-list-entry-diagnostic-group {
+    container diagnostics {
+      leaf bandwidth-not-available {
+        type boolean;
+        default "false";
+        description
+          "There is not enough bandwidth available for the configured host-service
+           based on the configured media-interface transmission-mode bit-rate.";
+      }
+      leaf not-provisioned {
+        type boolean;
+        default "false";
+        description
+          "The service is available but is not currently provisioned.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping service-list-entry-group {
+    leaf service-id {
+      type coherent-device-service-types:service-id-type;
+      description
+        "";
+    }
+    leaf mode {
+      type coherent-device-service-types:service-mode-enum;
+      description
+        "A read-only leaf that indicates the actual mode for the WaveLogic device client/host interface.
+         Configuration of this leaf is rejected. Its value is derived by the system.";
+    }
+    leaf type {
+      type coherent-device-service-types:service-interface-type-enum;
+      description
+        "";
+    }
+    leaf parent-resource {
+      type coherent-device-common-types:string128;
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping service-list-state-group {
+    list service {
+      key "service-id";
+      uses service-list-entry-group;
+      uses service-list-entry-diagnostic-group;
+      description
+        "";
+    }
+    description
+      "";
+  }
+}

@@ -1,0 +1,168 @@
+module ciena-ztp {
+  namespace "http://www.ciena.com/ns/yang/ciena-ztp";
+  prefix ztp;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-tls-service-profile {
+      prefix ciena-tsp;
+  }
+  import ciena-types {
+    prefix ciena-types;
+  }
+
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the YANG definition for Zero Touch 
+     Provisioning (ZTP) per Ciena functional specification
+     106-0008-001_CES_DHCPClient_FS.doc.
+
+     Copyright (c) 2018 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains the property of
+     Ciena Corporation. Dissemination of this information or
+     reproduction of this material is strictly forbidden unless prior
+     written permission is obtained from Ciena Corporation.";
+
+  revision 2021-06-01 {
+    description
+      "Adding optional config leaf hw-role to represent vendor-specific 
+       hardware role of the device.";
+  }
+
+  revision 2019-07-16 {
+    description
+      "Adding leaf ztp-type in container ztp to distinguish between 
+       legacy command-file based ZTP vs RFC8572 SZTP.
+       Adding leaf admin-state to allow the user to disable ZTP before
+       ZTP process starts
+       Adding ztp-state oper container with oper-state and ztp-status leafs";
+    reference
+      "RFC 8572 Secure Zero Touch Provisioning (SZTP)";
+  }
+
+  revision 2018-05-23 {
+    description
+      "Initial revision.";
+    reference
+      "RFC 2132, DHCP Options and BOOTP Vendor Extensions
+       RFC 3925, Vendor-Identifying Vendor Options for
+                 Dynamic Host Configuration Protocol version 4
+                 (DHCPv4)
+       Ciena Functional Specification.";
+  }
+
+  typedef ztp-internal-state {
+     type enumeration {
+        enum first-start {
+            description
+                "First state, ZTP state-machine starts with";
+        }
+        enum bootstrapping {
+            description
+                "ZTP process has started, bootstrap in progress";
+        }
+        enum ztp-wait {
+            description
+                "ZTP process is waiting for one of the following :
+                  - DHCP options
+                  - connection to a Bootstrap server";
+        }
+        enum ztp-halt {
+            description
+                "ZTP process is temporarily halted because the device is not ready for Command File URL processing";
+        }
+        enum activating {
+            description
+                "Software image download is in progress";
+        }
+        enum activated {
+            description
+                "Software image download and activated";
+        }
+     }
+     description
+        "ZTP status reflecting the internal state-machine of ZTP process";
+  }
+
+  container ztp {
+      description
+          "This is the top-level container for the ZTP. It contains
+          ZTP client configuration values and the operational state 
+          container.";
+      reference
+          "Ciena Functional Specification";
+
+      leaf-list server-url {
+          type inet:uri;
+          description
+            "A list of the URLs to try for ZTP.";
+      }
+
+      leaf tls-service-profile {
+          type leafref {
+              path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+          }
+          description
+            "The TLS Service Profile used for ZTP secure file transfers.";
+      }
+      leaf ztp-type {
+          type enumeration {
+              enum legacy;
+              enum rfc8572;
+          }
+          default "legacy";
+          description
+            "The ZTP type could be legacy command-file based ZTP or RFC8572 based SZTP";
+      }
+      leaf admin-state {
+          type ciena-types:admin-state;
+          default "enabled";
+          description
+            "ZTP admin-state can be configured to be disabled or enabled. 
+             Disabling ZTP may be postponed if ZTP operation is in progress.";
+      }
+      leaf hw-role {
+          type string {
+             length "1..128";
+             pattern '[0-9a-zA-Z\-_.]*';
+         }
+         description
+             "This optional input parameter enables a device to communicate 
+              to the bootstrap server its vendor-specific hardware role";
+      }
+   }
+
+   container ztp-state {
+      config false;
+         description
+            "This is the top-level operational state for ZTP.";
+         reference
+            "Ciena Functional Specification";
+
+      leaf oper-state {
+          type ciena-types:oper-state;
+          description
+            "Operational state of ZTP";
+      }
+      leaf ztp-status {
+          type ztp-internal-state;
+          description
+            "ZTP status reflecting the internal state-machine of ZTP process";
+      }
+   }
+}

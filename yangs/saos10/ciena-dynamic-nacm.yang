@@ -1,0 +1,468 @@
+module ciena-dynamic-nacm {
+  namespace "http://www.ciena.com/ns/yang/ciena-dynamic-nacm";
+  prefix "ciena-dynamic-nacm";
+
+  import openconfig-system { prefix oc-sys; }
+  import ciena-types { prefix cn-type; }
+  import openconfig-inet-types { prefix inet; }
+  import ciena-tls-service-profile { prefix ciena-tsp; }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines LDAP server config for dynamic NACM.
+
+      Copyright (c) 2022 Ciena Corporation.  All rights reserved.
+
+      All information and intellectual property contained in this
+      YANG module (Specification) is, and remains the property
+      of Ciena Corporation. Ciena retains all title and ownership
+      in the Specification, including any revisions.
+
+      Ciena grants all interested parties that access the
+      Specification with the intent to use or distribute ('you') a
+      non-exclusive, no-cost license to use and distribute
+      unmodified copies of the Specification solely in connection
+      with the management of Ciena products sold by or on
+      behalf of Ciena, provided this copyright notice and license
+      appear on all copies. Ciena may rescind or modify this
+      license at any time.
+
+      This Specification is supplied 'as is', and Ciena makes no
+      warranty, either express or implied, as to the use, operation,
+      condition, or performance of the Specification. You agree
+      that Ciena has no liability for your use of the Specification.";
+
+  revision 2023-07-07 {
+    description
+      "Added max length for binddn.
+       Added RPC to clear dynamic NACM statistics.";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision 2023-01-19 {
+    description
+      "Support Secure connection with LDAP server.
+       Add yang config and state objects to support LDAP
+       server resilience scenarios.
+       Support LDAP server stats.
+       Added LDAP server yang notification.
+       Modified range for connect timeout, bind timeout and
+       search timeout";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  revision 2022-03-28 {
+    description
+      "Initial version";
+    reference
+      "No specific reference; standard not available.";
+  }
+
+  /*--------------------*/
+  /*  Types Definition  */
+  /*--------------------*/
+  typedef secure-ldap-type {
+    type enumeration {
+      enum off {
+        description
+          "Unsecured connection with LDAP server";
+      }
+      enum ldaps {
+        description
+          "Secured connection with LDAP server using LDAPS";
+      }
+      enum start-tls {
+        description
+          "Secured connection with LDAP server using StartTLS";
+      }
+    }
+    description
+      "Mechanisms to connect to LDAP server";
+  }
+
+  typedef server-state-type {
+    type enumeration {
+      enum available {
+        description
+          "LDAP server is available to download NACM rules";
+      }
+      enum failed {
+        description
+          "Connection with LDAP server failed and connection with it
+           shall be attempted after configured retry time";
+      }
+    }
+    description
+      "State of the LDAP server";
+  }
+
+  typedef hold-down-delay-status-type {
+    type enumeration {
+      enum inactive {
+        description
+          "Hold down delay timer is not running and communication with
+           LDAP servers is going to be tried to download NACM rules.";
+      }
+      enum active {
+        description
+          "Hold down delay timer is running and communication with
+           LDAP servers is going to be skipped.";
+      }
+    }
+    description
+      "Status of the hold down delay timer";
+  }
+
+  grouping ldap-server-state {
+    description
+      "Common operational state data for LDAP servers";
+
+    leaf connection-skips {
+      type uint64;
+      description
+        "Number of connections towards the server skipped";
+    }
+
+    leaf connection-opens {
+      type uint64;
+      description
+        "Number of new connections opened towards the server";
+    }
+
+    leaf connection-closes {
+      type uint64;
+      description
+        "Number of connections closed with the server after successful operation";
+    }
+
+    leaf connection-aborts {
+      type uint64;
+      description
+        "Number of connections aborted towards the server due to internal error";
+    }
+
+    leaf connection-timeouts {
+      type uint64;
+      description
+        "Number of connection timeouts to the server";
+    }
+
+    leaf search-timeouts {
+      type uint64;
+      description
+        "Number of search timeouts to the server";
+    }
+
+    leaf rule-prase-errors {
+      type uint64;
+      description
+        "Number of errors in parsing rules received from the server";
+    }
+  }
+
+  augment /oc-sys:system {
+    description
+      "Augmenting System attributes to dynamic NACM config.";
+
+    container dynamic-nacm {
+      description
+        "Parameters corresponding to dynamic NACM.";
+   
+      container config {
+        description
+          "Configuration parameters for dynamic NACM.";
+
+        leaf admin-state {
+          type cn-type:admin-state;
+          default "disabled";
+          description
+            "Enables or disables dynamic NACM feature's admin state.";
+        }
+
+        leaf secure-ldap {
+          type secure-ldap-type;
+          default "off";
+          description
+            "Secure or unsecure mechanism to connect to LDAP server.";
+        }
+
+        leaf tls-service-profile {
+          type leafref {
+            path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+          }
+          description
+            "The TLS service profile to be used for specific cipher suites and elliptical curves.";
+        }
+
+        leaf hold-down-delay {
+          type uint16{
+            range "0 | 10..1200";
+          }
+          default 30;
+          units seconds;
+          description
+            "When all the LDAP servers configured have failed, this is the amount of delay before
+             LDAP servers may be reattempted.";
+        }
+
+        container ldap-servers-config {
+          description
+            "Top-level container for list of LDAP servers";
+
+          list ldap-server {
+            key host;
+            max-elements 4;
+            description
+              "List of LDAP server entries";
+
+            leaf host {
+              type "inet:host";
+              description
+                "The IP address or host name of the LDAP server.";
+            }
+
+            leaf port {
+              type uint32 {
+                range "1..65535";
+              }
+            description
+              "The port of the LDAP server.";
+            }
+
+            leaf binddn {
+              type string {
+                length "1..512";
+              }
+              description
+                "The binddn of the LDAP server.";
+            }
+
+            leaf bindpw {
+              type string;
+              description
+                "The bindpw of the LDAP server. Length of bindpw must not exceed 128";
+            }
+
+            leaf connect-timeout {
+              type uint16 {
+                range "1..120";
+              }
+              units seconds;
+              default "6";
+              description
+                "Max time to connect to the LDAP server.";
+            }
+
+            leaf bind-timeout {
+              type uint16 {
+                range "1..120";
+              }
+              units seconds;
+              default "6";
+              description
+                "Max time to bind to the LDAP server.";
+            }
+
+            leaf search-timeout {
+              type uint16 {
+                range "1..120";
+              }
+              units seconds;
+              default "6";
+              description
+                "Max time to complete search operation on the LDAP server.";
+            }
+
+            leaf retry-delay {
+              type uint16 {
+                range "0 | 10..3600";
+              }
+              default 30;
+              units seconds;
+              description
+                "Amount of delay before the failed LDAP server may be reattempted.";
+            }
+          }
+        }
+      }
+
+      container state {
+        config false;
+        description
+          "Operational state data related to dynamic NACM";
+
+        leaf hold-down-delay-status {
+          type hold-down-delay-status-type;
+          description
+            "Status of the hold down delay timer";
+        }
+
+        leaf ldap-communication-skips {
+          type uint64;
+          description
+            "Number of times communication with LDAP server(s) skipped";
+        }
+
+        list user {
+          key user;
+          description
+            "List of dynamic NACM users";
+
+          leaf user {
+            type string;
+            description
+              "The user that has been logged on to the device";
+          }
+
+          leaf group {
+            type string;
+            description
+               "The group of the user for which NACM rules have been downloaded";
+          }
+
+          leaf rule-download-time {
+            type string;
+            description
+              "The date and time when NACM rules were downloaded.";
+          }
+        }
+
+        container ldap-servers-stats {
+          description
+            "Operational state data of LDAP servers";
+
+          list ldap-server {
+            key host;
+            max-elements 4;
+            description
+              "List of LDAP server entries";
+
+            leaf host {
+              type "inet:host";
+              description
+                "The IP address or host name of the LDAP server.";
+            }
+
+            leaf server-state {
+              type server-state-type;
+              description
+                "State of the LDAP server";
+            }
+
+            leaf last-access-time {
+              type string;
+              description
+                "The date and time when connection with LDAP server was tried.";
+            }
+
+            leaf rule-download-time {
+              type string;
+              description
+                "The date and time when NACM rules were successfully downloaded from LDAP server.";
+            }
+
+            uses ldap-server-state;
+          }
+        }
+      }
+    }
+  }
+
+  rpc clear-dynamic-nacm-statistics {
+    description
+      "RPC to clear the dynamic NACM statistics.";
+
+    input {
+      choice clear-scope {
+        mandatory true;
+        description
+          "Clear all dynamic NACM statistics or for a specific LDAP host.";
+        case host {
+          leaf host-id {
+            type "inet:host";
+            description
+              "The IP address or host name of the LDAP host server.";
+          }
+        }
+
+        case all {
+          leaf all {
+            type empty;
+            description
+              "Clear all statistics for dynamic NACM.";
+          }
+        }
+      }
+    }
+    output {
+      leaf status {
+        type cn-type:status;
+        description
+          "Status of the clear statistics operation.";
+      }
+    }
+  } // end rpc clear-dynamic-nacm-statistics
+
+  notification ldap-server-status-event {
+    description
+      "LDAP server status event notification";
+
+    leaf ldap-server {
+      description
+        "The IP address or host name of the LDAP server.";
+      type string;
+    }
+
+    leaf user {
+      description
+        "The user that has logged on to the device";
+      type string;
+    }
+
+    leaf nacm-group {
+      description
+        "The group of the user for which NACM rules have been downloaded";
+      type string;
+    }
+
+    leaf ldap-server-status {
+      description
+        "State of the LDAP server.";
+      type enumeration {
+        enum AVAILABLE {
+          description "LDAP server is available.";
+        }
+        enum UNAVAILABLE {
+          description "LDAP server is unavailable.";
+        }
+        enum RULEPARSEERROR {
+          description "Error in parsing the NACM rules downloaded from LDAP server.";
+        }
+      }
+    }
+  }
+
+  notification all-ldap-servers-down-event {
+    description
+      "All LDAP servers down event notification";
+
+    leaf all-server-down {
+      description
+        "All LDAP servers down";
+      type boolean;
+    }
+  }
+}

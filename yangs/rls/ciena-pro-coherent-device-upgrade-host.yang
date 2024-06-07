@@ -1,0 +1,240 @@
+module ciena-pro-coherent-device-upgrade-host {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:coherent-device-upgrade-host";
+  prefix coherent-device-upgrade-host;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device {
+    prefix coherent-device;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Definition for WaveLogic device upgrade operations and firmware status";
+
+  revision 2023-12-01 {
+    description
+      "Initial version";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef device-upgrade-restart-type-enum {
+    type enumeration {
+      enum warm-opportunistic {
+        description
+          "";
+      }
+      enum cold {
+        description
+          "";
+      }
+    }
+    description
+      "";
+  }
+
+  typedef device-upgrade-interface-type-enum {
+    type enumeration {
+      enum CDB {
+        description
+          "For Ciena and 3rd party coherent QSFP-DD and CFP2-DCO devices.";
+      }
+      enum EMI {
+        description
+          "For WaveLogic Nano and Extreme devices.";
+      }
+    }
+  }
+
+  typedef device-file-transfer-protocol-enum {
+    type enumeration {
+      enum scp {
+        description
+          "The file is to be retrieved using SCP.";
+      }
+      enum local {
+        description
+          "The file is present on the local filesystem.";
+      }
+    }
+  }
+
+  grouping internal-file-server-details-group {
+    leaf protocol {
+      type device-file-transfer-protocol-enum;
+      description
+        "";
+    }
+    leaf ip-address {
+      type coherent-device-common-types:ip-address;
+      description
+        "";
+    }
+    leaf ip-port {
+      type coherent-device-common-types:ip-port;
+      description
+        "";
+    }
+    leaf username {
+      type coherent-device-common-types:username-string;
+      description
+        "Optional";
+    }
+    leaf password {
+      type coherent-device-common-types:password-string;
+      description
+        "Optional";
+    }
+    leaf local-temp-directory {
+      type coherent-device-common-types:filename-string;
+      description
+        "Optional
+         When interface for file transfer is CDB and the image file is located on a remote filesystem
+         the WLRA will temporarily download the file from the remote location into the local-temp-directory.";
+    }
+  }
+
+  augment "/coherent-device:coherent-devices/coherent-device:device/coherent-device:state/coherent-device:inventory/coherent-device:firmware" {
+    ciena-common-yang:augment-name "-augment-coherent-devices-device-state-inventory-firmware";
+    action install {
+      description
+        "";
+      input {
+        leaf filename {
+          type coherent-device-common-types:filename-string;
+          mandatory true;
+          description
+            "The local path and filename to the image file to be used for this operation.
+             The file must have been transferred to the platform previously.";
+        }
+        leaf restart-type {
+          type device-upgrade-restart-type-enum;
+          mandatory true;
+          description
+            "";
+        }
+        leaf interface {
+          type device-upgrade-interface-type-enum;
+          description
+            "<fill in description>
+             No default defined - host must choose CDB or EMI. Cannot be mandatory.";
+        }
+        leaf restart-delay {
+          type uint16;
+          units "milliseconds";
+          default "0";
+          description
+            "";
+        }
+        container internal-server {
+          uses internal-file-server-details-group;
+          description
+            "
+             When interface is EMI...
+                - Image file may be located on an internal file server - only SCP is supported, specify all file server details
+                - Image file may be located on the local file system - specify the internal-server/protocol as local and no other details are required
+             When interface is CDB...
+                - WLRA will temporarily download the file if not currently available on the local filesystem - specify internal file server details
+                - Otherwise, specify internal-server/protocol as local and omit all other nodes
+            ";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action download {
+      description
+        "";
+      input {
+        leaf filename {
+          type coherent-device-common-types:filename-string;
+          mandatory true;
+          description
+            "The local path and filename to the image file to be used for this operation.
+             The file must have been transferred to the platform previously.";
+        }
+        leaf interface {
+          type device-upgrade-interface-type-enum;
+          description
+            "<fill in description>
+             No default defined - host must choose CDB or EMI. Cannot be mandatory.";
+        }
+        container internal-server {
+          uses internal-file-server-details-group;
+          description
+            "
+             When interface is EMI...
+                - Image file may be located on an internal file server - only SCP is supported, specify all file server details
+                - Image file may be located on the local file system - specify the internal-server/protocol as local and no other details are required
+             When interface is CDB...
+                - WLRA will temporarily download the file if not currently available on the local filesystem - specify internal file server details
+                - Otherwise, specify internal-server/protocol as local and omit all other nodes
+            ";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action activate {
+      description
+        "";
+      input {
+        leaf restart-type {
+          type device-upgrade-restart-type-enum;
+          mandatory true;
+          description
+            "";
+        }
+        leaf restart-delay {
+          type uint16;
+          units "milliseconds";
+          default "0";
+          description
+            "";
+        }
+      }
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action commit {
+      description
+        "";
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    action abort {
+      description
+        "An abort action is possible only when using a multi-step upgrade or in the event of
+         an upgrade failure. While performing a multi-step upgrade, abort is accepted during
+         the download process or at the completion of any upgrade step. For single-step upgrade
+         via install, or while a step is in-progress, an abort request is rejected.";
+      output {
+        uses coherent-device-common-types:return-code;
+      }
+    }
+    description
+      "";
+  }
+}

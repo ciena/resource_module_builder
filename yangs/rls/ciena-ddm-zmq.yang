@@ -1,0 +1,137 @@
+module ciena-ddm-zmq {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ddm-zmq";
+  prefix ddm-zmq;
+
+  import ciena-ddy-msg {
+    prefix ciena-ddy-msg;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Yang file for ZMQ options and configurable parameters related to
+     DDY Messaging";
+
+  revision 2022-08-17 {
+    description
+      "Depo option to configure zmq tx/rx hwm queue size";
+    ciena-common-version:string "0.4.0";
+  }
+  revision 2022-06-21 {
+    description
+      "Allow configurable autoreconnect options";
+    ciena-common-version:string "0.3.0";
+  }
+  revision 2019-10-21 {
+    description
+      "Added in ZMQ option for pubtopic.";
+    ciena-common-version:string "0.2.0";
+  }
+  revision 2015-04-07 {
+    description
+      "Initial revision";
+    ciena-common-version:string "0.1.0";
+  }
+
+  identity zmq {
+    base ciena-ddy-msg:ddm-protocols;
+    description
+      "Zero-MQ Client/Server";
+  }
+
+  grouping zmq-default-options {
+    leaf timeout {
+      type uint32;
+      units "msecs";
+      default "5000";
+      description
+        "Response timeout in millisec";
+    }
+    leaf format {
+      type identityref {
+        base ciena-ddy-msg:ddm-format;
+      }
+      description
+        "Serialization format for the data.";
+    }
+    leaf reconnect-interval {
+      type uint32;
+      units "msecs";
+      default "100";
+      description
+        "Reconnect interval time";
+    }
+    leaf reconnect-interval-max {
+      type uint32;
+      units "msecs";
+      description
+        "Max connect reconnect interval time. On each reconnect attempt, the previous interval shall be doubled
+         until reconnect-interval-max is reached";
+    }
+    leaf crud-ingress-queue-hwm {
+      type uint32;
+      default "1000";
+      description
+        "Set the zmq high water mark for the inbound messages. When the HWM limit is reached, the socket
+         goes into a blocking state and upstream backpressure is applied";
+    }
+    leaf crud-egress-queue-hwm {
+      type uint32;
+      default "1000";
+      description
+        "Set the zmq high water mark for the outbound messages. When the HWM limit is reached,
+         egress messages are dropped";
+    }
+    leaf scale {
+      type uint8;
+      default "3";
+      description
+        "Scale of the server.  Higher numbers will allocate more
+         resources on the server but will increase responsiveness
+         of the server to concurrent requests";
+    }
+  }
+
+  grouping zmq-options {
+    container zmq-options {
+      leaf ipport {
+        type string;
+        description
+          "IP and Port in the URL of the destination.";
+      }
+      leaf pubipport {
+        type string;
+        description
+          "IP and Port of the publisher to connect to";
+      }
+      leaf pubtopic {
+        type string;
+        description
+          "ZMQ topic to publish to.  If not provided, the
+           pubipport will be used";
+      }
+      uses zmq-default-options;
+    }
+  }
+
+  augment "/ciena-ddy-msg:domains/ciena-ddy-msg:protocols" {
+    when "ciena-ddy-msg:type = 'ciena-ddy-msg:zmq'";
+    uses zmq-options;
+  }
+
+  container zmq-default-options {
+    description
+      "Override the yang default with the product-specific default";
+    uses zmq-default-options;
+  }
+}

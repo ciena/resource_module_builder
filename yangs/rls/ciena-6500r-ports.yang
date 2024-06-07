@@ -1,0 +1,245 @@
+module ciena-6500r-ports {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-ports";
+  prefix equipment;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-pro-frequencies {
+    prefix ciena-pro-frequencies;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's port object for the 6500r-Series platform";
+
+  revision 2021-01-29 {
+    version:version "version" {
+      version:string "1.3.0";
+    }
+    description
+      "Added mux-demux-type leaf";
+  }
+  revision 2020-12-01 {
+    version:version "version" {
+      version:string "1.2.0";
+    }
+    description
+      "Added logical-line leaf";
+  }
+  revision 2020-06-10 {
+    version:version "version" {
+      version:string "1.1.0";
+    }
+    description
+      "Removed config false for parameters that should be saved in datastore";
+  }
+  revision 2020-02-07 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Changed object-name to type list; added Name leaf to object-name.";
+  }
+  revision 2017-11-01 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "6500r-series Release 1.0";
+  }
+
+  grouping ciena-6500r-ports-mount {
+    list port {
+      key "name";
+      leaf name {
+        type ciena-6500r-types:object-name;
+        description
+          "Port name";
+      }
+
+      leaf user-label {
+        type string;
+        description
+          "User label";
+      }
+
+      leaf parent {
+        type leafref {
+          path "../name";
+        }
+        description
+          "Port parent";
+      }
+
+      list facilities {
+        key "name";
+        leaf name {
+          type string;
+        }
+
+        list object-names {
+          key "name";
+          leaf name {
+            type instance-identifier;
+            description
+              "A reference to an object.";
+          }
+        }
+
+        leaf auto-provisioning {
+          type boolean;
+        }
+
+        leaf delete-supported {
+          type boolean;
+        }
+      }
+
+      leaf port-type {
+        type enumeration {
+          enum "mpo" {
+            description
+              "MPO";
+          }
+          enum "lc" {
+            description
+              "LC";
+          }
+          enum "rj-45" {
+            description
+              "RJ45";
+          }
+          enum "usb-a" {
+            description
+              "USB-A";
+          }
+          enum "usb-b" {
+            description
+              "USB-b";
+          }
+          enum "sub-port" {
+            description
+              "Sub-port";
+          }
+          enum "internal" {
+            description
+              "internal";
+          }
+          enum "passthrough" {
+            description
+              "Passthrough";
+          }
+        }
+        description
+          "Type of the port.";
+      }
+
+      leaf label {
+        type string {
+          length "1..64";
+        }
+        description
+          "Operator identifier for equipment description. 64 Character Maximum.";
+      }
+
+      leaf partner-port {
+        when "../port-direction[.= tx or .= rx]";
+        type leafref {
+          path "../name";
+        }
+        description
+          "Port partner";
+      }
+
+      leaf wavelength {
+        type decimal64 {
+          fraction-digits 2;
+          range "1530.. 1625";
+        }
+        units "nm";
+        config false;
+        description
+          "Port wavelength";
+      }
+
+      leaf frequency {
+        type leafref {
+          path "/ciena-pro-frequencies:freq-group/ciena-pro-frequencies:name";
+        }
+        description
+          "Port frequency";
+      }
+
+      leaf port-direction {
+        type enumeration {
+          enum "tx" {
+            description
+              "transmit";
+          }
+          enum "rx" {
+            description
+              "receive";
+          }
+          enum "bidirectional" {
+            description
+              "bidirectional";
+          }
+        }
+        description
+          "Whether port is uni (tx/rx) or bi-directional";
+      }
+
+      leaf snmp-instance {
+        type uint32;
+        description
+          "The snmp instance of the port";
+      }
+
+      uses ciena-6500r-types:admin-state;
+
+      leaf logical-line {
+        type uint8;
+        description
+          "The logical line index the port is associated with";
+      }
+
+      leaf mux-demux-type {
+        type enumeration {
+          enum "colored" {
+            description
+              "This port has a fixed frequency";
+          }
+          enum "colorless" {
+            description
+              "This port supports any frequency within the band";
+          }
+          enum "contentionless" {
+            description
+              "This port can use any frequency, regardless of which frequencies are in use on other ports of the same card";
+          }
+        }
+        description
+          "Type of mux/demux supported by this port.";
+      }
+    }
+  }
+
+  grouping ciena-6500r-ports-mount-actions;
+
+  uses ciena-6500r-ports-mount;
+}

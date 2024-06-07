@@ -1,0 +1,405 @@
+module ciena-6500r-chc {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-chc";
+  prefix channel-control;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ciena-6500r-ports;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's channel-control object for the 6500r platform";
+
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Version formating";
+  }
+  revision 2018-01-01 {
+    description
+      "Initial Revision";
+  }
+
+  typedef chc-mode {
+    type enumeration {
+      enum "LOSS" {
+        description
+          "Target Loss Control Mode";
+      }
+      enum "POWER" {
+        description
+          "Target Power Control Mode";
+      }
+      enum "OPENLOOPLOSS" {
+        description
+          "Target Loss Control Open Loop Mode";
+      }
+    }
+    description
+      "CHC Mode.  LOSS indicates Target Loss Control Mode.  POWER indicates Target Power Control Mode.  OPENLOOPLOSS indicates Target Loss Control Open Loop Mode.";
+  }
+
+  grouping ciena-6500r-chc-mount {
+    container channel-control {
+      list chc {
+        key "name";
+        leaf name {
+          type string {
+            length "1..63";
+          }
+          mandatory true;
+          description
+            "CHC identification/name";
+        }
+
+        leaf parent {
+          type leafref {
+            path "/ciena-6500r-ports:port/ciena-6500r-ports:name";
+          }
+          description
+            "CHC Parent";
+        }
+
+        leaf min-freq {
+          type ciena-6500r-types:frequency;
+          mandatory true;
+          description
+            "Minimum Channel Frequency";
+        }
+
+        leaf max-freq {
+          type ciena-6500r-types:frequency;
+          mandatory true;
+          description
+            "Maximum Channel Frequency";
+        }
+
+        leaf min-freq-deadband {
+          type ciena-6500r-types:frequency;
+          description
+            "Minimum Channel Frequency Deadband";
+        }
+
+        leaf max-freq-deadband {
+          type ciena-6500r-types:frequency;
+          description
+            "Maximum Channel Frequency Deadband";
+        }
+
+        leaf opaque {
+          type enumeration {
+            enum "YES" {
+              description
+                "Channel is Blocked.";
+            }
+            enum "NO" {
+              description
+                "Channel is not Blocked.";
+            }
+          }
+          default "YES";
+          description
+            "Is Opaque.  YES indicates the Channel is Blocked.  NO indicates the Channel is Not Blocked.";
+        }
+
+        leaf switch-selector {
+          type instance-identifier;
+          description
+            "Switch Selector.";
+        }
+
+        leaf chcmode {
+          type chc-mode;
+          description
+            "CHC Mode.  LOSS indicates Target Loss Control Mode.  POWER indicates Target Power Control Mode.  OPENLOOPLOSS indicates Target Loss Control Open Loop Mode.";
+        }
+
+        uses ciena-6500r-types:admin-state;
+      }
+
+      list ssc {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "SSC Facility name";
+        }
+
+        leaf parent {
+          type leafref {
+            path "/ciena-6500r-ports:port/ciena-6500r-ports:name";
+          }
+          description
+            "SSC Parent Port";
+        }
+
+        leaf bias {
+          type decimal64 {
+            fraction-digits 2;
+            range "-20..20";
+          }
+          units "dB";
+          default "0";
+          description
+            "Provisioned Attenuation Bias of a Spectral Frequency Unit.";
+        }
+
+        leaf base-target-power {
+          type decimal64 {
+            fraction-digits 2;
+            range "-21..24";
+          }
+          units "dBm";
+          description
+            "Base Target Power";
+        }
+
+        leaf reference-bandwidth {
+          type decimal64 {
+            fraction-digits 1;
+            range "12..50";
+          }
+          units "GHz";
+          default "12.5";
+          description
+            "Reference Bandwidth which refers to the frame of reference for local controller to use.Supported values: 12.5GHz (flexiblegrid card only), 50GHzITU.";
+        }
+
+        leaf min-freq {
+          type ciena-6500r-types:frequency;
+          config false;
+          description
+            "Minimum Spectral Frequency Unit";
+        }
+
+        leaf max-freq {
+          type ciena-6500r-types:frequency;
+          config false;
+          description
+            "Minimum Spectral Frequency Unit";
+        }
+
+        leaf parent-nmcc {
+          type string;
+          config false;
+          description
+            "Parent NMCC Index";
+        }
+
+        leaf nmcc-relative-index {
+          type string;
+          config false;
+          description
+            "NMCC Relative Index";
+        }
+
+        leaf attenuation {
+          type decimal64 {
+            fraction-digits 1;
+            range "0..28";
+          }
+          units "dB";
+          config false;
+          description
+            "It is the actual attenuation that is set on the card to this SSC";
+        }
+      }
+
+      list nmcc {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "NMCC Facility name";
+        }
+
+        leaf parent {
+          type leafref {
+            path "/channel-control:channel-control/channel-control:chc/channel-control:name";
+          }
+          mandatory true;
+          description
+            "Parent CHC";
+        }
+
+        leaf target-loss {
+          type decimal64 {
+            fraction-digits 2;
+            range "0..28";
+          }
+          units "dBm";
+          default "18.0";
+          description
+            "Target attenuation value to be achieved for the NMCC.";
+        }
+
+        leaf control-target-power {
+          type decimal64 {
+            fraction-digits 2;
+            range "-21..24";
+          }
+          units "dBm";
+          description
+            "Target Power in the control bandwidth to be achieved by the controller for the NMCC in dBm.";
+        }
+
+        leaf control-frequency-offset {
+          type decimal64 {
+            fraction-digits 2;
+            range "-4650..4650";
+          }
+          units "GHz";
+          default "0";
+          description
+            "Defines spectral offset for controller from the center frequency.";
+        }
+
+        leaf reference-bandwidth {
+          type decimal64 {
+            fraction-digits 1;
+            range "12..50";
+          }
+          units "GHz";
+          default "12.5";
+          description
+            "Reference Bandwidth which refers to the frame of reference for local controller to use.";
+        }
+
+        leaf initial-attenuation {
+          type decimal64 {
+            fraction-digits 2;
+            range "0..18";
+          }
+          units "dB";
+          default "12";
+          description
+            "Initial Attenuation. Sets the bias when opening pixels for the first time channel add in power mode.";
+        }
+
+        leaf center-freq {
+          type ciena-6500r-types:frequency;
+          mandatory true;
+          description
+            "Center Frequency. It is defined within its parent CHC frequency spectrum.";
+        }
+
+        leaf spectral-width {
+          type uint32;
+          units "MHz";
+          mandatory true;
+          description
+            "Spectral Width. It is minumum value is 12.5GHz and the maximum value is limited to its parent CHC range and its deadbands.";
+        }
+
+        leaf wavelength {
+          type uint64 {
+            range "157021..160857";
+          }
+          units "nm";
+          config false;
+          description
+            "Wavelength associated with the center frequency";
+        }
+
+        leaf min-freq {
+          type ciena-6500r-types:frequency;
+          config false;
+          description
+            "Minimum Channel Frequency. It is limited to its parent CHC range and its deadband.";
+        }
+
+        leaf max-freq {
+          type ciena-6500r-types:frequency;
+          config false;
+          description
+            "Maximum Channel Frequency. It is limited to its parent CHC range and its deadband";
+        }
+
+        leaf controller-state {
+          type enumeration {
+            enum "Adding";
+            enum "Deleting";
+            enum "Idle";
+            enum "Not Controlled";
+            enum "Not Applicable";
+          }
+          config false;
+          description
+            "Control State of the NMCC. values can be -waiting for power, - Adding, -Deleting, -Idle, -Not controlled, -Not Applicable.";
+        }
+
+        list control-ssc {
+          key "name";
+          config false;
+          leaf name {
+            type string;
+            description
+              "SSCs whose range falls into the center of parent NMCC range + CTRLFREQOFFSET.";
+          }
+
+          leaf index {
+            type uint32;
+            description
+              "SSC index";
+          }
+        }
+
+        leaf control-ssc-attenuation {
+          type ciena-6500r-types:power;
+          units "dB";
+          config false;
+          description
+            "Attenuation that has been applied at the reference control SSC.";
+        }
+
+        leaf attenuation {
+          type decimal64 {
+            fraction-digits 2;
+          }
+          units "dB";
+          config false;
+          description
+            "WSS Current Attenuation Request";
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-chc-mount-actions {
+    action channel-control-init-power-profile-nmcc {
+      description
+        "Reset the power profile of the specified NMCC facilities";
+      input {
+        leaf nmcc {
+          type leafref {
+            path "/channel-control:channel-control/channel-control:nmcc/channel-control:name";
+          }
+          mandatory true;
+          description
+            "NMCC facility name";
+        }
+      }
+    }
+  }
+
+  uses ciena-6500r-chc-mount;
+}

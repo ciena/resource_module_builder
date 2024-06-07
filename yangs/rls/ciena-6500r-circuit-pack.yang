@@ -1,0 +1,489 @@
+module ciena-6500r-circuit-pack {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-circuit-pack";
+  prefix equipment;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's circuit-pack object for the 6500r platform";
+
+  revision 2021-05-06 {
+    ciena-common-version:string "1.4.0";
+    description
+      "Added secure-erase-status enum to the diagnostic container.";
+  }
+  revision 2021-04-27 {
+    ciena-common-version:string "1.3.0";
+    description
+      "Added photonic-ready leaf to the diagnostic container.";
+  }
+  revision 2021-02-01 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Added baud-rate and console-port parms for access panel inventory.";
+  }
+  revision 2020-11-20 {
+    ciena-common-version:string "1.1.1";
+    description
+      "Added unavailable enum value to operational-state enum.";
+  }
+  revision 2020-06-22 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Added band-info, cct-encoding for circuit-pack.
+       Added backplane-300mm enum value to form-factor enum.";
+  }
+  revision 2020-04-08 {
+    ciena-common-version:string "1.0.9";
+    description
+      "Changed fan-speed and current-power to containers.";
+  }
+  revision 2020-04-01 {
+    ciena-common-version:string "1.0.8";
+    description
+      "Added powered-uptime leaf";
+  }
+  revision 2020-03-18 {
+    ciena-common-version:string "1.0.7";
+    description
+      "Added last restart type";
+  }
+  revision 2020-03-17 {
+    ciena-common-version:string "1.0.6";
+    description
+      "Changing on-since to uptime, reducing string sizes, moving current and average temperatures to numerical values";
+  }
+  revision 2020-03-12 {
+    ciena-common-version:string "1.0.5";
+    description
+      "added current-power and fan-speed";
+  }
+  revision 2020-02-28 {
+    ciena-common-version:string "1.0.4";
+    description
+      "added triple-high slot-type";
+  }
+  revision 2020-02-13 {
+    ciena-common-version:string "1.0.3";
+    description
+      "added ram-size";
+  }
+  revision 2020-01-22 {
+    ciena-common-version:string "1.0.2";
+    description
+      "change ctm-access-panel to ctm-front-panel,
+       added power-type";
+  }
+  revision 2019-05-13 {
+    ciena-common-version:string "1.0.1";
+    description
+      "added operational-state.";
+  }
+  revision 2017-10-01 {
+    ciena-common-version:string "1.0.0";
+    description
+      "ciena 6500r Release 1.0";
+  }
+
+  typedef power-enum {
+    type enumeration {
+      enum "DC";
+      enum "AC";
+    }
+  }
+
+  typedef ram-enum {
+    type enumeration {
+      enum "8G";
+      enum "16G";
+    }
+  }
+
+  grouping ciena-6500r-circuit-pack-mount {
+    container circuit-pack {
+      leaf pec {
+        type ciena-6500r-types:pec-code;
+        mandatory true;
+        description
+          "Product equipment code";
+      }
+
+      leaf c-type {
+        type string {
+          length "0..63";
+        }
+        description
+          "c-type";
+      }
+
+      leaf label {
+        type string {
+          length "0..63";
+        }
+        description
+          "Operator identifier for equipment description. 64 Character Maximum.";
+      }
+
+      container power {
+        config false;
+        description
+          "This container and its parameters are no longer used as of RLS 2.0";
+        leaf low-power {
+          type uint16 {
+            range "0..960";
+          }
+          description
+            "Low power (in W) for this card";
+        }
+
+        leaf max-power {
+          type uint16 {
+            range "0..960";
+          }
+          description
+            "Maximum power (in W) for this card";
+        }
+      }
+
+      uses ciena-6500r-types:admin-state;
+
+      leaf operational-state {
+        type enumeration {
+          enum "active";
+          enum "idle";
+          enum "unavailable";
+        }
+        config false;
+        description
+          "operational state.";
+      }
+
+      leaf slot-type {
+        type enumeration {
+          enum "single";
+          enum "double-wide";
+          enum "double-high";
+          enum "quad";
+          enum "triple-high";
+        }
+        config false;
+        description
+          "Card Slot type.";
+      }
+
+      leaf type {
+        type string {
+          length "1..32";
+        }
+        description
+          "The associated equipment family";
+      }
+
+      leaf form-factor {
+        type enumeration {
+          enum "backplane";
+          enum "access-panel";
+          enum "ctm";
+          enum "fan";
+          enum "power";
+          enum "i2c";
+          enum "passive";
+          enum "sfp";
+          enum "sfpplus";
+          enum "cfp";
+          enum "cfp2";
+          enum "xfp";
+          enum "qsfp";
+          enum "qsfp28";
+          enum "ctm-front-panel";
+          enum "backplane-300mm";
+        }
+      }
+
+      leaf power-type {
+        when "../form-factor = power";
+        type power-enum;
+        description
+          "Power Input Module type, i.e. DC or AC";
+      }
+
+      leaf ram-size {
+        when "../form-factor = ctm";
+        type ram-enum;
+        description
+          "RAM size, i.e. 8G or 16G";
+      }
+
+      leaf band-info {
+        type ciena-6500r-types:band-occupancy;
+        description
+          "supported band types of the circuit-pack";
+      }
+
+      leaf cct-encoding {
+        type enumeration {
+          enum "none";
+          enum "sn-bin";
+          enum "xml";
+        }
+        description
+          "Indicate how CCT is being encoded for the supported circuit-pack";
+      }
+
+      leaf baud-rate {
+        type uint32;
+        config false;
+        description
+          "Access panel console port baudrate.";
+      }
+
+      leaf console-port {
+        type enumeration {
+          enum "disconnected" {
+            value 0;
+            description
+              "Disconnected console port";
+          }
+          enum "RJ45" {
+            value 1;
+            description
+              "RJ45 console port";
+          }
+          enum "USB-C" {
+            value 2;
+            description
+              "USB-C console port";
+          }
+        }
+        config false;
+      }
+
+      container diagnostic {
+        config false;
+        description
+          "Circuit-pack diagnostic state";
+        leaf active {
+          type boolean;
+          description
+            "Active, carrying traffic";
+        }
+
+        leaf failed {
+          type boolean;
+          description
+            "Card Failed";
+        }
+
+        leaf hardware-subsystem-fail {
+          type boolean;
+          description
+            "Equipment hardware subsystem fail";
+        }
+
+        leaf software-subsystem-fail {
+          type boolean;
+          description
+            "Equipment software subsystem fail";
+        }
+
+        leaf hi-temp-warning {
+          type boolean;
+          description
+            "High temperature warning";
+        }
+
+        leaf hi-temp {
+          type boolean;
+          description
+            "High temperature";
+        }
+
+        leaf photonic-ready {
+          type boolean;
+          default "false";
+          description
+            "Indicates if the card is photonic ready.
+             photonic-ready = communication-up && optically-ready";
+        }
+
+        leaf secure-erase-status {
+          type enumeration {
+            enum "unknown" {
+              value 1;
+            }
+            enum "idle" {
+              value 2;
+            }
+            enum "in-progress" {
+              value 3;
+            }
+            enum "completed" {
+              value 4;
+            }
+            enum "failed" {
+              value 5;
+            }
+          }
+          default "unknown";
+          description
+            "Secure Erase Status. Values aligned with the enum received from the card:
+             UNKNOWN(1)     : Circuit pack is missing or not communicating with the SP/CTM.
+             IDLE(2)        : Secure erase has not been requested yet.
+             IN PROGRESS(3) : Secure erase or validation in progress.
+             COMPLETED(4)   : Secure erase has completed and validation was successful.
+             FAILED(5)      : Secure erase has not completed or validation was not successful.";
+        }
+      }
+
+      leaf hardware-release {
+        type string {
+          length "1..32";
+        }
+        config false;
+        description
+          "Release Level";
+      }
+
+      leaf common-language-equipment-identifier {
+        type string {
+          length "1..32";
+        }
+        config false;
+        description
+          "Common language equipment identifier";
+      }
+
+      leaf serial-number {
+        type string {
+          length "1..32";
+        }
+        config false;
+        description
+          "Serial Number";
+      }
+
+      leaf manufacturing-date {
+        type ietf-yang:date-and-time;
+        config false;
+        description
+          "Date of Manufacture.";
+      }
+
+      leaf age {
+        type string {
+          length "1..16";
+        }
+        config false;
+        description
+          "Cumulative in-service time elapsed since manufacture, in the format: days:hours:minutes:seconds (DDDD:HH:MM:00).";
+      }
+
+      leaf uptime {
+        type string {
+          length "1..16";
+        }
+        config false;
+        description
+          "Cumulative uptime since the unit was last restarted (warm or cold), in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS).";
+      }
+
+      leaf last-restart-type {
+        type ciena-6500r-types:restart-type;
+        config false;
+        description
+          "Last restart type reported by the card";
+      }
+
+      leaf current-temperature {
+        type int32;
+        units "celsius";
+        config false;
+        description
+          "Current card temperature in celsius";
+      }
+
+      leaf average-temperature {
+        type int32;
+        units "celsius";
+        config false;
+        description
+          "Average card temperature in celsius";
+      }
+
+      container fan-speed {
+        leaf value {
+          type int32;
+          units "rpm";
+          config false;
+          description
+            "Current fan speed value";
+        }
+
+        leaf measurement-type {
+          type enumeration {
+            enum "measured";
+            enum "estimated";
+            enum "unknown";
+          }
+          config false;
+          description
+            "Flag to indicate if fan speed is measured, estimated or unknown.";
+        }
+      }
+
+      container current-power {
+        leaf value {
+          type int32;
+          units "W";
+          config false;
+          description
+            "Current power value";
+        }
+
+        leaf measurement-type {
+          type enumeration {
+            enum "measured";
+            enum "estimated";
+            enum "unknown";
+          }
+          config false;
+          description
+            "Flag to indicate if current power is measured, estimated or unknown.";
+        }
+      }
+
+      leaf powered-uptime {
+        type string {
+          length "1..16";
+        }
+        config false;
+        description
+          "Cumulative time since the card was last powered on, in the format: days:hours:minutes:seconds (DDDD:HH:MM:SS).";
+      }
+    }
+  }
+
+  grouping ciena-6500r-circuit-pack-mount-actions;
+
+  uses ciena-6500r-circuit-pack-mount;
+}

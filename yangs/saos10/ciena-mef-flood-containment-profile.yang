@@ -1,0 +1,105 @@
+module ciena-mef-flood-containment-profile {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-mef-flood-containment-profile";
+    prefix "mef-fc";
+    
+   organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's configuration of
+         the Flood Containment Profile.";
+
+    revision 2023-08-02 {
+        description
+            "Disabling yang for flood-containment on  unsupported platforms";
+    }
+
+    revision 2022-02-04 {
+        description
+            "Removed string showing the name leaf size";
+    }
+
+    revision 2021-04-06 {
+        description
+            "Added descriptions";
+    }
+
+    revision 2016-01-13 {
+        description 
+            "Initial revision";
+    }
+
+    feature flood-containment {
+    description
+        "Support flood-containment feature";
+    }
+
+    typedef flood-containment-profile-ref {
+        type leafref {
+            path "/mef-fc:flood-containment-profiles/mef-fc:flood-containment-profile/mef-fc:name";
+        }
+        description
+            "This type is used by the data models that need to reference
+             configured Flood Containment Profiles.";
+    }
+
+    container flood-containment-profiles {
+        description
+            "List of flood-containment-profile templates. Flood containment profiles can be referenced by various entities (flow-point/logical-port etc.) 
+             to instantiate flood containment meters based on traffic type.";
+        if-feature flood-containment;
+        list flood-containment-profile {
+            key "name";
+
+            description
+               "A list of flood-containment-profile templates. Flood containment profiles can be referenced by various entities(flow-point/logical-port, etc.) to instantiate flood containment meters based on traffic type.";
+
+            leaf name {
+                type string;
+                description
+                    "An administratively assigned string, which may be used
+                     to identify the profile.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "This is a user-defined string used to describe the profile.";
+            }
+
+	    list containment {
+                key "frame-type";
+
+                description
+                   "Configurations of a flood-containment-profile to define the rate parameters for a set of flood-containment-instances.";
+
+                leaf frame-type {
+                    type bits {
+                        bit unknown-unicast;
+                        bit unknown-l2-multicast;
+                        bit unknown-ip-multicast;
+                        bit known-multicast;
+                        bit broadcast;
+                    }
+                    description
+                        "The frame types to be contained with the given rate.";
+                }
+
+                leaf rate {
+                    type uint64;
+                    description
+                        "Data rate in kbps.";
+                }
+	    }
+        }
+    }
+}

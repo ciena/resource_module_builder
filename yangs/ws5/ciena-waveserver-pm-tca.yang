@@ -1,0 +1,835 @@
+module ciena-waveserver-pm-tca {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-pm-tca";
+  prefix pm-tca;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  import ciena-waveserver-pm {
+    prefix pm;
+  }
+
+  swagger:support "true";
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+            Hanover, Maryland 21076
+            U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines PM TCA profiles data for the Waveserver.";
+
+  revision 2019-09-16 {
+    description
+      "Initial revision for PM TCA profiles.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  //////// PM TCA Profiles Groupings ////////
+
+  grouping tca-profile-id {
+    description
+      "Grouping for PM TCA profile id attributes.";
+    leaf profile-id {
+      ui:ui-name "TCA Profile Id";
+      type tca-profile-id;
+      config false;
+      description
+        "ID of TCA profile.";
+    }
+    leaf profile-type {
+      ui:ui-name "TCA Profile Type";
+      type pm:pm-profile-type;
+      config false;
+      description
+        "TCA profile type.";
+    }
+    leaf bin-type {
+      ui:ui-name "TCA Profile Bin Type";
+      type tca-bin-type;
+      mandatory true;
+      description
+        "TCA profile bin type.";
+    }
+  }//end tca-profile-id
+
+  grouping error-counts-thresholds {
+    description
+      "Grouping for common PM error counts (ES, SES, UAS) TCA thresholds.";
+    leaf errored-seconds {
+      ui:ui-name "Errored Seconds Threshold";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "Threshold for the number of seconds that error happened.";
+    }
+    leaf severely-errored-seconds {
+      ui:ui-name "Severely Errored Seconds Threshold";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "Threshold for the number of seconds that severe error happened.";
+    }
+    leaf unavailable-seconds {
+      ui:ui-name "Unavailable Seconds Threshold";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "Threshold for the number of seconds that the interface was unavailable.";
+    }
+  }//end error-counts-thresholds
+
+  grouping tca-ethernet-thresholds-group {
+    description
+      "Grouping for Ethernet port TCA thresholds.";
+    leaf rx-link-utilization {
+      ui:ui-name "Rx Link Utilization Threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 100.000";
+      }     
+      units "percent";
+      description
+        "Rx link utilization threshold as a percentage.";
+    }
+    leaf tx-link-utilization {
+      ui:ui-name "Tx Link Utilization Threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 100.000";
+      }
+      units "percent";
+      description
+        "Tx link utilization threshold as a percentage.";
+    }
+    leaf rx-frame-error-ratio {
+      ui:ui-name "Rx Frame Error Ratio Threshold";
+      type cienawstypes:string-sci;
+      description
+        "Rx frame error ratio threshold, expressed in scientific notation.";
+    }
+    leaf tx-frame-error-ratio {
+      ui:ui-name "Tx Frame Error Ratio Threshold";
+      type cienawstypes:string-sci;
+      description
+        "Tx frame error ratio threshold, expressed in scientific notation.";
+    }
+    leaf rx-crc-errored-packets {
+      ui:ui-name "Rx CRC Errored Packets Threshold";
+      type uint64 {
+        range "0 .. 4294967295";
+      }
+      description
+        "Threshold for the number of packets received which contained an FCS error and were 
+         between 64 and 1518 bytes in length.";
+    }
+    leaf tx-crc-errored-packets {
+      ui:ui-name "Tx CRC Errored Packets Threshold";
+      type uint64 {
+        range "0 .. 4294967295";
+      }
+      description
+        "Threshold for the number of transmitted packets with an FCS error";
+    }
+    container pcs-layer {
+      ui:ui-name "PCS Layer Thresholds";
+      description
+        "PCS layer thresholds.";
+      uses error-counts-thresholds;
+    }
+  }
+
+  grouping tca-otdr-thresholds-group {
+    description
+      "Grouping for OTDR TCA thresholds.";
+    leaf event-max-loss {
+      ui:ui-name "Event Maximum Loss Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 20.000";
+      }
+      units "dB";
+      description
+        "Event maximum loss offset in dB.";
+    }
+    leaf event-max-reflection {
+      ui:ui-name "Event Maximum Reflection Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 20.000";
+      }
+      units "dB";
+      description
+        "Event maximum reflection offset in dB.";
+    }
+    leaf cumulative-loss {
+      ui:ui-name "Cumulative Loss Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 20.000";
+      }    
+      units "dB";
+      description
+        "Cumulative loss offset in dB.";
+    }
+    leaf cumulative-reflection {
+      ui:ui-name "Cumulative Reflection Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 20.000";
+      }
+      units "dB";
+      description
+        "Cumulative reflection offset in dB.";
+    }
+  }
+
+  grouping tca-photonics-thresholds-group {
+    description
+      "Grouping for OTM PTP photonics TCA thresholds.";
+    leaf return-loss {
+      ui:ui-name "Return Loss Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 40.000";
+      }
+      units "dB";      
+      description
+        "Return Loss offset in dB.";
+    }
+    leaf rx-span-loss {
+      ui:ui-name "Rx Span Loss Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 40.000";
+      }     
+      units "dB"; 
+      description
+        "Rx Span Loss offset in dB.";
+    }
+    leaf tx-span-loss {
+      ui:ui-name "Tx Span Loss Offset";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 40.000";
+      }     
+      units "dB"; 
+      description
+        "Tx Span Loss offset in dB.";
+    }
+    container tx-otdr-short {
+      ui:ui-name "Tx OTDR Short Trace Thresholds";
+      description
+        "Tx OTDR short trace thresholds.";
+      uses tca-otdr-thresholds-group;
+    }
+    container tx-otdr-long {
+      ui:ui-name "Tx OTDR Long Trace Thresholds";
+      description
+        "Tx OTDR long trace thresholds.";
+      uses tca-otdr-thresholds-group;
+    }
+    container rx-otdr-short {
+      ui:ui-name "Rx OTDR Short Trace Thresholds";
+      description
+        "Rx OTDR short trace thresholds.";
+      uses tca-otdr-thresholds-group;
+    }
+    container rx-otdr-long {
+      ui:ui-name "Rx OTDR Long Trace Thresholds";
+      description
+        "Rx OTDR long trace thresholds.";
+      uses tca-otdr-thresholds-group;
+    }
+  }
+
+  grouping tca-modem-thresholds-group {
+    description
+      "Grouping for PTP modem TCA thresholds.";
+    leaf q-factor {
+      ui:ui-name "Q Factor Threshold (dBQ)";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 2.150";
+      }
+      units "dBQ";
+      description
+        "Rx FEC Q-Factor threshold, expressed in dBQ notation.";
+    }
+    leaf high-correction-count-seconds {
+      ui:ui-name "FEC High Correction Count Seconds Threshold";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "FEC high correction count seconds threshold.";
+    }
+    leaf dgd {
+      ui:ui-name "DGD Threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 250.000";
+      }
+      units "ps/nm";
+      description
+        "Differential group delay (DGD) threshold, in picoseconds per nanometer (ps/nm).";
+    }
+    leaf pdl {
+      ui:ui-name "PDL Threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 250.000";
+      }
+      units "dB";
+      description
+        "Polarization dependent loss (PDL) threshold in dB.";
+    }
+    leaf esnr {
+      ui:ui-name "ESNR threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 50.000";
+      }
+      units "dB";
+      description
+        "Electrical Signal-to-Noise Ratio (ESNR) threshold in dB.";
+    }
+    leaf snr-external {
+      ui:ui-name "SNR External threshold";
+      type decimal64 {
+        fraction-digits 3;
+        range "0.000 .. 50.000";
+      }
+      units "dB";
+      description
+        "Signal-to-Noise Ratio External threshold in dB.";
+    }
+    leaf chromatic-dispersion {
+      ui:ui-name "Chromatic Dispersion Threshold";
+      type int64 {
+        range "0 .. 2000000";
+      }
+      units "ps/nm";
+      description
+        "Chromatic Dispersion threshold, in picoseconds per nanometer (ps/nm).";
+    }
+    leaf csi {
+      ui:ui-name "Cycle Slip Indicator (CSI) Threshold";
+      type uint64 {
+        range "0 .. 1000000000";
+      }
+      description
+        "Cycle Slip Indicator (CSI) Threshold.";
+    }
+  }
+
+  grouping tca-otn-thresholds-group {
+    description
+      "Grouping for OTN port/channel TCA thresholds.";
+    leaf background-block-errors {
+      ui:ui-name "Background Block Errors (BBE) Threshold";
+      type uint64 {
+        range "0 .. 4294967295";
+      }
+      description
+        "Background Block Errors (BBE) threshold.";
+    }
+    uses error-counts-thresholds;
+    container far-end {
+      description
+        "Far-end OTN port/channel TCA thresholdss.";
+      leaf background-block-errors {
+        ui:ui-name "Background Block Errors (BBE) Threshold";
+        type uint64 {
+          range "0 .. 4294967295";
+        }
+        description
+          "Background Block Errors (BBE) threshold.";
+      }
+      uses error-counts-thresholds;
+    }
+  }
+
+  grouping tca-gcm-thresholds-group {
+    description
+      "Grouping for Encryption-GCM channel TCA thresholds.";
+    leaf error-count {
+      ui:ui-name "Error Count Threshold";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "GCM tag error count threshold.";
+    }
+    leaf severely-errored-seconds {
+      ui:ui-name "Severely Errored Seconds (SES)";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "Threshold for the number of seconds that severe errors happened.";
+    }
+    leaf unavailable-seconds {
+      ui:ui-name "Unavailable Seconds (UAS)";
+      type uint64 {
+        range "0 .. 86399";
+      }
+      description
+        "Threshold for the number of seconds that the interface was unavailable.";
+    }
+  }
+
+  typedef tca-profile-id {
+    type uint32 {
+      range "1..141";
+    }
+    description
+      "TCA Profile ID.";
+  }
+
+  typedef tca-bin-type {
+    type enumeration {
+      enum "15-min" {
+        description
+          "Identifies the 15-min current bin only.";
+      }
+      enum "24-hr" {
+        description
+          "Identifies the 24-hr current bin only.";
+      }
+      enum "untimed" {
+        description
+          "Identifies the untimed bin only.";
+      }
+    }
+    description
+      "TCA bin type.";
+  }
+
+  container waveserver-pm-tca {
+    ui:ui-name "Performance Monitoring TCA";
+    description
+      "Waveserver performance monitoring threshold crossing alerts.";
+    container tca-profiles {
+      ui:ui-name "PM TCA Profiles";
+      description
+        "Performance monitoring threshold crossing alerts profiles on the Waveserver.";
+      container auto-created {
+        ui:ui-name "Auto Created TCA profiles";
+        config false;
+        description
+          "Auto created performance monitoring threshold crossing alerts profiles.";
+        list otu-profiles {
+          ui:ui-name "OTU TCA Profile List";
+          key "profile-name";
+          description
+            "OTU TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-otn-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:otu-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list odu-profiles {
+          ui:ui-name "ODU TCA Profile List";
+          key "profile-name";
+          description
+            "ODU TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-otn-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:odu-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list ethernet-profiles {
+          ui:ui-name "Ethernet TCA Profile List";
+          key "profile-name";
+          description
+            "Ethernet TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-ethernet-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:ethernet-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list encryption-gcm-profiles {
+          ui:ui-name "Channel Encryption GCM TCA Profile List";
+          key "profile-name";
+          description
+            "Channel Encryption GCM TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-gcm-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:encryption-gcm-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list photonics-profiles {
+          ui:ui-name "Photonics TCA Profile List";
+          key "profile-name";
+          description
+            "Photonics TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-photonics-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:photonics-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list optical-power-profiles {
+          ui:ui-name "Optical Power TCA Profile List";
+          key "profile-name";
+          description
+            "Optical power TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          leaf baseline-tx-offset {
+            ui:ui-name "Optical Power Baseline Tx Offset";
+            type decimal64 {
+              fraction-digits 3;
+              range "0.000 .. 40.000";
+            }
+            units "dBm";
+            description
+              "Optical power baseline Tx offset, as a power level in dBm.";
+          }
+          leaf baseline-rx-offset {
+            ui:ui-name "Optical Power Baseline Rx Offset";
+            type decimal64 {
+              fraction-digits 3;
+              range "0.000 .. 40.000";
+            }
+            units "dBm";
+            description
+              "Optical power baseline Rx offset, as a power level in dBm.";
+          }
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:optical-power-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list modem-profiles {
+          ui:ui-name "Modem TCA Profile List";
+          key "profile-name";
+          description
+            "Modem TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-modem-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:modem-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+      }
+      container user-created {
+        ui:ui-name "User Created TCA profiles";
+        description
+          "User created performance monitoring threshold crossing alerts profiles.";
+        list otu-profiles {
+          ui:ui-name "OTU TCA Profile List";
+          key "profile-name";
+          description
+            "OTU TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-otn-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:otu-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list odu-profiles {
+          ui:ui-name "ODU TCA Profile List";
+          key "profile-name";
+          description
+            "ODU TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-otn-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:odu-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list ethernet-profiles {
+          ui:ui-name "Ethernet TCA Profile List";
+          key "profile-name";
+          description
+            "Ethernet TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-ethernet-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:ethernet-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list encryption-gcm-profiles {
+          ui:ui-name "Channel Encryption GCM TCA Profile List";
+          key "profile-name";
+          description
+            "Channel Encryption GCM TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-gcm-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:encryption-gcm-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list photonics-profiles {
+          ui:ui-name "Photonics TCA Profile List";
+          key "profile-name";
+          description
+            "Photonics TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-photonics-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:photonics-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list optical-power-profiles {
+          ui:ui-name "Optical Power TCA Profile List";
+          key "profile-name";
+          description
+            "Optical power TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          leaf baseline-tx-offset {
+            ui:ui-name "Optical Power Baseline Tx Offset";
+            type decimal64 {
+              fraction-digits 3;
+              range "0.000 .. 40.000";
+            }
+            units "dBm";
+            description
+              "Optical power baseline Tx offset, as a power level in dBm.";
+          }
+          leaf baseline-rx-offset {
+            ui:ui-name "Optical Power Baseline Rx Offset";
+            type decimal64 {
+              fraction-digits 3;
+              range "0.000 .. 40.000";
+            }
+            units "dBm";
+            description
+              "Optical power baseline Rx offset, as a power level in dBm.";
+          }
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:optical-power-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+        list modem-profiles {
+          ui:ui-name "Modem TCA Profile List";
+          key "profile-name";
+          description
+            "Modem TCA profiles.";
+          leaf profile-name {
+            ui:ui-name "TCA Profile Name";
+            type cienawstypes:string-maxl-32;
+            description
+              "Unique name for TCA profile.";
+          }
+          uses tca-profile-id;
+          uses tca-modem-thresholds-group;
+          leaf-list assigned-pm-instances {
+            ui:ui-name "Assigned PM Instance List";
+            type leafref {
+              path "/pm:waveserver-pm/pm:modem-performance-instances/pm:instance-name";
+            }
+            config false;
+            description
+              "Assigned PM instance reference list.";
+          }
+        }
+      }
+    }
+  }
+  rpc waveserver-pm-tca-copy-profile {
+    description
+      "Copy profile to another profile.";
+    input {
+      leaf source-profile-name {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Source Profile Name";
+        description
+          "The name of the profile to be copied from.";
+      }
+      leaf destination-profile-name {
+        type cienawstypes:string-maxl-254;
+        mandatory true;
+        ui:ui-name "Destination Profile Name";
+        description
+          "The name of the profile to be copied to.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

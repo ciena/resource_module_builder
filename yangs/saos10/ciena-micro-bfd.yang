@@ -1,0 +1,122 @@
+module ciena-micro-bfd {
+
+     namespace "http://ciena.com/ns/yang/ciena-micro-bfd";
+
+     prefix "micro-bfd";
+
+     import ciena-bfd-types {
+       prefix "bfd-types";
+     }
+
+     import ciena-bfd {
+       prefix "bfd";
+     }
+
+     import openconfig-interfaces{
+       prefix "oc-if";
+     }
+
+     import ietf-inet-types {
+       prefix "inet";
+     }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the YANG operational data for  
+     Micro-BFD as per RFC-9127. 
+     
+     Copyright (c) 2022 Ciena Corporation.  All rights 
+     reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision 2022-11-02 {
+     description 
+        "Initial revision of micro-BFD operational data model.
+         Added changes in micro-BFD session state.";
+  }
+
+  /*
+   * Augments
+   */
+  augment "/bfd:bfd" {
+     if-feature bfd-types:micro-bfd;
+     description
+        "BFD augmentation for micro-BFD";
+     container micro-bfd-sessions-state {
+        description
+           "micro-BFD sessions operational data.";
+        config false;
+        container session-state {
+           description
+              "micro-BFD session operational data.";
+           config false;
+           list lag {
+              key "lag-name";
+              description
+                 "State data of micro-BFD sessions monitoring LAG.";
+
+              leaf lag-name {
+                 type leafref {
+                    path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                 }
+              description
+                 "Aggregation on which the micro-BFD session is enabled.";
+              }
+              list member {
+                 key "member-link remote-addr";
+                 description
+                    "State data of micro-BFD sessions monitoring a LAG member port";
+                 leaf member-link {
+                    type leafref {
+                       path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description 
+                       "Aggregation member link over which micro-BFD session is running";
+                 }
+                 leaf remote-addr {
+                    type inet:ip-address;
+                    description
+                       "IP address of the peer.";
+                 }
+                 leaf local-addr {
+                    type inet:ip-address;
+                    description
+                       "Local IP address.";
+                 }
+                 uses bfd-types:base-cfg-parms;
+                 uses bfd-types:all-session;
+              }
+           }
+        }
+    }
+  }//augment end
+}

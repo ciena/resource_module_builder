@@ -1,0 +1,269 @@
+module ciena-mef-pfg-profile {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn::ciena-mef-pfg-profile";
+    prefix "mef-pfg";
+    
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's configuration of
+         the Private Forwarding Group Profile.";
+
+    revision 2023-05-15 {
+        description 
+            "1) Updated pfg-group to include hub.";
+    }
+
+    revision 2021-08-23 {
+        description 
+            "1) Added descriptions.
+             2) Updated pfg-group to include dynamic and pfg-type to include dynamic-leaf-and-root.";
+    }
+
+    revision 2016-05-19 {
+        description "Initial revision";
+    }
+
+    typedef pfg-profile-ref {
+        type leafref {
+            path "/mef-pfg:pfg-profiles/mef-pfg:pfg-profile/mef-pfg:name";
+        }
+        description
+            "This type is used by the data models that need to reference
+             configured Private Forwarding Group Profiles.";
+    }
+
+    typedef pfg-group-enum {
+       type enumeration {
+          enum leaf;
+          enum root;
+          enum dynamic;
+          
+          enum mesh;
+          enum spoke;
+
+          enum group-A;
+          enum group-B;
+          enum group-C;
+          enum group-D;
+          enum hub;
+       }
+       description
+          "The Private-Forwarding-Group that a given traffic-type traffic ingressing a logical-port belongs to for the scope of a
+           Private-Forwarding-Group-Profile.
+           Can be leaf/root for a PFG-profile with PFG-type of leaf-and-root or spokemesh-and-leafroot.
+           Can be mesh/spoke for a PFG-profile with PFG-type of spoke-and-mesh or spokemesh-and-leafroot.
+           Can be groupA/B/C/D for a PFG-profile with PFG-type of pfg-groups.
+           Can be leaf/root/dynamic for a PFG-profile with PFG-type of dynamic-leaf-and-root.
+           Can be hub/spoke/dynamic for a PFG-profile with PFG-type of dynamic-hub-and-spoke";
+    }
+
+    typedef PfgType {
+        type enumeration {
+            enum pfg-groups {
+                description
+                    "This pfg-type allows for up to 4 PFG groups with configurable forwarding policies.
+                    Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+                    PFG-group A,B,C or D that they belong to. This is the only PfgType which allows
+                    configuration of forwarding group policies";
+            }
+            enum spoke-and-mesh {
+                description
+                    "This pfg-type supports spoke and mesh with strict forwarding policy rules
+                       spoke => can forward to mesh and can forward to spoke.
+                       mesh => can forward to spoke but cannot forward to mesh.
+                    Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+                    PFG-group Spoke or Mesh that they belong to";
+            }
+            enum leaf-and-root {
+                description
+                    "This pfg-type supports leaf and root with strict forwarding policy rules
+                       leaf => can forward to root but cannot forward to leaf.
+                       root => can forward to leaf and can forward to root.
+                    Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+                    PFG-group Leaf or Root that they belong to";
+            }
+            enum spokemesh-and-leafroot {
+                description
+                    "This pfg-type supports leaf, root, spoke and mesh with strict forwarding policy rules
+                       leaf => can forward to root, can forward to mesh, can forward to spoke, but cannot forward to leaf.
+                       root => can forward to root, can forward to mesh, can forward to spoke, can forward to leaf.
+                       spoke => can forward to root, can forward to mesh, can forward to mesh, can forward to leaf.
+                       mesh => can forward to root, can forward to spoke, can forward to leaf, but cannot forward to mesh.
+                    Interfaces (e.g. flow points) in the domain (e.g forwarding-domain) will specify which
+                    PFG-group Spoke, Mesh, Leaf or Root that they belong to";
+            }
+            enum dynamic-leaf-and-root {
+                description
+                    "This pfg-type supports leaf, root, and dynamic (leaf or root) with strict forwarding policy rules
+                        leaf => can forward to root but cannot forward to leaf.
+                        root => can forward to leaf and can forward to root.
+                        dynamic => takes the role of leaf, when the underlying logical-port of the configured root interface 
+                        is operationally down, or root, when the underlying logical-port of the configured root interface is
+                        operationally up.
+                    Interfaces (e.g., flow points) in the domain (e.g., forwarding domain) will specify which PFG-group Leaf,
+                    Root, or Dynamic that they belong to via static configuration. In this mode, only one interface in the 
+                    domain can be statically configured to be a root";
+            }
+        }
+    }
+
+    container pfg-profiles {
+        description
+            "List of pfg-profile templates. Private forwarding group profiles can be referenced by various entities (flow-point/logical-port etc.) 
+             to instantiate Private Forwarding Group instances defining a set of rules for forwarding constraints between a set of entities.";
+
+        list pfg-profile {
+            key "name";
+
+            description
+               "Private Forwarding Group profile template containing Private Forwarding Group instance parameters";
+
+            leaf name {
+                type string {
+                }
+                description
+                    "An administratively assigned string, which may be used
+                     to identify the profile.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "This is a user-defined string used to describe the profile.";
+            }
+
+            leaf pfg-type {
+                type PfgType;
+                description
+                    "The type of PFG-profile whch has configurable policies or strict forwarding policies";
+            }
+
+            leaf pfg-group-count {
+                type uint32;
+                description
+                    "When the pfg-type is pfg-groups, this defines the number of PFG groups that are valid in this profile.
+                     2 => PFG-Groups A and B
+                     3 => PFG-Groups A, B and C
+                     4 => PFG-Groups A,B,C and D";
+            }
+
+            leaf group-A-policy {
+                type bits {
+                   bit forward-to-a {
+                       description
+                           "can forward to PFG-group A";
+                   }
+                   bit forward-to-b {
+                       description
+                           "can forward to PFG-group B";
+                   }
+                   bit forward-to-c {
+                       description
+                           "can forward to PFG-group C";
+                   }
+                   bit forward-to-d {
+                       description
+                           "can forward to PFG-group D";
+                   }
+                }
+                description
+                    "The set of forwarding rules for Group A
+                     When PfgType is pfg-groups the forwarding policies between the groups can be configured.
+                     Each PFG Group A,B,C or D can define the set of PFG-groups that it can forward to (including itself)
+                     If a forward-to-x bit is not set for a PFG-group, the PFG-group cannot forward to any interface (e.g. flow-point)
+                     in that PFG-group. Each interface defines which PFG-group it belongs to";
+            }
+
+            leaf group-B-policy {
+                type bits {
+                   bit forward-to-a {
+                       description
+                           "can forward to PFG-group A";
+                   }
+                   bit forward-to-b {
+                       description
+                           "can forward to PFG-group B";
+                   }
+                   bit forward-to-c {
+                       description
+                           "can forward to PFG-group C";
+                   }
+                   bit forward-to-d {
+                       description
+                           "can forward to PFG-group D";
+                   }
+                }
+                description
+                    "The set of forwarding rules for Group B
+                     When PfgType is pfg-groups the forwarding policies between the groups can be configured.
+                     Each PFG Group A,B,C or D can define the set of PFG-groups that it can forward to (including itself)
+                     If a forward-to-x bit is not set for a PFG-group, the PFG-group cannot forward to any interface (e.g. flow-point)
+                     in that PFG-group. Each interface defines which PFG-group it belongs to";
+            }
+
+            leaf group-C-policy {
+                type bits {
+                   bit forward-to-a {
+                       description
+                           "can forward to PFG-group A";
+                   }
+                   bit forward-to-b {
+                       description
+                           "can forward to PFG-group B";
+                   }
+                   bit forward-to-c {
+                       description
+                           "can forward to PFG-group C";
+                   }
+                   bit forward-to-d {
+                       description
+                           "can forward to PFG-group D";
+                   }
+                }
+                description
+                    "The set of forwarding rules for Group C
+                     When PfgType is pfg-groups the forwarding policies between the groups can be configured.
+                     Each PFG Group A,B,C or D can define the set of PFG-groups that it can forward to (including itself)
+                     If a forward-to-x bit is not set for a PFG-group, the PFG-group cannot forward to any interface (e.g. flow-point)
+                     in that PFG-group. Each interface defines which PFG-group it belongs to";
+            }
+
+            leaf group-D-policy {
+                type bits {
+                   bit forward-to-a {
+                       description
+                           "can forward to PFG-group A";
+                   }
+                   bit forward-to-b {
+                       description
+                           "can forward to PFG-group B";
+                   }
+                   bit forward-to-c {
+                       description
+                           "can forward to PFG-group C";
+                   }
+                   bit forward-to-d {
+                       description
+                           "can forward to PFG-group D";
+                   }
+                }
+                description
+                    "The set of forwarding rules for Group D
+                     When PfgType is pfg-groups the forwarding policies between the groups can be configured.
+                     Each PFG Group A,B,C or D can define the set of PFG-groups that it can forward to (including itself)
+                     If a forward-to-x bit is not set for a PFG-group, the PFG-group cannot forward to any interface (e.g. flow-point)
+                     in that PFG-group. Each interface defines which PFG-group it belongs to";
+            }
+        }
+    }
+}

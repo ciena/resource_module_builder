@@ -1,0 +1,894 @@
+module ciena-openconfig-telemetry {
+  namespace "http://www.ciena.com/ns/yang/ciena-openconfig-telemetry";
+  prefix "ciena-oc-tmet";
+
+  import openconfig-telemetry {
+    prefix oc-telemetry;
+  }
+  import ciena-tls-service-profile {
+    prefix ciena-tsp;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description       
+    "This YANG module defines Ciena's global
+     configuration for telemetry.
+    
+    Copyright (c) 2018-2022 Ciena Corporation.  All rights 
+    reserved.
+
+    All information and intellectual property contained in this
+    YANG module (Specification) is, and remains the property
+    of Ciena Corporation. Ciena retains all title and ownership
+    in the Specification, including any revisions.
+
+    Ciena grants all interested parties that access the
+    Specification with the intent to use or distribute ('you') a
+    non-exclusive, no-cost license to use and distribute
+    unmodified copies of the Specification solely in connection
+    with the management of Ciena products sold by or on
+    behalf of Ciena, provided this copyright notice and license
+    appear on all copies. Ciena may rescind or modify this
+    license at any time.
+
+    This Specification is supplied 'as is', and Ciena makes no
+    warranty, either express or implied, as to the use, operation,
+    condition, or performance of the Specification. You agree
+    that Ciena has no liability for your use of the Specification.";
+
+  revision 2022-09-26 {
+    description
+      "Change the grouping name of telemetry-dial-out-destination-config to dial-out-destination-config. 
+      In dial-out-destination-config, 
+      delete tunnel-protocol node and tls-service-profile node. 
+      Mark the no-tls and target nodes as deprecated.
+      Add the secure-tunnel node. 
+      Add the tls-profile list. 
+      Add the target list to show the target names to corresponding tunnel destination.
+      Add the target-client grouping which allows user to configure a list of valid targets keyed by
+      its name and target-type
+      In state container, 
+      delete tunnel-protocol node and tls-service-profile node. 
+      Mark the no-tls and target nodes as deprecated.
+      Add target list which contains name node, service-oper-state node, and service-status-msg node. 
+      Add tls-profile list which contains tls-profile-name node and tls-type node.
+      Alignment of the current subscription model per gnmi specs.";
+    reference
+      "https://github.com/openconfig/gnmi/blob/master/proto/gnmi/gnmi.proto ";
+  }
+
+  revision 2022-04-24 {
+    description
+      "In telemetry-dial-out-destination-config,
+      change uint16 tunnel-id to string target and add a knob to enable/disable tunnel connection.
+      Add oper-state and status message nodes to show the state of configured tunnels";
+    reference
+      " https://github.com/openconfig/grpctunnel/blob/master/proto/tunnel/tunnel.proto
+      https://github.com/openconfig/gnmi/blob/master/proto/gnmi/gnmi.proto.";
+  }
+
+  revision 2021-09-10 {
+    description
+      "Introduce telemetry dial-out related config
+      and state models version 0.1.";
+    reference
+      "openconfig-telemetry.yang as a base reference.
+      No additional dial-out specific reference;
+      standard not available.";
+  }
+
+  revision 2021-09-03 {
+    description
+      "Add telemetry counters for server and sensor.";
+    reference
+      ".";
+  }
+
+  revision 2021-08-11 {
+    description
+      "Add sensor service mode.";
+    reference
+      "openconfig-telemetry.yang";
+  }
+
+  revision 2020-03-13 {
+    description
+      "Add sensor and subscription interfaces.";
+    reference
+      "openconfig-telemetry.yang";
+  }
+
+  revision 2018-03-26 {
+    description
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+//typedefs
+  typedef tmet-sub-submode {
+    description
+      "This typedef defines submode of telemetry 
+      stream subscription.";
+    type enumeration {
+      enum target-defined {
+        description
+          "gNMI telemetry subscription stream mode of
+          sub mode as target-defined.";
+      }
+      enum onchange {
+        description
+          "gNMI telemetry subscription stream mode of
+          sub mode as on-change.";
+      }
+      enum sample {
+        description
+          "gNMI telemetry subscription stream mode of
+          sub mode as sample.";
+      }
+    }
+  }
+
+  typedef tmet-sensor-sub-svcmode {
+    description
+      "This typedef defines the sensor service mode to support
+      telemetry stream subscription.";
+    type enumeration {
+      enum unavailable {
+        description
+          "Sensor registration for a gNMI telemetry subscription
+          is unavailable.";
+      }
+      enum onchange {
+        description
+          "Sensor registration for a gNMI telemetry subscription
+          is an onchange service.";
+      }
+      enum sample {
+        description
+          "Sensor registration for a gNMI telemetry subscription
+          is a sample service.";
+      }
+    }
+  }
+
+  typedef tmet-sub-mode {
+    description
+      "This typedef defines telemetry subscription mode.";
+    type enumeration {
+      enum stream {
+        description
+          "gNMI telemetry subscription mode - stream.";
+      }
+      enum once {
+        description
+          "gNMI telemetry subscription mode - once.";
+      }
+      enum poll {
+        description
+          "gNMI telemetry subscription mode - poll.";
+      }
+    }
+  }
+
+  typedef tmet-tunnel-proto {
+    description
+      "Tunnel protocol (GRPC or TCP) used between Tunnel client and gNMI Server.";
+
+    type enumeration {
+      enum grpc {
+        description
+          "Protocol type GRPC.";
+      }
+      enum tcp {
+        description
+          "Protocol type TCP.";
+      }
+    }
+  }
+
+  typedef tmet-encoding-format {
+    description
+      "This typedef defines telemetry subscription encoding format.";
+    type enumeration {
+      enum JSON {
+        description
+          "gNMI telemetry subscription encoding format  - json.";
+      }
+      enum BYTES {
+        description
+          "gNMI telemetry subscription encoding format  - bytes.";
+      }
+      enum PROTO {
+        description
+          "gNMI telemetry subscription encoding format  - proto.";
+      }
+      enum ASCII {
+        description
+          "gNMI telemetry subscription encoding format  - ascii.";
+      }
+      enum JSON_IETF {
+        description
+          "gNMI telemetry subscription encoding format  - json_ietf.";
+      }
+    }
+  }
+
+  typedef dial-out-connection-state {
+    description
+      "This typedef defines states of connectivity during a Dial-out operation.";
+
+    type enumeration {
+      enum connecting {
+        description
+          "Dial-out connection state which shows that a channel is attempting to establish a connection.";
+      }
+      enum connected {
+        description
+          "Dial-out connection state which shows that a channel has successfully established a connection.";
+      }
+      enum disconnected {
+        description
+          "Dial-out connection state which shows that a channel is not attempting to establish any connection.";
+      }
+      enum streaming {
+        description
+          "Dial-out connection state which shows that a channel is connected and there is an active traffic in connected channel.";
+      }
+      enum error {
+        description
+          "Dial-out connection state which shows that an error has occurred to the channel connection.";
+      }
+      enum ready {
+        description
+          "Dial-out connection state which shows that the channel is ready to take further actions.";
+      }
+    }
+  }
+
+  // grouping to define dial-out destination config attributes
+  grouping dial-out-destination-config {
+    description
+        "Configuration parameters for the Dial-out destinations.";
+
+    list tunnel-destination {
+        key "tunnel-destination-address tunnel-destination-port";
+
+        description
+          "List of tunnel servers as destination.";
+
+        leaf tunnel-destination-address {
+          type inet:ip-address;
+
+          description
+            "IP address of the tunnel server as destination.";
+        }
+
+        leaf tunnel-destination-port {
+          type uint16;
+
+          description
+            "Port number for the tunnel server as destination.";
+        }
+
+        leaf target {
+          type string;
+          status deprecated;
+
+          description
+          "This is a deprecated leaf that allows a default value for the target that can be a
+          concatenated string formed within ${HOST}:${VENDOR}:${MODEL}:${VERSION} of the network element
+          which is a target client in the dial-out scenario.
+
+          Refer to /oc-telemetry:telemetry-system/ciena-oc-tmet:dial-out/ciena-oc-tmet:config/ciena-oc-tmet:target-client/ciena-oc-tmet:name
+          for an updated version of configuring target name for a target instance
+          to associate with a target list.";
+        }
+
+        leaf no-tls {
+          type boolean;
+          status deprecated;
+          default true;
+
+          description
+            "Enable/Disable TLS behavior towards a tunnel server as destination.";
+        }
+
+        leaf admin-state {
+          type enumeration {
+              enum disable { value 0; }
+              enum enable { value 1; }
+          }
+          default disable;
+          description
+            "Enable/Disable Dial-out connection from target client. Default to be disable Dial-out connection from target client.";
+        }
+
+        leaf secure-tunnel {
+          type boolean;
+          default false;
+          description
+            "Enable/Disable TLS behavior for the tunnel. Default behavior is the TLS remains disabled for the tunnel.";
+        }
+
+        list target-list {
+          key "name target-type";
+
+          leaf name {
+            mandatory true;
+            type leafref {
+              path "/oc-telemetry:telemetry-system/ciena-oc-tmet:dial-out/ciena-oc-tmet:config/ciena-oc-tmet:target-client/ciena-oc-tmet:name";
+            }
+
+            description
+              "Name is a configurable field to be used for a target instance in a Dial-out register
+               operation for tunnel server to identify the name of the target.
+               Operators can only select a target from target-client configuration.
+
+               Target is the configurable name for the target used in dial-out register operation
+               for the tunnel server to identify the name of the target instance.
+               Current support is to only allow a value for the target that follows the
+               pattern 'custom {custom-string}';
+
+               String literal 'custom' is a case sensitive prefix that must be followed by a space
+               before any case sensitive alphanumeric value for the {custom-string} is provided.
+               Special characters (_@/#+-:) are acceptebale characters for the {custom-string}.
+
+               Tunnel client uses only the string literal {custom-string} without the prefix keyword 'custom'
+               as a value for the target name in the tunnel registerOp RPC.
+               As an example, operators can form a concatenated
+               {custom-string} literal such as ${HOST}:${VENDOR}:${MODEL}:${VERSION}.";
+          }
+
+          leaf target-type {
+            mandatory true;
+            type leafref {
+              path "/oc-telemetry:telemetry-system/ciena-oc-tmet:dial-out/ciena-oc-tmet:config/ciena-oc-tmet:target-client/ciena-oc-tmet:target-type";
+            }
+            description
+              "Type of service that a target can support.";
+          }
+
+          leaf secure-service {
+            type boolean;
+            default false;
+            description
+              "Enable/Disable TLS behaviour for the service. Default to be disable TLS behaviour for the service.";
+          }
+        }
+
+        uses dial-out-service-tls-config;
+
+    } //end of list tunnel-destinations
+  } //end of grouping dial-out-destination-config
+
+  grouping telemetry-counter {
+    description
+      "Defines a generic counter structure.";
+    leaf counter-name {
+      type string;
+      description
+        "Name of a counter.";
+    }
+    
+    leaf counter-val {
+      type uint64;
+      description
+        "Counter value.";
+    }
+  }
+  grouping telemetry-server-config {
+    description
+      "Configuration data for the
+       telemetry server.";
+
+    leaf enable {
+      type boolean;
+      default true;
+      description
+        "Enables the telemetry server.";
+    }
+
+    leaf tls-service-profile {
+      type leafref {
+        path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+      }
+      description
+        "The TLS Service Profile to be used when accepting
+         TLS connections.";
+    }
+  }
+
+  grouping telemetry-subscription-mode {
+    description
+      "Subscription mode settings.";
+    leaf subscription-mode {
+      type tmet-sub-mode;
+      description
+        "The subscription mode specified by
+        a client in the subscription request.";
+    }
+
+    leaf update-only {
+      type boolean;
+      default false;
+      description
+        "The updates_only flag specified by a client in
+        the subscription request.";
+    }
+  }
+
+  grouping telemetry-sensor-subscription-svcmode {
+    description
+      "Sensor service mode for stream subscription.";
+    leaf sensor-sub-svcmode {
+      type tmet-sensor-sub-svcmode;
+      description
+        "The sensor service mode used for the subscription request
+        of type stream mode.";
+    }
+  }
+
+  grouping sensor-stream {
+    description
+      "Grouping for sensor supported stream subscription submode.";
+    leaf sensor-supported-stream-submode {
+      type tmet-sub-submode;
+      description
+        "The sub-submode used within the subscription request
+        of type stream mode.";
+    }
+  }
+
+  grouping telemetry-sensor-path-element {
+    description
+      "Grouping for path elements.";
+    list xpath-elements {
+      key "path-element";
+      config false;
+      description
+        "Path elements are tokens from the
+        registered xpath.";
+
+      leaf path-element {
+        type string;
+        description
+          "Path tokens generated by a registered xpath.";
+      }
+
+      leaf filter-name {
+        type string;
+        description
+          "Valid filter name used to filter response from
+          Grpc server.";
+      }
+
+      leaf filter-value {
+        type string;
+        description
+          "Filter value provided by the client.";
+      }
+    }
+  }
+
+  grouping telemetry-compound-key {
+    description
+      "Grouping for compound key support.";
+    list compound-keys {
+      key "compound-key";
+      config false;
+      description
+        "List of compound keys and path elements that 
+        generated them.";
+
+      leaf compound-key {
+        type string;
+        description
+          "Value of a compound key which is generated by
+          its list of correlated path elements.";
+      }
+
+      uses telemetry-sensor-path-element;
+    }
+  }
+
+  grouping telemetry-user-info {
+    description
+      "Grouping for user information";
+    leaf user-name {
+      type string;
+      description
+        "User name used for authentication to establish a gNMI 
+        telemetry subscription session";
+    }
+    
+    leaf telemetry-server-port {
+      type inet:port-number;
+      description
+        "The port number of the device on which an external gNMI client 
+        established a gNMI telemetry subscription session.";
+    }
+
+    leaf telemetry-client-ip-address {
+      type inet:ip-address;
+      description
+        "The source IP address from which the external gNMI client 
+        originates a gNMI telemetry subscription session.";
+    }
+  }
+
+  grouping telemetry-sensor-id {
+    description
+      "A grouping to contain unique identifier 
+      which is used to identify an internal sensor
+      assocaited with subscription xpathtmet generates a 
+      identifier that can uniquely identify a sensor.";
+    leaf sensor-id {
+      type uint64;
+      description
+        "A unique sensor id to identify a sensor.";
+    }
+  }
+
+  grouping telemetry-subscription-encoding-format {
+    description
+      "Telemetry subscription encoding format.";
+    leaf subscription-encoding-format {
+      type tmet-encoding-format;
+      description
+        "The tmet-encoding-format used within the subscription request.";
+    }
+  }
+  grouping telemetry-subscriptions{
+    description
+      "Grouping for a list of subscriptions";
+    list subscriptions {
+      key "id";
+
+      leaf id {
+        type string;
+        description
+          "GRPC generated identifier to  uniquely identify a gNMI 
+          telemetry subscribe RPC request";
+      }
+
+      container subscription-params {
+        config false;
+        description
+          "Parameters related to the telemetry
+          subscription on the target device.";
+        leaf path {
+          type string;
+          description
+            "Prefix path defined by the client.";
+        }
+        leaf target {
+          type string;
+          description
+            "Target defined by the client.";
+        }
+        uses telemetry-user-info;
+        uses telemetry-subscription-mode;
+        uses telemetry-subscription-encoding-format;
+      }
+
+      container subscription-list {
+        config false;
+        description
+          "Describes a set of paths that is to be subscribed to by a 
+          client.";
+        list subscription {
+          key "telemetry-sensor-path";
+          description
+            "A list of subscriptions";
+
+          leaf telemetry-sensor-path {
+            type string;
+            description
+              "The sensor path is a path to a portion of operational
+              state of interest in the data model";
+          }
+
+          uses telemetry-sensor-id;
+          uses sensor-stream;
+          uses telemetry-sensor-subscription-svcmode;
+          uses oc-telemetry:telemetry-stream-subscription-config;
+        }
+      }
+    }
+  }
+
+  grouping telemetry-sensors-top {
+    description
+      "Top level grouping for avaialbe sensors registered for the device.";
+    container telemetry-registered-sensors {
+      config false;
+      container stream-sensors {
+        description
+          "List of stream sensors that are registered 
+          for the device's telemetry system.";
+        list telemetry-sensor-paths {
+          key "telemetry-sensor-path";
+          description
+            "A list of sensor paths and exclude filters which comprise
+            a sensor grouping";
+
+          leaf telemetry-sensor-path {
+            type string;
+            description
+              "The sensor path is a path to a portion of operational
+              state of interest in the data model";
+          }
+
+          uses telemetry-sensor-id;
+          uses sensor-stream;
+        }
+      }
+    }
+  }
+
+  grouping telemetry-subscriptions-top {
+    description
+        "Telemetry Subscription stats.";
+      container telemetry-client-subscriptions {
+        config false;
+        leaf telemetry-subscription-count {
+           type int32;
+           description
+             "Displays total number of active subscriptions";
+        }
+        uses telemetry-subscriptions;
+      }
+  }
+
+  grouping telemetry-server-counter-top{
+    container telemetry-server-counters {
+      description
+        "Provides counters info on the gRPC server to help debug telemetry.";
+      config false;
+      list counter {
+        key "counter-name";
+        description
+          "Provides total-counters information on the gRPC server.";
+        uses telemetry-counter;
+      }
+
+      list client-counter {
+        key "telemetry-client-ip-address";
+        description
+          "Provides counter info per connected client to gRPC server.";
+        uses telemetry-user-info;
+        list counter {
+          key "counter-name";
+            description
+              "Counter information at per unique client level.";
+          uses telemetry-counter;
+        }
+      }
+    }
+  }
+
+  grouping telemetry-sensor-counter-top{
+    container telemetry-sensor-counters {
+      description
+        "Provides counter info on internal telemetry collector/plugin infra to
+        help debug telemetry.";
+      config false;
+      list counter {
+        key "counter-name";
+        description
+          "Provides an overview on sensors related behavior on runtime.";
+        uses telemetry-counter;
+      }
+
+      list sensor-counter {
+        key "sensor-path sub-mode";
+        description
+          "Per sensor counters.";
+
+        leaf sub-mode {
+          type tmet-sub-submode;
+          description
+            "Sensor supported subscription mode.";
+        }
+
+        leaf sensor-path {
+          type string;
+          description
+            "Sensor path which can uniquely identify a sensor";
+        }
+
+        list counter {
+          key "counter-name";
+            description
+              "Counter information at per unique client level.";
+          uses telemetry-counter;
+        }
+      }
+    }
+  }
+
+  uses telemetry-sensors-top;
+  uses telemetry-subscriptions-top;
+  uses telemetry-server-counter-top;
+  uses telemetry-sensor-counter-top;
+
+  grouping dial-out-service-tls-config {
+    description
+      "The TLS service config to be used when accepting TLS connections for the service";
+
+    container tls-profile {
+      description
+        "TLS profile which contains TLS related parameters.";
+
+      leaf tls-profile-name {
+        type leafref {
+          path "/ciena-tsp:tls-service-profiles/ciena-tsp:tls-service-profile-name";
+        }
+        description
+          "The TLS profile name to be used when accepting TLS connections for the service.";
+      }
+
+      leaf tls-type {
+        type enumeration {
+          enum server-side-tls { value 0; }
+          enum mtls { value 1; }
+        }
+        default server-side-tls;
+        description
+          "The TLS type to be used when accepting TLS connections for the service.";
+      }
+    }
+  }
+
+  grouping dial-out-target-client-config {
+    description
+      "Configuration parameters for the Dial-out target client instance.";
+
+    list target-client {
+      key "name target-type";
+
+      description
+        "Target name and its type form a unique identifier in a tunnel register RPC,
+         hence no two target instances in the target list can have the same values for a target's name and its type.";
+
+      leaf name {
+        type string {
+          pattern '(custom\s)[a-zA-Z0-9_@/#+-:]+';
+        }
+        description
+          "Target is the configurable name for the target used in dial-out register operation
+          for the tunnel server to identify the name of the target instance.
+          Current support is to only allow a value for the target that follows the
+          pattern 'custom {custom-string}';
+
+          String literal 'custom' is a case sensitive prefix that must be followed by a space
+          before any case sensitive alphanumeric value for the {custom-string} is provided.
+          Special characters (_@/#+-:) are acceptebale characters for the {custom-string}.
+
+          Tunnel client uses only the string literal {custom-string} without the prefix keyword 'custom'
+          as a value for the target name in the tunnel registerOp RPC.
+          As an example, operators can form a concatenated
+          {custom-string} literal such as ${HOST}:${VENDOR}:${MODEL}:${VERSION}.";
+      }
+
+      leaf target-type {
+        mandatory true;
+        type enumeration {
+          enum GNMI_GNOI{ value 0; }
+        }
+        description
+          "Each target type is a supported tunnel service.";
+      }
+    }
+  }
+
+//augment statments
+  augment /oc-telemetry:telemetry-system {
+    description
+      "Addition for configuring the telemetry server";
+
+    container server {
+      description
+        "Top-level container for telemetry server";
+
+      container config {
+        description
+          "Configuration parameters for the 
+           telemetry server.";
+
+        uses telemetry-server-config;
+        
+      }
+    }
+
+    //dial-out definition statements
+    container dial-out {
+      description
+        "Top level container for Dial-out configuration and state.";
+
+      container config {
+        description
+          "Configuration parameters relating to Dial-out tunnel server destinations.";
+          
+          uses dial-out-target-client-config;
+          uses dial-out-destination-config;
+      }
+
+      container state {
+        config false;
+        description
+          "State information associated with Dial-out tunnel server destinations.";
+
+          uses dial-out-destination-config;
+      }
+    } //end of container dial-out
+  }
+
+  augment /oc-telemetry:telemetry-system/ciena-oc-tmet:dial-out/ciena-oc-tmet:state/ciena-oc-tmet:tunnel-destination {
+    description
+      "Additionnal nodes to show tunnel state.";
+
+    leaf tunnel-oper-state {
+      type dial-out-connection-state;
+
+      description
+        "Operational state of a configured tunnel.";
+    }
+
+    leaf tunnel-status-msg {
+      type string;
+
+      description
+        "Message which provides further description on a tunnel's operational state.";
+    }
+  }
+
+  augment /oc-telemetry:telemetry-system/ciena-oc-tmet:dial-out/ciena-oc-tmet:state/ciena-oc-tmet:tunnel-destination/ciena-oc-tmet:target-list {
+    description
+      "Additionnal nodes to show target state.";
+
+    leaf service-oper-state {
+      type dial-out-connection-state; 
+
+      description
+        "Operational state of the service.";
+    }
+
+    leaf service-status-msg {
+      type string;
+
+      description
+        "Message which provides further description 
+        on a service's operational state.";
+    }
+  }
+
+//rpc
+  rpc gnmi-subscribe {
+    description
+      "Represents the gNMI Subscribe RPC used by
+       gNMI clients when requesting a subscription from
+       telemetry. Clients may use this RPC to define NACM
+       rules limiting access to the telemetry subscribe operation.
+       Since telemetry subscriptions are only supported over
+       telemetry connections, attempting to invoke it via NETCONF 
+       will always return an error.";
+  }
+}

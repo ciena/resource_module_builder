@@ -1,0 +1,87 @@
+module finite-state-machine {
+  namespace "http://sssup.it/fsm";
+  prefix fsm;
+
+  import transitions {
+    prefix ev;
+  }
+
+  organization
+    "Scuola Superiore Sant'Anna Network and Services Laboratory";
+  contact
+    " Editor: Matteo Dallaglio
+
+              <mailto:m.dallaglio@sssup.it>
+     
+    ";
+  description
+    "This module contains a YANG definitions of a generic finite state
+     machine.";
+
+  revision 2016-03-15 {
+    description
+      "Initial Revision.";
+    reference
+      "RFC xxxx:";
+  }
+
+  identity state-name {
+    description
+      "Initial Revision.";
+  }
+
+  typedef state-name-type {
+    type identityref {
+      base state-name;
+    }
+  }
+
+  grouping state-top {
+    leaf name {
+      type identityref {
+        base state-name;
+      }
+    }
+    leaf description {
+      type string;
+    }
+    grouping next-state-top {
+      leaf next-state {
+        type identityref {
+          base state-name;
+        }
+        description
+          "Id of the next state";
+      }
+    }
+
+    uses ev:transitions-top {
+      augment "transitions/transition/actions/action/conditional/true" {
+        uses next-state-top;
+      }
+      augment "transitions/transition/actions/action/conditional/false" {
+        uses next-state-top;
+      }
+      augment "transitions/transition/actions/action/simple" {
+        leaf next-state {
+          type identityref {
+            base state-name;
+          }
+          description
+            "Id of the next state";
+        }
+      }
+    }
+  }
+
+  grouping states-top {
+    container states {
+      list state {
+        key "name";
+        uses state-top;
+      }
+    }
+  }
+
+  uses states-top;
+}

@@ -1,0 +1,749 @@
+module ciena-rib {
+    namespace   "http://ciena.com/ns/yang/ciena/ciena-rib";
+    prefix "rib";
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+  import ciena-openconfig-interfaces {
+       prefix cn-if;
+   }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import ciena-system-telemetry {
+        prefix ciena-sys-tmet;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                      U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific rib yang model.
+        Copyright (c) 2018  Ciena Corporation.  All rights
+        reserved.
+        All information contained herein is, and remains the
+        property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained
+        from Ciena Corporation.";
+
+    revision "2022-11-21" {
+        description
+           "Added a new leaf to configure the RIB to allow protocols to 
+            purge their own routes.";
+    }
+
+    revision "2022-02-01" {
+        description
+            "Added clear route afi option for IPv4 or IPv6.
+             Added instance-tag key to display ISIS/OSPF instance that the route is learned from.
+             Added a new leaf for counting all the paths which are not installed in FIB but in RIB in VRF.
+             Fixed the pattern to accept empty string in RO destination-prefix for IPv4 and IPv6.";
+    }
+
+    revision "2021-03-24" {
+        description
+           "Added new leaf to determine if the prefix is Anycast or not
+            Added MPLS L3VPN VRF route threshold config, oper and event provision.";
+    }
+
+    revision "2020-09-03" {
+        description
+           "Add a new RIB key to filter FIB installed routes & allow
+            partial key filtering of empty destination prefixes.
+            Add Must statement addition to ensure outgoing interface is binded to the same VRF.";
+    }
+
+    revision "2020-02-10" {
+        description
+           "Changing RW yang to allow configuring multiple next-hops for Ipv4.
+            Changing Rib-state next-hop address type to ip-address for Ipv4 and Ipv6.
+            Adding next-hop interface as a leaf for Ipv6 rib route configuration and
+            Adding Must statement to allow specific types of interfaces for Ipv4 and Ipv6.
+            Blocking config of IPv6 outgoing-interface only option to be inline with IPv4.
+            Adding option to retrieve longest prefix matched route when IPv4/IPv6 address is provided.";
+    }
+
+    revision "2020-01-21" {
+        description
+            "Changing RO yang to have route-preference as a key";
+    }
+
+    revision "2017-06-21" {
+        description
+            "Initial version of Rib model.";
+    }
+
+    grouping routing-attributes {
+        description
+            "Routing attributes";
+        leaf route-preference  {
+            type uint32 {
+                range "1..255";
+            }
+            description
+                "Numerical value that allows for comparing  routes from different protocols.
+                Also known as administrative-distance.";
+        }
+        leaf tag  {
+            type  int64 {
+                range "0..4294967295";
+            }
+            default "0";
+            description
+                "Route tag";
+        }
+        leaf description {
+            type cn-l3-types:string-max-256;
+            description
+                "Description of the route";
+        }
+    }
+
+    grouping  rib-grouping {
+        description
+            "Rib config grouping";
+        container rib {
+            description
+                "IP routing table";
+
+            list vrf {
+                key "name";
+                description
+                    "VRF routing instance";
+                leaf name {
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    description
+                        "Virtual Routing and Forwarding instance";
+                }
+
+                list ipv4 {
+                    key "destination-prefix";
+                                        description
+                                                "Ipv4 routes";
+                    leaf destination-prefix  {
+                        type  inet:ipv4-prefix;
+                        description
+                            "IPv4 destination prefix";
+                    }
+                    choice next-hop-options {
+                        mandatory "true";
+
+                        case outgoing-interfaces {
+                            list outgoing-interface {
+                                min-elements 1;
+                                key "name";
+                                description
+                                    "Name of the outgoing interface";
+                                leaf name  {
+                                    type string
+                                    {
+                                        pattern "Null0";
+                                    }
+                                    description
+                                        "Name of the outgoing interface";
+                                }
+                                uses routing-attributes;
+                            }
+                        }
+                        case next-hops {
+                            list next-hop {
+                                min-elements 1;
+                                key "address";
+                                description
+                                    "IPv4 address of the next hop";
+                                leaf address  {
+                                    type inet:ipv4-address;
+                                    description
+                                        "IPv4 address or blackhole config for the next hop.";
+                                }
+                                leaf outgoing-interface-name {
+                                    type  leafref {
+                                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                                     }
+                                     must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]/oc-if:config/" +
+                                          "cn-if:vrfName=../../../name and " +
+                                          "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]/oc-if:config/" +
+                                          "cn-if:type[.='ip' or .='system' or .='loopback' or .='ip-unnumbered' or .='ip-tunnel']" {
+                                         error-message "Referenced interface cannot be configured for this static route.";
+                                     }
+                                    description
+                                        "Name of the outgoing interface";
+                                }
+                                uses routing-attributes;
+                            }
+                        }
+                    }
+                }
+
+                list ipv6 {
+                    key "destination-prefix";
+                    description
+                        "Ipv6 routes";
+                    leaf destination-prefix  {
+                        type  inet:ipv6-prefix;
+                        description
+                            "IPv6 destination prefix.";
+                    }
+
+                    choice next-hop-options {
+                        mandatory "true";
+                        case outgoing-interfaces {
+                            list outgoing-interface {
+                                min-elements 1;
+                                key "name";
+                                description
+                                    "List of the outgoing interfaces";
+                                leaf name  {
+                                    type string {
+                                        pattern "Null0";
+                                    }
+                                    description
+                                    "Name of the outgoing interface";
+                                }
+                                leaf route-preference  {
+                                    type  uint32 {
+                                        range "1..255";
+                                    }
+                                    description
+                                        "Numerical value that allows for comparing
+                                        routes from different protocols.
+                                        Also known as administrative-distance.";
+                                }
+                            }
+                        }
+
+                        case next-hops {
+                            list next-hop {
+                                min-elements 1;
+                                key "address";
+                                description
+                                    "IPv6 address of the next hop";
+                                leaf address  {
+                                    type  inet:ipv6-address;
+                                    description
+                                        "IPv6 address of the next hop";
+                                }
+                                leaf route-preference  {
+                                    type  uint32 {
+                                        range "1..255";
+                                    }
+                                    description
+                                        "Numerical value that allows for comparing
+                                        routes from different protocols.
+                                        Also known as administrative-distance.";
+                                }
+                                leaf outgoing-interface-name {
+                                    type  leafref {
+                                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                                    }
+                                    must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]/oc-if:config/" +
+                                         "cn-if:vrfName=../../../name and " +
+                                         "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]/oc-if:config/" +
+                                         "cn-if:type[.='ip' or .='system' or .='loopback' or .='ip-unnumbered' or .='ip-tunnel']" {
+                                         error-message "Referenced interface cannot be configured for this static route.";
+                                    }
+
+                                    description
+                                        "Name of the outgoing interface";
+                                }
+                            }
+                        }
+                    }
+                }
+
+                container route-limit {
+                    description
+                        "Route limit specific attributes";
+                    list address-family {
+                        key "type";
+                        description
+                            "List of route limit attributes per IP address-family";
+                        leaf type {
+                            type cn-l3-types:vrf-afi-type;
+                            description
+                                "Address family type : IPv4 or IPv6";
+                        }
+                        leaf maximum-routes {
+                            type uint32 {
+                                range "0..1000000";
+                            }
+                            mandatory true;
+                            description
+                                "Maximum selected route limit for the VRF";
+                        }
+                        leaf warning-only {
+                            type boolean;
+                            mandatory true;
+                            description
+                                "If set, only a warning is issued when the VRF's maximum-routes limit is reached";
+                        }
+                        leaf warning-threshold {
+                            type ciena-sys-tmet:ciena-system-decimal2-percent;
+                            units "percent";
+                            mandatory true;
+                            description
+                                "Percentage value of the maximum-routes limit indicating the high water mark";
+                        }
+                        leaf reinstall-threshold {
+                            type ciena-sys-tmet:ciena-system-decimal2-percent;
+                            units "percent";
+                            mandatory true;
+                            description
+                                "When the number of routes are decreasing, this attribute specifies the percentage value of the maximum-routes
+                                 limit at which point, previously withheld routes are reinstalled for the VRF";
+                        }
+                    }
+                }
+            }
+            container protocol {
+                description
+                    "IP RIB protocol options.";
+
+                container purge {
+                    description
+                        "Purge routes options.";
+
+                    leaf interface {
+                        type boolean;
+                        description
+                            "When true, protocols will remove unreachable routes 
+                             when dependent interface is down.";
+                    }
+                }
+            }
+        }
+    }
+    uses rib-grouping;
+
+    grouping source-protocol {
+        description
+            "Source-protocol attributes";
+        leaf protocol-subtype  {
+            type string;
+            description
+                "Protocol Subtype";
+        }
+        leaf route-preference  {
+            type  uint8;
+            description
+                "Numerical value that allows for comparing
+                routes from different protocols.
+                Also known as administrative-distance.";
+        }
+        leaf metric  {
+            type  uint32;
+            description
+                "Route metric";
+        }
+        leaf blackhole  {
+            type string;
+            description
+                "Silently discard the packet.";
+        }
+        leaf last-updated  {
+            type string;
+            description
+                "Time stamp of the last modification of the route.  If the
+                route was never modified, it is the time when the route was
+                inserted into the RIB.";
+        }
+        leaf active  {
+            type boolean;
+            description
+                "Presence of this leaf indicates that the route is preferred
+                among all routes in the same RIB that have the same
+                destination prefix.";
+        }
+
+        leaf anycast-prefix {
+            type boolean;
+            description
+               "Prefix is anycast or not";
+        }
+
+        leaf instance-tag {
+            type string;
+            description
+               "ISIS or OSPF instance tag from which the route has been learned";
+        }
+    }
+
+    grouping  rib-state-grouping {
+        description
+            "Rib state attributes";
+        container rib-state {
+            description
+                "Rib state container";
+            config false;
+            list vrf {
+                key "name";
+                leaf name  {
+                    type leafref {
+                        path "/vrf:vrf/vrf:vrfName";
+                    }
+                    description
+                        "Routing and Forwarding Instance name";
+                }
+                list ipv4 {
+                    description
+                        "IPv4 routing table";
+                    key "destination-prefix type route-preference selected-only instance-tag";
+                    leaf destination-prefix  {
+                        type union{
+                           type inet:ipv4-address;
+                           type inet:ipv4-prefix;
+                           type string {pattern "";}
+                        }
+                        description
+                            "IPv4 destination prefix or destination address.";
+                    }
+                    leaf type  {
+                         type string;
+                         description
+                            "Type of the routing protocol from which the route
+                             originated.";
+                    }
+                    leaf matched-prefix  {
+                        type  inet:ipv4-prefix;
+                        description
+                            "IPv4 matched destination prefix";
+                    }
+                    leaf selected-only {
+                        type boolean;
+                        description
+                            "FIB installed selected route for IPv4.";
+                    }
+                    uses source-protocol;
+                    list next-hops {
+                        key "index";
+                        description
+                            "Next hop state attributes ";
+                        leaf index  {
+                            type  uint8;
+                            description
+                                "Index for next hop";
+                        }
+                        leaf address  {
+                            type  inet:ip-address;
+                            description
+                                "Ipv4 address";
+                        }
+                        leaf outgoing-interface  {
+                            type string;
+                            description
+                                "Name of the outgoing interface";
+                        }
+                        leaf selected-route  {
+                            type boolean;
+                            description
+                               "Preferred route among all routes in the same
+                                RIB that have the same destination prefix";
+                         }
+                         leaf recursive-next-hop {
+                             type string;
+                             description
+                                 "Recursive next-hop information.";
+                         }
+                       }
+                    }
+                list ipv6 {
+                    description
+                        "IPv6 routing table";
+                    key "destination-prefix type route-preference selected-only instance-tag";
+                    leaf destination-prefix  {
+                         type union{
+                             type inet:ipv6-address;
+                             type inet:ipv6-prefix;
+                             type string {pattern "";}
+                         }
+                         description
+                            "IPv6 destination prefix or destination address.";
+                    }
+                        leaf type  {
+                            type string;
+                            description
+                                "Type of the routing protocol from which the route
+                                originated.";
+                        }
+                        leaf matched-prefix  {
+                            type  inet:ipv6-prefix;
+                            description
+                                "IPv6 matched destination prefix";
+                        }
+                        leaf selected-only {
+                            type boolean;
+                            description
+                                "FIB installed selected route for IPv6.";
+                        }
+                        uses source-protocol;
+                        list next-hops {
+                            key "index";
+                            description
+                                "Next hop state attributes ";
+                            leaf index  {
+                                type  uint8;
+                                description
+                                    "Index for next hop";
+                            }
+                            leaf address  {
+                                type  inet:ip-address;
+                                description
+                                    "Ipv6 address";
+                            }
+                            leaf outgoing-interface  {
+                                type string;
+                                description
+                                    "Name of the outgoing interface";
+                            }
+                            leaf selected-route  {
+                                type boolean;
+                                description
+                                    "Preferred route among all routes in the same
+                                    RIB that have the same destination prefix";
+                            }
+                            leaf recursive-next-hop {
+                                type string;
+                                description
+                                    "Recursive next-hop information.";
+                        }
+                    }
+                }
+
+                list summary {
+                    key "protocol-index";
+                    description
+                        "Summary of all routes";
+
+                    leaf protocol-index  {
+                        type  uint32;
+                        description 
+                           "Index for count of routes for IPv4/IPv6";
+                    }
+
+                    leaf total-routes  {
+                        type  uint32;
+                        description 
+                            "Total Routes in the RIB from all protocols";
+                    }
+
+                    leaf total-paths  {
+                        type  uint32;
+                        description 
+                             "Total Paths [all destinations]in the
+                              RIB from all protocols including ECMP";
+                    }
+
+                    leaf fib-count  {
+                        type  uint32;
+                        description
+                             "Total Routes in the FIB from all protocols";
+                    }
+
+                    leaf ecmp-routes  {
+                        type  uint32;
+                        description
+                             "Total ECMP routes in the RIB from all protocols";
+                    }
+
+                    leaf ecmp-paths  {
+                        type  uint32;
+                        description
+                             "Total ECMP paths [all destinations] in the RIB 
+                              from all protocols";
+                    }
+
+                    leaf ecmp-path-counters  {
+                        type  string;
+                        description
+                             "ECMP path counters detailed description from all protocols";
+                    }
+
+                    list route-source {
+                        key "type";
+                        description
+                            "Statistics of different Route Types";
+
+                        leaf type  {
+                            type  string;
+                            description
+                                 "Type of Route from all protocols";
+                        }
+
+                        leaf type-count  {
+                            type  uint32;
+                            description
+                                 "Total number routes for each Route type";
+                        }
+                    }
+                    leaf total-rib-paths  {
+                        type  uint32;
+                        description
+                             "Total paths in RIB for all types of protocols";
+                    }
+                }
+
+                container route-limit {
+                    description
+                        "Route limit specific attributes";
+                    list address-family {
+                        key "type";
+                        description
+                            "List of route limit attributes per IP address-family";
+                        leaf type {
+                            type cn-l3-types:vrf-afi-type;
+                            description
+                                "Address family type: IPv4 or IPv6";
+                        }
+                        container configured {
+                            description
+                                "Configured VRF route limit threshold values";
+                            leaf maximum-routes {
+                                type uint32 {
+                                    range "0..10000000";
+                                }
+                                mandatory true;
+                                description
+                                    "Maximum route limit for the VRF";
+                            }
+                            leaf warning-only {
+                                type boolean;
+                                description
+                                    "If set, only a warning is issued when the VRF's maximum-routes limit is reached";
+                            }
+                            leaf warning-threshold {
+                                type ciena-sys-tmet:ciena-system-decimal2-percent;
+                                units "percent";
+                                mandatory true;
+                                description
+                                    "Percentage value of the maximum-routes limit of which a maximum routes warning is issued for the VRF";
+                            }
+                            leaf reinstall-threshold {
+                                type ciena-sys-tmet:ciena-system-decimal2-percent;
+                                units "percent";
+                                mandatory true;
+                                description
+                                    "When the number of routes are decreasing, this attribute specifies the percentage value of the maximum-routes
+                                     limit of which previously withheld routes are reinstalled for the VRF";
+                            }
+                        }
+                        container operational {
+                            description
+                                "operational VRF route limit threshold values";
+                            leaf installed-route-count {
+                                type uint32;
+                                description
+                                    "Number of route entries installed in VRF instance";
+                            }
+                            leaf pending-route-count {
+                                type uint32;
+                                description
+                                    "Number of routes to be installed when installed-route-count falls to reinstall-threshold value";
+                            }
+                            leaf is-max-routes-reached {
+                                type boolean;
+                                description
+                                    "Maximum route limit reached status";
+                            }
+                            leaf is-warning-threshold-reached {
+                                type boolean;
+                                description
+                                    "Warning threshold reached status";
+                            }
+                            leaf is-reinstall-threshold-reached {
+                                type boolean;
+                                description
+                                    "Reinstall threshold reached status";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    uses rib-state-grouping;
+
+    rpc clear-rib {
+        input  {
+            leaf destination-prefix  {
+                type cn-l3-types:ip-prefix;
+                description
+                    "Ip prefix address";
+            }
+            leaf vrf  {
+                type leafref {
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                description
+                    "Routing and Forwarding Instance name.";
+            }
+            leaf afi {
+                 type cn-l3-types:vrf-afi-type;
+                 description
+                     "Specify AFI type IPv4 or IPv6 to clear routes.";
+            }
+        }
+        output{
+            leaf response {
+                type string;
+                description
+                    "The response could be 'success', or the reason for rib route clear failure";
+            }
+        }
+    }
+
+    notification vrf-events {
+        list vrf{
+            description
+                "Event notifications for VRF";
+
+            leaf vrfName {
+                type leafref{
+                    path "/vrf:vrf/vrf:vrfName";
+                }
+                mandatory true;
+                description
+                    "The name of a VRF on which a alarm
+                    has been detected";
+                }
+
+            leaf event {
+                type cn-l3-types:vrf-event-type;
+                mandatory true;
+                description
+                    "Notification event.
+                    e.g VRF route mid threshold exceeded.";
+            }
+
+            leaf reason {
+                type cn-l3-types:vrf-reason-type;
+                description
+                    "Notification event reason.
+                    e.g VRF route mid threshold exceeded.";
+            }
+        }
+    }
+}

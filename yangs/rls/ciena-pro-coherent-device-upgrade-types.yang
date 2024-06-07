@@ -1,0 +1,230 @@
+module ciena-pro-coherent-device-upgrade-types {
+  yang-version 1.1;
+  namespace "urn:ciena:ns:yang:coherent-device-upgrade-types";
+  prefix coherent-device-upgrade-types;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Upgrade definitions for coherent devices.";
+
+  revision 2024-01-01 {
+    description
+      "Initial version.";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    reference
+      "1.0.0";
+  }
+
+  typedef device-upgrade-status-enum {
+    type enumeration {
+      enum idle {
+        description
+          "An indication that a WaveLogic device module is not currently in the
+           process of upgrading to a new firmware image.";
+      }
+      enum in-progress {
+        description
+          "The WaveLogic device is in the process of downloading, activating, or committing
+           a new firmware image.";
+      }
+      enum success {
+        description
+          "The WaveLogic device has successcully completed installation of a new
+           firmware image.";
+      }
+      enum failed {
+        description
+          "The WaveLogic device has failed to complete installation of a new firmware
+           image.";
+      }
+      enum aborted {
+        description
+          "The firmware installation on the WaveLogic device has been administratively
+           aborted.";
+      }
+      enum cold-restart-required {
+        description
+          "The WaveLogic device requires a cold restart to complete the activation of the
+           new firmware version.";
+      }
+    }
+    description
+      "";
+  }
+
+  typedef device-upgrade-command-enum {
+    type enumeration {
+      enum install {
+        description
+          "A single-step, full-upgrade of the device is in-progress or has completed.";
+      }
+      enum download {
+        description
+          "A firmware image download operation is in progress or has completed for this device.
+           This command is only relevant when using a multi-step upgrade.";
+      }
+      enum activate {
+        description
+          "A firmware image activation operation is in progress or has has completed for this device.
+           This command is only relevant when using a multi-step upgrade.";
+      }
+      enum commit {
+        description
+          "A firmware image commit operation is in progress or has has completed for this device.
+           This command is only relevant when using a multi-step upgrade.";
+      }
+      enum abort {
+        description
+          "A firmware image upgrade operation has been aborted or has has completed for this device.
+           This command is only relevant when using a multi-step upgrade.";
+      }
+    }
+    description
+      "";
+  }
+
+  typedef firmware-image-bank-enum {
+    type enumeration {
+      enum image-a {
+        description
+          "Image bank A of the device.";
+      }
+      enum image-b {
+        description
+          "Image bank B of the device.";
+      }
+    }
+    description
+      "";
+  }
+
+  grouping min-firmware-baseline-group {
+    leaf ciena-min-firmware-baseline {
+      type coherent-device-common-types:string32;
+      config false;
+      description
+        "The minimum firmware release number supported by the Ciena platform
+         for Ciena WaveLogic devices. If a device has an older release active
+         a firmware-below-baseline defect is set and the device is managed on
+         a best effort basis until it has been upgraded.
+
+         This attribute and firmware-below-baseline defect is not applicable
+         if the device is a WaveLogic 5 Nano running release 1.";
+    }
+    description
+      "";
+  }
+
+  grouping firmware-status-group {
+    leaf committed-version {
+      type coherent-device-common-types:string32;
+      config false;
+      description
+        "The committed firmware version for this device. For pluggable devices
+         the version format is major.minor.build.";
+    }
+    leaf active-version {
+      type coherent-device-common-types:string32;
+      config false;
+      description
+        "The firmware version currently running on this device. For pluggable devices
+         the version format is major.minor.build.";
+    }
+    leaf upgrade-to-version {
+      type coherent-device-common-types:string32;
+      config false;
+      description
+        "The firmware version that is being installed on this device via an upgrade process.
+         For pluggable devices the version format is major.minor.build.";
+    }
+    leaf manufacturing-version {
+      type coherent-device-common-types:string32;
+      config false;
+      description
+        "The manufacturing firmware version on this device. For pluggable devices
+         the version format is major.minor.build.";
+    }
+    leaf active-image {
+      type firmware-image-bank-enum;
+      config false;
+      description
+        "The image bank currently being run on this device.";
+    }
+    list images {
+      key "name";
+      config false;
+      leaf name {
+        type firmware-image-bank-enum;
+        description
+          "The name of the firmware-image-bank is the list key.";
+      }
+      leaf version {
+        type coherent-device-common-types:string32;
+        description
+          "The firmware version installed in this bank.";
+      }
+      leaf valid {
+        type boolean;
+        description
+          "Indication whether the image in this bank is valid.";
+      }
+      leaf committed {
+        type boolean;
+        description
+          "Indication whether the image in this bank is committed.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+
+  grouping firmware-upgrade-status-group {
+    container upgrade-state {
+      leaf status {
+        type device-upgrade-status-enum;
+        config false;
+        description
+          "The current view of firmware upgrades on this device. When an upgrade is not
+           in-progress or in a failed or aborted state, the value is Idle. Idle is also
+           the initial state after a host module restart.";
+      }
+      leaf last-command {
+        type device-upgrade-command-enum;
+        config false;
+        description
+          "The last firmware upgrade command executed on this device.";
+      }
+      leaf last-command-details {
+        type string {
+          length "0..128";
+        }
+        config false;
+        description
+          "A brief explanation of the status of the last firmware upgrade command for this device.";
+      }
+      description
+        "";
+    }
+    description
+      "";
+  }
+}

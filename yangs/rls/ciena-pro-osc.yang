@@ -1,0 +1,172 @@
+module ciena-pro-osc {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-osc";
+  prefix pro-osc;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's optical service channel (OSC) object.";
+
+  revision 2020-08-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Initial version";
+  }
+
+  typedef profile-type_t {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "To make sure we serialize if we receive a value of 0";
+      }
+      enum "ge-open" {
+        value 1;
+        description
+          "GE Open... ";
+      }
+      enum "ge-fec-1" {
+        value 2;
+        description
+          "GE FEC 1";
+      }
+      enum "oc3" {
+        value 3;
+        description
+          "OC3";
+      }
+      enum "fe-open" {
+        value 4;
+        description
+          "FE Open";
+      }
+      enum "ge-fec-2" {
+        value 5;
+        description
+          "GE FEC 2";
+      }
+    }
+    description
+      "The OSC profile";
+  }
+
+  grouping osc-base {
+    leaf name {
+      type string {
+        length "1..11";
+      }
+      description
+        "OSC facility name";
+    }
+
+    leaf tx-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      config false;
+      description
+        "OSC Tx launch power in dBm.";
+    }
+
+    leaf tx-wavelength {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      units "nm";
+      config false;
+      description
+        "The OSC wavelength in nm.";
+    }
+
+    leaf rx-power {
+      type decimal64 {
+        fraction-digits 1;
+      }
+      config false;
+      description
+        "The OSC rx power in dBm.";
+    }
+
+    leaf prov-profile {
+      type profile-type_t;
+      default "ge-fec-1";
+      description
+        "Provisioned OSC profile";
+    }
+
+    leaf running-profile {
+      type profile-type_t;
+      config false;
+      description
+        "Actual OSC profile retrieved from card";
+    }
+
+    leaf interface-tag {
+      type string;
+      description
+        "Name of the Interface associated with this OSC facility";
+    }
+
+    uses ciena-pro-types:admin-state;
+  }
+
+  grouping osc-diagnostic {
+    leaf osc-link-failed {
+      type boolean;
+      description
+        "OSC link failed";
+    }
+
+    leaf remote-defect-indicator {
+      type boolean;
+      description
+        "OSC remote defect indicator (RDI)";
+    }
+
+    leaf loss-of-frame {
+      type boolean;
+      description
+        "OSC loss of Frame";
+    }
+
+    leaf automatic-shutoff-compromised {
+      type boolean;
+      description
+        "OSC cross fiber detected. ALSO or Automatic shutoff is Compromised";
+    }
+
+    leaf parent-failed {
+      type boolean;
+      description
+        "Parent Object Failed";
+    }
+  }
+
+  grouping osc {
+    uses osc-base;
+
+    container diagnostic {
+      config false;
+      description
+        "Facility diagnostic state.";
+      uses osc-diagnostic;
+    }
+  }
+}

@@ -1,0 +1,200 @@
+module ciena-6500r-delay-measurement-mgr {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-delay-measurement-mgr";
+  prefix dmmgr;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes the Yang data model for delay-measurement-mgr";
+
+  revision 2023-02-06 {
+    description
+      "Delay Measurement Mgr initial yang model";
+    ciena-common-version:string "0.0.0";
+  }
+
+  typedef dm-admin-state {
+    type enumeration {
+      enum Disabled {
+        value 0;
+        description
+          "Delay Measurement disable";
+      }
+      enum Enabled {
+        value 1;
+        description
+          "Delay Measurement enable";
+      }
+    }
+  }
+
+  typedef dm-status {
+    type enumeration {
+      enum Disabled {
+        value 0;
+        description
+          "Delay Measurement is Disabled on this slot/facHwindex";
+      }
+      enum Enabled {
+        value 1;
+        description
+          "Delay Measurement is Enabled on this slot/facHwindex";
+      }
+      enum Unsupported {
+        value 2;
+        description
+          "Delay Measurement is Unsupported on this slot/facHwindex";
+      }
+      enum Not-Ready {
+        value 3;
+        description
+          "Error configuring daemon for this slot/facHwindex. Will retry on audit";
+      }
+    }
+  }
+
+  typedef dm-reset-reason {
+    type enumeration {
+      enum restart {
+        value 0;
+        description
+          "software or hardware restart ";
+      }
+      enum fiber-restored {
+        value 1;
+        description
+          "fiber is restored";
+      }
+      enum manual {
+        value 2;
+        description
+          "manually reset";
+      }
+    }
+  }
+
+  list delay-measurement {
+    config true;
+    key "slot facilityHwIdx";
+    leaf slot {
+      type uint8;
+    }
+    leaf facilityHwIdx {
+      type uint8;
+    }
+    uses ciena-pro-types:admin-state;
+    leaf polling-cadence {
+      type uint32;
+      description
+        "Polling period between DMM sends (in seconds)";
+    }
+    leaf send-count {
+      type uint32;
+      config false;
+      description
+        "Number of DMM frames sent";
+    }
+    leaf receive-count {
+      type uint32;
+      config false;
+      description
+        "Number of DMR frames received";
+    }
+    leaf one-way-latency {
+      type uint32;
+      config false;
+      description
+        "One way latency calculated from last DMR in nanoseconds";
+    }
+    leaf min-latency {
+      type uint32;
+      config false;
+      description
+        "Lowest measured latency in nanoseconds";
+    }
+    leaf max-latency {
+      type uint32;
+      config false;
+      description
+        "Highest measured latency in nanoseconds";
+    }
+    leaf avg-latency {
+      type uint32;
+      config false;
+      description
+        "Average measured latency in nanoseconds";
+    }
+    leaf last-reset-time {
+      type yang:date-and-time;
+      config false;
+      description
+        "Timestamp of last DM stats reset";
+    }
+    leaf last-reset-reason {
+      type dm-reset-reason;
+      config false;
+      description
+        "Reason for last stats reset.";
+    }
+    leaf last-receive-time {
+      type yang:date-and-time;
+      config false;
+      description
+        "Timestamp of last last DMR received";
+    }
+    leaf status {
+      type dm-status;
+      config false;
+      description
+        "Delay Measurement service status for this port.";
+    }
+    container diagnostic {
+      config false;
+      leaf delay-measurement-timeout {
+        type boolean;
+        description
+          "True if DM sees DMR timeout continuously for 15mins";
+      }
+      leaf delay-measurement-port-not-found {
+        type boolean;
+        description
+          "True if slot/facHwIndex to OSC lookup failed on last GET";
+      }
+    }
+  }
+
+  rpc delay-measurement-reset {
+    description
+      "Reset Stats on specified slot/port";
+    input {
+      leaf slot {
+        type uint8;
+      }
+      leaf facilityHwIdx {
+        type uint8;
+      }
+      leaf reset-reason {
+        type dm-reset-reason;
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

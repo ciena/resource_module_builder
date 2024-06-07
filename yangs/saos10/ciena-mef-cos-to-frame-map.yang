@@ -1,0 +1,148 @@
+module ciena-mef-cos-to-frame-map {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-mef-cos-to-frame-map";
+    prefix "ctf";
+
+    organization
+        "Ciena Corporation";
+ 
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                 U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines the CoS to Frame Map. A combination of 
+         cos and color yields a pcp and dei or ip-dscp or mpls-tc.
+         Additionally, for some forwarding-plane architectures, this module also
+         defines the CoS to Queue Map. CoS yields a Queue Number and also a WRED
+         curve number for green or yellow frames.";
+
+    revision 2021-04-06 {
+        description "Added descriptions";
+    }
+    
+    revision 2015-07-16 {
+        description "Initial revision";
+    }
+
+    /*
+     * Typedefs
+     */
+    typedef cos-to-frame-ref {
+        type leafref {
+            path "/ctf:cos-to-frame-maps/ctf:cos-to-frame-map/ctf:name";
+        }
+        description
+          "This type is used by data models that need to reference
+           configured CoS to frame maps.";
+    }
+
+    container cos-to-frame-maps {
+        description
+            "List of COS-to-frame-map templates. COS To Frame maps can be referenced by various entities
+             to determine how frames are updated in regards to cos fields (pcp, dei, mpls-tc, dscp).";
+        
+        list cos-to-frame-map {
+            description
+                "A list of profiles that can contain several map entries.";
+
+            key "name";
+            
+            leaf name {
+                type string;
+                
+                description
+                    "A string used to uniquely identify a profile entry within
+                     the list of maps (profiles).";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "A more detailed description of the map.";
+            }
+            
+            list map-entry {
+                key "cos color";
+
+                description
+                   "An entry which maps internal-cos and internal-color to a frame CoS value.";
+                
+                leaf cos {
+                    type uint8 {
+                        range "0..63";
+                    }
+                    description
+                        "Class of Service bits.";
+                }
+                
+                leaf color {
+                    type enumeration {
+                        enum green;
+                        enum yellow;       
+                    }
+                }
+                
+                leaf pcp {
+                    type uint8 {
+                        range "0..7";
+                    }
+                    description
+                        "The frame's VLAN tag priority bits will be set to this 
+                         value if the frame's assigned cos and color matches this 
+                         map instance. ";
+                }
+                
+                leaf dei {
+                    type enumeration {
+                        enum enabled;
+                        enum disabled;
+                    }
+                    description
+                        "Drop Eligibility Indication";
+                }
+                
+                leaf ip-dscp {
+                    type uint8 {
+                        range "0..63";
+                    }
+                    description
+                        "IP DiffServ Code Point value. ";
+                }
+                
+                leaf mpls-tc {
+                    type uint8 {
+                        range "0..7";
+                    }
+                    description
+                        "MPLS Traffic Class (TC) bits.";
+                }     
+
+                leaf queue {
+                    type uint32;
+
+                    description
+                         "Queue mapped to by internal CoS for E-QoS";
+                }
+
+                leaf green-wred-curve {
+                    type uint32;
+
+                    description
+                         "WRED curve relative to a Queue to use for traffic whose internal color is Green";
+                }
+
+                leaf yellow-wred-curve {
+                    type uint32;
+
+                    description
+                         "WRED curve relative to a Queue to use for traffic whose internal color is Yellow";
+                }
+            }
+        }
+    }
+}

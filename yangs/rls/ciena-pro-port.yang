@@ -1,0 +1,161 @@
+module ciena-pro-port {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-port";
+  prefix pro-port;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's port object.";
+
+  revision 2022-01-11 {
+    description
+      "Adding parent leaf";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.2.0";
+    }
+  }
+  revision 2021-07-22 {
+    description
+      "Addition of USB-C as a port-type enum value.";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.1.0";
+    }
+  }
+  revision 2020-08-01 {
+    description
+      "Initial version";
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+  }
+
+  grouping port {
+    leaf name {
+      type ciena-pro-types:object-name;
+      description
+        "Port name";
+    }
+    leaf user-label {
+      type string;
+      description
+        "User configurable label.";
+    }
+    leaf parent {
+      type leafref {
+        path "../name";
+      }
+      description
+        "Port parent, only if this port is a subport.";
+    }
+    list facilities {
+      key "name";
+      leaf name {
+        type string;
+      }
+      list object-names {
+        key "name";
+        leaf name {
+          type instance-identifier;
+          description
+            "A reference to an object.";
+        }
+      }
+      leaf auto-provisioning {
+        type boolean;
+      }
+      leaf delete-supported {
+        type boolean;
+      }
+    }
+    leaf port-type {
+      type enumeration {
+        enum mpo {
+          description
+            "MPO";
+        }
+        enum lc {
+          description
+            "LC";
+        }
+        enum rj-45 {
+          description
+            "RJ45";
+        }
+        enum usb-a {
+          description
+            "USB-A";
+        }
+        enum usb-b {
+          description
+            "USB-B";
+        }
+        enum usb-c {
+          description
+            "USB-C";
+        }
+        enum sub-port {
+          description
+            "Sub-port";
+        }
+        enum internal {
+          description
+            "internal";
+        }
+        enum passthrough {
+          description
+            "Passthrough";
+        }
+      }
+      description
+        "Type of the port.";
+    }
+    leaf label {
+      type string {
+        length "1..64";
+      }
+      description
+        "Label as observed on the faceplate. 64 Character Maximum.";
+    }
+    leaf partner-port {
+      when '../port-direction[.= tx or .= rx]';
+      type leafref {
+        path "../name";
+      }
+      description
+        "Port partner";
+    }
+    leaf port-direction {
+      type enumeration {
+        enum tx {
+          description
+            "transmit";
+        }
+        enum rx {
+          description
+            "receive";
+        }
+        enum bidirectional {
+          description
+            "bidirectional";
+        }
+      }
+      description
+        "Whether port is uni (tx/rx) or bi-directional";
+    }
+    uses ciena-pro-types:admin-state;
+  }
+}

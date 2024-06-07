@@ -1,0 +1,264 @@
+module ciena-6500r-osrp-rls-ra-osrp-newport {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-osrp-rls-ra-osrp-newport";
+  prefix osrp-newport;
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+
+  import ciena-6500r-osrp-rls-ra-types {
+    prefix osrp-rls-ra-types;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal: Ciena India Pvt. Ltd.
+     Sector 32, Plot 14,
+     Gurgaon 122001,
+     Haryana, India";
+  description
+    "This module describes Ciena's osrp-port object for the 6500r platform";
+
+  revision 2021-02-05 {
+    ciena-common-version:string "1.3.0";
+    description
+      "fault-source is removed from faults list key.";
+  }
+  revision 2021-01-09 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Node-id length extended.";
+  }
+  revision 2020-10-07 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Added logical-port-identifier for display of tlpi in channel-ports on osrp.";
+  }
+  revision 2020-09-07 {
+    ciena-common-version:string "1.0.1";
+    description
+      "ip-address field added in remote-config for InterShelf/InterSite Comms.";
+  }
+  revision 2019-11-14 {
+    ciena-common-version:string "1.0.0";
+    description
+      "6500r-series Release 2.0.";
+  }
+  revision 2019-07-14 {
+    description
+      "Initial revision.";
+  }
+
+  list osrp-newport {
+    key "name";
+    leaf name {
+      type osrp-rls-ra-types:osrp-port-identifier;
+      mandatory true;
+      description
+        "Port Name.";
+    }
+
+    leaf admin-state {
+      type osrp-rls-ra-types:osrp-admin-state;
+      description
+        "Administrative state of port.";
+    }
+
+    leaf grid-type {
+      type osrp-rls-ra-types:port-grid-type;
+      description
+        "Specified the type of GRID supported on the port based on the spectrum-info.";
+    }
+
+    leaf logical-port-identifier {
+      type uint32;
+      description
+        "Logical port id.";
+    }
+
+    leaf port-identifier {
+      type instance-identifier;
+      description
+        "Port identifier.";
+    }
+
+    leaf partner-port-identifier {
+      type instance-identifier;
+      description
+        "Peer Port identifier.";
+    }
+
+    leaf port-type {
+      type osrp-rls-ra-types:osrp-port-type;
+      description
+        "Type of port i.e. service, routing or internal.";
+    }
+
+    leaf port-direction {
+      type osrp-rls-ra-types:osrp-port-direction;
+      description
+        "Direction of port i.e. mux or demux.";
+    }
+
+    container spectrum-info {
+      leaf tx-minimum-spectral-width {
+        type osrp-rls-ra-types:frequency-mhz;
+        description
+          "Tx Minimum Spectral Width (MHz). Applicable for service ports.";
+      }
+
+      leaf minimum-guard-band {
+        type osrp-rls-ra-types:frequency-mhz;
+        description
+          "Lower Guard Band (MHz). Applicable for service ports.";
+      }
+
+      leaf maximum-guard-band {
+        type osrp-rls-ra-types:frequency-mhz;
+        description
+          "Higher Guard Band (MHz). Applicable for service ports.";
+      }
+
+      list freq-marker-list {
+        key "freq-marker-start";
+        leaf band-type {
+          type osrp-rls-ra-types:band-type;
+          description
+            "Type of the band for the mentioned frequency start/end.";
+        }
+
+        leaf freq-marker-start {
+          type osrp-rls-ra-types:frequency-mhz;
+          mandatory true;
+          description
+            "Start frequency marker (MHz). freq-marker-start & freq-marker-end must be same in case of Colored CMD port.";
+        }
+
+        leaf freq-marker-end {
+          type osrp-rls-ra-types:frequency-mhz;
+          mandatory true;
+          description
+            "End frequency marker (MHz). freq-marker-start & freq-marker-end must be same in case of Colored CMD port.";
+        }
+      }
+    }
+
+    leaf group-id {
+      type string {
+        length "0..64";
+      }
+      description
+        "Port Group Identifier.";
+    }
+
+    leaf operational-state {
+      type osrp-rls-ra-types:osrp-operational-state;
+      description
+        "Specifies whether the port can be used or not.";
+    }
+
+    leaf osc-name {
+      type osrp-rls-ra-types:osrp-port-identifier;
+      description
+        "Name of OSC.";
+    }
+
+    leaf regen-peer-port {
+      type osrp-rls-ra-types:osrp-port-identifier;
+      description
+        "Name of peer port in case of regen.";
+    }
+
+    list faults {
+      key "fault-type";
+      leaf fault-type {
+        type osrp-rls-ra-types:osrp-port-fault;
+        description
+          "Type of fault on the port.";
+      }
+
+      leaf fault-source {
+        type string {
+          length "0..512";
+        }
+        description
+          "Source service of fault.";
+      }
+
+      leaf fault-cause {
+        type string {
+          length "0..1024";
+        }
+        description
+          "Root cause or point of failure of fault.";
+      }
+    }
+
+    list node-specific-config {
+      key "pfg-name";
+      description
+        "Node specific data.";
+      leaf pfg-name {
+        type string;
+        description
+          "Name of PFG port belongs to.";
+      }
+
+      leaf port-role {
+        type osrp-rls-ra-types:osrp-port-role;
+        description
+          "Role of port i.e. boundary-in, boundary-out, etc.";
+      }
+
+      list remote-config {
+        key "pfg-name";
+        description
+          "Intra-shelf Out-of-band provisioning data.";
+        leaf pfg-name {
+          type string;
+          description
+            "Name of PFG remote port belongs to.";
+        }
+
+        leaf node-id {
+          type osrp-rls-ra-types:node-id-hex-type;
+          description
+            "Remote Node id.";
+        }
+
+        leaf oob-port {
+          type uint16;
+          description
+            "Remote Out-of-band port.";
+        }
+
+        leaf osrp-port {
+          type osrp-rls-ra-types:osrp-port-identifier;
+          description
+            "Remote Port name.";
+        }
+
+        leaf ip-address {
+          type ietf:ip-address;
+          description
+            "Remote IP address, for Inter-Shelf/Inter-Site Comms.";
+        }
+      }
+    }
+
+    leaf additional-information {
+      type string {
+        length "512";
+      }
+      description
+        "Additional information of osrp-port,
+         for e.g. available-bandwidth to maximum-bandwidth ratio.";
+    }
+  }
+}

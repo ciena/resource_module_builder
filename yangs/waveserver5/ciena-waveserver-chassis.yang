@@ -1,0 +1,1201 @@
+module ciena-waveserver-chassis {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-chassis";
+  prefix chassis;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-interfaces {
+    prefix ciena-ws-if;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines Chassis data for the Waveserver Platform.";
+
+  revision 2021-10-11 {
+    description
+      "Added leaf 'power' to 'state' container in list 'power-supply-units'.
+       Added component-by-name list to the inventory container.";
+    reference
+      "Waveserver OS R2.2 user's guide.";
+  }
+  revision 2021-06-10 {
+    description
+      "Modified management-port list to be indexed by enumeration rather than integer index.
+       Removed deprecated ethernet-specific grouping from the 'management-port' list.
+       Added output container to waveserver-chassis-restart rpcs.
+       Added 'LC' and 'USB-C' management-port connector types.
+       Added 'lower-layer-down' and 'unknown' enum values to 'chassis-operational-state' typedef.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2020-09-24 {
+    description
+      "Added 'fan-speed' leaf to cooling-fan-units/state container.";
+    reference
+      "Waveserver OS R2.0.3 user's guide.";
+  }
+  revision 2020-01-31 {
+    description
+      "Modified the range for 'slot-id' from '1..3' to '1..8'.
+       Removed 'leaf cfu-number' as key for 'list cooling-fan-units'.
+       Added 'leaf cfu-id' as key for 'list cooling-fan-units'.
+       Removed leaf 'psu-number' as key for 'list power-supply-units'.
+       Added 'leaf psu-id' as key for 'list power-supply-units'.
+       Changed 'wcs' to 'control-module' in this module.";
+    reference
+      "Waveserver OS R2.0 user's guide.";
+  }
+  revision 2019-05-23 {
+    description
+      "Made power-state attribute configurable.";
+    reference
+      "Waveserver Ai R1.5 user's guide.";
+  }
+  revision 2018-12-06 {
+    description
+      "Moved chassis-type enum to waveserver-typedefs.yang.
+       Deprecated ethernet-specific grouping in the 'management-port' list.
+       Added 'connector-type' to 'management-port' list.";
+    reference
+      "Waveserver Ai R1.4 user's guide.";
+  }
+  revision 2018-09-19 {
+    description
+      "Add 'secure-erase' read-only container.
+       Add 'type-2' wcs type enum value.";
+    reference
+      "Waveserver Ai R1.3 user's guide.";
+  }
+  revision 2018-06-14 {
+    description
+      "Added 'restart-info' list for Chassis, WCS, and Module restart reason and time.
+       Moved several 'management-port' attributes into groupings in the ciena-waveserver-interfaces module.
+       Removed unused/unsupported sub-containers from the chassis/mac-address container.
+       Added ncx:user-write to 'power-supply-units', 'cooling-fan-units', 'management-port', and 'slot' lists.
+       Increased max string length for device-id 'model' attribute from 50 to 128 characters.
+       Added container 'power/state' with leaf 'total-power'.
+       Added new 'AC/240VDC' PSU type enum value.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+  revision 2017-12-20 {
+    description
+      "Added management-port 'mode', 'speed', and 'duplex' for wayside channel configuration.
+       Added return code for waveserver-wcs-restart and waveserver-wcs-restart-cold.";
+    reference
+      "Waveserver Ai R1.1 user's guide.";
+  }
+  revision 2017-09-05 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.4 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Added 'waveserver ai chassis' type.
+       Updated several UI and description strings.
+       Added access-panel container, wcs container, and inventory view of components.
+       Added slot power management and wcs-restart RPCs.
+       Removed 10-second delay from restart RPCs and remove restart-cancel RPCs.
+       Added access-panel capabilities.
+       Moved several device-id attributes into common grouping used by all components.
+       Removed 'number-of-fans', 'number-of-temperature-sensors' and 'status' list from 'cooling-fan-units/properties' container.";
+    reference
+      "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef mac-block-size {
+    type uint32;
+    description
+      "MAC address block size.";
+  }
+
+  typedef chassis-operation-state {
+    type enumeration {
+      enum "uninstalled" {
+        description
+          "Device is not present.";
+      }
+      enum "normal" {
+        description
+          "Device is up/operational.";
+      }
+      enum "faulted" {
+        description
+          "Device is in a failed/faulted state.";
+      }
+      enum "lower-layer-down" {
+        description
+          "Device operation is down due to parent or subtending device fault.";
+      }
+      enum "unknown" {
+        description
+          "Device operational state is unknown or unavailable.";
+      }
+    }
+    description
+      "Chassis operational state. Applies to PSU, CFU, AP, Control Module components in
+       the chassis.";
+  }
+
+  grouping device-id-group {
+    description
+      "Common group of device identification attributes for components in the
+       chassis.";
+    leaf model {
+      ui:ui-name "Model";
+      type cienawstypes:string-maxl-128;
+      config false;
+      description
+        "Device model information.";
+    }
+
+    leaf description {
+      ui:ui-name "Description";
+      type cienawstypes:string-maxl-254;
+      config false;
+      description
+        "Device description.";
+    }
+
+    leaf serial-number {
+      ui:ui-name "Serial Number";
+      type cienawstypes:string-maxl-50;
+      config false;
+      description
+        "Device serial number information.";
+    }
+
+    leaf part-number {
+      ui:ui-name "Part Number";
+      type cienawstypes:string-maxl-50;
+      config false;
+      description
+        "Device part number information.";
+    }
+
+    leaf revision {
+      ui:ui-name "Revision";
+      type cienawstypes:string-maxl-50;
+      config false;
+      description
+        "Device revision information.";
+    }
+
+    leaf manufacture-date {
+      ui:ui-name "Manufacture Date";
+      type cienawstypes:string-maxl-50;
+      config false;
+      description
+        "Device Manufacture Date, in string format.";
+    }
+  }
+
+  container waveserver-chassis {
+    ui:ui-name "Chassis";
+    description
+      "Waveserver chassis configuration data and operational data.";
+    container identification {
+      ui:ui-name "Chassis Identification";
+      config false;
+      description
+        "Waveserver chassis identification attributes.";
+      leaf type {
+        ui:ui-name "Chassis Type";
+        type cienawstypes:chassis-type;
+        config false;
+        description
+          "Type enum value of the Chassis.";
+      }
+
+      uses device-id-group;
+    }
+
+    container capabilities {
+      ui:ui-name "Chassis Capabilities";
+      config false;
+      description
+        "Waveserver chassis capabilities attributes.";
+      container control-module {
+        ui:ui-name "Control Module Capabilities";
+        description
+          "Control module capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "Control Module Count";
+          type uint8;
+          config false;
+          description
+            "Number of control modules available to the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Control Module Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis control module type. Can be integrated or field-replaceable.";
+        }
+      }
+
+      container access-panel {
+        ui:ui-name "Access Panel Capabilities";
+        description
+          "Access Panel capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "Access Panel Count";
+          type uint8;
+          config false;
+          description
+            "Number of access panel modules available to the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Access Panel Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis access panel module type. Can be integrated or field-replaceable.";
+        }
+      }
+
+      container switch {
+        ui:ui-name "Switch Module Capabilities";
+        description
+          "Switch module capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "Switch Module Count";
+          type uint8;
+          config false;
+          description
+            "Number of switch modules available to the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Switch Module Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis switch module type. Can be integrated or field-replaceable.";
+        }
+      }
+
+      container modules {
+        ui:ui-name "Module Capabilities";
+        description
+          "Service module capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "Module Count";
+          type uint8;
+          config false;
+          description
+            "Total number of service modules available to a fully-equipped
+             Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Module Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis service module type. Can be integrated or field-replaceable.";
+        }
+      }
+
+      container fan {
+        ui:ui-name "Fan Unit Capabilities";
+        description
+          "Fan unit capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "Fan Unit Count";
+          type uint8;
+          config false;
+          description
+            "Number of fan units available to the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Fan Unit Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis fan unit type. Can be integrated or field-replaceable.";
+        }
+      }
+
+      container air-filter {
+        ui:ui-name "Air Filter Capabilities";
+        description
+          "Air filter capabilities for this chassis.";
+        leaf supported {
+          ui:ui-name "Air Filter Supported";
+          type cienawstypes:yes-no-enum;
+          config false;
+          description
+            "Is the air filter supported on the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "Air Filter Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Chassis air filter type. Can be integrated or field-replaceable.";
+        }
+
+        leaf active {
+          ui:ui-name "Air Filter Active";
+          type cienawstypes:yes-no-enum;
+          config false;
+          description
+            "Is the air filter active on the Waveserver chassis.";
+        }
+      }
+
+      container power {
+        ui:ui-name "Power Capabilities";
+        description
+          "Power supply capabilities for this chassis.";
+        leaf count {
+          ui:ui-name "PSU Count";
+          type uint8;
+          config false;
+          description
+            "Number of power supply units available to the Waveserver chassis.";
+        }
+
+        leaf type {
+          ui:ui-name "PSU Type";
+          type cienawstypes:module-type-bits;
+          config false;
+          description
+            "Power supply unit type. Can be integrated or field-replaceable.";
+        }
+
+        leaf redundant {
+          ui:ui-name "Redundant Power";
+          type cienawstypes:yes-no-enum;
+          config false;
+          description
+            "Is redundant power present for the Waveserver chassis.";
+        }
+
+        leaf dc-support {
+          ui:ui-name "DC Power Supported";
+          type cienawstypes:yes-no-enum;
+          config false;
+          description
+            "Whether or not DC power is supported.";
+        }
+      }
+    }
+
+    container mac-addresses {
+      ui:ui-name "MAC Addresses";
+      config false;
+      description
+        "MAC Addresses used by this chassis.";
+      container chassis {
+        ui:ui-name "Chassis MAC";
+        description
+          "Chassis MAC address information.";
+        leaf base {
+          ui:ui-name "Chassis Base MAC";
+          type cienawstypes:mac-string;
+          config false;
+          description
+            "The Chassis Base MAC address. All MACs used in shelf offset from
+             this address.";
+        }
+
+        leaf block-size {
+          ui:ui-name "Chassis MAC Block Size";
+          type mac-block-size;
+          config false;
+          description
+            "Number of MACs allocated by manufacturing.";
+        }
+      }
+
+      container local-management {
+        ui:ui-name "Local Management MAC";
+        description
+          "Local management MAC address information.";
+        leaf base {
+          ui:ui-name "Local Management Base MAC";
+          type cienawstypes:mac-string;
+          config false;
+          description
+            "Local Management MAC address.";
+        }
+
+        leaf block-size {
+          ui:ui-name "Local Management MAC Block Size";
+          type mac-block-size;
+          config false;
+          description
+            "Local Management MAC Block Size.";
+        }
+      }
+
+      container reserved {
+        ui:ui-name "Reserved MAC";
+        description
+          "Reserved MAC address information.";
+        leaf base {
+          ui:ui-name "Reserved Base MAC";
+          type cienawstypes:mac-string;
+          config false;
+          description
+            "Reserved MAC address.";
+        }
+
+        leaf block-size {
+          ui:ui-name "Reserved MAC Block Size";
+          type mac-block-size;
+          config false;
+          description
+            "Reserved MAC address Block Size.";
+        }
+      }
+    }
+
+    list power-supply-units {
+      ui:ui-name "Power Supply Units";
+      ncx:user-write "update";
+      key "psu-id";
+      description
+        "Power Supply Unit Status.";
+      leaf psu-id {
+        ui:ui-name "PSU Id";
+        type cienawstypes:string-maxl-16;
+        description
+          "Unique id for the Power Supply Unit list entry.";
+      }
+
+      leaf name {
+        ui:ui-name "PSU Name";
+        type cienawstypes:string-maxl-16;
+        config false;
+        description
+          "Name of the power supply unit. In the format of PSU-<slot #>. Contains
+           the slot number of the power supply unit.";
+      }
+
+      container state {
+        ui:ui-name "PSU State";
+        description
+          "Power Supply Unit state information.";
+        leaf admin-state {
+          ui:ui-name "PSU Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether admin state of the Power Supply Unit is enabled or disabled.
+             Disabled state masks the alarms only.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "PSU Operational State";
+          type chassis-operation-state;
+          config false;
+          description
+            "Operational state of the Power Supply Unit.";
+        }
+
+        leaf power {
+          ui:ui-name "PSU Power";
+          type cienawstypes:decimal-1-dig;
+          units "watts";
+          config false;
+          description
+            "The PSU input power in watts.";
+        }
+      }
+
+      container properties {
+        ui:ui-name "PSU Properties";
+        config false;
+        description
+          "All the operational data fields of this Power Supply Unit.";
+        leaf type {
+          ui:ui-name "PSU Type";
+          type enumeration {
+            enum "AC" {
+              description
+                "Power supply unit uses AC power.";
+            }
+            enum "DC" {
+              description
+                "Power supply unit uses DC power.";
+            }
+            enum "unequipped" {
+              description
+                "Power supply unit is unequipped.";
+            }
+            enum "AC/240VDC" {
+              description
+                "Power supply unit is capable of AC or 240 Volt DC power.";
+            }
+          }
+          config false;
+          description
+            "The Power Supply Unit type.";
+        }
+      }
+
+      container device-id {
+        ui:ui-name "PSU Device ID";
+        config false;
+        description
+          "Device identification information of this Power Supply Unit.";
+        uses device-id-group;
+      }
+    }
+
+    list cooling-fan-units {
+      ui:ui-name "Cooling Fan Units";
+      ncx:user-write "update";
+      key "cfu-id";
+      description
+        "Cooling Fan Unit Status.";
+      leaf cfu-id {
+        ui:ui-name "CFU Id";
+        type cienawstypes:string-maxl-16;
+        description
+          "Unique id for the Cooling Fan Unit list entry.";
+      }
+
+      leaf name {
+        ui:ui-name "CFU Name";
+        type cienawstypes:string-maxl-16;
+        config false;
+        description
+          "Name of the cooling fan unit. In the format of CFU-<slot #>. Contains
+           the slot number of the cooling fan unit.";
+      }
+
+      container state {
+        ui:ui-name "CFU State";
+        description
+          "Cooling Fan Unit state information.";
+        leaf admin-state {
+          ui:ui-name "CFU Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether Admin State of the cooling fan unit is enabled or disabled.
+             Disabled state masks the alarms only.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "CFU Operational State";
+          type chassis-operation-state;
+          config false;
+          description
+            "Operational state of the Cooling Fan unit.";
+        }
+
+        leaf fan-speed {
+          type enumeration {
+            enum "low" {
+              description
+                "Low fan rotation speed";
+            }
+            enum "medium" {
+              description
+                "Medium fan rotation speed";
+            }
+            enum "high" {
+              description
+                "High fan rotation speed";
+            }
+          }
+          config false;
+          description
+            "Cooling Fan rotation speed";
+        }
+      }
+
+      container properties {
+        ui:ui-name "CFU Properties";
+        config false;
+        description
+          "All the operational data fields of this Cooling Fan Unit.";
+        leaf automatic-control {
+          ui:ui-name "Automatic Control";
+          type cienawstypes:enabled-disabled-enum;
+          config false;
+          description
+            "Whether Automatic Control of the cooling fan unit is enabled or
+             disabled.";
+        }
+      }
+
+      container device-id {
+        ui:ui-name "CFU Device ID";
+        config false;
+        description
+          "Device Identification information of this Cooling Fan Unit.";
+        uses device-id-group;
+      }
+    }
+
+    list management-port {
+      ui:ui-name "Management Port";
+      ncx:user-write "update";
+      key "port-id";
+      description
+        "A list to manage chassis ports.";
+      leaf port-id {
+        ui:ui-name "Port Id";
+        type enumeration {
+          enum "ilan-1" {
+            description
+              "ILAN-1";
+          }
+          enum "ilan-2" {
+            description
+              "ILAN-2";
+          }
+          enum "dcn-1" {
+            description
+              "DCN-1";
+          }
+          enum "dcn-2" {
+            description
+              "DCN-2";
+          }
+          enum "dcn-3" {
+            description
+              "DCN-3";
+          }
+          enum "dcn-4" {
+            description
+              "DCN-4";
+          }
+          enum "dcn-5" {
+            description
+              "DCN-5";
+          }
+          enum "console-1" {
+            description
+              "Console-1";
+          }
+          enum "console-2" {
+            description
+              "Console-2";
+          }
+        }
+        description
+          "Management port identifier.";
+      }
+
+      container id {
+        ui:ui-name "Management Port ID";
+        config false;
+        description
+          "Identification information of this management port.";
+        leaf name {
+          ui:ui-name "Name";
+          type cienawstypes:string-maxl-16;
+          config false;
+          description
+            "Name of the Port. The names are predefined.";
+        }
+      }
+
+      container state {
+        ui:ui-name "Management Port State";
+        description
+          "Management port state information.";
+        leaf admin-state {
+          ui:ui-name "Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether Admin State is enabled or disabled for this management port.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Operational state of this management port.";
+        }
+      }
+
+      container properties {
+        ui:ui-name "Management Port Properties";
+        description
+          "All the operational data of this management port.";
+        leaf type {
+          ui:ui-name "Management Port Protocol Type";
+          type enumeration {
+            enum "ethernet" {
+              description
+                "Management port uses Ethernet protocol for communications.";
+            }
+            enum "serial" {
+              description
+                "Management port is a Serial interface.";
+            }
+          }
+          config false;
+          description
+            "Management port protocol type. If the port is DCN, ILAN-1, or
+             ILAN-2, the protocol type will be Ethernet. If the port is Console,
+             the port type will be Serial.";
+        }
+
+        leaf connector-type {
+          ui:ui-name "Management Port Connector Type";
+          type enumeration {
+            enum "RJ45" {
+              description
+                "Management port connector type is RJ45 (Registered Jack-45).";
+            }
+            enum "LC" {
+              description
+                "Management port connector type is LC (Lucent Connector).";
+            }
+            enum "USB-C" {
+              description
+                "Management port connector type is USB-C (Universal Serial Bus, type C).";
+            }
+          }
+          config false;
+          description
+            "Management port connector type.";
+        }
+
+        uses ciena-ws-if:management-if-properties-group;
+      }
+    }
+
+    container access-panel {
+      ui:ui-name "Access Panel";
+      description
+        "Access Panel";
+      container state {
+        ui:ui-name "Access Panel State";
+        description
+          "Access Panel state information.";
+        leaf admin-state {
+          ui:ui-name "AP Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether admin state of the Access Panel is enabled or disabled.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "AP Operational State";
+          type chassis-operation-state;
+          config false;
+          description
+            "Operational state of the Access Panel.";
+        }
+      }
+
+      container properties {
+        ui:ui-name "Access Panel Properties";
+        config false;
+        description
+          "All the operational data fields of the Access Panel.";
+        leaf type {
+          ui:ui-name "AP Type";
+          type enumeration {
+            enum "type-1" {
+              description
+                "Access Panel Type 1.";
+            }
+            enum "unequipped" {
+              description
+                "Access Panel is unequipped.";
+            }
+          }
+          config false;
+          description
+            "The Access Panel type.";
+        }
+      }
+
+      container device-id {
+        ui:ui-name "Access Panel Device ID";
+        config false;
+        description
+          "Device identification information of the Access Panel.";
+        uses device-id-group;
+      }
+    }
+
+    container control-module {
+      ui:ui-name "Control Module";
+      description
+        "Waveserver Control Subsystem. This is the control module for the
+         Waveserver Ai or Waveserver 5 chassis.";
+      container state {
+        ui:ui-name "Control Module State";
+        description
+          "Control module state information.";
+        leaf admin-state {
+          ui:ui-name "Control Module Admin State";
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether admin state of the control module is enabled or disabled.";
+        }
+
+        leaf operational-state {
+          ui:ui-name "Control Module Operational State";
+          type chassis-operation-state;
+          config false;
+          description
+            "Operational state of the control module.";
+        }
+      }
+
+      container properties {
+        ui:ui-name "Control Module Properties";
+        config false;
+        description
+          "All the operational data fields of the control module.";
+        leaf type {
+          ui:ui-name "Type";
+          type enumeration {
+            enum "unequipped" {
+              description
+                "Control Module is unequipped.";
+            }
+            enum "type-1" {
+              description
+                "Control Module Type 1.";
+            }
+            enum "type-2" {
+              description
+                "Control Module Type 2.";
+            }
+          }
+          config false;
+          description
+            "The control module type.";
+        }
+      }
+
+      container device-id {
+        ui:ui-name "Control Module Device ID";
+        config false;
+        description
+          "Device identification information of the control module.";
+        uses device-id-group;
+      }
+    }
+
+    container secure-erase {
+      ui:ui-name "Secure Erase";
+      config false;
+      description
+        "Chassis secure erase status attributes, if applicable.";
+      leaf last-secure-erase-result {
+        ui:ui-name "Result";
+        type enumeration {
+          enum "unknown" {
+            description
+              "Secure erase status is unknown or not applicable.";
+          }
+          enum "passed" {
+            description
+              "Secure erase was successful.";
+          }
+          enum "failed" {
+            description
+              "Secure erase failed.";
+          }
+        }
+        description
+          "The result of the most recent secure erase on this system.";
+      }
+
+      leaf last-secure-erase-type {
+        ui:ui-name "Type";
+        type enumeration {
+          enum "unknown" {
+            description
+              "Secure erase type is unknown or not applicable.";
+          }
+          enum "rtfd-user" {
+            description
+              "Reset to factory defaults (RTFD) initiated by user command via
+               management interface. The control module will reboot after the reset
+               operation is complete.";
+          }
+          enum "rtfd-and-halt" {
+            description
+              "Reset to factory defaults (RTFD) without rebooting the control module.";
+          }
+          enum "rtfd-push-button" {
+            description
+              "Reset to factory defaults (RTFD) initiated via push button on
+               the chassis.";
+          }
+          enum "rtfd-recovery-menu" {
+            description
+              "Reset to factory defaults (RTFD) initiated by user via ONIE
+               recovery menu.";
+          }
+        }
+        description
+          "The type of the most recent secure erase on this system.";
+      }
+
+      leaf last-secure-erase-date {
+        ui:ui-name "Date";
+        type cienawstypes:string-maxl-50;
+        description
+          "Last secure erase date and time, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm'
+           format, or omitted if not applicable or unavailable.
+
+           The string format follows IETF yang date-and-time specifications, compliant
+           with RFC-6991. The base date and time portion of the string represents
+           Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates the
+           system-configured local timezone offset at the time the event was recorded, and not
+           necessarily when it was retrieved.
+
+           When system timezone is set to UTC or no time-offset value is provisioned,
+           the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+        reference
+          "RFC 3339: Date and Time on the Internet: Timestamps
+           RFC 6991: Common Yang Data Types";
+      }
+    }
+
+    container inventory {
+      ui:ui-name "Chassis Inventory";
+      config false;
+      description
+        "The inventory view of all of the components in the chassis.";
+      list component {
+        ui:ui-name "Inventory component list.";
+        key "index";
+        config false;
+        description
+          "Inventory component details.";
+        leaf index {
+          ui:ui-name "Index";
+          type uint16;
+          description
+            "Index value of the inventory component.";
+        }
+
+        leaf name {
+          ui:ui-name "Component Name";
+          type cienawstypes:string-maxl-16;
+          config false;
+          description
+            "Name of the inventory component (e.g., Chassis, DCN, Control Module, AP,
+             PSU-<n>, FAN-<n>, etc.).";
+        }
+
+        uses device-id-group;
+      }
+
+      list component-by-name {
+        ui:ui-name "Components by name";
+        key "name";
+        config false;
+        description
+          "Inventory component list indexed by the component name.";
+        leaf name {
+          ui:ui-name "Component Name";
+          type cienawstypes:string-maxl-16;
+          config false;
+          description
+            "Name of the inventory component (e.g., Chassis, DCN, Control Module, AP,
+             PSU-<n>, FAN-<n>, etc.).";
+        }
+
+        uses device-id-group;
+      }
+    }
+
+    list slot {
+      ui:ui-name "Chassis Slot";
+      ncx:user-write "update";
+      key "slot-id";
+      description
+        "Chassis slot power management.";
+      leaf slot-id {
+        ui:ui-name "Slot ID";
+        type uint8 {
+          range "1..8";
+        }
+        description
+          "Chassis slot number, Key value for the chassis slot list.";
+      }
+
+      leaf power-state {
+        ui:ui-name "Slot Power State";
+        type cienawstypes:power-state;
+        description
+          "Slot power state.";
+      }
+
+      leaf actual-power-state {
+        ui:ui-name "Slot Actual Power State";
+        type cienawstypes:on-off-enum;
+        config false;
+        description
+          "The actual power state (on or off) of the specified slot.";
+      }
+    }
+
+    list restart-info {
+      ui:ui-name "Restart Info";
+      key "component";
+      config false;
+      description
+        "Chassis, Control Module, and Module restart information.";
+      leaf component {
+        ui:ui-name "Component";
+        type cienawstypes:string-maxl-16;
+        description
+          "Component name.";
+      }
+
+      leaf last-restart {
+        ui:ui-name "Last Restart";
+        type cienawstypes:string-maxl-32;
+        description
+          "The date and time of the last restart, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm'
+           format, or omitted if not applicable or unavailable.
+
+           The string format follows IETF yang date-and-time specifications, compliant
+           with RFC-6991. The base date and time portion of the string represents
+           Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates the
+           system-configured local timezone offset at the time the event was recorded, and not
+           necessarily when it was retrieved.
+
+           When system timezone is set to UTC or no time-offset value is provisioned,
+           the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+        reference
+          "RFC 3339: Date and Time on the Internet: Timestamps
+           RFC 6991: Common Yang Data Types";
+      }
+
+      leaf last-restart-reason {
+        ui:ui-name "Last Restart Reason";
+        type cienawstypes:restart-reason;
+        description
+          "Cause for the last restart.";
+      }
+    }
+
+    container power {
+      ui:ui-name "Chassis Power Summary";
+      config false;
+      description
+        "Chassis power operational data.";
+      container state {
+        ui:ui-name "State";
+        description
+          "Chassis power state attributes.";
+        leaf total-power {
+          ui:ui-name "Total Power";
+          type cienawstypes:decimal-1-dig;
+          units "watts";
+          description
+            "The total chassis input power in watts.";
+        }
+      }
+    }
+  }
+
+  rpc waveserver-chassis-restart {
+    description
+      "Initiates a chassis warm restart. This restarts the control module and all modules.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-chassis-restart-cold {
+    description
+      "Initiates a chassis cold restart. This restarts the control module and all modules.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-control-module-restart {
+    description
+      "Initiates a control module warm restart.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-control-module-restart-cold {
+    description
+      "Initiates a control module cold restart.";
+
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

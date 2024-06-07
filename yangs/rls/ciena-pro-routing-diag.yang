@@ -1,0 +1,350 @@
+module ciena-pro-routing-diag {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-routing-diag";
+  prefix rtg-diag;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+  import openconfig-isis-types {
+    prefix oc-isis-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines actions for retrieving the BGP Network Layer Routing Information
+     The summary data is retrieved per network-instance/Protocol-name/Address-Family
+     The detailed data is retrieved per network-instance/Protocol-name for a specific network-address";
+
+  revision 2022-07-12 {
+    description
+      "Added grouping for routing table display";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2022-04-22 {
+    description
+      "Initial revision";
+    ciena-common-version:string "1.0.0";
+  }
+
+  typedef as-path-type {
+    type enumeration {
+      enum AS_SEQ {
+        description
+          "Ordered set of autonomous systems that a route in
+           the UPDATE message has traversed";
+      }
+      enum AS_SET {
+        description
+          "Unordered set of autonomous systems that a route in
+           the UPDATE message has traversed";
+      }
+      enum AS_CONFED_SEQUENCE {
+        description
+          "Ordered set of Member Autonomous
+           Systems in the local confederation that the UPDATE message
+           has traversed";
+      }
+      enum AS_CONFED_SET {
+        description
+          "Unordered set of Member Autonomous Systems
+           in the local confederation that the UPDATE message has
+           traversed";
+      }
+    }
+    description
+      "Defines the types of BGP AS path segments.";
+  }
+
+  identity LOCAL_DEFINED_NEXT_HOP {
+    description
+      "A base identity type of local defined next-hops";
+  }
+
+  identity DROP {
+    base LOCAL_DEFINED_NEXT_HOP;
+    description
+      "Discard traffic for the corresponding destination";
+  }
+
+  identity LOCAL_LINK {
+    base LOCAL_DEFINED_NEXT_HOP;
+    description
+      "Treat traffic towards addresses within the specified
+       next-hop prefix as though they are connected to a local
+       link. When the LOCAL_LINK next-hop type is specified,
+       an interface must also be specified such that
+       the local system can determine which link to trigger
+       link-layer address discovery against";
+  }
+
+  typedef local-defined-next-hop {
+    type identityref {
+      base LOCAL_DEFINED_NEXT_HOP;
+    }
+    description
+      "Pre-defined next-hop designation for locally generated
+       routes";
+  }
+
+  grouping bgp-as-path-attr {
+    description
+      "Data for representing BGP AS-PATH attribute";
+    leaf type {
+      type as-path-type;
+      description
+        "The type of AS-PATH segment";
+    }
+    leaf-list member {
+      type uint32;
+      description
+        "List of the AS numbers in the AS-PATH segment";
+    }
+  }
+
+  grouping bgp-rib-summary {
+    action retrieve-rib-summary {
+      input {
+        leaf address-family {
+          mandatory true;
+          type enumeration {
+            enum IPV4 {
+              value 1;
+            }
+            enum IPV6 {
+              value 2;
+            }
+          }
+        }
+      }
+      output {
+        list entry {
+          config false;
+          description
+            "routing table entry";
+          leaf network-address {
+            type inet:ip-address;
+            description
+              "Network address";
+          }
+          leaf best {
+            type boolean;
+            description
+              "Best route or not";
+          }
+          leaf next-hop {
+            type inet:ip-address;
+            description
+              "Next hop";
+          }
+          leaf med {
+            type uint32;
+            description
+              "MED";
+          }
+          list path {
+            description
+              "Unkeyed list of AS PATH segments";
+            uses bgp-as-path-attr;
+          }
+        }
+      }
+    }
+  }
+
+  grouping bgp-rib-detail {
+    action retrieve-rib-detail {
+      input {
+        leaf network-address {
+          mandatory true;
+          type inet:ip-address;
+        }
+      }
+      output {
+        list paths {
+          config false;
+          list path {
+            description
+              "Unkeyed list of AS PATH segments";
+            uses bgp-as-path-attr;
+          }
+          leaf next-hop {
+            type inet:ip-address;
+            description
+              "Next-hop";
+          }
+          leaf next-hop-link-local {
+            type inet:ip-address;
+            description
+              "IPv6 link local address of the next hop";
+          }
+          leaf best {
+            type boolean;
+            description
+              "Best route or not";
+          }
+          leaf current {
+            type boolean;
+            description
+              "True: route is current, False: route is History";
+          }
+          leaf origin {
+            type enumeration {
+              enum IGP {
+                description
+                  "IGP protocol";
+              }
+              enum EGP {
+                description
+                  "EGP protocol";
+              }
+              enum INCOMPLETE {
+                description
+                  "Incomplete";
+              }
+            }
+          }
+          leaf originator-id {
+            type inet:ip-address;
+            description
+              "originator-id";
+          }
+          leaf med {
+            type uint32;
+            description
+              "MED";
+          }
+          leaf local-preference {
+            type uint32;
+            description
+              "local-preference";
+          }
+          leaf flap-count {
+            type uint32;
+            description
+              "flap-count";
+          }
+          leaf reason-not-best {
+            type string;
+            description
+              "Reason the route is not the best";
+          }
+        }
+      }
+    }
+  }
+
+  grouping routing-table {
+    action retrieve-route {
+      input {
+        leaf address-family {
+          mandatory true;
+          type enumeration {
+            enum IPV4 {
+              value 1;
+            }
+            enum IPV6 {
+              value 2;
+            }
+            enum ALL;
+          }
+        }
+      }
+      output {
+        list entry {
+          config false;
+          description
+            "Fib table entry";
+          leaf prefix {
+            type inet:ip-address;
+            description
+              "Prefix address";
+          }
+          leaf prefix-length {
+            type uint32 {
+              range "0..128";
+            }
+            description
+              "The length of the prefix: Ipv4 range (1-32), Ipv6 range (1-128)";
+          }
+          leaf metric {
+            type uint32;
+            description
+              "Metric";
+          }
+          leaf next-hop {
+            type union {
+              type inet:ip-address;
+              type local-defined-next-hop;
+            }
+            description
+              "The next-hop that is to be used for the route
+               - this may be specified as an IP address, an interface
+               or a pre-defined next-hop type - for instance, DROP or
+               LOCAL_LINK. When this leaf is not set, and the interface-ref
+               value is specified for the next-hop, then the system should
+               treat the prefix as though it is directly connected to the
+               interface.";
+          }
+          leaf interface {
+            type leafref {
+              path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+            }
+            description
+              "Reference to a base interface.  If a reference to a
+               subinterface is required, this leaf must be specified
+               to indicate the base interface.";
+          }
+          leaf subinterface {
+            type leafref {
+              path "/oc-if:interfaces/oc-if:interface[oc-if:name=current()/../interface]/oc-if:subinterfaces/oc-if:subinterface/oc-if:index";
+            }
+            description
+              "Reference to a subinterface -- this requires the base
+               interface to be specified using the interface leaf in
+               this container.  If only a reference to a base interface
+               is required, this leaf should not be set.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping isis-area-list {
+    action retrieve-area-address-list {
+      output {
+        list area-addresses {
+          config false;
+          description
+            "The union of the sets of area addresses reported in all Level 1 LSPs.
+             The maximumAreaAddresses numerically lowest area addresses,
+             retained for use in the LSP, will have the in-lsp flag TRUE";
+          leaf area-address {
+            type oc-isis-types:area-address;
+            description
+              "Area address";
+          }
+          leaf in-lsp {
+            type boolean;
+            description
+              "Retained for use in-lsp or not";
+          }
+        }
+      }
+    }
+  }
+}

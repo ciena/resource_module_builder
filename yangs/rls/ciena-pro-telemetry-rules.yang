@@ -1,0 +1,180 @@
+module ciena-pro-telemetry-rules {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-telemetry-rules";
+  prefix telemetry-rules;
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes a template for on-change special case rules to cover
+     the following cases:
+     1) ASSOCIATION: an external leaf maps to one or more internal leaves. In this
+                     case when a diff occurs on the internal leaf, any associated
+                     leaves need to be appended to the notification. Possible another
+                     external leaf exists that maps 1:1 to the internal leaf so need
+                     to omit this leaf from the publish if the diff does not apply,
+                     see omit-external-data
+     2) SAME_VALUE: internal leaf values only map to a single external leaf value so
+                    a diff to any of these internal values should be ignored (no change
+                    in the external leaf).
+
+     Copyright (c) 2020 Ciena (R) Corporation. All rights reserved.
+
+     CONFIDENTIALITY AND LIMITED USE
+
+     This software, including any software of third parties embodied herein,
+     contains information and concepts which are confidential to Ciena
+     and such third parties. This software is licensed for use
+     solely in accordance with the terms and conditions of the applicable
+     license agreement with Ciena.";
+
+  revision 2021-05-10 {
+    description
+      "Initial revision";
+    reference
+      "See product documentation";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity rule-type {
+    description
+      "Type of rule";
+  }
+
+  identity ASSOCIATION {
+    base rule-type;
+    description
+      "Rule where multiple internal leaves associate to a single external leaf";
+  }
+
+  identity SAME_VALUE {
+    base rule-type;
+    description
+      "Rule where multiple internal leaf values map to a single leaf value externally";
+  }
+
+  container rule-template {
+    description
+      "Special case on-change rules to apply";
+    list external-data-module {
+      key "module-name";
+      description
+        "List of external YANG modules that require special on-change behavior";
+      leaf module-name {
+        type string {
+          length "1..101";
+        }
+        description
+          "YANG external module name";
+      }
+      list leaf-rule {
+        key "path leaf";
+        description
+          "List of leaf level rules to apply";
+        leaf path {
+          type string {
+            length "1..255";
+          }
+          description
+            "YANG internal path with leaf omitted";
+        }
+        leaf leaf {
+          type string {
+            length "1..60";
+          }
+          description
+            "YANG internal leaf";
+        }
+        leaf type {
+          type identityref {
+            base rule-type;
+          }
+          description
+            "Type of rule to apply";
+        }
+        list omit-external-data {
+          key "path leaf";
+          description
+            "List of external paths to omit in the publish since they are not dependent on the internal path";
+          leaf path {
+            type string {
+              length "1..255";
+            }
+            description
+              "YANG external path with leaf omitted";
+          }
+          leaf leaf {
+            type string {
+              length "1..60";
+            }
+            description
+              "YANG external leaf";
+          }
+        }
+        list associated-leaf-path {
+          key "path leaf";
+          description
+            "List of internal paths associated with the internal path";
+          leaf path {
+            type string {
+              length "1..255";
+            }
+            description
+              "YANG internal path with leaf omitted";
+          }
+          leaf leaf {
+            type string {
+              length "1..60";
+            }
+            description
+              "YANG internal leaf";
+          }
+        }
+        list dependent-leaf {
+          key "leaf";
+          description
+            "List of dependent internal leaves that should be omitted from the publish";
+          leaf leaf {
+            type string {
+              length "1..60";
+            }
+            description
+              "YANG internal leaf";
+          }
+        }
+        list value {
+          key "external-value";
+          description
+            "List of cases where there are multiple internal leaf values that map to the external-value";
+          leaf external-value {
+            type string {
+              length "1..60";
+            }
+            description
+              "External value for the leaf that maps to multiple internal leaf values";
+          }
+          leaf-list internal-value {
+            type string {
+              length "1..60";
+            }
+            description
+              "List of internal leaf values that map to external-value";
+          }
+        }
+      }
+    }
+  }
+}

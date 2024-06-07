@@ -1,0 +1,1005 @@
+module ciena-openconfig-interfaces {
+  yang-version 1.1;
+  namespace "http://ciena.com/ns/yang/ciena-openconfig-interfaces";
+  prefix cn-if;
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  import ciena-mef-frame-to-cos-map {
+    prefix "ftc";
+  }
+  import ciena-vrf {
+    prefix "vrf";
+  }
+
+  import ciena-mef-cos-to-frame-map {
+    prefix "ctf";
+  }
+
+  import ietf-yang-types {
+    prefix "ietf-yt";
+  }
+
+  import ietf-yang-types {
+    prefix "yang";
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+
+  import ciena-mef-mac-management {
+    prefix "mef-mac-management";
+  }
+
+  import ciena-mef-access-flow {
+    prefix "acl";
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the Ciena proprietary YANG deviations
+     of the standard openconfig-interfaces YANG module.
+
+     Copyright (c) 2016 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision "2023-08-24" {
+    description
+      "Updated type leaf to clear statistics for Interfaces or all";
+  }
+
+  revision "2023-08-03" {
+    description
+      "Added leaf lockout for interface configuration and leaf lockout last change for interface operational data";
+  }
+
+  revision "2023-06-01" {
+    description
+      "Updated enumerations in leaf down-reason";
+  }
+
+  revision "2023-05-09" {
+    description
+      "Added GARP/UNA Tx stats.";
+  }
+
+  revision "2022-09-12" {
+    description
+      "Added down reason leaf to interface operational data";
+  }
+
+  revision "2022-07-12" {
+    description
+      "Added new leaf for L3 interface bandwidth.
+       Added new leaf, last-change-uptime.";
+  }
+
+  revision "2021-08-02" {
+    description
+      "Added new event-type ettp-terminal-loopback-state and ettp-facility-loopback-state.
+       Added new reason-type terminal-loopback-state-change and facility-loopback-state-change.
+       Added new leaf terminal-loopback-state and facility-loopback-state in notification, which is pointing to a new operational data terminal-loopback-oper-state and facility-loopback-oper-state.";
+  }
+
+  revision "2021-03-16" {
+    description
+      "Added IP point-to-point feature.
+      Added support for point-to-point interface.
+      Added keys to lists in interface-telemetry-state to set sensor xpath for PM binning.";
+  }
+
+  revision "2020-05-12" {
+    description
+      "Added new event-type ettp-capability-state and reason-type speed-compatibility.
+       Added new leaf speed-compatibility in notification, which is pointing to a new state operational data.";
+  }
+
+  revision "2020-02-17" {
+    description
+      "Added L3 interface reference to access-profile.
+       Added IP unnumbered feature.
+       Added VTI Tunnel interface feature.";
+  }
+
+  revision "2019-08-28" {
+    description
+      "Upgrading to version 1.1";
+  }
+
+  revision "2017-07-12" {
+    description
+      "Initial version";
+    reference
+     "";
+  }
+
+  feature cn-notification {
+    description
+      "This feature indicates that notification is supported.";
+  }
+
+  feature lockout {
+    description
+      "Support for Interface lockout feature.";
+  }
+
+  typedef ciena-openconfig-interface-ref {
+    type leafref {
+      path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+    }
+    description
+      "This type is used by data models that need to reference
+       configured openconfig-interfaces.";
+  }
+
+    identity INTERFACE_ROLE {
+      description
+        "Base identity for the layer 3 roles.";
+    }
+
+    identity connectivity {
+      base INTERFACE_ROLE;
+      description
+        "Specifies that the interface is used for connectivity validation.";
+    }
+
+    identity management {
+      base INTERFACE_ROLE;
+      description
+        "Specifies that the interface is of type management.";
+    }
+
+    identity data {
+      base INTERFACE_ROLE;
+      description
+        "Specifies that the interface is of type data.";
+    }
+
+  typedef event-type {
+    type enumeration {
+        enum operational-state {
+          description
+              "Interface operational state change (link state, error state).";
+        }
+        enum ettp-capability-state {
+           description
+              "ETTP capability state change.";
+        }
+        enum any
+        {
+          description
+              "An enum value used by notification registrants to specify any of the enumerated values in the enumeration list.";
+        }
+        enum ettp-terminal-loopback-state {
+           description
+              "ETTP terminal-loopback state change.";
+        }
+        enum ettp-facility-loopback-state {
+           description
+              "ETTP facility-loopback state change.";
+        }
+    }
+    description
+        "A generic event type describing the type of events/notifications triggered by interface.";
+  }
+
+  typedef reason-type {
+    type enumeration {
+        enum admin-state-change {
+          description
+              "Operational State changed due to admin-state config change.";
+        }
+        enum speed-compatibility {
+           description
+              "Operational state changed due to underlying speed compatibility change.";
+        }
+        enum other {
+          description
+              "Operational State changed due to dependent component.";
+        }
+        enum ip-interface-delete {
+          description
+              "IP interface deleted.";
+        }
+        enum terminal-loopback-state-change {
+           description
+              "terminal-loopback state changed due to config change.";
+        }
+        enum facility-loopback-state-change {
+           description
+              "facility-loopback state changed due to config change.";
+        }
+    }
+    description
+        "A generic event type describing the reason for an operational-state change.";
+  }
+  typedef interface-type {
+    type enumeration {
+        enum ip {
+           description
+              "Specifies all ip interfaces.";
+        }
+        enum ettp {
+           description
+              "Specifies all ettp interfaces.";
+        }
+        enum agg {
+           description
+              "Specifies all aggregation interfaces.";
+        }
+        enum loopback {
+           description
+              "All virtual interfaces designated as a loopback used for various tasks.";
+        }
+        enum system {
+           description
+              "All management interfaces provided by the system.";
+        }
+        enum ip-unnumbered {
+           description
+              "Specifies all ip unnumbered interfaces.";
+        }
+        enum ip-tunnel{
+           description
+              "Specifies all IP tunnel interfaces.";
+        }
+        enum point-to-point {
+           description
+              "Specifies all layer 3 point to point interfaces.";
+        }
+        enum any {
+           description
+              "Only used by notification registrants to
+               specify any of the enumerated values in the enumeration list.";
+        }
+    }
+    description
+        "A generic type describing the type of interfaces.";
+  }
+
+  
+  // grouping statement 
+
+  grouping tunnel {
+     description
+        "Parameters relating to a tunnel interface.";
+
+     leaf type {
+        type enumeration{
+           enum vti {
+              description
+                 "Virtual tunnel interface type";
+           }
+        }
+        description
+           "Different types of tunnel interface.";
+     }
+     leaf source {
+        when "../cn-if:type='vti'";
+        type inet:ipv4-address-no-zone;
+        description
+           "The source address that should be used for the
+           tunnel.";
+     }
+     leaf destination {
+        when "../cn-if:type='vti'";
+        type inet:ipv4-address-no-zone;
+        description
+           "The destination address for the tunnel.";
+     }
+  }
+  
+  augment /oc-if:interfaces/oc-if:interface/oc-if:config {
+    // CIENA addition: Track the IP address configuration mode for L3-interfaces
+    leaf type {
+      ncx:user-write "create";
+      type enumeration {
+        enum ip {
+          value 1;
+          description
+            "Specifies an layer 3 interface.";
+        }
+        enum ettp {
+          value 2;
+          description
+            "Specifies an underlay layer 2 interface.";
+        }
+        enum lag {
+          value 3;
+          description
+            "Specifies an underlay layer 2 interface.";
+        }
+        enum loopback {
+          value 4;
+          description
+            "A virtual interface designated as a loopback used for various tasks.";
+        }
+        enum system {
+          value 5;
+          description
+            "A management interface provided by the system.";
+        }
+        enum ip-unnumbered {
+          value 6;
+          description
+            "Specifies an layer 3 unnumbered interface.";
+        }
+        enum ip-tunnel {
+          value 7;
+          description
+            "Specifies an IP tunnel interface";
+        }
+        enum point-to-point {
+          value 8;
+          description
+            "Specifies a layer 3 point to point interface";
+        }
+        enum any {
+          value 999;
+          if-feature "cn-notification";
+          description
+            "Only used by notification registrants to specify any of the
+             enumerated values in the enumeration list.";
+        }
+      }
+      description
+        "Type of the interface.";
+    }
+
+    leaf admin-status {
+      when "../cn-if:type[.='ettp' or .='ip' or .='system' or .='loopback' or .='ip-unnumbered' or .='ip-tunnel' or .='point-to-point']";
+      type boolean;
+      default "true";
+      description
+        "[adapted from IETF interfaces model (RFC 7223)]
+
+        This leaf contains the configured, desired state of the
+        interface.
+
+        Systems that implement the IF-MIB use the value of this
+        leaf in the 'running' datastore to set
+        IF-MIB.ifAdminStatus to 'up' or 'down' after an ifEntry
+        has been initialized, as described in RFC 2863.
+
+        Changes in this leaf in the 'running' datastore are
+        reflected in ifAdminStatus, but if ifAdminStatus is
+        changed over SNMP, this leaf is not affected.";
+      reference
+        "RFC 2863: The Interfaces Group MIB - ifAdminStatus";
+    }
+
+    // CIENA addition: Provide the ability to designate the L3-interface as a
+    //                 special beahavior instance. For example: EVC, SAT
+    leaf role {
+       ncx:user-write "create delete";
+       when "../cn-if:type[.='ip' or .='system' or .='loopback' or .='point-to-point']";
+       type identityref {
+         base INTERFACE_ROLE;
+       }
+       default "data";
+       description
+         "Operational role of the interface.";
+    }
+
+    // CIENA addition: Provide L3-interface to parent VRF binding
+    leaf vrfName {
+      when "../cn-if:type[.='loopback' or .='ip' or .='system' or .='ip-unnumbered' or .='point-to-point']";
+      type leafref {
+        path "/vrf:vrf/vrf:vrfName";
+      }
+      default "default";
+      description
+        "Provides interface to parent VRF binding.";
+    }
+
+    leaf virtual-mac {
+       when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+       type leafref {
+          path "/mef-mac-management:virtual-macs/mef-mac-management:mac-entry/mef-mac-management:mac-address";
+      }
+      description
+        "Virtual mac-address on layer 3 interface.";
+    }
+    choice frame-to-cos {
+      when "cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+      default map;
+      case map {
+        leaf map-policy {
+          type enumeration {
+            enum dscp {
+              description
+                "Map to internal cos and color based on dscp field of IP of
+                L3-frame (if IP present). Any L3 frame which is non-IP is
+                considered non-conforming from frame-to-cos map perspective,
+                and the resolution to an internal cos and color is platform
+                specific for non-conforming frames.";
+            }
+          }
+          description
+             "The fields of frame to map to internal CoS and color.";
+        }
+        leaf frame-to-cos-map {
+          type ftc:frame-to-cos-ref;
+          default "default-f2c";
+          description
+            "A mapping resolving an incoming packet to internal color and CoS.";
+        }
+      }
+
+      case fixed {
+        leaf cos {
+          type uint8 {
+            range "0..63";
+          }
+          description
+            "An internal label defining the baseline for Class-Of-Service treatment of a packet as it routes through the device.";
+        }
+        leaf color {
+          type enumeration {
+            enum green;
+            enum yellow;
+            enum red;
+          }
+          description
+            "An internal label assigned to packet defining the treatment of a packet as it routes through the device.";
+        }
+      }
+    }
+    leaf cos-to-frame-map {
+        when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+        type ctf:cos-to-frame-ref;
+        default "default-c2f";
+        description
+         "A mapping resolving an internal color and CoS to packet DSCP, MPLS-TC.";
+    }
+    leaf stats-collection
+    {
+      description
+          "Determines whether stats collection will be turned on or not for the interface";
+      when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+      type enumeration {
+        enum on {
+          value 1;
+          description
+            "Specifies counter status on interface is ON";
+        }
+        enum off {
+          value 2;
+          description
+            "Specifies counter status on interface is OFF";
+        }
+      }
+      default "on";
+    }
+    leaf lockout{
+      if-feature lockout;
+      when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+      type boolean;
+      default "false";
+      description
+        "Gracefully moves services/traffic away from an interface for upgrade, 
+         fiber maintenance, card replacement.
+         TRUE: means interface is locked out for any services/traffic
+         FALSE: means interface is not locked out for any services/traffic";
+    }
+    leaf access-profile {
+      when "../cn-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']";
+      type acl:access-profile-ref;
+      must "/acl:access-profiles/acl:access-profile[acl:name=current()]/acl:type = 'IP-interface'"{
+         error-message "Referenced type is not supported.";
+      }
+      description
+        "Specifies the Access-Profile for this IP interface";
+    }
+    container tunnel {
+       when "../cn-if:type='ip-tunnel'";
+       description
+          "In the case that the interface is logical tunnel
+          interface, the parameters for the tunnel are
+          specified within this subtree. Tunnel interfaces
+          have only a single logical subinterface associated
+          with them.";
+
+       container config {
+          description
+             "Configuration parameters associated with the
+             tunnel interface";
+
+          uses tunnel;
+       }
+    }
+  }
+
+  augment /oc-if:interfaces/oc-if:interface/oc-if:state {
+  // CIENA addition: Track the IP address operation mode for L3-interfaces
+    leaf type {
+      type enumeration {
+        enum ip {
+          value 1;
+          description
+            "Specifies an layer 3 interface.";
+        }
+        enum ettp {
+          value 2;
+          description
+            "Specifies an underlay layer 2 interface.";
+        }
+        enum lag {
+          value 3;
+          description
+            "Specifies an underlay layer 2 interface.";
+        }
+        enum loopback {
+          value 4;
+          description
+            "A virtual interface designated as a loopback used for various tasks.";
+        }
+        enum system {
+          value 5;
+          description
+            "A management interface provided by the system.";
+        }
+        enum ip-unnumbered {
+          value 6;
+          description
+            "Specifies an layer 3 unnumbered interface.";
+        }
+        enum ip-tunnel {
+          value 7;
+          description
+            "Specifies an IP tunnel interface";
+        }
+        enum point-to-point {
+          value 8;
+          description
+            "Specifies a layer 3 point to point interface";
+        }
+        enum any {
+          value 999;
+          if-feature "cn-notification";
+          description
+            "Only used by notification registrants to specify any of the
+             enumerated values in the enumeration list.";
+        }
+      }
+      description
+        "Type of the interface.";
+    }
+
+    leaf admin-status {
+      type boolean;
+      default "true";
+      description
+        "[adapted from IETF interfaces model (RFC 7223)]
+
+        This leaf contains the configured, desired state of the
+        interface.
+
+        Systems that implement the IF-MIB use the value of this
+        leaf in the 'running' datastore to set
+        IF-MIB.ifAdminStatus to 'up' or 'down' after an ifEntry
+        has been initialized, as described in RFC 2863.
+
+        Changes in this leaf in the 'running' datastore are
+        reflected in ifAdminStatus, but if ifAdminStatus is
+        changed over SNMP, this leaf is not affected.";
+      reference
+        "RFC 2863: The Interfaces Group MIB - ifAdminStatus";
+    }
+    // CIENA addition: Track the special beahavior instance of the L3-interface.
+    //                 For example: EVC, SAT
+    leaf role {
+      type identityref {
+        base INTERFACE_ROLE;
+      }
+      description
+        "Operational role of the interface.";
+    }
+
+    // CIENA addition: Provide L3-interface to parent VRF binding
+    leaf vrfName {
+      type string;
+      default "default";
+      description
+        "Provides interface to parent VRF binding.";
+    }
+
+    // CIENA addition: Provide mac address of interface
+    leaf mac-address {
+      type ietf-yt:mac-address;
+      description
+        "The operational MAC address of this interface.";
+    }
+
+    leaf dhcp-v4-ip {
+      type inet:ipv4-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The DHCP acquired IPv4 address on the interface.";
+    }
+
+    leaf dhcp-v4-prefix-length {
+      type uint8 {
+        range "0..32";
+      }
+    description
+      "[adapted from IETF IP model RFC 7277]
+
+      The DHCP acquired length of the subnet prefix.";
+    }
+
+    leaf dhcp-v4-client {
+      type boolean;
+      default false;
+      description
+        "This leaf node specifies whether the ipv4 address was acquired via dhcp.";
+    }
+
+    leaf dhcp-v6-ip {
+      type inet:ipv6-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The DHCP acquired IPv6 address on the interface.";
+    }
+
+    leaf dhcp-v6-prefix-length {
+      type uint8 {
+        range "0..128";
+      }
+    description
+      "[adapted from IETF IP model RFC 7277]
+
+      The DHCP acquired length of the subnet prefix.";
+    }
+
+    leaf dhcp-v6-client {
+      type boolean;
+      default false;
+      description
+        "This leaf node specifies whether the ipv6 address was acquired via dhcpv6.";
+    }
+
+    leaf link-local-v6-ip {
+      type inet:ipv6-address-no-zone;
+      description
+        "[adapted from IETF IP model RFC 7277]
+
+        The link local acquired IPv6 address on the interface.";
+    }
+
+    leaf link-local-v6-prefix-length {
+      type uint8 {
+        range "0..128";
+      }
+    description
+      "[adapted from IETF IP model RFC 7277]
+
+      The link local acquired length of the subnet prefix.";
+    }
+
+    leaf access-profile {
+      type acl:access-profile-ref;
+      description
+        "Specifies the Access-Profile for this IP interface";
+    }
+
+    leaf speed-compatibility {
+      type boolean;
+      description
+        "false means that ETTP configured speed is incompatible with underlying layer (e.g. XCVR).
+         true means that ETTP configured speed is compatible with underlying layer (e.g. XCVR)";
+    }
+
+    leaf terminal-loopback-oper-state {
+      type boolean;
+      description
+        "true means that terminal-loopback is operationally active.
+         false means that terminal-loopback is not operationally active.";
+    }
+
+    leaf facility-loopback-oper-state {
+      type boolean;
+      description
+        "true means that facility-loopback is operationally active.
+         false means that facility-loopback is not operationally active.";
+    }
+
+    leaf bandwidth {
+      type uint32;
+      units "megabits/second";
+      description
+        "An estimate of the interface's bandwidth in megabits
+         per second.";
+    }
+
+    container tunnel {
+       description
+          "Operational state parameters associated with
+          the tunnel interface.";
+
+       uses tunnel;
+    }
+
+    leaf last-change-uptime {
+      type uint64;
+      units nanoseconds;
+      description
+        "The timestamp of the last state change of the interface
+        (e.g., up-to-down transition or vice-versa).
+
+        The value is relative to system uptime which is independent
+        of system clock time.";
+    }
+
+    leaf down-reason {
+      type enumeration {
+        enum admin-down {
+          description
+              "Interface operational state is down, due to admin-state down.";
+        }
+        enum underlay-down {
+           description
+              "Interface operational state is down, due to underlay down.";
+        }
+        enum ppm-down {
+          description
+              "Interface operational state is down, due to PPM policy.";
+        }
+        enum underlay-ppm-down {
+          description
+              "Interface operational state is down, due to underlay down and PPM policy";
+        }
+      }
+      description
+          "Reason for interface operational state down";
+    }
+
+    leaf lockout-last-change {
+      if-feature lockout;
+      type yang:date-and-time;
+      description
+          "The timestamp of the last lockout state change of the interface.";
+    }
+  }
+
+  augment "/oc-if:interfaces/oc-if:interface/oc-if:state/oc-if:counters" {
+  // CIENA addition: Operational statistics parameters
+
+    leaf in-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of packets, delivered by this sub-layer to a
+        higher (sub-)layer, that were addressed to an unicast,
+        multicast and broadcast address at this sub-layer.";
+    }
+
+    leaf out-pkts {
+      type ietf-yt:counter64;
+      description
+      "The total number of packets that higher-level protocols
+        requested be transmitted, and that were addressed
+        to a unicast, multicast and a broadcast address at this sub-layer.";
+    }
+
+    leaf in-dropped-octets {
+      type ietf-yt:counter64;
+      description
+        "The number of inbound octets that were chosen to be
+        dropped even though no errors had been detected to
+        prevent their being deliverable to a higher-layer
+        protocol.";
+    }
+
+    leaf in-dropped-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of inbound packets that were chosen to be
+        dropped even though no errors had been detected to
+        prevent their being deliverable to a higher-layer
+        protocol.";
+    }
+
+    leaf out-gratuitous-arp-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of gratuitous arp packets sent on this interface.";
+    }
+
+    leaf out-unsolicited-neighbor-adv-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of unsolicited neighbor advertisement packets sent on this interface..";
+    }
+  }
+
+  /*
+   * RPC
+   */
+  rpc interfaces-clear-statistics {
+    description "An RPC operation to clear the statistics for one or all Interfaces.";
+
+    input {
+      choice clear-scope {
+
+        case interface {
+          leaf interface {
+            type leafref {
+              path "/oc-if:interfaces/oc-if:interface/oc-if:config/oc-if:name";
+            }
+          }
+          description
+            "Clear stats for this interface.";
+        }
+
+        case all {
+          leaf all {
+            type empty;
+               description
+                 "Clear stats for all interfaces.";
+          }
+        }
+        case type {
+          leaf type {
+            type interface-type;
+               description
+                  "Clear stats for all interfaces of this interface type.";
+          }
+        }
+      }
+    }
+    output {
+      leaf status {
+        type string;
+        description
+          "Status of the clear statistics operation.";
+      }
+    }
+  } // end rpc clear-statistics
+
+   /*
+    * This augment to oc-interface is specifally to allow an xpath to be defined for the notification of an interface-event.
+    *       Examples:
+    *         #1 register for notification on specific interface for specific event-type.
+    *        #2 register for notification on specific event-type for all interfaces.
+    *        #3 register for notification on all event-types for all interfaces.
+    *        #4 register for notification on specific interface for all event-types.
+    *             (also maybe if-type in the mix).
+    *
+    *        hierarchy:  interface-event/interface-name[*]/event-type[any]/<leaves>
+    *        hierarchy:  interface-event/interface-name[*]/if-type[any]/event-type[oper-down]
+    */
+   augment /oc-if:interfaces/oc-if:interface {
+      leaf if-event-type {
+         config false;
+         type event-type;
+            description
+               "Defines the set of event types corresponding to the interface state changes.";
+      }
+   }
+
+   notification interface-events {
+      list interface-event {
+         description
+            "Defines interface related events and associated data used to publish change in the state of the interface instance.";
+
+         leaf interface-type {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-if:type";
+            }
+            description
+               "The interface-type for the notification. 'any' means any interface-type";
+         }
+         list name-list {
+            leaf name {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+               }
+               description
+                  "The interface-name for the notification. '*' means any interface-name";
+            }
+            list event-list {
+               leaf event-type {
+                  type leafref {
+                     path "/oc-if:interfaces/oc-if:interface/cn-if:if-event-type";
+                  }
+                  description
+                     "The event-type for the notification. 'any' means any event-type";
+               }
+            }
+         }
+         leaf operational-state {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:state/oc-if:oper-status";
+            }
+            description "interface operational state change (link state).";
+         }
+
+         leaf speed-compatibility {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:state/cn-if:speed-compatibility";
+            }
+            description
+               "speed compatibility state change.";
+         }
+
+         leaf terminal-loopback-oper-state {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:state/cn-if:terminal-loopback-oper-state";
+            }
+            description
+               "terminal-loopback operational state change.";
+         }
+        
+         leaf facility-loopback-oper-state {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:state/cn-if:facility-loopback-oper-state";
+            }
+            description
+               "facility-loopback operational state change.";
+         }
+
+         leaf reason {
+            type reason-type;
+            description
+               "Reason for operational state change";
+         }
+      }
+   }
+
+   container interface-telemetry-state {
+      config false;
+
+      list interface-counters {
+         description
+            "Defines interface related events and associated data used to publish change in the state of the interface instance.";
+
+         key "interface-type";
+         leaf interface-type {
+            type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-if:type";
+            }
+            description
+               "The interface-type for the state. 'any' means any interface-type";
+         }
+
+         list interfaces {
+            key "if-name";
+            leaf if-name {
+               type leafref {
+                  path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+               }
+             description
+                "The interface-name for the xpath definition. '*' means any interface-name";
+            }
+            uses oc-if:interface-common-state;
+            uses oc-if:interface-counters-state;
+         }
+      }
+   }
+}

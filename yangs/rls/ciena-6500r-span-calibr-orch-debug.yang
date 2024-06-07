@@ -1,0 +1,113 @@
+module ciena-6500r-span-calibr-orch-debug {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-span-calibr-orch-debug";
+  prefix span-calibr-orch-debug;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com;
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module contains debug RPCs for manipulating SCO objects";
+
+  revision 2023-05-25 {
+    description
+      "Introduced new rpc: access-data
+       It can be used for getting or setting remote data
+       Currently setting is not implemented yet";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2019-05-25 {
+    description
+      "Initial version for RLS 1.01";
+    ciena-common-version:string "1.0.0";
+  }
+
+  typedef access-type {
+    type enumeration {
+      enum get {
+        description
+          "get operation";
+      }
+      enum set {
+        description
+          "set operation";
+      }
+    }
+  }
+
+  rpc sco-operation {
+    input {
+      leaf sco-instance {
+        mandatory true;
+        type string;
+        description
+          "SCO instance which will be the subject of this operation.";
+      }
+      leaf operation-type {
+        mandatory true;
+        type enumeration {
+          enum start {
+            value 1;
+          }
+          enum cancel {
+            value 2;
+          }
+        }
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+
+  rpc access-data {
+    description
+      "Get data from specified SCO";
+    input {
+      leaf name {
+        type string;
+        description
+          "Name of SCO to access.";
+      }
+      leaf operation {
+        type access-type;
+        description
+          "operation to perform";
+      }
+      leaf var {
+        type string {
+          length "1..64";
+        }
+        default "true";
+        description
+          "Name of the variable to access";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+      leaf data {
+        type uint32;
+        description
+          "Value of integer data rpc is accessing and associated with this SCO instance";
+      }
+      leaf str-data {
+        type string;
+        description
+          "Value of string data rpc is accessing and associated with this SCO instance";
+      }
+    }
+  }
+}

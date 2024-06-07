@@ -1,0 +1,145 @@
+module ciena-bfd-mpls-tp {
+
+   namespace "http://ciena.com/ns/yang/ciena-bfd-mpls-tp";
+
+   prefix ciena-bfd-mpls-tp;
+
+   import ciena-bfd-types {
+      prefix "bfd-types";
+   }
+
+   import ciena-bfd-mpls {
+      prefix "bfd-mpls";
+   }
+
+   import ietf-yang-types {
+      prefix "yang";
+   }
+
+   import ciena-mpls-tp-corouted {
+      prefix "mpls-tp";
+   }
+
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's MPLS-TP BFD protocol.
+      Copyright (c) 2020  Ciena Corporation.  All rights
+      reserved.
+      All information contained herein is, and remains the
+      property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained
+      from Ciena Corporation.";
+
+   revision 2020-01-27 {
+      description 
+          "Initial revision of MPLS-TP BFD model.";
+   }
+
+   /*
+    * Identity definitions
+    */
+   identity path-lsp {
+      base bfd-types:path-type;
+      description
+         "BFD on Label Switched Paths.";
+      reference
+         "RFC 5884: Bidirectional Forwarding Detection (BFD)
+         for MPLS Label Switched Paths (LSPs)";
+   }
+
+   /*
+    * Groupings
+    */
+   grouping cv-packet-count {
+      leaf cv-receive-packet-count {
+         type yang:counter64;
+         description
+            "Count of received BFD cv packets for this session. This includes
+            valid and invalid received packets.";
+      }
+
+      leaf cv-send-packet-count {
+         type yang:counter64;
+         description
+            "Count of sent BFD cv packets for this session.";
+      } 
+      description
+         "BFD CV packet counters";
+   }
+
+   grouping lsp-bfd-cfg-params {
+      container bfd-cfg-parms  {
+         description
+            "BFD configuration on MPLS-TP LSP";
+         uses bfd-types:common-cfg-parms {
+            refine admin-down {
+               default true;
+            }
+         }
+
+         uses bfd-mpls:encap-cfg;
+
+         leaf gach-type {
+            type bfd-mpls:gach-value;
+            description 
+               "Gach-value for LSP BFD session";
+         }
+
+         leaf enable-cv {
+            description
+               "Enable Connectivity-verification(CV) feature ";
+            when "../gach-type = 'mpls-tp-cc'";
+            type empty;
+         }
+      }
+   }
+
+   /*
+    * Augments
+    */
+   augment "/mpls-tp:tp-corouted-tunnels/mpls-tp:tunnel" {
+      description 
+         "BFD configuration on MPLS-TP LSP.";
+      uses lsp-bfd-cfg-params;
+   }
+
+   augment "/mpls-tp:tp-corouted-tunnel-state/mpls-tp:tunnel" {
+      description
+         "Augmenting MPLS-TP state information with BFD Session state information.";
+      container bfd-state {
+         description
+            "MPLS-TP BFD session state information.";
+         config false;
+         uses bfd-types:common-cfg-parms;
+         uses bfd-mpls:encap-cfg;
+         leaf gach-type {
+            description
+               "Gach-value for LSP BFD session";
+            type bfd-mpls:gach-value;
+         }
+         leaf enable-cv {
+            description
+               "Enable Connectivity-verification(CV) feature ";
+            type empty;
+         }
+         uses bfd-types:all-session {
+            augment "session-statistics" {
+               uses cv-packet-count; 
+            }
+         }
+      }
+   }
+}

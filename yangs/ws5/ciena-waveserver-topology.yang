@@ -1,0 +1,232 @@
+module ciena-waveserver-topology {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-topology";
+  prefix topology;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-waveserver-interfaces {
+    prefix if;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's Waveserver Topology representation.";
+
+  revision 2019-06-03 {
+    description
+      "Initial revision introducing basic topology support.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  grouping topology-inventory-attribute-group {
+    description
+      "Common attributes of network inventory.";
+    leaf network-id {
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify the sub-network domain in which this chassis is managed.";
+      ui:ui-name "Network Identifier";
+    }
+    leaf site-id {
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify the site where this chassis is located.";
+      ui:ui-name "Site Identifier";
+    }
+    leaf group-id {
+      type uint8 {
+        range "0..254";
+      }
+      description
+        "An integer to uniquely identify a group of chassis within a site.";
+      ui:ui-name "Group Identifier";
+    }
+    leaf chassis-id {
+      type cienawstypes:mac-string;
+      description
+        "MAC address of the chassis.";
+      ui:ui-name "Chassis Identifier";
+    }
+    leaf member-id {
+      type uint8 {
+        range "0..254";
+      }
+      config false;
+      description
+        "An integer to uniquely identify a chassis within a commonly managed group.";
+      ui:ui-name "Member Identifier";
+    }
+    leaf member-name {
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "A name to uniquely identify a chassis within a commonly managed group.";
+      ui:ui-name "Member Name";
+    }
+    leaf chassis-type {
+      type cienawstypes:chassis-type;
+      config false;
+      description
+        "The type of the chassis.";
+      ui:ui-name "Chassis Type";
+    }
+    leaf primary-chassis-id {
+      type cienawstypes:mac-string;
+      config false;
+      description
+        "Chassis MAC address of the primary node within the management domain.";
+      ui:ui-name "Primary Chassis Identifier";
+    }
+    leaf host-name {
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Hostname of the chassis.";
+      ui:ui-name "Host Name";
+    }
+    leaf enrolled {
+      type boolean;
+      config false;
+      description
+        "Specifies if this chassis is enrolled into the management domain.";
+      ui:ui-name "Enrolled";
+    }
+    leaf connectivity-state {
+      type cienawstypes:up-down-enum;
+      config false;
+      description
+        "The connectivity state of the cluster member.
+         A reachable member shall have conn state UP, while
+         An unreachable member shall have conn state DOWN.";
+      ui:ui-name "Connectivity State";
+    }
+    leaf network-primary {
+      type boolean;
+      config false;
+      description
+        "Attribute indicating the role of this member in the cluster. 
+         Default value is false (member).";
+      ui:ui-name "Network Primary";
+    }
+  }
+
+  grouping topology-adjacency-attribute-group {
+    description
+      "Common attributes of topology inventory's adjacency attributes.";
+    leaf interface-id {
+      type leafref {
+        path "/if:waveserver-interfaces/if:physical-interface/if:id/if:name";
+      }
+      config false;
+      description
+        "Interface ID of the local ILAN Port which is connected to the neighbor chassis.";
+      ui:ui-name "Interface Identifier";
+    }
+    leaf neighbor-member-id {
+      type uint8 {
+        range "0..254";
+      }
+      config false;
+      description
+        "An integer to uniquely identify the neighbor chassis.";
+      ui:ui-name "Neighbor Member Identifier";
+    }
+    leaf neighbor-host-name {
+      type cienawstypes:string-maxl-64;
+      config false;
+      description
+        "Hostname of the neighbor chassis.";
+      ui:ui-name "Neighbor Host Name";
+    }
+    leaf neighbor-chassis-id { 
+      type leafref {
+        path "../../../network-inventory/chassis-id";
+      }
+      config false;
+      description
+        "MAC address of the neighbor chassis";
+      ui:ui-name "Neighbor Chassis Identifier";
+    }
+    leaf neighbor-interface-id {
+      type cienawstypes:string-maxl-16;
+      config false;
+      description
+        "Interface ID of the ILAN Port on the neighbor chassis which is connected to the this chassis.";
+      ui:ui-name "Neighbor Interface Identifier";
+    }
+  }
+
+  container waveserver-topology {
+    description
+      "Waveserver topology attributes and operational data.";
+    ui:ui-name "topology";
+
+    list network-inventory {
+      key "chassis-id";
+      config false;
+      description
+        "Summary of the network elements discovered in the network topology, such as NDP discovered chassis on the ILAN.";
+      ui:ui-name "Network Inventory";
+
+      uses topology-inventory-attribute-group;
+      
+      list adjacency {
+        key "interface-id";
+        config false;
+        description
+          "A list of neighbor node attributes adjacent to this chassis.";
+        ui:ui-name "Adjacency";
+      
+        uses topology-adjacency-attribute-group;
+      }//end adjacency
+      
+    }//end network-inventory   
+
+  }//end waveserver-topology
+
+  rpc waveserver-topology-delete-network-inventory {
+    description
+      "Delete a network element from network inventory list for the specified instance.";
+    input {
+      leaf chassis-id {
+        type cienawstypes:mac-string;
+        mandatory true;
+        description
+          "MAC address of the chassis.";
+        ui:ui-name "Chassis Identifier";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+}//end ciena-waveserver-topology

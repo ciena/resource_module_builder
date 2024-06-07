@@ -1,0 +1,835 @@
+module ciena-pro-telemetry {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-telemetry";
+  prefix telemetry;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ietf-yang-types {
+    prefix yang-types;
+  }
+  import ciena-common-yang {
+    prefix yang;
+  }
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's streaming telemetry model.
+
+     Copyright (c) 2020 Ciena (R) Corporation. All rights reserved.
+
+     CONFIDENTIALITY AND LIMITED USE
+
+     This software, including any software of third parties embodied herein,
+     contains information and concepts which are confidential to Ciena
+     and such third parties. This software is licensed for use
+     solely in accordance with the terms and conditions of the applicable
+     license agreement with Ciena.";
+
+  revision 2023-06-07 {
+    description
+      "Added groupings and configuration data for dial-out configured subscriptions.
+       Moved subscription 'type' enum to a 'subscription-type' typedef.
+       Moved receiver state data into a 'receiver-state' grouping.
+       Moved path-config data into a 'path-config' grouping.
+       Moved RPC response data into an 'rpc-response-data' grouping.
+       Added telemetry state container with target IPv4 and IPv6 addresses.
+       Added per-receiver statistics for configured subscriptions.
+       Added conditional statements to 'managed-subscriptions/subscription' list to support
+        path profiles and receiver groups for configured subscriptions.
+       Added 'reset-reciever' RPC to reset receiver connection on demand.
+       Changed type of ip-address in keep-alive container from ipv6-address to ip-prefix.
+       Changed subscription/id to be non-configurable.
+       Added error-code error-once-unsupported.
+       Removed default sample interval from description";
+    reference
+      "See product documentation";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2021-08-09 {
+    description
+      "Initial revision";
+    reference
+      "See product documentation";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  typedef subscription-id {
+    type uint32;
+    description
+      "System generated unique identifier for a subscription";
+  }
+
+  typedef subscription-type {
+    type enumeration {
+      enum dynamic {
+        description
+          "Dynamic subscription created through a RPC and tied to the subscriber protocol
+           session";
+      }
+      enum configured {
+        description
+          "Configured subscription created through user configuration and persisted across
+           restarts";
+      }
+    }
+    description
+      "Type of subscription. Describes the subscription origin and longevity.";
+  }
+
+  identity exclude-filter-type {
+    description
+      "Types of data or actions to exclude from subscription data when publishing.";
+  }
+
+  identity EXCLUDE_CREATE {
+    base exclude-filter-type;
+    description
+      "Do not publish if CREATE action occurs";
+  }
+
+  identity EXCLUDE_DELETE {
+    base exclude-filter-type;
+    description
+      "Do not publish if DELETE action occurs";
+  }
+
+  identity EXCLUDE_EDIT {
+    base exclude-filter-type;
+    description
+      "Do not publish if EDIT action occurs";
+  }
+
+  identity EXCLUDE_REPLACE {
+    base exclude-filter-type;
+    description
+      "Do not publish if REPLACE action occurs";
+  }
+
+  identity EXCLUDE_CONFIG {
+    base exclude-filter-type;
+    description
+      "Do not publish YANG configuration data";
+  }
+
+  identity EXCLUDE_OPERATIONAL {
+    base exclude-filter-type;
+    description
+      "Do not publish YANG operational data";
+  }
+
+  identity encoding-type {
+    description
+      "Message encoding formats supported";
+  }
+
+  identity ENCODING_XML {
+    base encoding-type;
+    description
+      "XML encoding";
+  }
+
+  identity ENCODING_PROTO3 {
+    base encoding-type;
+    description
+      "Protocol buffer version 3 encoding";
+  }
+
+  identity ENCODING_JSON {
+    base encoding-type;
+    description
+      "JSON encoding";
+  }
+
+  identity ENCODING_JSON_IETF {
+    base encoding-type;
+    description
+      "JSON_IETF encoding RFC7951";
+  }
+
+  identity update-trigger-type {
+    description
+      "Types of update triggers";
+  }
+
+  identity ON_CHANGE {
+    base update-trigger-type;
+    description
+      "Publish an update given a change to the subscription data";
+  }
+
+  identity PERIODIC {
+    base update-trigger-type;
+    description
+      "Publish an update given a set period interval";
+  }
+
+  identity ONCE {
+    base update-trigger-type;
+    description
+      "Publish a one-time update of the current state of the subscription data";
+  }
+
+  identity datastore {
+    description
+      "Supported datastores";
+  }
+
+  identity RUNNING {
+    base datastore;
+    description
+      "Running datastore";
+  }
+
+  identity protocol-type {
+    description
+      "Supported protocols";
+  }
+
+  identity GNMI {
+    base protocol-type;
+    description
+      "gNMI protocol";
+  }
+
+  identity NETCONF {
+    base protocol-type;
+    description
+      "NETCONF protocol";
+  }
+
+  identity RESTCONF {
+    base protocol-type;
+    description
+      "RESTCONF protocol";
+  }
+
+  identity SNMP {
+    base protocol-type;
+    description
+      "SNMP protocol";
+  }
+
+  identity WEBSOCKET {
+    base protocol-type;
+    description
+      "WebSocket protocol";
+  }
+
+  identity subscription-request-type {
+    description
+      "Subscription management request types";
+  }
+
+  identity CREATE_SUBSCRIPTION {
+    base subscription-request-type;
+    description
+      "Subscription create request";
+  }
+
+  identity MODIFY_SUBSCRIPTION {
+    base subscription-request-type;
+    description
+      "Subscription modify request";
+  }
+
+  identity DELETE_SUBSCRIPTION {
+    base subscription-request-type;
+    description
+      "Subscription delete request";
+  }
+
+  identity KILL_SUBSCRIPTION {
+    base subscription-request-type;
+    description
+      "Subscription kill request";
+  }
+
+  identity error-period-interval-unsupported {
+    base yang:error-code;
+    description
+      "Period interval is not supported";
+  }
+
+  identity error-on-change-unsupported {
+    base yang:error-code;
+    description
+      "On-change update trigger not supported for specified subscription path(s).";
+  }
+
+  identity error-periodic-unsupported {
+    base yang:error-code;
+    description
+      "Periodic update trigger not supported for specified subscription path(s).";
+  }
+
+  identity error-invalid-input {
+    base yang:error-code;
+    description
+      "Input is invalid (e.g. missing data)";
+  }
+
+  identity error-exclude-filter-unsupported {
+    base yang:error-code;
+    description
+      "Exclude-filter is not supported";
+  }
+
+  identity error-once-unsupported {
+    base yang:error-code;
+    description
+      "Once update trigger not supported for specified subscription.";
+  }
+
+  grouping subscription-data {
+    description
+      "Subscription data settings for all paths in a subscription";
+    leaf id {
+      type subscription-id;
+      config false;
+      description
+        "System generated unique identifier for a subscription. Read-only attribute";
+    }
+    leaf label {
+      type string {
+        length "0..128";
+      }
+      description
+        "User-provisionable label assigned to a subscription. Optional for dynamic
+         subscriptions, required for configured subscriptions.";
+    }
+    leaf sync-on-start {
+      type boolean;
+      default "true";
+      description
+        "Synchronization to the current state required at the start of a subscription";
+    }
+    leaf sync-on-start-done-required {
+      type boolean;
+      default "false";
+      description
+        "Flag set to TRUE if indication when synchronization is complete is required ";
+    }
+    leaf datastore {
+      type identityref {
+        base datastore;
+      }
+      default "RUNNING";
+      description
+        "Datastore to subscribe to";
+    }
+  }
+
+  grouping subscription-paths {
+    description
+      "Collection of subscription paths";
+    list subscription-paths {
+      key "subscription-path";
+      description
+        "List of subscription paths";
+      leaf subscription-path {
+        type yang:target-node;
+        description
+          "Path specified by the subscriber";
+      }
+    }
+  }
+
+  grouping receiver-id {
+    description
+      "Uniquely identifying data for a particular receiver of subscription updates.";
+    leaf address {
+      type inet:host;
+      description
+        "IPv4/IPv6 address or hostname of the receiver to send subscription updates.";
+    }
+    leaf port {
+      type inet:port-number;
+      description
+        "Port of the receiver to send subscription updates.";
+    }
+  }
+
+  grouping receiver-data {
+    description
+      "Receiver data settings for all paths in a subscription";
+    leaf protocol {
+      type identityref {
+        base protocol-type;
+      }
+      description
+        "Interface used to publish updates for the subscription";
+    }
+    leaf encoding {
+      type identityref {
+        base encoding-type;
+      }
+      description
+        "Update message encoding format";
+    }
+  }
+
+  grouping receiver-state {
+    description
+      "State data for a receiver of subscription updates.";
+    leaf session-id {
+      type uint32;
+      description
+        "Session identifier";
+    }
+    leaf state {
+      type enumeration {
+        enum connecting {
+          description
+            "When in this state, attempt to create a connection to the receiver is in progress";
+        }
+        enum connected {
+          description
+            "When in this state, a receiver is successfully connected and is ready to receive
+             updates for the subscription";
+        }
+        enum failed {
+          description
+            "When in this state, the target is unable to establish a connection to the receiver after
+             a predefined timeout";
+        }
+        enum disconnected {
+          description
+            "When in this state, a previously connected receiver is not reachable";
+        }
+      }
+      default "connecting";
+      description
+        "State of a receiver";
+    }
+    leaf state-timestamp {
+      type yang-types:date-and-time;
+      description
+        "Timestamp in UTC of when the receiver transitioned to the current state";
+    }
+    leaf last-publish-timestamp {
+      type yang-types:date-and-time;
+      description
+        "Timestamp in UTC for the most recent update";
+    }
+  }
+
+  grouping path-config {
+    description
+      "Subscription path settings";
+    list path-config {
+      key "subscription-path update-trigger";
+      description
+        "List of subscription data for a subscription";
+      leaf subscription-path {
+        type yang:target-node;
+        mandatory true;
+        description
+          "Path specified by the subscriber";
+      }
+      uses subscription-path-data;
+    }
+  }
+
+  grouping subscription-path-data {
+    description
+      "Subscription data settings for subscription path(s)";
+    leaf update-trigger {
+      type identityref {
+        base update-trigger-type;
+      }
+      description
+        "Update trigger used to publish an update for a subscription.";
+    }
+    leaf period-interval {
+      type uint32;
+      units "ms";
+      description
+        "Interval to use for periodic subscriptions.";
+    }
+    leaf-list exclude-filter {
+      type identityref {
+        base exclude-filter-type;
+      }
+      description
+        "Exclude change operation(s) or type of data";
+    }
+    leaf only-changes {
+      type boolean;
+      description
+        "Only publish changes to subscription data. If not specified, default for on-change
+         is true, otherwise set to false for all other update triggers";
+    }
+  }
+
+  grouping rpc-response-data {
+    description
+      "Common RPC response and status data";
+    leaf error {
+      type identityref {
+        base yang:error-code;
+      }
+      description
+        "Error code in failure";
+    }
+    leaf error-str {
+      type string {
+        length "0..255";
+      }
+      description
+        "More detailed string description of the error code if applicable.";
+    }
+    leaf status {
+      type yang:yang-status;
+      description
+        "Overall status of the RPC";
+    }
+  }
+
+  container telemetry {
+    description
+      "Telemetry configuration and operational data";
+    container config {
+      description
+        "Telemetry feature level settings.";
+      leaf admin-state {
+        type enumeration {
+          enum disabled {
+            description
+              "Publishing is disabled on all subscriptions on the chassis.";
+          }
+          enum enabled {
+            description
+              "Publishing is enabled on all subscriptions on the chassis.";
+          }
+        }
+        default "enabled";
+        description
+          "Chassis-wide administrative state for the telemetry feature.";
+      }
+    }
+    container state {
+      config false;
+      description
+        "Telemetry feature level state data.";
+      leaf target-ipv4-address {
+        type inet:ipv4-prefix;
+        description
+          "IPv4 address (including prefix) of the target.";
+      }
+      leaf target-ipv6-address {
+        type inet:ipv6-prefix;
+        description
+          "IPv6 address (including prefix) of the target, if applicable.";
+      }
+    }
+    container statistics {
+      config false;
+      description
+        "Telemetry statistics.";
+      list protocol {
+        key "protocol";
+        description
+          "List of statistics per protocol.";
+        leaf protocol {
+          type identityref {
+            base protocol-type;
+          }
+          description
+            "Interface used to publish updates for the subscription";
+        }
+        container subscriptions {
+          description
+            "Statistics on subscriptions.";
+          leaf active {
+            type uint32;
+            description
+              "Current number of active subscriptions for the protocol";
+          }
+          leaf cummulative-since-last-restart {
+            type uint32;
+            description
+              "Cummulative number of subscriptions for the protocol since the last restart";
+          }
+        }
+      }
+      list receiver {
+        key "address port";
+        description
+          "List of statistics per receiver since the last target restart.";
+        uses receiver-id;
+        leaf connection-attempts {
+          type uint32;
+          description
+            "Number of times the target has attempted to connect to the receiver.";
+        }
+        leaf connection-opens {
+          type uint32;
+          description
+            "Number of times the target has successfully connected to the receiver.";
+        }
+        leaf connection-closes {
+          type uint32;
+          description
+            "Number of times an active connection to the receiver has been closed.";
+        }
+        leaf messages-sent {
+          type uint32;
+          description
+            "Number of subscription updates target has sent the receiver.";
+        }
+      }
+    }
+    container configured-subscriptions {
+      description
+        "Configuration data container for user-configured persistent subscriptions.";
+      container config {
+        description
+          "Container for configuration data that applies to all configured subscriptions.";
+        leaf retry-interval {
+          type uint32 {
+            range "30..7200";
+          }
+          units "s";
+          default "30";
+          description
+            "Time the target will wait after disconnect before attempting to reconnect. Defaults
+             to 30s, provisionable up to 2hr.";
+        }
+      }
+      list path-groups {
+        key "group-id";
+        description
+          "List of groups of subscription paths to monitor and generate configured subscription updates.";
+        leaf group-id {
+          type string {
+            length "0..128";
+          }
+          description
+            "User-provided unique identifier for a path group.";
+        }
+        uses subscription-paths;
+      }
+      list receiver-groups {
+        key "group-id";
+        description
+          "List of groups of receivers to send configured subscription updates.";
+        leaf group-id {
+          type string {
+            length "0..128";
+          }
+          description
+            "User-provided unique identifier for a receiver group.";
+        }
+        list receiver {
+          key "address port";
+          description
+            "List of receivers that define the receiver group.";
+          uses receiver-id;
+        }
+      }
+      list subscription {
+        key "label";
+        description
+          "List of all configured subscriptions.";
+        uses subscription-data;
+        uses receiver-data;
+        list path-profiles {
+          key "group-id";
+          description
+            "List of all path groups assigned to the configured subscription.";
+          leaf group-id {
+            type leafref {
+              path "../../../path-groups/group-id";
+            }
+            description
+              "User-provisioned unique identifier for the path group.";
+          }
+          uses subscription-path-data;
+        }
+        list receiver-groups {
+          key "group-id";
+          description
+            "List of all receiver groups assigned to the configured subscription.";
+          leaf group-id {
+            type leafref {
+              path "../../../receiver-groups/group-id";
+            }
+            description
+              "System generated unique identifier for the receiver group. Read only attribute.";
+          }
+        }
+      }
+    }
+    container managed-subscriptions {
+      config false;
+      description
+        "Operational view of both dynamic and configured subscriptions that are managed by the target.";
+      list subscription {
+        key "id";
+        description
+          "List of managed subscriptions.";
+        uses subscription-data;
+        leaf type {
+          type subscription-type;
+          description
+            "Subscription type";
+        }
+        leaf operational-state {
+          type enumeration {
+            enum up {
+              description
+                "When in this state, a subscription is publishing to at least one receiver.";
+            }
+            enum down {
+              description
+                "When in this state, no publishing is occurring on the subscription.";
+            }
+            enum degrade {
+              description
+                "State is not currently supported.";
+            }
+          }
+          description
+            "Operational state of a subscription";
+        }
+        leaf state-timestamp {
+          type yang-types:date-and-time;
+          description
+            "Timestamp in UTC of when the subscription transitioned to the current state";
+        }
+        list receiver {
+          when "../type = 'dynamic'";
+          key "id";
+          description
+            "List of receivers of a dynamic subscription.";
+          leaf id {
+            type string {
+              length "1..63";
+            }
+            description
+              "Set to string 'default' in dial in. Set to the ip-address/hostname in dial out.";
+          }
+          uses receiver-state;
+          uses receiver-data;
+        }
+        list receiver-groups {
+          when "../type = 'configured'";
+          key "group-id";
+          description
+            "List of receiver groups assigned to the configured subscription.";
+          leaf group-id {
+            type leafref {
+              path "../../../../configured-subscriptions/receiver-groups/group-id";
+            }
+            description
+              "System generated unique identifier for the receiver group. Read only attribute.";
+          }
+          list receiver {
+            key "address port";
+            description
+              "List of receivers that define the receiver group.";
+            uses receiver-id;
+            uses receiver-state;
+            uses receiver-data;
+          }
+        }
+        uses path-config;
+      }
+    }
+    container keep-alive {
+      description
+        "Container that can be used for a periodic subscription as a keep-alive between
+         the target and receiver";
+      leaf platform {
+        type string {
+          length "0..64";
+        }
+        config false;
+        description
+          "Platform used by the target";
+      }
+      leaf host-name {
+        type string {
+          length "0..64";
+        }
+        config false;
+        description
+          "Host name of the target";
+      }
+      leaf ip-address {
+        type inet:ip-prefix;
+        config false;
+        description
+          "IPv4 or IPv6 address, including prefix, of the target.";
+      }
+      leaf scratchpad {
+        type string {
+          length "0..255";
+        }
+        description
+          "Customizable string";
+      }
+    }
+  }
+
+  rpc subscribe-request {
+    description
+      "Interface for dynamic subscription requests";
+    input {
+      uses subscription-data;
+      leaf subscription-request {
+        type identityref {
+          base subscription-request-type;
+        }
+        default "CREATE_SUBSCRIPTION";
+        description
+          "Subscription management request";
+      }
+      uses receiver-data;
+      uses path-config;
+    }
+    output {
+      leaf id {
+        type subscription-id;
+        description
+          "System generated unique identifier for a dynamic subscription";
+      }
+      uses rpc-response-data;
+    }
+  }
+
+  rpc reset-receiver {
+    description
+      "Interface to reset telemetry receiver connection on-demand";
+    input {
+      uses receiver-id {
+        refine "address" {
+          mandatory true;
+        }
+        refine "port" {
+          mandatory true;
+        }
+      }
+    }
+    output {
+      uses rpc-response-data;
+    }
+  }
+}

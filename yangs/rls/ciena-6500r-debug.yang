@@ -1,0 +1,109 @@
+module ciena-6500r-debug {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-debug";
+  prefix debug;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's debugging log objects for the microprocesses on the 6500r platform";
+
+  revision 2020-05-29 {
+    description
+      "Added rpc call to reset detailed log type and limit";
+    ciena-common-version:string "0.1.0";
+  }
+  revision 2020-04-07 {
+    description
+      "Assigned maximum string length to name, cmd and time in debug struct";
+    ciena-common-version:string "1.0.0";
+  }
+
+  container debug {
+    description
+      "List of rls debugging levels";
+    leaf level {
+      type uint32;
+      description
+        "What level to set debugging/logging to";
+    }
+    leaf throttle_limit {
+      type uint32;
+      description
+        "Throttle limit of rls-mgr logs";
+    }
+    list query_list {
+      key "name";
+      description
+        "List of get/set/rpc queries";
+      leaf name {
+        type string {
+          length "1..50";
+        }
+        description
+          "Method the queries are for";
+      }
+      leaf count {
+        type uint32;
+        description
+          "Counter for specific method";
+      }
+      list queries {
+        key "time";
+        description
+          "List of latest queries";
+        leaf time {
+          type string {
+            length "1..50";
+          }
+          description
+            "Time of query";
+        }
+        leaf cmd {
+          type string {
+            length "1..500";
+          }
+          description
+            "Query cmd";
+        }
+      }
+    }
+    list log_count {
+      key "level";
+      description
+        "Count of logs at different levels";
+      leaf level {
+        type uint32;
+        description
+          "Level for which count is for";
+      }
+      leaf count {
+        type uint32;
+        description
+          "Count for log at specific level";
+      }
+    }
+  }
+
+  rpc reset-detailed-log-limit {
+    input {
+      leaf new_detailed_log_limit {
+        type uint32;
+        description
+          "What limit of detailed log to reset to";
+      }
+    }
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

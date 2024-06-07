@@ -1,0 +1,825 @@
+module CPL-PERFMON-MIB {
+  namespace "urn:ietf:params:xml:ns:yang:smiv2:CPL-PERFMON-MIB";
+  prefix cpl-perfmon;
+
+  import CPL-OID-MIB {
+    prefix cpl-oid;
+  }
+  import CPL-TC-MIB {
+    prefix cpl-tc;
+  }
+  import SNMPv2-TC {
+    prefix smiv2;
+  }
+  import yang-smi {
+    prefix smi;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Ciena Corporation
+     1201 Winterson Road
+     Linthicum, Maryland 21090
+     United States
+     1-800-921-1144
+     www.ciena.com";
+  description
+    "Control of Performance Monitor objects";
+
+  revision 2016-03-05 {
+    description
+      "Added OCn related Delay Measurement PM parms.";
+  }
+  revision 2015-06-22 {
+    description
+      "[Revision added by libsmi due to a LAST-UPDATED clause.]";
+  }
+  revision 2015-06-22 {
+    description
+      "Changed pmSetParmCurr15m parm to read-write.";
+  }
+  revision 2015-06-14 {
+    description
+      "Revise retrieveAllFacData. Changed PMThreshCross notification to include ThreshLevel in pmSetThresh table.";
+  }
+  revision 2015-04-10 {
+    description
+      "Added pmSetParmPrev15m and pmSetParmBaselineValue to PmSetParmEntry.";
+  }
+  revision 2015-03-19 {
+    description
+      "Added boolean pmSetParmCurr15m, CurrDay, PrevDay,
+       CurrUnt and Baseline to PmSetParmEntry.";
+  }
+  revision 2015-02-18 {
+    description
+      "Added Version and removed DateAndTime from TCA.
+       Changed range of PMSpanLoss. It's now -66 to +75.";
+  }
+  revision 2015-02-06 {
+    description
+      "Modifications to SetThresh. Changed most octet messages to bulk
+       messages, except for RtrvAllParms.";
+  }
+  revision 2015-01-22 {
+    description
+      "Objects for control of PM's.";
+  }
+
+  typedef PMFacTypeEnum {
+    type enumeration {
+      enum pmFacTypeOSC {
+        value 1;
+      }
+      enum pmFacTypeUNUSED {
+        value 2;
+      }
+    }
+  }
+
+  typedef PMTmperEnum {
+    type enumeration {
+      enum tmperUNT {
+        value 1;
+      }
+      enum tmper15MIN {
+        value 2;
+      }
+      enum tmperDAY {
+        value 3;
+      }
+    }
+  }
+
+  typedef PMBinNumIndex {
+    type int32 {
+      range "1..33";
+    }
+  }
+
+  typedef PMPortNumIndex {
+    type enumeration {
+      enum rlaOSCPort2 {
+        value 2;
+      }
+    }
+  }
+
+  typedef PMTimeDataTicks {
+    type int32 {
+      range "0..900";
+    }
+  }
+
+  typedef PMTimeDataIntervals {
+    type int32 {
+      range "0..96";
+    }
+  }
+
+  typedef PMOCnParmsEnum {
+    type enumeration {
+      enum pmOCnCVSNeRx {
+        value 1;
+      }
+      enum pmOCnESSNeRx {
+        value 2;
+      }
+      enum pmOCnSESSNeRx {
+        value 3;
+      }
+      enum pmOCnSEFSSNeRx {
+        value 4;
+      }
+      enum pmOCnCVLNeRx {
+        value 5;
+      }
+      enum pmOCnESLNeRx {
+        value 6;
+      }
+      enum pmOCnSESLNeRx {
+        value 7;
+      }
+      enum pmOCnUASLNeRx {
+        value 8;
+      }
+      enum pmOCnFCLNeRx {
+        value 9;
+      }
+      enum pmOCnOPR {
+        value 10;
+      }
+      enum pmOCnOPT {
+        value 11;
+      }
+      enum pmOCnSPANLOSS {
+        value 12;
+      }
+      enum pmOCnOPRMIN {
+        value 13;
+      }
+      enum pmOCnOPRMAX {
+        value 14;
+      }
+      enum pmOCnOPRAVG {
+        value 15;
+      }
+      enum pmOCnOPTMIN {
+        value 16;
+      }
+      enum pmOCnOPTMAX {
+        value 17;
+      }
+      enum pmOCnOPTAVG {
+        value 18;
+      }
+      enum pmOCnSPANLOSSMIN {
+        value 19;
+      }
+      enum pmOCnSPANLOSSMAX {
+        value 20;
+      }
+      enum pmOCnSPANLOSSAVG {
+        value 21;
+      }
+      enum pmOCnDMMIN {
+        value 22;
+      }
+      enum pmOCnDMMAX {
+        value 23;
+      }
+      enum pmOCnDMAVG {
+        value 24;
+      }
+      enum pmOCnAllParms {
+        value 99;
+      }
+    }
+  }
+
+  typedef PMParmsFlags {
+    type bits {
+      bit pmIdfSectionCVs {
+        position 0;
+      }
+      bit pmIdfSectionESs {
+        position 1;
+      }
+      bit pmIdfSectionSESs {
+        position 2;
+      }
+      bit pmIdfSectionSEFSs {
+        position 3;
+      }
+      bit pmIdfLineCVs {
+        position 4;
+      }
+      bit pmIdfLineESs {
+        position 5;
+      }
+      bit pmIdfLineSESs {
+        position 6;
+      }
+      bit pmIdfLineUASs {
+        position 7;
+      }
+      bit pmIdfLineFailureCount {
+        position 8;
+      }
+      bit pmIdfOpticalPowerRx {
+        position 9;
+      }
+      bit pmIdfOpticalPowerTx {
+        position 10;
+      }
+      bit pmIdfSpanLoss {
+        position 11;
+      }
+      bit pmIdfOpticalPowerRxMin {
+        position 12;
+      }
+      bit pmIdfOpticalPowerRxMax {
+        position 13;
+      }
+      bit pmIdfOpticalPowerRxAvg {
+        position 14;
+      }
+      bit pmIdfOpticalPowerTxMin {
+        position 15;
+      }
+      bit pmIdfOpticalPowerTxMax {
+        position 16;
+      }
+      bit pmIdfOpticalPowerTxAvg {
+        position 17;
+      }
+      bit pmIdfSpanLossMin {
+        position 18;
+      }
+      bit pmIdfSpanLossMax {
+        position 19;
+      }
+      bit pmIdfSpanLossAvg {
+        position 20;
+      }
+      bit pmIdfDMMin {
+        position 21;
+      }
+      bit pmIdfDMMax {
+        position 22;
+      }
+      bit pmIdfDMAvg {
+        position 23;
+      }
+    }
+    description
+      "Flag bits.  One per PM Parameter.";
+  }
+
+  container pmSetTimeData {
+    leaf pmSetTimeDataTicksPer {
+      type cpl-perfmon:PMTimeDataTicks;
+      config true;
+      description
+        "Specifies the number of ticks (i.e. seconds per interval (i.e 15-minute = 900).";
+      smi:default "900";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.1.1";
+    }
+    leaf pmSetTimeDataIntervalsPer {
+      type cpl-perfmon:PMTimeDataIntervals;
+      config true;
+      description
+        "Specifies the number of intervals per day (i.e. 4 x 24 = 96)";
+      smi:default "96";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.1.2";
+    }
+    leaf pmSetTimeDataTicksLeft {
+      type cpl-perfmon:PMTimeDataTicks;
+      config true;
+      description
+        "Specifies the number of ticks (i.e. seconds) remaining in the current interval.";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.1.3";
+    }
+    leaf pmSetTimeDataIntervalsLeft {
+      type cpl-perfmon:PMTimeDataIntervals;
+      config true;
+      description
+        "Specifies number of intervals left.";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.1.4";
+    }
+    leaf pmSetTimeDataDateAndTime {
+      type smiv2:DateAndTime;
+      config true;
+      description
+        "Specifies Date and Time. Can also be used to determine when the SetParm message was sent.";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.1.5";
+    }
+    smi:oid "1.3.6.1.4.1.562.73.15.1.1";
+  }
+  container pmSetParmData {
+    list pmSetParmEntry {
+      key "pmSetParmFacType pmSetParmPortNum pmSetParmNum";
+      description
+        "";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1";
+      leaf pmSetParmFacType {
+        type cpl-perfmon:PMFacTypeEnum;
+        description
+          "PM Facility type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.1";
+      }
+      leaf pmSetParmPortNum {
+        type cpl-perfmon:PMPortNumIndex;
+        description
+          "PM port number being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.2";
+      }
+      leaf pmSetParmNum {
+        type cpl-perfmon:PMOCnParmsEnum;
+        description
+          "An index identifying the PM OCn Monitored Parameter";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.3";
+      }
+      leaf pmSetParmPrev15m {
+        type uint32;
+        config true;
+        description
+          "is a 32 boolean bit field specifying which history bin: lsb=prev1, msb=prev32.";
+        smi:default "0";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.4";
+      }
+      leaf pmSetParmCurr15m {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "True indicates that the curr15m bin is set for the specified PM OCn Monitored parameter.";
+        smi:default "true";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.5";
+      }
+      leaf pmSetParmCurrDay {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "True indicates that the currDay bin is set for the specified PM OCn Monitored parameter.";
+        smi:default "true";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.6";
+      }
+      leaf pmSetParmPrevDay {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "True indicates that the prevDay bin is set for the specified PM OCn Monitored parameter.";
+        smi:default "true";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.7";
+      }
+      leaf pmSetParmCurrUnt {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "True indicates that the currUntbin is set for the specified PM OCn Monitored parameter.";
+        smi:default "true";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.8";
+      }
+      leaf pmSetParmBaseline {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "True indicates that the Baseline is set for the specified PM OCn Monitored parameter.";
+        smi:default "true";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.9";
+      }
+      leaf pmSetParmBaselineValue {
+        type cpl-tc:FixedX10;
+        config true;
+        description
+          "Baseline value to be assigned for the specified PM OCn Monitored parameter.";
+        smi:default "0";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.2.1.1.10";
+      }
+    }
+    smi:oid "1.3.6.1.4.1.562.73.15.1.2";
+  }
+  container pmSetThreshData {
+    list pmSetThreshEntry {
+      key "pmSetThreshFacType pmSetThreshPortNum
+           pmSetThreshInterval pmSetThreshNum";
+      description
+        "";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1";
+      leaf pmSetThreshFacType {
+        type cpl-perfmon:PMFacTypeEnum;
+        description
+          "PM Facility type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.1";
+      }
+      leaf pmSetThreshPortNum {
+        type cpl-perfmon:PMPortNumIndex;
+        description
+          "PM port number being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.2";
+      }
+      leaf pmSetThreshInterval {
+        type cpl-perfmon:PMTmperEnum;
+        description
+          "PM Interval type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.3";
+      }
+      leaf pmSetThreshNum {
+        type cpl-perfmon:PMOCnParmsEnum;
+        description
+          "PM OCn parameter type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.4";
+      }
+      leaf pmSetThreshLevel {
+        type uint32;
+        config true;
+        description
+          "A threshold crossing value for the identified index";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.5";
+      }
+      leaf pmSetThreshMonVal {
+        type uint32;
+        config false;
+        description
+          "Current count or power value";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.6";
+      }
+    }
+    smi:oid "1.3.6.1.4.1.562.73.15.1.3";
+  }
+  container pmSetSpanLossData {
+    list pmSetSpanLossEntry {
+      key "pmSetSpanLossFacType pmSetSpanLossPortNum";
+      description
+        "";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.4.1.1";
+      leaf pmSetSpanLossFacType {
+        type cpl-perfmon:PMFacTypeEnum;
+        description
+          "PM Facility type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.4.1.1.1";
+      }
+      leaf pmSetSpanLossPortNum {
+        type cpl-perfmon:PMPortNumIndex;
+        description
+          "PM port number being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.4.1.1.2";
+      }
+      leaf pmSetSpanIDFflag {
+        type cpl-tc:Boolean;
+        config true;
+        description
+          "Indicates whether the Span Loss data in valid. Its stored on the card, and can be
+           retrieved later to determine whether the Span Loss data should be used for calculations.";
+        smi:default "false";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.4.1.1.3";
+      }
+      leaf pmSetSpanLossValue {
+        type cpl-tc:FixedX10;
+        config true;
+        description
+          "Span loss value (float)";
+        smi:default "0";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.4.1.1.4";
+      }
+    }
+    smi:oid "1.3.6.1.4.1.562.73.15.1.4";
+  }
+  container pmRtvrAllFacData {
+    list pmRtrvAllFacEntry {
+      key "pmRtrvAllFacType pmRtrvAllPortNum pmRtrvAllInterval
+           pmRtrvAllBinIndex";
+      description
+        "";
+      smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1";
+      leaf pmRtrvAllFacType {
+        type cpl-perfmon:PMFacTypeEnum;
+        description
+          "PM Facility type being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.1";
+      }
+      leaf pmRtrvAllPortNum {
+        type cpl-perfmon:PMPortNumIndex;
+        description
+          "PM port number being monitored.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.2";
+      }
+      leaf pmRtrvAllInterval {
+        type cpl-perfmon:PMTmperEnum;
+        description
+          "Interval (time period) for bins.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.3";
+      }
+      leaf pmRtrvAllBinIndex {
+        type cpl-perfmon:PMBinNumIndex;
+        description
+          "Bin Number for UNT=1, 15MIN=1..33, 1DAY=1 or 2";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.4";
+      }
+      leaf pmRtrvAllIDF {
+        type cpl-perfmon:PMParmsFlags;
+        config false;
+        description
+          "The Invalid Data Flags for each PM Parameter.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.5";
+      }
+      leaf pmRtrvAllSectionESs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of Errored
+           Seconds encountered by a SONET/SDH Section in
+           the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.6";
+      }
+      leaf pmRtrvAllSectionSESs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of
+           Severely Errored Seconds encountered by a
+           SONET/SDH Section in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.7";
+      }
+      leaf pmRtrvAllSectionSEFSs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of
+           Severely Errored Framing Seconds encountered
+           by a SONET/SDH Section in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.8";
+      }
+      leaf pmRtrvAllSectionCVs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of Coding
+           Violations encountered by a SONET/SDH Section in
+           the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.9";
+      }
+      leaf pmRtrvAllLineESs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of Errored
+           Seconds encountered by a SONET/SDH Line in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.10";
+      }
+      leaf pmRtrvAllLineSESs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of
+           Severely Errored Seconds encountered by a
+           SONET/SDH Line in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.11";
+      }
+      leaf pmRtrvAllLineCVs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of Coding
+           Violations encountered by a
+           SONET/SDH Line in the current 15 minute interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.12";
+      }
+      leaf pmRtrvAllLineUASs {
+        type yang:gauge32;
+        config false;
+        description
+          "The counter associated with the number of
+           Unavailable Seconds encountered by a SONET/SDH
+           Line in the current 15 minute interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.13";
+      }
+      leaf pmRtrvAllLineFailureCount {
+        type yang:gauge32;
+        config false;
+        description
+          "The failure count parameter is specified as an optional
+           parameter for the purpose of qualifying UAS in
+           terms of single or multiple failure events.
+
+           Standards define a failure event as a filtered defect,
+           with a hold-off time of 2.5s and a hold-on time of 10s.
+
+           The FC_NE (Near End Failure Count) parameter shall be
+           incremented by one on each occurrence of a near end defect
+           detection, i.e. the count increments when a Near End defect
+           begins (is raised).";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.14";
+      }
+      leaf pmRtrvAllOpticalPowerRx {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The Optical Power Receive (OPR-OCH) performance monitoring parameter
+           acts as a gauge parameter, updated each second from readings of the
+           current optical power.  Unlike the BER performance parameters, the
+           OPR-OCH parameter represents the current value of the received optical
+           power.  It is in units of dBm x 10.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.15";
+      }
+      leaf pmRtrvAllOpticalPowerRxMin {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The minimum value of the 1 second OPR-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.16";
+      }
+      leaf pmRtrvAllOpticalPowerRxMax {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The maximum value of the 1 second OPR-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.17";
+      }
+      leaf pmRtrvAllOpticalPowerRxAvg {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The average value of the 1 second OPR-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.18";
+      }
+      leaf pmRtrvAllOpticalPowerTx {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The Optical Power Transmit (OPT-OCH) performance monitoring parameter
+           acts as a gauge parameter, updated each second from readings of the
+           current optical power.  Unlike the BER performance parameters, the
+           OPT-OCH parameter represents the current value of the transmit optical
+           power.  It is in units of dBm x 10.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.19";
+      }
+      leaf pmRtrvAllOpticalPowerTxMin {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The minimum value of the 1 second OPT-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.20";
+      }
+      leaf pmRtrvAllOpticalPowerTxMax {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The maximum value of the 1 second OPT-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.21";
+      }
+      leaf pmRtrvAllOpticalPowerTxAvg {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The average value of the 1 second OPT-OCH samples collected over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.22";
+      }
+      leaf pmRtrvAllSpanLoss {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The value of the SPAN LOSS set by the CTM.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.23";
+      }
+      leaf pmRtrvAllSpanLossMin {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The minimum value of the SPAN LOSS over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.24";
+      }
+      leaf pmRtrvAllSpanLossMax {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The maximum value of the SPAN LOSS over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.25";
+      }
+      leaf pmRtrvAllSpanLossAvg {
+        type cpl-tc:FixedX10;
+        config false;
+        description
+          "The time weighted average value of the SPAN LOSS over the period.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.26";
+      }
+      leaf pmRtrvAllDMMin {
+        type int32;
+        config false;
+        description
+          "The value in micro-seconds specifiy
+           Minimum Delay Measurement in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.27";
+      }
+      leaf pmRtrvAllDMMax {
+        type int32;
+        config false;
+        description
+          "The value in micro-seconds specifying
+           Maximum Delay Measurement in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.28";
+      }
+      leaf pmRtrvAllDMAvg {
+        type int32;
+        config false;
+        description
+          "The value in micro-seconds specifying
+           Average Delay Measurement in the interval.";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.5.1.1.29";
+      }
+    }
+    smi:oid "1.3.6.1.4.1.562.73.15.1.5";
+  }
+
+  notification pmThreshCrossNotifyData {
+    description
+      "Notifies the Controller when the Threshold has been crossed.";
+    smi:oid "1.3.6.1.4.1.562.73.15.2.1.0.1";
+    container pmThreshCrossNotifyData-pmSetThreshLevel {
+      leaf pmSetThreshFacType {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshFacType";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshPortNum {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshPortNum";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshInterval {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshInterval";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshNum {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshNum";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshLevel {
+        type uint32;
+        config false;
+        description
+          "A threshold crossing value for the identified index";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.5";
+      }
+    }
+    container pmThreshCrossNotifyData-pmSetThreshMonVal {
+      leaf pmSetThreshFacType {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshFacType";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshPortNum {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshPortNum";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshInterval {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshInterval";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshNum {
+        type leafref {
+          path "/cpl-perfmon:pmSetThreshData/cpl-perfmon:pmSetThreshEntry/cpl-perfmon:pmSetThreshNum";
+        }
+        config false;
+        description
+          "Automagically generated leafref leaf.";
+      }
+      leaf pmSetThreshMonVal {
+        type uint32;
+        config false;
+        description
+          "Current count or power value";
+        smi:oid "1.3.6.1.4.1.562.73.15.1.3.1.1.6";
+      }
+    }
+  }
+}

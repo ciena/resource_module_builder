@@ -1,0 +1,119 @@
+module ciena-pro-spli {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-spli";
+  prefix spli;
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-spli-common-types {
+    prefix ciena-pro-spli-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "SPLI module";
+
+  revision 2021-03-24 {
+    description
+      "Adding neighbor-unresolved to diagnostic";
+  }
+  revision 2021-03-15 {
+    description
+      "Adding neighbor-missing to diagnostic";
+  }
+  revision 2021-02-26 {
+    description
+      "Changed state to diagnostic";
+  }
+  revision 2021-02-25 {
+    description
+      "Changing Shared Secret Key Length from 31 to 32";
+  }
+  revision 2021-02-20 {
+    description
+      "Changing SecretKey to 1 & 2";
+  }
+  revision 2020-11-30 {
+    description
+      "Initial revision";
+  }
+
+  grouping match-info {
+    description
+      " SPLI match status per slot / port.";
+    list spli-port {
+      key "slot-number port-number";
+      description
+        "SPLI Port Data";
+      leaf slot-number {
+        type ciena-pro-spli-types:slot-number;
+        description
+          "Slot number associated with the photonic line equipment facing transponder";
+      }
+
+      leaf port-number {
+        type ciena-pro-spli-types:port-number;
+        description
+          "Port number associated with the photonic line equipment facing transponder";
+      }
+
+      leaf matched-state {
+        type boolean;
+        default "false";
+        description
+          "Indicates whether the connection with the transponder is matched";
+      }
+
+      leaf neighbor-unresolved {
+        type boolean;
+        default "false";
+        description
+          "Couldn't resolve a neighbor for the link to/from transponder";
+      }
+
+      leaf neighbor-missing {
+        type boolean;
+        default "false";
+        status deprecated;
+        description
+          "No neighbor provisioned for the link to/from transponder. Deprecated: use neighbor-unresolved instead";
+      }
+    }
+  }
+
+  container spli {
+    container config {
+      config true;
+      uses ciena-pro-types:admin-state {
+        refine "admin-state" {
+          default "Enabled";
+        }
+      }
+
+      leaf shared-secret1 {
+        type string {
+          length "6..32";
+        }
+        description
+          "Shared Secret Key for SPLI SCM SSH Authentication";
+      }
+
+      leaf shared-secret2 {
+        type string {
+          length "6..32";
+        }
+        description
+          "Shared Secret Key for SPLI SCM SSH Authentication";
+      }
+    }
+
+    container diagnostic {
+      config false;
+      uses match-info;
+    }
+  }
+}

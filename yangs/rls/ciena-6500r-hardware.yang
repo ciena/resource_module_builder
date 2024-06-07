@@ -1,0 +1,608 @@
+module ciena-6500r-hardware {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-6500r-hardware";
+  prefix rlshw;
+
+  import ietf-hardware {
+    prefix hw;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+  import iana-hardware {
+    prefix ianahw;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's hardware objects for the 6500r platform";
+
+  revision 2022-12-14 {
+    description
+      "Changed hw component baud-rate to configurable value";
+    ciena-common-version:string "0.16.0";
+  }
+  revision 2021-07-22 {
+    description
+      "Added support for powered uptime for CTM's";
+    ciena-common-version:string "0.15.0";
+  }
+  revision 2021-07-12 {
+    description
+      "Added secure-erase state change notification";
+    ciena-common-version:string "0.14.0";
+  }
+  revision 2021-06-22 {
+    description
+      "Added support for last-restart-type for CTM's";
+    ciena-common-version:string "0.13.0";
+  }
+  revision 2021-05-17 {
+    description
+      "Added support for AP SFP Power";
+    ciena-common-version:string "0.12.0";
+  }
+  revision 2021-03-16 {
+    description
+      "Added support for Power Input Module input voltage (R2/R4 shelves)";
+    ciena-common-version:string "0.11.0";
+  }
+  revision 2020-12-21 {
+    description
+      "Added support for AP console port connection (USB-C or RJ45) and baudrate, only visible from primary CTM";
+    ciena-common-version:string "0.10.0";
+  }
+  revision 2020-11-18 {
+    description
+      "Increased raw-cct length to 350 to support encoded base64";
+    ciena-common-version:string "0.9.0";
+  }
+  revision 2020-10-09 {
+    description
+      "Added supported-sw-rel and adoptable fields";
+    ciena-common-version:string "0.8.0";
+  }
+  revision 2020-09-22 {
+    description
+      "Added raw CCT field";
+    ciena-common-version:string "0.7.0";
+  }
+  revision 2020-07-28 {
+    description
+      "Added shelf type enum";
+    ciena-common-version:string "0.6.0";
+  }
+  revision 2020-04-13 {
+    description
+      "Added string length for age, on_since, mfg-week-year, mac_address and CLEI";
+    ciena-common-version:string "0.5.0";
+  }
+  revision 2020-04-03 {
+    description
+      "Added CLEI field";
+    ciena-common-version:string "0.4.0";
+  }
+  revision 2020-03-02 {
+    description
+      "Added measurement type for fan speed and power";
+    ciena-common-version:string "0.3.0";
+  }
+  revision 2020-02-14 {
+    description
+      "Added triple height card support for physical card type";
+    ciena-common-version:string "0.2.0";
+  }
+  revision 2019-05-16 {
+    description
+      "Added card-physical-type field to identify if the card is single/double/quad and augmented the hardware-class to include filler type";
+    ciena-common-version:string "0.1.0";
+  }
+  revision 2018-11-06 {
+    description
+      "6500r Release 1.0-
+       First release";
+  }
+
+  typedef temperature {
+    type int32 {
+      range "-1000 .. 10000";
+    }
+    description
+      "Temperature of equipment in degrees Celcius";
+  }
+
+  identity filler {
+    base ianahw:hardware-class;
+    description
+      "This is a filler card";
+  }
+
+  typedef power-mode {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "The power mode can not be determined";
+      }
+      enum LOW_POWER {
+        value 1;
+        description
+          "Low Power Mode";
+      }
+      enum HIGH_POWER {
+        value 2;
+        description
+          "High Power Mode";
+      }
+    }
+  }
+
+  typedef lab-mode {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "The lab mode can not be determined";
+      }
+      enum LAB_MODE {
+        value 1;
+        description
+          "Lab Mode";
+      }
+      enum CUSTOMER_MODE {
+        value 2;
+        description
+          "Customer Mode";
+      }
+    }
+  }
+
+  typedef restart-state {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "The state can not be determined";
+      }
+      enum EARLY_INIT {
+        value 1;
+        description
+          "Software is not running";
+      }
+      enum BASELOAD_ENTRY {
+        value 2;
+        description
+          "Software/baseload entry";
+      }
+      enum APPLOAD_RUNNING {
+        value 3;
+        description
+          "Appload running";
+      }
+      enum PROV_READY {
+        value 4;
+        description
+          "Restart over, Ready for provisioning";
+      }
+      enum UPGRADE_READY {
+        value 5;
+        description
+          "Available in upgrade mode";
+      }
+      enum NOPROV_READY {
+        value 6;
+        description
+          "Available in do not provision mode";
+      }
+      enum RUNNING {
+        value 7;
+        description
+          "Available and provisioned";
+      }
+      enum LPM_SHUTTINGDOWN {
+        value 8;
+        description
+          "Prelude to going to low power mode";
+      }
+      enum SHUTTINGDOWN {
+        value 9;
+        description
+          "Prelude to restarting";
+      }
+      enum BOOT_FAIL {
+        value 10;
+        description
+          "Boot failed";
+      }
+      enum FPGA_DOWNLOAD_FAIL {
+        value 11;
+        description
+          "FPGA Download failed";
+      }
+      enum LPM_OVER_TEMP {
+        value 12;
+        description
+          "Low power mode shutdown - Over temperature";
+      }
+    }
+  }
+
+  typedef secure-erase-state {
+    type enumeration {
+      enum IDLE {
+        value 0;
+        description
+          "Default state, no activity";
+      }
+      enum IN_REQUEST {
+        value 1;
+        description
+          "User request is received";
+      }
+      enum IN_PROGRESS {
+        value 2;
+        description
+          "Action in progress";
+      }
+      enum COMPLETED {
+        value 3;
+        description
+          "Completes successfully";
+      }
+      enum FAILED_START {
+        value 4;
+        description
+          "Unable to start: Secure Erase Fail alarm";
+      }
+      enum FAILED_BACK_UP {
+        value 5;
+        description
+          "Unable to backup: Secure Erase Fail alarm";
+      }
+      enum CANNOT_CLEANSE {
+        value 6;
+        description
+          "Unable to erase: Secure Erase Fail alarm";
+      }
+      enum FAILED_CLEANSE {
+        value 7;
+        description
+          "Failed to erase: Secure Erase Fail alarm";
+      }
+      enum FAILED_RESTORE {
+        value 8;
+        description
+          "Unable to restore : Secure Erase Fail alarm";
+      }
+      enum STATE_ERR {
+        value 9;
+        description
+          "State is not set";
+      }
+    }
+  }
+
+  typedef card-physical-type {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "Unknown physical type of the card";
+      }
+      enum SINGLE {
+        value 1;
+        description
+          "Single Width Card";
+      }
+      enum DOUBLE-WIDTH {
+        value 2;
+        description
+          "Double Width Card";
+      }
+      enum DOUBLE-HEIGHT {
+        value 3;
+        description
+          "Double Height Card";
+      }
+      enum QUAD {
+        value 4;
+        description
+          "Quad Card";
+      }
+      enum TRIPLE-HEIGHT {
+        value 5;
+        description
+          "Triple height Card";
+      }
+    }
+  }
+
+  typedef console-port-type {
+    type enumeration {
+      enum DISCONNECTED {
+        value 0;
+        description
+          "Disconnected console port";
+      }
+      enum RJ45 {
+        value 1;
+        description
+          "RJ45 console port";
+      }
+      enum USB-C {
+        value 2;
+        description
+          "USB-C console port";
+      }
+    }
+  }
+
+  typedef measurement-type {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "Unknown measurement type";
+      }
+      enum ESTIMATED {
+        value 1;
+        description
+          "Estimated measurement type";
+      }
+      enum MEASURED {
+        value 2;
+        description
+          "Measured measurement type";
+      }
+    }
+  }
+
+  typedef shelf-type-enum {
+    type enumeration {
+      enum UNKNOWN {
+        value 0;
+        description
+          "Unknown shelf type";
+      }
+      enum R2 {
+        value 1;
+        description
+          "R2";
+      }
+      enum R4 {
+        value 2;
+        description
+          "R4";
+      }
+      enum R8_300 {
+        value 3;
+        description
+          "R8_300";
+      }
+    }
+  }
+
+  typedef power-input-voltage {
+    type decimal64 {
+      fraction-digits 1;
+    }
+    units "V";
+  }
+
+  augment "/hw:hardware/hw:component" {
+    description
+      "Ciena Special Modifications";
+    leaf current-temp {
+      type temperature;
+      config false;
+      description
+        "Current Temperature";
+    }
+    leaf average-temp {
+      type temperature;
+      config false;
+      description
+        "Average Temperature";
+    }
+    leaf age {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "Cumulative in-service time elapsed since manufacture in YY-DDD-HH-MM";
+    }
+    leaf on-since {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "Cumulative time since unit was last inserted or rebooted in YY-DDD-HH-MM";
+    }
+    leaf powered-uptime {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "Cumulative time since the card was last powered on, in the format: DDDD:HH:MM:SS";
+    }
+    leaf mfg-year-week {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "Manufacturing year and week";
+    }
+    leaf mac-address {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "MAC address";
+    }
+    leaf baud-rate {
+      type uint32;
+      config true;
+      description
+        "AP console port baudrate";
+    }
+    leaf console-port {
+      type console-port-type;
+      config false;
+      description
+        "AP console port";
+    }
+    leaf hw-id {
+      type uint32;
+      config false;
+      description
+        "HW ID of the componenent";
+    }
+    leaf power {
+      type int16;
+      description
+        "The power of card";
+    }
+    leaf power-measurement-type {
+      type measurement-type;
+      description
+        "The measurement type";
+    }
+    leaf fanSpeed {
+      type int16;
+      description
+        "Fan speed of fan";
+    }
+    leaf fan-speed-measurement-type {
+      type measurement-type;
+      description
+        "The measurement type";
+    }
+    leaf fw-id {
+      type uint32;
+      config false;
+      description
+        "FW ID of the componenent";
+    }
+    leaf shelf-type {
+      type uint32;
+      config false;
+      description
+        "Shelf type";
+    }
+    leaf card-physical-type {
+      type card-physical-type;
+      description
+        "Type of physical card present";
+    }
+    container state {
+      leaf power-mode {
+        type power-mode;
+        config true;
+        description
+          "Current Power Mode";
+      }
+      leaf lab-mode {
+        type lab-mode;
+        config false;
+        description
+          "Current Lab Mode";
+      }
+      leaf restart-state {
+        type restart-state;
+        config false;
+        description
+          "Current restart type";
+      }
+      leaf secure-erase-state {
+        type secure-erase-state;
+        config false;
+        description
+          "Current secure erase state for CTM or AP";
+      }
+      container gates {
+        leaf sbe-sw-good-ready {
+          type boolean;
+          description
+            "SbeSwGoodReady gate status";
+        }
+      }
+    }
+    leaf clei {
+      type string {
+        length "1..20";
+      }
+      config false;
+      description
+        "Common Language Equipment Identifier";
+    }
+    leaf shelf-type-enum {
+      type shelf-type-enum;
+      config false;
+      description
+        "Shelf type enum";
+    }
+    leaf raw-cct {
+      type binary {
+        length "350";
+      }
+      config false;
+      description
+        "Raw binary CCT data";
+    }
+    leaf supported-sw-rel {
+      type string {
+        length "8";
+      }
+      config false;
+      description
+        "Supported SW Release";
+    }
+    leaf adoptable {
+      type boolean;
+      config false;
+      description
+        "Adoptable card";
+    }
+    leaf input-voltage {
+      type power-input-voltage;
+      config false;
+      description
+        "Power Input Module input voltage";
+    }
+    leaf sfp-tx-power {
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "AP SFP TX power";
+    }
+    leaf sfp-rx-power {
+      type ciena-pro-optical-types:power-dBm-1-precision;
+      config false;
+      description
+        "AP SFP RX power";
+    }
+    leaf last-restart-type {
+      type ciena-6500r-types:restart-type;
+      config false;
+      description
+        "Last restart-type reported by CTM";
+    }
+  }
+}

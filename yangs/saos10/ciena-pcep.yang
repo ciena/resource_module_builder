@@ -1,0 +1,955 @@
+module ciena-pcep {
+  namespace   "http://ciena.com/ns/yang/ciena-pcep";
+  prefix "cn-pcep";
+  
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-te-types {
+    prefix te-types;
+  }
+
+  import openconfig-extensions { 
+    prefix oc-ext; 
+  }
+
+  import ciena-l3-types {
+    prefix cn-l3-types;
+  }
+
+  import yuma-ncx {
+     prefix "ncx";
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+     "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+               Hanover, Maryland 21076
+               U.S.A.
+      Phone:   +1 800-921-1144
+      Phone:   +1 408-904-2139
+      Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's specific YANG definitions
+     for PCEP module
+
+    Copyright (c) 2022  Ciena Corporation.  All rights
+    reserved.
+
+    All information and intellectual property contained in this
+    YANG module (Specification) is, and remains the property
+    of Ciena Corporation. Ciena retains all title and ownership
+    in the Specification, including any revisions.
+
+    Ciena grants all interested parties that access the
+    Specification with the intent to use or distribute ('you') a
+    non-exclusive, no-cost license to use and distribute
+    unmodified copies of the Specification solely in connection
+    with the management of Ciena products sold by or on
+    behalf of Ciena, provided this copyright notice and license
+    appear on all copies. Ciena may rescind or modify this
+    license at any time.
+
+    This Specification is supplied 'as is', and Ciena makes no
+    warranty, either express or implied, as to the use, operation,
+    condition, or performance of the Specification. You agree
+    that Ciena has no liability for your use of the Specification.";
+
+  revision 2023-04-14 {
+    description
+      "Initial version.";
+    reference
+      "draft-ietf-pce-pcep-yang-19";
+  }
+
+  typedef pcep-role {
+    type enumeration {
+      enum pcc {
+        value 0;
+        description
+          "The role of a Path Computation Client.";
+      }
+      enum pce {
+        value 1;
+        description
+          "The role of Path Computation Element.";
+      }
+    }
+    description
+      "The role of a PCEP speaker.
+       Takes one of the following values
+       - pcc(1): the role is of a Path Computation
+         Client (PCC).
+       - pce(2): the role is of a Path Computation
+           Server (PCE).";
+       reference
+         "RFC 5440: Path Computation Element (PCE) Communication
+          Protocol (PCEP)";
+  }
+
+  typedef sync-state {
+    type enumeration {
+      enum pending {
+        value 0;
+        description
+          "The state synchronization has not started.";
+      }
+      enum ongoing {
+        value 1;
+        description
+          "The state synchronization is ongoing.";
+      }
+      enum finished {
+        value 2;
+        description
+          "The state synchronization is finished.";
+      }
+    }
+    description
+      "The LSP-DB state synchronization operational status.";
+       reference
+         "RFC 8231: Path Computation Element Communication Protocol
+          (PCEP) Extensions for Stateful PCE";
+  }
+
+  typedef sess-state {
+    type enumeration {
+      enum idle {
+        value 1;
+        description
+          "The Idle state of PCEP session.";
+      }
+      enum tcp-pending {
+        value 2;
+        description
+          "The TCPPending state of PCEP session.";
+      }
+      enum open-wait {
+        value 3;
+        description
+          "The OpenWait state of PCEP session.";
+      }
+      enum keep-wait {
+        value 4;
+        description
+          "The KeepWait state of PCEP session.";
+      }
+      enum session-up {
+        value 5;
+        description
+          "The SessionUP state of PCEP session.";
+      }
+    }
+    description
+      "The current state of the session.
+       Takes one of the following values
+       - idle(1): PCEP Idle state
+       - tcp-pending(2): PCEP TCPPending state
+       - open-wait(3): PCEP OpenWait state
+       - keep-wait(4): PCEP KeepWait state
+       - session-up(5): PCEP SessionUP state";
+    reference
+      "RFC 5440: Path Computation Element (PCE) Communication
+       Protocol (PCEP)";
+  }
+
+  typedef assoc-types {
+    type enumeration {
+      enum association-type-srpolicy {
+        value 6;
+        description
+          "The association type as SR policy.";
+      }
+    }
+  }
+  
+  container pcep {
+    description
+      "Parameters for list of configured PCEP entities
+       on the device.";
+    container entity {
+      description
+        "The configured PCEP entity on the device.";
+      leaf address {
+        type inet:ip-address;
+        description
+          "The local Internet address of this PCEP entity.
+           If operating as a PCE server, the PCEP entity
+           listens on this address. If operating as a PCC,
+           the PCEP entity binds outgoing TCP connections
+           to this address. It is possible for the PCEP entity
+           to operate both as a PCC and a PCE Server, in which
+           case it uses this address both to listen for incoming
+           TCP connections and to bind outgoing TCP connections.";
+      }
+
+      leaf role {
+        type pcep-role;
+        must '(. != "pce")' {
+          error-message
+            "The PCEP entity cannot be PCE.";
+        }
+        default "pcc";
+        description
+          "The role that this entity can play.
+           Takes one of the following values.
+           - pcc(1): this PCEP Entity is a PCC.
+           - pce(2): this PCEP Entity is a PCE.";
+      }
+
+      leaf report-non-pce-controlled-path {
+      when "../role = 'pcc'" {
+        description
+          "This field is applicable when the role is PCC.";
+        }
+        type boolean;
+        default "false";
+        description
+          "If set, a PCC reports LSPs that are not
+           controlled by any PCE (for example, LSPs
+           that are statically configured at the PCC).";
+      }
+
+      container timers {
+        leaf keepalive-timer {
+          type uint8 {
+            range "1..255";
+          }
+          units "seconds";
+          default "30";
+          description
+            "The Keepalive timer that this PCEP
+             entity will propose in the initial Open message of
+             each session it is involved in.  This is the
+             maximum time between two consecutive messages sent
+             to a peer. Zero means that the PCEP entity prefers
+             not to send Keepalives at all.
+             Note that the actual Keepalive transmission
+             intervals, in either direction of an active PCEP
+             session, are determined by negotiation between the
+             peers as specified by RFC 5440, and so may differ
+             from this configured value.";
+        }
+
+        leaf dead-timer {
+          type uint8 {
+            range "1..255";
+          }
+          units "seconds";
+          must '(. > ../keepalive-timer)' {
+             error-message "The dead-timer must be "
+                         + "larger than the Keepalive-timer";
+          }
+          default "120";
+          description
+            "The dead timer that this PCEP entity will propose
+             in the initial Open message of each session it is
+             involved in. This is the time after which a peer
+             should declare a session down if it does not
+             receive any PCEP messages. Zero suggests that the
+             peer does not run a DeadTimer at all.";
+        }
+ 
+        leaf state-timeout {
+          type uint32 {
+            range "1..4294967295";
+          }
+          units "seconds";
+          must '(. > ../redelegation-timeout)' {
+             error-message "The state-timeout must be larger "
+                         + "than the redelegation-timeout";
+          }
+          default "60";
+          description
+            "When a PCEP session is terminated, a PCC
+             waits for this time period before flushing
+             LSP state associated with that PCEP session
+             and reverting to operator-defined default
+             parameters or behaviours. The value 4294967295
+             is equivalent to infinite timeout.";
+        }
+
+        leaf redelegation-timeout {
+          when "../../role = 'pcc'" {
+          description
+            "This field is applicable when the role is PCC.";
+          }
+          type uint32 {
+            range "0..4294967295";
+          }
+          units "seconds";
+          default "30";
+          description
+            "When a PCEP session is terminated, a PCC
+             waits for this time period before revoking
+             LSP delegation to a PCE and attempting to
+             redelegate LSPs associated with the
+             terminated PCEP session to an alternate
+             PCE. The value 4294967295 is equivalent to 
+             infinite timeout.";
+        }
+      } 
+
+      container peers {
+        description
+          "The list of configured peers for the
+           entity (remote PCE).";
+        list peer {
+          max-elements 3;
+          key "address";
+          description
+            "The peer configured for the entity(remote PCE).";
+          leaf address {
+            type inet:ip-address;
+            description
+              "The local Internet address of this PCEP peer.";
+          }
+
+          leaf role {
+            type pcep-role;
+            must '(. != "pcc")' {
+              error-message
+                "The PCEP peer cannot be PCC.";
+            }
+            default "pce";
+            description
+              "The role of the PCEP Peer.
+               Takes one of the following values.
+               - pcc(1): this PCEP peer is a PCC.
+               - pce(2): this PCEP peer is a PCE.";
+          }
+
+          leaf delegation-preference {
+            type uint8 {
+              range "1..255";
+            }
+            mandatory true;
+            description
+              "The PCE peer delegation preference.";
+          }
+
+          container authentication {
+            description
+              "The authentication specific configuration.";
+
+            leaf authentication-type {
+              type cn-l3-types:pcep-auth-mode;
+              description
+                "The interface authentication type (MD5).";
+            }
+
+            leaf password {
+              type string {
+                length "1..255";
+              }
+              ncx:password;
+              description
+                "The MD5 authentication password.";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  container pcep-state
+  {
+    config false;
+    description
+      "Contains information about pcep state.";
+
+     container entity
+     {
+        leaf address {
+          type inet:ip-address;
+          description
+            "The address of the entity.";
+        }
+
+        leaf role {
+          type pcep-role;
+          description
+            "The role types.";
+        }
+
+        leaf stateful-capability {
+          type  boolean;
+          description
+            "The PCEP entity capability information.";
+        }
+
+        leaf stateful-capability-flags {
+          type uint32;
+          description
+            "The PCEP entity capability flags information.";
+        }
+
+        container sr {
+          leaf capability {
+            type  boolean;
+            description
+              "The Segment Routing capability information.";
+          }
+
+          leaf sr-capability-flags {
+            type uint32;
+            description
+              "The Segment Routing capability flags information.";
+          }
+
+          leaf msd {
+            type uint8;
+            description
+              "The maximum SID Depth for Segment Routing.";
+          }
+        }
+
+        list path-setup-type {
+          key "pst";
+          description
+            "The list of path setup types.";
+          leaf pst {
+            type identityref {
+              base te-types:path-signaling-type;
+            }
+            description
+              "The types of path setup types supported.";
+          }
+        }
+
+        list association {
+          key "type";
+          description
+            "The list of authorized association types.";
+          leaf type {
+            type cn-l3-types:assoc-types;
+            description
+              "The association type authorized.";
+          }
+        }
+
+        container timers {
+          leaf connect-timer {
+            type uint16;
+            units seconds;
+            description
+              "The time in seconds that the PCEP entity will wait
+               to establish a TCP connection with a peer.  If a
+               TCP connection is not established within this time
+               then PCEP aborts the session setup attempt.";
+          }
+
+          leaf connect-max-retry {
+            type uint32;
+            description
+              "The maximum number of times the system tries to
+               establish a TCP connection to a peer before the
+               session with the peer transitions to the idle
+               state.";
+          }
+
+          leaf open-wait-timer {
+            type uint16;
+            units "seconds";
+            description
+              "The time in seconds that the PCEP entity will wait
+               to receive an Open message from a peer after the
+               TCP connection has come up.
+               If no Open message is received within this time then
+               PCEP terminates the TCP connection and deletes the
+               associated sessions.";
+         }
+
+         leaf keep-wait-timer {
+           type uint16;
+           units "seconds";
+           description
+             "The time in seconds that the PCEP entity will wait
+              to receive a Keepalive or PCErr message from a peer
+              during session initialization after receiving an
+              Open message.  If no Keepalive or PCErr message is
+              received within this time then PCEP terminates the
+              TCP connection and deletes the associated
+              sessions.";
+         }
+
+         leaf keepalive-timer {
+           type uint8;
+           units "seconds";
+           description
+             "The Keepalive timer that this PCEP
+              entity will propose in the initial Open message of
+              each session it is involved in.  This is the
+              maximum time between two consecutive messages sent
+              to a peer. Zero means that the PCEP entity prefers
+              not to send Keepalives at all.
+              Note that the actual Keepalive transmission
+              intervals, in either direction of an active PCEP
+              session, are determined by negotiation between the
+              peers as specified by RFC 5440, and so may differ
+              from this configured value.";
+         }
+
+         leaf dead-timer {
+           type uint8;
+           units "seconds";
+           description
+             "The dead timer that this PCEP entity will propose
+              in the initial Open message of each session it is
+              involved in. This is the time after which a peer
+              should declare a session down if it does not
+              receive any PCEP messages. Zero suggests that the
+              peer does not run a DeadTimer at all.";
+         }
+ 
+         leaf state-timeout {
+           type uint32;
+           units "seconds";
+           description
+             "When a PCEP session is terminated, a PCC
+              waits for this time period before flushing
+              LSP state associated with that PCEP session
+              and reverting to operator-defined default
+              parameters or behaviours.";
+         }
+
+         leaf redelegation-timeout {
+           type uint32;
+           units "seconds";
+           description
+             "When a PCEP session is terminated, a PCC
+              waits for this time period before revoking
+              LSP delegation to a PCE and attempting to
+              redelegate LSPs associated with the
+              terminated PCEP session to an alternate
+              PCE.";
+         }
+       }
+
+       leaf report-non-pce-controlled-path {
+          type boolean;
+          description
+            "The status of whether PCC reports LSPs that are not
+             controlled by any PCE.";
+       }
+
+       container peers {
+         list peer {
+         key "address";
+         description
+           "The peer configured for the entity(remote PCE).";
+         leaf address {
+           type inet:ip-address;
+           description
+             "The local Internet address of this PCEP peer.";
+         }
+
+         leaf role {
+           type pcep-role;
+           description
+             "The role of the PCEP Peer.";
+         }
+
+         leaf delegation-preference {
+           type uint8;
+           description
+             "The PCE peer delegation preference.";
+         }
+
+         leaf selected-pce {
+           type boolean;
+           description
+             "The status of the PCE selection";
+         }
+
+         leaf session-up-time {
+           type string;
+           description
+             "The timestamp value of the last time a
+              session with this peer was successfully
+              established.";
+         }
+
+         leaf session-fail-time {
+           type string;
+           description
+             "The timestamp value of the last time a
+              session with this peer failed to be
+              established.";
+         }
+
+         leaf number-session-setup-ok {
+           type yang:counter32;
+           description
+             "The value of the last time a
+              session with this peer failed to be
+              established.";
+         }
+
+         leaf number-session-setup-fail {
+           type yang:counter32;
+           description
+             "The value of the last time a
+              session with this peer failed to be
+              established.";
+         }
+
+         container session {
+           leaf state {
+             type sess-state;
+             description
+               "The current state of the session.
+                The set of possible states excludes the
+                idle state since entries do not exist
+                in the idle state.";
+           }
+
+           leaf old-state {
+             type sess-state;
+             description
+               "The previous state of the session.
+                The set of possible states excludes the
+                idle state since entries do not exist
+                in the idle state.";
+           }
+
+           leaf state-last-change {
+             type string;
+             description
+               "The timestamp value at the time this
+                session entered its current state as
+                denoted by the state leaf.";
+           }
+
+           leaf session-creation {
+             type string;
+             description
+               "The timestamp value at the time the
+                TCP connection is started in TCP pending
+                state.";
+           }
+
+           leaf local-id {
+             type uint8;
+             description
+               "The value of the PCEP session ID used by
+                the local PCEP entity in the Open message
+                for this session. If state is tcp-pending
+                then this is the session ID that will be
+                used in the Open message. Otherwise, this
+                is the session ID that was sent in the
+                Open message.";
+           }
+
+           leaf remote-id {
+             type uint8;
+             description
+               "The value of the PCEP session ID used by the
+                peer in its Open message for this session.";
+           }
+           
+           leaf keepalive-timer {
+             type uint8;
+             units "seconds";
+             description
+               "The agreed maximum interval at which the entity
+                transmits PCEP messages on this PCEP session.
+                Zero means that the entity never sends Keepalives
+                on this session.";
+           }
+
+           leaf dead-timer {
+             type uint8;
+             units "seconds";
+             description
+               "The entity's DeadTimer interval
+                for this PCEP session.";
+           }
+
+           leaf peer-keepalive-timer {
+             type uint8;
+             units "seconds";
+             description
+               "The agreed maximum interval at which the peer
+                transmits PCEP messages on this PCEP session.
+                Zero means that the peer never sends Keepalives
+                on this session.";
+           }
+
+           leaf peer-dead-timer {
+             type uint8;
+             units "seconds";
+             description
+               "The peer's DeadTimer interval
+                for this PCEP session.";
+           }
+
+           leaf peer-overloaded {
+             type  boolean;
+             description
+               "If the peer has informed the local PCEP entity
+                that it is currently overloaded, then this is
+                set to true. Otherwise, it is set to false.";
+           }
+
+           leaf lspdb-sync {
+             type cn-l3-types:sync-state;
+             description
+               "The LSP-DB state synchronization status.";
+           }
+
+           leaf peer-stateful-capability {
+             type  boolean;
+             description
+               "The PCEP peer capability information.";
+           }
+
+           leaf peer-stateful-capability-flags {
+             type uint32;
+             description
+               "The PCEP peer capability flags information.";
+           }
+
+           leaf peer-sr-capability {
+             type  boolean;
+             description
+               "The PCEP Segment Routing capability information.";
+           }
+
+           list peer-path-setup-type {
+             key "pst";
+             description
+               "The list of path setup types.";
+             leaf pst {
+               type identityref {
+                 base te-types:path-signaling-type;
+               }
+               description
+                 "The types of path setup types supported.";
+             }
+           }
+
+           list peer-association {
+             key "type";
+             description
+               "The list of authorized association types.";
+             leaf type {
+               type cn-l3-types:assoc-types;
+               description
+                 "The association type authorized.";
+             }
+           }
+
+           container counters {
+             leaf keepalive-sent {
+               type uint64;
+               description
+                 "The number of Keepalive messages sent.";
+             }
+
+             leaf keepalive-received {
+               type uint64;
+               description
+                 "The number of Keepalive messages received.";
+             }
+
+             leaf open-sent {
+               type  yang:counter32;
+               description
+                 "The number of open messages sent.";
+             }
+
+             leaf open-received {
+               type  yang:counter32;
+               description
+                 "The number of open messages received.";
+             }
+
+             leaf pcreq-sent {
+               type  yang:counter32;
+               description
+                 "The number of PC request messages sent.";
+             }
+
+             leaf pcreq-received {
+               type  yang:counter32;
+               description
+                 "The number of PC request messages received.";
+             }
+
+             leaf pcrep-sent {
+               type  yang:counter32;
+               description
+                 "The number of PC reply messages sent.";
+             }
+
+             leaf pcrep-received {
+               type  yang:counter32;
+               description
+                 "The number of PC reply messages received.";
+             }
+
+             leaf pcrpt-sent {
+               type  yang:counter32;
+               description
+                 "The number of corrupted PCEP message sent.";
+             }
+
+             leaf pcrpt-received {
+               type  yang:counter32;
+               description
+                 "The number of corrupted PCEP message received.";
+             }
+
+             leaf pcupd-sent {
+               type  yang:counter32;
+               description
+                 "The number of PCUpd messages sent.";
+             }
+
+             leaf pcupd-received {
+               type  yang:counter32;
+               description
+                 "The number of PCUpd messages received.";
+             }
+
+             leaf pcerr-sent {
+               type  yang:counter32;
+               description
+                 "The number of PC error messages sent.";
+             }
+
+             leaf pcerr-received {
+               type  yang:counter32;
+               description
+                 "The number of PC error messages received.";
+             }
+
+             leaf pcinitiate-sent {
+               type  yang:counter32;
+               description
+                 "The number of PCInitiate messages sent.";
+             }
+
+             leaf pcinitiate-received {
+               type  yang:counter32;
+               description
+                 "The number of PCInitiate messages received.";
+             }
+
+             leaf close-sent {
+               type  yang:counter32;
+               description
+                 "The number of close messages sent.";
+             }
+
+             leaf close-received {
+               type  yang:counter32;
+               description
+                 "The number of close messages received.";
+             }
+
+             leaf pcnotification-received {
+               type yang:counter32;
+               description
+                 "The number of PC Notification messages received.";
+             }
+
+             leaf pcnotification-sent {
+             type yang:counter32;
+             description
+               "The number of PC Notification messages sent.";
+             }
+             
+             leaf unknown-received {
+               type  yang:counter32;
+               description
+                 "The number of unknown messages received.";
+             }
+
+             leaf corrupted-received {
+               type yang:counter32;
+               description
+                 "The number of corrupted messages received.";
+             }
+           }
+         }
+       }
+     }
+   }
+ }
+
+  rpc pcep-clear-peer {
+    input {
+      leaf peer-address {
+        type leafref {
+          path "/pcep/entity/peers/peer/address";
+        }
+        description
+          "PCEP peer address.";
+      }
+    }
+
+    output {
+      leaf status {
+        type enumeration {
+          enum success {
+            description
+              "Specifies successful status of the clear pcep peer.";
+          }
+          enum failure {
+            description
+              "Specifies failed status of the clear pcep peer.";
+          }
+        }
+      }
+      leaf status-message {
+        type string;
+        description
+          "The details of the 'success', or the reason for clear pcep peer failure.";
+      }
+    }
+  }
+  
+  rpc pcep-clear-counters {
+    input {
+      leaf peer-address {
+        type leafref {
+          path "/pcep/entity/peers/peer/address";
+        }
+        description
+          "The PCEP peer address.";
+      }
+    }
+
+    output {
+      leaf status {
+        type enumeration {
+          enum success {
+            description
+              "Specifies successful status of the clear pcep counters";
+          }
+          enum failure {
+            description
+              "Specifies failed status of the clear pcep counters";
+          }
+        }
+      }
+      leaf status-message {
+        type string;
+        description
+          "The details of the 'success', or the reason for clear pcep counters failure";
+      }
+    }
+  }
+}

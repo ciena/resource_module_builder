@@ -1,0 +1,119 @@
+module ciena-bfd-sr-policy {
+
+   namespace "http://ciena.com/ns/yang/ciena-bfd-sr-policy";
+
+   prefix bfd-sr-policy;
+
+   import ciena-bfd-types {
+      prefix "bfd-types";
+   }
+
+   import ciena-bfd {
+      prefix "bfd";
+   }
+
+   import ciena-sr-policy {
+      prefix "sr-policy";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's Seamless-BFD protocol
+      over SR-policy.
+      Copyright (c) 2021  Ciena Corporation.  All rights
+      reserved.
+      All information contained herein is, and remains the
+      property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained
+      from Ciena Corporation.";
+
+   revision 2022-07-29 {
+      description
+         "Seamless BFD changes for enabling monitoring 
+         on SR candidate-path and inheritance mechanism 
+         on SR-policy.";
+   }
+
+   revision 2021-07-19 {
+      description 
+         "Initial revision of Seamless-BFD over SR-policy.
+          SR-policy configuration and state parameters 
+          augmented for supporting Seamless-BFD session.";
+   }
+
+  /*
+   * Augments
+   */
+
+   /* Augmentation of SR-policy configuration parameters */
+   augment "/sr-policy:segment-routing-traffic-engineering/sr-policy:policies/sr-policy:policy" {
+      description 
+         "Seamless-BFD configuration on SR-policy tunnel.";
+      if-feature bfd-types:seamless-bfd;
+      uses bfd:sr-policy-seamless-bfd-cfg-grouping;
+   }
+
+   /* Augmentation of SR-policy state information */
+   augment "/sr-policy:segment-routing-traffic-engineering-state/sr-policy:policies/sr-policy:policy" {
+      description
+         "Augmenting SR-policy state information with Seamless-BFD initiator session state information.";
+      if-feature bfd-types:seamless-bfd;
+      container bfd-state {
+         description
+            "MPLS Seamless-BFD initiator session state information.";
+         config false;
+
+         uses bfd:sr-policy-seamless-bfd-cfg-grouping;
+
+         leaf local-state {
+            description
+               "Local state of the Seamless-BFD session.";
+
+            type bfd-types:state;
+         }
+      }
+   }
+
+   /* Augmentation of SR-policy candidate-path configuration parameters */
+   augment "/sr-policy:segment-routing-traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path" {
+      description
+         "Seamless-BFD configuration on SR candidate-path";
+      if-feature bfd-types:seamless-bfd;
+
+      uses bfd:sr-candidate-path-seamless-bfd-cfg-grouping;
+   }
+
+   /* Augmentation of SR-policy candidate-path state information */
+   augment "/sr-policy:segment-routing-traffic-engineering-state/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path" {
+      description
+         "SR candidate-path Seamless-BFD information";
+      if-feature bfd-types:seamless-bfd;
+
+      container bfd-state {
+         description
+            "MPLS Seamless-BFD state information.";
+         config false;
+
+         uses bfd:sr-candidate-path-seamless-bfd-cfg-grouping;
+
+         leaf local-state {
+            description
+               "Local state of the Seamless-BFD session.";
+
+            type bfd-types:state;
+         }
+      }
+   }
+}

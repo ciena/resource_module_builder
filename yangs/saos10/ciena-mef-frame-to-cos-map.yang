@@ -1,0 +1,212 @@
+module ciena-mef-frame-to-cos-map {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-mef-frame-to-cos-map";
+    prefix "ftc";
+
+    organization
+        "Ciena Corporation";
+ 
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                 U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines the Frame to Cos Map.";
+    
+    revision 2021-01-24 {
+        description 
+          "1) Added non-conforming-cos and non-conforming-color leaves
+           2) Added descriptions";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+    
+    revision 2015-07-16 {
+        description "Initial revision";
+        reference
+          "RFC 6020: YANG - A Data Modeling Language for
+           the Network Configuration Protocol (NETCONF).
+           No specific reference; standard not available.";
+    }
+    
+    /*
+     * Typedefs
+     */
+    typedef frame-to-cos-ref {
+        type leafref {
+            path "/ftc:frame-to-cos-maps/ftc:frame-to-cos-map/ftc:name";
+        }
+        description
+          "This type is used by data models that need to reference
+           configured frame to CoS maps.";
+    }
+    
+    container frame-to-cos-maps {
+        description
+            "List of frame-to-cos-map templates. Frame to COS maps can be referenced by various entities 
+             to determine how internal-cos and internal-color are determined based on cos fields in a frame (pcp, dei, mpls-tc, dscp).";
+        
+        list frame-to-cos-map {
+            key "name";
+            description
+                "A list of profiles that can contain several map entries.";
+            
+            leaf name {
+                type string;             
+                description
+                    "A string used to uniquely identify a list of profiles.";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "A more detailed description of the map.";
+            }
+            
+            list map-entry {
+                key "name";
+
+                description
+                   "An entry which maps a frame CoS value to internal-cos and internal-color.";
+                
+                leaf name {
+                    type string;
+                    
+                    description
+                        "A string used to uniquely identify a particular map 
+                         entry within the profile.";
+                }
+                
+                choice frame-type {
+                   description
+                       "Type of the frame";
+                    case vlan-tag {
+                        leaf pcp {
+                            type uint8 {
+                                range "0..7";
+                            }
+                            description
+                                "PCP value to be applied";
+                        }
+                        leaf dei {
+                            type enumeration {
+                                enum enabled {
+                                    description
+                                         "Enable DEI";
+                                }
+                                enum disabled {
+                                    description
+                                         "Disable DEI";
+                                }
+                            }
+                            description
+                                "Enable or disable DEI";
+                        }
+                        description
+                            "For layer 2 frames, the VLAN tag's priority bits and 
+                            dei value are used as key fields to derive an assigned 
+                            cos and color for the frame";
+                    }
+                    
+                    case ip {
+                        leaf ip-dscp {
+                            type uint8 {
+                                range "0..63";
+                            }
+                            description
+                                "IP DSCP value to be applied";
+                        }
+                        description
+                            "The frame a IP frame.";
+                    }
+                    
+                    case mpls {
+                        leaf mpls-tc {
+                            type uint8 {
+                                range "0..7";
+                            }
+                            description
+                                "MPLS TC value to be applied";
+                        }
+                    }
+                }
+                
+                leaf cos {
+                    type uint8 {
+                        range "0..63";
+                    }
+                    description
+                        "Class of Service bits.";
+                }
+                
+                leaf color {
+                    type enumeration {
+                        enum green {
+                            description
+                                 "A color of green indicates the frame is conformant with CIR";
+                        }
+                        enum yellow {
+                            description
+                                 "A color of yellow indicates the frame is s not conformant with CIR but
+                                  is conformant with EIR";
+                        }
+                        enum red {
+                            description
+                                 "A color of red indicates the frame is not conformant with EIR or CIR
+                                  and thus will be dropped.";
+                        }
+                    }
+                    description
+                        "The assigned color for the frame. A color of green
+                         indicates the frame is conformant with CIR,
+                         a yellow indicates it is not conformant with CIR but
+                         is conformant with EIR and red means it is not 
+                         conformant with EIR or CIR and thus will be dropped.";
+                }
+            }
+
+            leaf non-conforming-cos {
+                type uint8 {
+                    range "0..63";
+                }
+                description
+                    "The assigned COS for the frame when the frame does not conform to
+                     the frame-to-cos-policy that the frame is assigned to.
+                     For example, when the frame-to-cos-policy is l2-outer-tagged, an untagged
+                     frame would use the non-conforming COS.";
+            }
+
+            leaf non-conforming-color {
+                type enumeration {
+                    enum green {
+                        description
+                        "Set internal color to green for non-conforming frames";
+                    }
+                    enum yellow {
+                        description
+                        "Set internal color to yellow for non-conforming frames";
+                    }
+                    enum red {
+                        description
+                        "Set internal color to red for non-conforming frames";
+                    }
+                }
+                description
+                    "The assigned color for the frame when the frame does not conform to
+                     the frame-to-cos-policy that the frame is assigned to.
+                     For example, when the frame-to-cos-policy is l2-outer-tagged, an untagged
+                     frame would use the non-conforming color.
+                     A color of green indicates the frame is conformant with CIR,
+                     a yellow indicates it is not conformant with CIR but
+                     is conformant with EIR and red means it is not 
+                     conformant with EIR or CIR and thus will be dropped.";
+            }
+        }
+    }
+}

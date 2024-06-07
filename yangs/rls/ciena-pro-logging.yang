@@ -1,0 +1,243 @@
+module ciena-pro-logging {
+  yang-version 1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-logging";
+  prefix logging;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common-yang;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's logging objects for the 6500r platform";
+
+  revision 2021-04-10 {
+    ciena-common-version:string "5.2.0";
+    description
+      "added support for remote server";
+  }
+  revision 2020-07-24 {
+    ciena-common-version:string "5.1.0";
+    description
+      "added support for selection of syslog server messages protocol";
+  }
+  revision 2019-11-08 {
+    ciena-common-version:string "5.0.0";
+    description
+      "retrieve-log status inquiry are available on user's request";
+  }
+  revision 2019-10-21 {
+    ciena-common-version:string "4.0.0";
+    description
+      "Changed the SYSENG to SYSLOG";
+  }
+  revision 2019-05-23 {
+    ciena-common-version:string "3.0.0";
+    description
+      "The slot paramater for retrieve-logs is now a string";
+  }
+  revision 2019-05-13 {
+    ciena-common-version:string "2.0.0";
+    description
+      "Changed the retrieve log to be an RPC";
+  }
+  revision 2019-02-26 {
+    description
+      "6500r Release 1.0-
+       First release";
+  }
+
+  typedef retrieve-logs-mode {
+    type enumeration {
+      enum "full";
+      enum "syslog";
+      enum "null";
+    }
+    description
+      "Specifies the type of the log collection";
+  }
+
+  typedef slot-string {
+    type string {
+      length "1..10";
+    }
+    description
+      "Indicates the current and historical log collection slot number";
+  }
+
+  typedef rfc-type {
+    type enumeration {
+      enum "RFC3164";
+      enum "RFC5424";
+    }
+    description
+      "Selects the protocol used to send message to remote syslog server";
+  }
+
+  typedef retrieve-logs-status {
+    type enumeration {
+      enum "idle";
+      enum "in progress";
+      enum "failed";
+      enum "partially success";
+      enum "finished";
+      enum "partially success with log transfer failure";
+      enum "partially success with log transfer completed";
+      enum "finished with log transfer failure";
+      enum "finished with log transfer completed";
+    }
+    description
+      "Indicates the current and historical log collection request status";
+  }
+
+  grouping retrieve-logs-status-type {
+    description
+      "Specifies the retrieval  of the log collection";
+    leaf status {
+      type retrieve-logs-status;
+      description
+        "Current or historical Status of retrieve log request: Idle/In progress";
+    }
+
+    leaf slot {
+      type slot-string;
+      description
+        "Current or historical retrieve log slot number";
+    }
+
+    leaf type {
+      type retrieve-logs-mode;
+      description
+        "what type of collection";
+    }
+
+    leaf event-time {
+      type yang:date-and-time;
+      description
+        "The time that the historical/current log retrieval event occurs";
+    }
+  }
+
+  container logs {
+    list remote-config {
+      key "server-num";
+      config true;
+      description
+        "List of configuration data for remote log servers";
+      leaf server-num {
+        type uint8 {
+          range "1..3";
+        }
+        default "1";
+        description
+          "Number of the remote log server (1 - 3). The default is 1.";
+      }
+
+      leaf host {
+        type string;
+        mandatory true;
+        description
+          "IP Address or hostname of the remote log server";
+      }
+
+      leaf remote-port {
+        type uint16;
+        default "514";
+        description
+          "Sets the destination port number for syslog messages to
+           the server. The default for syslog is 514.";
+      }
+
+      leaf rfc {
+        type rfc-type;
+        description
+          "Select which RFC protocol to follow";
+      }
+    }
+
+    container retrieve-log-status {
+      config false;
+      container historical {
+        description
+          "shows the historical retrieve log process details";
+        uses retrieve-logs-status-type;
+      }
+
+      container current {
+        description
+          "shows the current retrieve log process details";
+        uses retrieve-logs-status-type;
+      }
+    }
+  }
+
+  rpc retrieve-logs {
+    input {
+      leaf slot {
+        type string;
+        description
+          "Identifies the slot to retrieve the specified logs from.
+           In addition to the specific slot number option of 'ALL', 'SELF', and 'CTM' are also supported";
+      }
+
+      leaf mode {
+        type retrieve-logs-mode;
+        default "full";
+        description
+          "The type of logs to trigger collection for";
+      }
+
+      leaf remote-server-ip {
+        type string;
+        mandatory false;
+        description
+          "IP Address or hostname of the remote server";
+      }
+
+      leaf username {
+        type string;
+        mandatory false;
+        description
+          "username of the remote server";
+      }
+
+      leaf password {
+        type string;
+        mandatory false;
+        description
+          "password of the remote server";
+      }
+
+      leaf destination-path {
+        type string;
+        mandatory false;
+        description
+          "destination path on the remote server where the logs will be sent";
+      }
+
+      leaf file-name {
+        type string {
+          length "1..254";
+        }
+        mandatory false;
+        description
+          "file name of archived tgz files, maximum length of file name is 254, provided file name does not need to end with tgz.";
+      }
+    }
+
+    output {
+      uses ciena-common-yang:rpc-result-common;
+    }
+  }
+}

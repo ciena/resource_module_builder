@@ -1,0 +1,1385 @@
+module ciena-mpls {
+
+    namespace   "http://ciena.com/ns/yang/ciena-mpls";
+
+    prefix "mpls";
+
+    import ciena-l3-types {
+        prefix ciena-l3-types;
+    }
+
+    import ciena-vrf {
+        prefix "vrf";
+    }
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import ietf-yang-types {
+        prefix yang;
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's specific LDP protocol
+
+        Copyright (c) 2018  Ciena Corporation.  All rights
+        reserved.
+
+        All information contained herein is, and remains the
+        property of Ciena Corporation. Dissemination of this
+        information or reproduction of this material is strictly
+        forbidden unless prior written permission is obtained
+        from Ciena Corporation.";
+
+    revision "2023-08-21" {
+      description
+        "Added value and afi as key to ftn backup-entry.
+         Added color, tunnel-name, tunnel-id, lsp-id and fallback leafs to backup-entry";
+    }
+
+    revision "2023-05-17" {
+      description
+        "Added fallback field for ftn table entries.";
+    }
+
+    revision "2022-07-05" {
+        description
+          "Adding support for additional fields for mpls fec for ilm table entries to match existing fec label.
+           Adding interface name field to tunnel statistics state.
+           Adding new operational leaf for ipv6 installed route count.
+           Deprecating per-prefix label allocation mode.";
+    }
+
+    revision "2022-03-21" {
+        description
+          "Adding support for additional fields for mpls fec for ftn table entries to match existing fec label.
+           Adding support for transit tunnel stats.
+           Adding flags leaf to cross-connect table to distinguish state of forwarding entry";
+    }
+
+    revision "2021-09-12" {
+        description
+          "Adding summary container to provide prefix summary under each VRF.";
+    }
+
+    revision "2021-03-01" {
+        description
+           "Add outgoing VRF name leaf to ilm-runtime-entry state.
+            Add next-hop-type for ftn-runtime and vrf-hash-table to distinguish primary/backup.
+            Add opcode for each cross-connect entry in ILM table.
+            Add value and afi as key to the ftn-runtime-entry.
+            Add color leaf to the ilm-runtime-entry.
+            Change start range of label block from 24321 to 16.";
+    }
+
+    revision "2020-08-30" {
+        description
+          "Updated forwarding-table-count-group to support IPv6 FTNs.
+           Adding next-hop-type for ILM runtime entry to distinguish primary/backup
+           Add FTN runtime flag value to distinguish state of forwarding entry.";
+    }
+
+    revision "2020-05-13" {
+        description
+          "Changed vrf-hash-table and vrf-table-count groupings to support IPv6.";
+    }
+
+    revision "2019-03-11" {
+        description
+          "Add MPLS label-allocation mode containers.
+           Change ILM next hop address type to inet:ip-address.";
+    }
+
+    revision "2017-10-03" {
+        description
+          "Initial version of MPLS model.";
+    }
+
+    grouping vrf-hash-table-grouping {
+        description
+          "Vrf hash table grouping.";
+
+        list vrf-hash-table {
+            key "vrf-name";
+            description
+              "Vrf table list.";
+
+            leaf vrf-name  {
+               type  string;
+               description
+                  "MPLS vrf name.";
+            }
+
+            list vrf-afi-table {
+                key "afi";
+                description
+                  "vrf afi table list.";
+
+                leaf afi  {
+                   type ciena-l3-types:mpls-afi-type;
+                   description
+                     "Mpls vrf Ipv4/Ipv6 Address family";
+                }
+
+                list mpls-vrf {
+                    key "fec-address";
+                    description
+                      "MPLS vrf list";
+
+                    leaf fec-address  {
+                        type inet:ip-prefix;
+                        description
+                          "MPLS vrf fec address";
+                    }
+
+                    leaf index  {
+                        type  uint32;
+                        description
+                          "MPLS vrf index";
+                    }
+
+                    uses ftn-entry-runtime-info-grouping;
+                    uses runtime-ftn-grouping;
+
+                    leaf tunnel-id {
+                       type uint32;
+                       description
+                          "Tunnel id.";
+                    }
+                }
+                container summary {
+                    description
+                      "VRF table summary of total/protected/unprotected prefixes.";
+
+                     uses vrf-table-summary-grouping;
+                }
+            }
+        }
+    }
+   
+    grouping vrf-table-summary-grouping {
+
+            leaf total-prefixes  {
+                type  uint32;
+                description
+                  "The number of total prefixes.";
+            }
+
+            leaf total-paths  {
+                type  uint32;
+                description
+                  "The number total active and backup paths.";
+            }
+
+            leaf protected-prefixes  {
+                type  uint32;
+                description
+                  "The number of protected prefixes.";
+            }
+
+            leaf unprotected-prefixes  {
+                type  uint32;
+                description
+                  "The number of unprotected prefixes.";
+            }
+
+            leaf ecmp-prefixes  {
+                type  uint32;
+                description
+                  "The number of ECMP prefixes.";
+            }
+    }
+
+    grouping ftn-runtime-entry-grouping {
+        description "FTN runtime entry grouping.";
+
+        list ftn-entry-runtime {
+            key "fec-address afi value";
+            description
+              "FTN runtime entry list.";
+
+            leaf fec-address  {
+                type inet:ip-prefix;
+                description
+                  "FTN Fec address.";
+            }
+
+            leaf afi  {
+                type  ciena-l3-types:mpls-afi;
+                description
+                  "MPLS FTN address family.";
+            }
+			
+            leaf value  {
+                type string;
+                description
+                  "Value of the AFI type";
+            }
+
+            list ftn-index {
+                key "ftn-index";
+                description
+                  "FTN index list.";
+
+                leaf ftn-index  {
+                    type  uint32;
+                    description
+                      "FTN index.";
+                }
+                uses ftn-entry-runtime-info-grouping;
+                uses runtime-ftn-grouping;
+            }
+
+            leaf color  {
+                type uint32;
+                description
+                  "Color for SR-TE FTN entries.";
+            }
+
+            leaf tunnel-name  {
+                type string;
+                description
+                  "Tunnel name for MPLS-TP FTN entries.";
+            }
+
+            leaf tunnel-id  {
+                type uint32;
+                description
+                  "Tunnel ID for RSVP-TE FTN entries.";
+            }
+
+            leaf lsp-id  {
+                type uint32;
+                description
+                  "LSP ID for RSVP-TE FTN entries.";
+            }
+
+            leaf fallback {
+              type boolean;
+              description
+                "Fallback is enabled or disabled for FTN entry.";
+            }
+        }
+
+
+        list backup-entry {
+            key "fec-address afi value";
+            description
+              "List of ftn runtime backup entries.";
+
+            leaf fec-address  {
+                type inet:ip-prefix;
+                description
+                  "Ftn Fec address.";
+            }
+
+            leaf afi  {
+                type  ciena-l3-types:mpls-afi;
+                description
+                  "MPLS FTN address family.";
+            }
+
+            leaf value  {
+                type string;
+                description
+                  "Value of the AFI type";
+            }
+
+            list entry-data {
+                key "index";
+                   description
+                     "FTN backup entry data.";
+
+                leaf index  {
+                    type  uint32;
+                    description
+                      "Ftn index.";
+                }
+                uses ftn-entry-runtime-info-grouping;
+            }
+
+            leaf color  {
+                type uint32;
+                description
+                  "Color for SR-TE FTN entries.";
+            }
+
+            leaf tunnel-name  {
+                type string;
+                description
+                  "Tunnel name for MPLS-TP FTN entries.";
+            }
+
+            leaf tunnel-id  {
+                type uint32;
+                description
+                  "Tunnel ID for RSVP-TE FTN entries.";
+            }
+
+            leaf lsp-id  {
+                type uint32;
+                description
+                  "LSP ID for RSVP-TE FTN entries.";
+            }
+
+            leaf fallback {
+              type boolean;
+              description
+                "Fallback is enabled or disabled for FTN entry.";
+            }
+        }
+    }
+
+    grouping ilm-runtime-entry-grouping {
+        description
+          "ILM runtime entry grouping.";
+
+        list ilm-runtime-entry {
+            key "incoming-label";
+            description
+              "ILM runtime entry list.";
+
+            leaf incoming-label  {
+                type  uint32;
+                description
+                  "Incoming label entry in ILM table.";
+            }
+
+            list incoming-interface-entry {
+                key "name";
+                description
+                  "Incoming interface entry list";
+
+                leaf name  {
+                    type  string;
+                    description
+                      "Incoming interface name.";
+                }
+
+                list ilm-index {
+                    key "index";
+                    description
+                      "ILM index list";
+
+                    leaf index  {
+                        type  uint32;
+                        description
+                          "ILM index.";
+                    }
+
+                    leaf owner  {
+                        type  string;
+                        description
+                          "Ownership of the management plane.";
+                    }
+
+                    leaf lsp-type  {
+                        type  string;
+                        description
+                          "ILM lsp type.";
+                    }
+
+                    leaf row-status  {
+                        type  ciena-l3-types:mpls-row-status;
+                        description
+                          "Status of ILM runtime entry such as active,not in services,not ready.";
+                    }
+
+                    leaf flag  {
+                        type  string;
+                        description
+                          "ILM flag value.";
+                    }
+
+                    leaf opcode  {
+                        type  ciena-l3-types:mpls-opcode;
+                        description
+                          "ILM opcode value such as swap,pop and push.";
+                    }
+
+                    leaf fec-address  {
+                        type inet:ip-prefix;
+                        description
+                          "ILM fec address.";
+                    }
+
+                    leaf outgoing-vrf-name  {
+                        type  string;
+                        description
+                          "Outgoing VRF name";
+                    }
+
+                    leaf color  {
+                        type uint32;
+                        description
+                          "Color associated with the SR policy";
+                    }
+
+                    leaf tunnel-name  {
+                        type string;
+                        description
+                          "Tunnel Name associated with ILM Tunnel entries";
+                    }
+
+                    leaf tunnel-id  {
+                        type uint32;
+                        description
+                          "Tunnel ID associated with the RSVP-TE policy";
+                    }
+
+                    leaf lsp-id  {
+                        type uint32;
+                        description
+                          "LSP ID associated with the RSVP-TE policy";
+                    }
+
+                    list cross-connect-entry {
+                        key "index";
+                        description
+                          "Cross connect entry list.";
+
+                        leaf index  {
+                            type  uint32;
+                            description
+                              "Table index for the cross-connect.";
+                        }
+
+                        container nhlfe-entry {
+                            description
+                             "Container with Next hop label forwarding entry .";
+
+                            leaf outgoing-label  {
+                                type  uint32;
+                                description
+                                  " MPLS outgoing label value.";
+                            }
+
+                            leaf ilm-next-hop-ip-address  {
+                                type inet:ip-address;
+                                description
+                                  "IP address of the next hop.";
+                            }
+
+                            leaf outgoing-interface-name  {
+                                type  string;
+                                description
+                                  "Outgoing interface name.";
+                            }
+
+                            uses runtime-nhlfe-entry;
+                        }
+
+                        uses runtime-xc-entry-grouping;
+
+                        leaf opcode  {
+                            type  ciena-l3-types:mpls-opcode;
+                            description
+                              "ILM opcode value such as swap, pop and push.";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    grouping runtime-nhlfe-entry {
+        description
+          "Runtime next hop label forwarding entry grouping.";
+
+        leaf index  {
+            type  uint32;
+            description
+              "Next hop label forwarding entry index.";
+        }
+
+        leaf cross-connect-index  {
+            type  uint32;
+            description
+              "Cross connect index.";
+        }
+
+        leaf owner  {
+            type  string;
+            description
+              "Creator of the cross connect, typically a protocol such as BGP,LDP... .";
+        }
+
+        leaf recursive-next-hop-address  {
+            type inet:ip-address;
+            description
+              "Recursive next hop address .";
+        }
+
+        leaf tx-bytes  {
+            type  uint32;
+            description
+              "The number of trasmited bytes.";
+        }
+
+        leaf tx-pkts  {
+            type  uint32;
+            description
+              "The number of transmited packets.";
+        }
+
+        leaf error-pkts  {
+            type  uint32;
+            description
+              "The number of error packets.";
+        }
+
+        leaf discard-pkts  {
+            type  uint32;
+            description
+              "The number of discarded packets count.";
+        }
+    }
+
+    grouping runtime-xc-entry-grouping {
+        description
+          "Run time cross connect entry grouping.";
+
+        leaf next-hop-type {
+            type ciena-l3-types:mpls-next-hop-type;
+            description
+              "Indicates whether next-hop is primary or backup.";
+        }
+
+        leaf nhlfe-index  {
+            type  uint32;
+            description
+              "Next hop label forwarding Entry index.";
+        }
+
+        leaf owner  {
+            type  string;
+            description
+              "Creator of the cross connect, typically a protocol such as BGP,LDP etc.";
+        }
+
+        leaf label-stack  {
+            type  string;
+            description
+              "Contains label stack for backup path.";
+        }
+
+        leaf flags {
+            type ciena-l3-types:mpls-flags-type;
+            description
+              "Runtime flags that distinguish state of forwarding entry.";
+        }
+    }
+
+    grouping ftn-entry-runtime-info-grouping {
+        description
+          "FTN runtime entry information grouping.";
+
+        list cross-connect-entry {
+            key "index";
+            description
+              "Cross connect entry list.";
+
+            leaf index  {
+                type  uint32;
+                description
+                  "Cross connect index.";
+            }
+
+            leaf incoming-label  {
+                type  uint32;
+                description
+                  "Incoming label value.";
+            }
+
+            leaf opcode  {
+                type  string;
+                description
+                  "Contains cross connect opcode.";
+            }
+
+            leaf admin-state  {
+                type  string;
+                description
+                    "The admin state of the backup xc-entry";
+            }
+
+            leaf oper-state  {
+                type  string;
+                description
+                     "The operational state of the backup xc-entry";
+            }
+
+            container nhlfe-entry {
+                description
+                  "Next hop label forwarding Entry";
+
+                leaf outgoing-label  {
+                    type  uint32;
+                    description
+                      "Outgoing label value.";
+                }
+
+                leaf next-hop-ip-address  {
+                    type inet:ip-address;
+                    description
+                      "IP address of the next hop.";
+                }
+
+                leaf outgoing-interface-name  {
+                    type  string;
+                    description
+                      "Outgoing interface name.";
+                }
+                uses runtime-nhlfe-entry;
+            }
+
+            uses runtime-xc-entry-grouping;
+        }
+    }
+
+    grouping runtime-ftn-grouping {
+        description
+          "Runtime FTN attributes.";
+
+        leaf row-status  {
+            type  ciena-l3-types:mpls-row-status;
+            description
+              "Status for FTN runtime entry such as active,not in services,not ready etc.";
+        }
+
+        leaf owner  {
+            type  string;
+            description "Creator of this segment, typically a protocol such as LDP,BGP,RSVP etc.";
+        }
+
+        leaf action-type  {
+            type  string;
+            description
+              "Runtime FTN action type such as Redirect to tunnel.";
+        }
+
+        leaf flag {
+            type string;
+            description
+              "Runtime FTN flag value.";
+        }
+    }
+
+    grouping  mpls-all-if-count-grouping {
+        description
+          "MPLS all interfaces count grouping.";
+
+        container interfaces {
+            description
+              "MPLS all if count container.";
+
+            leaf total-count  {
+                type  uint32;
+                description
+                  "The total number of interfaces.";
+            }
+
+            list interface {
+                key "name";
+                description
+                  "MPLS interface count list";
+
+                leaf name  {
+                    type  string;
+                    description
+                      "MPLS nterface name.";
+                }
+
+                leaf total-ftn-count  {
+                    type  uint32;
+                    description
+                      "The total number of FTN.";
+                }
+
+                leaf total-ilm-count  {
+                    type  uint32;
+                    description
+                      "The Total number of ILM.";
+                }
+            }
+        }
+    }
+
+    grouping  mpls-grouping {
+        description
+          "MPLS grouping.";
+
+        container mpls-state {
+            config false;
+            description
+              "MPLS state container.";
+
+            uses mpls-all-if-count-grouping;
+            uses vrf-hash-table-grouping;
+            uses vrf-table-count-grouping;
+            uses ilm-runtime-entry-grouping;
+            uses ilm-table-count-grouping;
+            uses ftn-runtime-entry-grouping;
+            uses forwarding-table-count-grouping;
+            uses rib-ldp-count-grouping;
+            uses tunnel-stats-grouping;
+            uses mpls-label-blocks-grouping;
+        }
+    }
+
+    grouping  vrf-table-count-grouping {
+        description
+          "Vrf table count grouping.";
+
+        container vrf-table {
+            description
+              "vrf table container";
+
+            leaf vrf-ipv4-count  {
+                type  uint32;
+                description
+                  "The number of Ipv4 vrf.";
+            }
+
+            leaf vrf-ipv4-install-count  {
+                type  uint32;
+                description
+                  "The number of Ipv4 vrf install.";
+            }
+
+            leaf vrf-ipv4-up-count  {
+                type  uint32;
+                description
+                  "The number of Ipv4 vrf up.";
+            }
+
+            leaf vrf-ipv6-count  {
+               type  uint32;
+               description
+                  "The number of IPv6 VRFs.";
+            }
+            
+            leaf vrf-ipv6-install-count  {
+                type  uint32;
+                description
+                  "The number of IPv6 VRF install.";
+            }
+
+            leaf vrf-ipv6-up-count  {
+                type  uint32;
+                description
+                  "The number of IPv6 VRF up.";
+            }
+        }
+    }
+
+    grouping  ilm-table-count-grouping {
+        description "ILM table count grouping.";
+
+        container ilm-table {
+            description
+              "ilm table count container.";
+
+            leaf count  {
+                type  uint32;
+                description
+                  "The number of ILM Label.";
+            }
+
+            leaf install-count  {
+                type  uint32;
+                description
+                  "The number of Label install.";
+            }
+
+            leaf up-count  {
+                type  uint32;
+                description
+                  "The number of Label up.";
+            }
+
+            leaf swap-count  {
+                type  uint32;
+                 description
+                   "The number of Label swap.";
+            }
+
+            leaf swap-install-count  {
+                type  uint32;
+                description
+                  "The number of Label swap install.";
+            }
+
+            leaf swap-up-count  {
+                type  uint32;
+                description
+                  "The number of Label swap up.";
+            }
+
+            leaf pop-count  {
+                type  uint32;
+                description
+                  "The number of Label pop.";
+            }
+
+            leaf pop-install-count  {
+                type  uint32;
+                description
+                  "The number of Label pop install.";
+            }
+
+            leaf pop-up-count  {
+                type  uint32;
+                description
+                  "The number of Label pop up. ";
+            }
+        }
+    }
+
+    grouping  forwarding-table-count-grouping {
+        description
+          "Forwarding table count grouping.";
+
+        container forwarding-table {
+            description
+              "Forwarding table count container";
+
+            leaf total-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of FTN.";
+            }
+
+            leaf ftn-install-count  {
+                type  uint32;
+                description
+                  "The number of FTN install.";
+            }
+
+            leaf ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of FTN up.";
+            }
+
+            leaf total-primary-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of primary FTN.";
+            }
+
+            leaf primary-ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of primary FTN up.";
+            }
+
+            leaf primary-ftn-install-count  {
+                type  uint32;
+                description
+                  "The number of Primary FTN install.";
+            }
+
+            leaf total-secondary-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of secondary FTN.";
+            }
+
+            leaf secondary-ftn-install-count  {
+                type  uint32;
+                description
+                  "The number secondary FTN install.";
+            }
+
+            leaf secondary-ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of secondary FTN up.";
+            }
+
+            leaf ipv6-total-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of IPv6 FTN.";
+            }
+
+            leaf ipv6-ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of IPv6 FTN up.";
+            }
+
+            leaf ipv6-total-primary-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of primary IPv6 FTN.";
+            }
+
+            leaf ipv6-primary-ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of primary IPv6  FTN up.";
+            }
+
+            leaf ipv6-total-secondary-ftn-count  {
+                type  uint32;
+                description
+                  "The total number of secondary IPv6 FTN.";
+            }
+
+            leaf ipv6-secondary-ftn-up-count  {
+                type  uint32;
+                description
+                  "The number of secondary IPv6 FTN up.";
+            }
+
+            leaf ipv6-ftn-install-count  {
+                type  uint32;
+                description 
+                  "The number of IPv6 FTN install.";
+            }
+
+            leaf ipv6-primary-ftn-install-count  {
+                type  uint32;
+                description 
+                  "The number of IPv6 Primary FTN install.";
+            }
+
+            leaf ipv6-secondary-ftn-install-count  { 
+                type  uint32;
+                description 
+                  "The number of IPv6 Secondary FTN install.";
+            }
+        }
+    }
+
+    grouping  rib-ldp-count-grouping {
+        description
+          "Rib ldp count grouping.";
+
+        container rib-ldp {
+            description
+              "rib ldp container.";
+
+            leaf count  {
+                type  uint32;
+                description
+                  "Ldp rib count.";
+            }
+
+            list rib-ldp {
+                key "index";
+                description
+                  "rib ldp list";
+
+                leaf index  {
+                    type  uint32;
+                    description
+                      "Ldp rib index.";
+                }
+
+                leaf session-address  {
+                    type inet:ipv4-address;
+                    description
+                      "Session ipv4 address .";
+                }
+
+                leaf rib-type  {
+                    type  string;
+                    description
+                      "Rib type .";
+                }
+
+                leaf ftn-count  {
+                    type  uint32;
+                    description
+                      "The number of FTN.";
+                }
+
+                leaf ilm-count  {
+                    type  uint32;
+                    description
+                      "The number of ILM.";
+                }
+
+                leaf dependent-ilm-count  {
+                    type  uint32;
+                    description
+                      "The number of dependent ILM's.";
+                }
+            }
+        }
+    }
+
+    grouping  tunnel-stats-grouping {
+        description
+          "Tunnel stats grouping.";
+
+        container tunnel-statistics {
+            description
+              "MPLS statistics container.";
+
+            list entry {
+                key "fec-address role owner";
+                description
+                  "MPLS stats entry list";
+
+                leaf fec-address  {
+                    type  inet:ip-prefix;
+                    description
+                      "MPLS stats FEC address.";
+                }
+
+                leaf role  {
+                    type ciena-l3-types:mpls-stats-role;
+                    description
+                      "MPLS stats role.";
+                }
+
+                leaf owner  {
+                    type ciena-l3-types:mpls-stats-owner;
+                    description
+                      "Protocol Owner Name.";
+                }
+
+                leaf interface-name  {
+                     type string;
+                     description
+                        "Interface name.";
+                }
+
+                leaf tx-bytes  {
+                    type yang:counter64;
+                    description
+                      "Tx bytes.";
+                }
+
+                leaf tx-packets  {
+                    type yang:counter64;
+                    description
+                      "Tx packets.";
+                }
+
+                leaf rx-bytes  {
+                    type yang:counter64;
+                    description
+                      "Rx bytes.";
+                }
+
+                leaf rx-packets  {
+                    type yang:counter64;
+                    description
+                      "Rx packets.";
+                }
+            }
+        }
+    }
+
+    grouping  mpls-label-blocks-grouping {
+        description
+          "Mpls Label Blocks State grouping.";
+
+        container label-blocks {
+            description
+              "MPLS label blocks container.";
+
+            list label-block {
+                key "index";
+                description
+                  "MPLS label-block list";
+
+                leaf index  {
+                    type  uint16;
+                    description
+                      "A user-specified identifier utilised to uniquely
+                       reference an MPLS label block.";
+                }
+
+                leaf start-label  {
+                    type uint32;
+                    description
+                      "Label-block start.";
+                }
+
+                leaf end-label  {
+                    type uint32;
+                    description
+                      "Label-block end.";
+                }
+
+                list protocol {
+                    key "name";
+                    description
+                      "List of MPLS protocols.";
+
+                    leaf name  {
+                        type  string;
+                        description
+                          "MPLS protocols name.";
+                    }
+
+                    leaf start-label  {
+                    type uint32;
+                    description
+                      "Protocol label-block start.";
+                    }
+
+                    leaf end-label  {
+                    type uint32;
+                    description
+                      "Protocol label-block end.";
+                    }
+                }
+            }
+        }
+    }
+
+    grouping mpls-interface-grouping {
+        description
+          "MPLS interface grouping.";
+
+        container interfaces {
+            description
+              "MPLS interfaces Container.";
+
+            list interface {
+                key "name";
+                description
+                  "MPLS interface list.";
+
+                leaf name  {
+                    type leafref {
+                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                    }
+                    description
+                      "MPLS interface name.";
+                }
+
+                leaf label-switching  {
+                    type  boolean;
+                    default "false";
+                    description
+                      "This enables ldp on all interfaces and sets the default
+                       label space value which is 0 by default.";
+                }
+            }
+        }
+    }
+
+    typedef label-mode-type {
+        type enumeration {
+            enum "per-prefix" {
+              status "deprecated";
+              description
+                "Deprecated: Per prefix label. Obsolete next release.
+                 Configuring per-prefix defaults to per-vrf mode";
+            }
+
+            enum "per-vrf" {
+              description
+                "Per VRF label for entire VRF";
+            }
+        }
+    }
+
+    grouping address-family-grouping {
+        list address-family {
+            key "af-type";
+            description
+                "MPLS Label allocation for address families";
+
+            leaf af-type {
+                type  ciena-l3-types:vrf-afi-type;
+                description
+                    "MPLS Label allocation for given address family";
+            }
+
+            leaf mode {
+                type label-mode-type;
+                default per-vrf;
+                description
+                    "MPLS Label allocation mode.";
+            }
+        }
+   }
+
+    // For mpls label
+    grouping label-grouping {
+        description
+            "Grouping for label properties";
+
+        container label-management {
+            description
+                "Label peoperties management container";
+            container allocation-mode {
+                description
+                    "MPLS Label allocation mode";
+                container all-vrfs {
+                    description
+                        "MPLS Label allocation mode for all VRFs";
+                    uses address-family-grouping;
+                }
+
+                list vrf {
+                    key "name";
+                    description
+                        "MPLS Label allocation mode for selected VRF";
+                    leaf name {
+                        type leafref {
+                            path "/vrf:vrf/vrf:vrfName";
+                        }
+                        description
+                            "VPN Routing/Forwarding instance name";
+                    }
+                    uses address-family-grouping;
+                }
+            }
+            uses mpls-label-blocks;
+        }
+    }
+
+    grouping mpls-tunnel-statistics-grouping {
+        description
+          "MPLS tunnel stats grouping.";
+
+        container tunnel-statistics {
+            description
+              "MPLS tunnel statistics container.";
+
+            list entry {
+                key "fec-address role owner";
+                description
+                  "MPLS stats entry list.";
+
+                leaf fec-address  {
+                    type inet:ip-prefix;
+                    description
+                      "MPLS stats fec Address.";
+                }
+
+                leaf role  {
+                    type ciena-l3-types:mpls-stats-role;
+                    description
+                      "MPLS role can be ingress/egress/transit.";
+                }
+
+                leaf owner  {
+                    type ciena-l3-types:mpls-stats-owner;
+                    description
+                      "Protocol Owner Name.";
+                }
+
+            }
+        }
+    }
+
+    grouping mpls-label-blocks {
+        description
+          "Label-block allocation grouping.";
+
+        container label-blocks {
+            description
+              "MPLS label blocks container.";
+            list label-block {
+                key "index";
+                description
+                  "List of MPLS protocol label range.";
+
+                leaf index  {
+                    type uint16 {
+                        range "0";
+                }
+                description
+                  "A user-specified identifier utilised to uniquely
+                   reference an MPLS label block.";
+                }
+
+                list protocol {
+                    key "name";
+                    description
+                      "List of MPLS protocols.";
+
+                    leaf name  {
+                    type ciena-l3-types:mpls-protocols;
+                    description
+                      "MPLS protocols name.";
+                    }
+
+                    leaf start-label  {
+                    mandatory true;
+                    type uint32 {
+                        range "16..1048575";
+                    }
+                    description
+                      "Protocol label-block start.";
+                    }
+
+                    leaf end-label  {
+                    mandatory true;
+                    type uint32 {
+                         range "16..1048575";
+                    }
+                    description
+                      "Protocol label-block end.";
+                    }
+                }
+            }
+        }
+    }
+
+    container mpls {
+        uses mpls-interface-grouping;
+        uses label-grouping;
+        uses mpls-tunnel-statistics-grouping;
+        description
+          "MPLS config container.";
+    }
+    uses mpls-grouping;
+
+    rpc mpls-clear-tunnel-statistics {
+       input {
+           leaf fec-address {
+               type inet:ip-prefix;
+               description
+                   "IP prefix address";
+           }
+
+           leaf role {
+               type ciena-l3-types:mpls-stats-role;
+               description
+                   "Tunnel Role";
+           }
+
+           leaf owner {
+               type ciena-l3-types:mpls-stats-owner;
+               description
+                   "Tunnel Protocol Owner";
+           }
+       }
+       output {
+           leaf response {
+               type string;
+               description
+                   "Response output for request";
+           }
+       }
+    }
+}

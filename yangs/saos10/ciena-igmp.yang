@@ -1,0 +1,1017 @@
+module ciena-igmp {
+   namespace   "http://ciena.com/ns/yang/ciena-igmp";
+   prefix "igmp";
+
+   import ietf-inet-types {
+      prefix "inet";
+   }
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   import ciena-routing-policy {
+      prefix "rt-pol";
+   }
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   import ciena-l3-types {
+      prefix cn-l3-types;
+   }
+
+   import ciena-types {
+      prefix ciena;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This module contains the YANG definition for Ciena's configuration
+       of Internet Group Management Protocol (IGMP) features.
+
+      Copyright (c) 2022 Ciena Corporation.  All rights
+      reserved.
+
+      All information and intellectual property contained in this
+      YANG module (Specification) is, and remains the property
+      of Ciena Corporation. Ciena retains all title and ownership
+      in the Specification, including any revisions.
+
+      Ciena grants all interested parties that access the
+      Specification with the intent to use or distribute (you) a
+      non-exclusive, no-cost license to use and distribute
+      unmodified copies of the Specification solely in connection
+      with the management of Ciena products sold by or on
+      behalf of Ciena, provided this copyright notice and license
+      appear on all copies. Ciena may rescind or modify this
+      license at any time.
+
+      This Specification is supplied 'as is', and Ciena makes no
+      warranty, either express or implied, as to the use, operation,
+      condition, or performance of the Specification. You agree
+      that Ciena has no liability for your use of the Specification.";
+
+   revision "2022-08-08" {
+      description
+         "Initial Version of IGMP Querier Config, State and RPC Yang Model.";
+      reference
+         "None.";
+   }
+
+   typedef igmp-querier-conf-version {
+      description
+       "IGMP configurable version type.";
+      type enumeration {
+         enum "v3" {
+            description
+               "Configure IGMP version v3";
+         }
+      }
+   }
+
+   typedef igmp-querier-oper-version {
+      description
+       "IGMP Operational version type.";
+      type enumeration {
+         enum "Unknown" {
+            description
+               "IGMP version is unknown";
+         }
+         enum "v1" {
+            description
+               "IGMP version is 1";
+         }
+         enum "v2" {
+            description
+               "IGMP version is 2";
+         }
+         enum "v3" {
+            description
+               "IGMP version is 3";
+         }
+      }
+   }
+
+   typedef igmp-querier-group-state {
+      description
+       "IGMP Querier Group state type.";
+      type enumeration {
+         enum "active" {
+            description
+               "Group is Active";
+         }
+         enum "inactive" {
+            description
+               "Group is Inactive";
+         }
+      }
+   }
+
+   typedef igmp-querier-election-state {
+      description
+       "IGMP Querier election state type.";
+      type enumeration {
+         enum "querier" {
+            description
+               "Device is acting as a Querier.";
+         }
+         enum "non-querier" {
+            description
+               "Device is acting as a Non-Querier.";
+         }
+      }
+   }
+
+   typedef igmp-querier-group-mode {
+      description
+       "IGMP Querier Group mode type.";
+      type enumeration {
+         enum "Unknown" {
+            description
+               "Group mode is unknown";
+         }
+         enum "include" {
+            description
+               "Group mode is Include";
+         }
+         enum "exclude" {
+            description
+               "Group mode is Exclude";
+         }
+      }
+   }
+
+   typedef igmp-querier-msg-type {
+      description
+       "IGMP Querier message type.";
+      type enumeration {
+         enum "first-host-join" {
+            description
+               "Received first host join request for a multicast group.";
+         }
+         enum "last-host-leave" {
+            description
+               "Last host leaving the multicast group.";
+         }
+      }
+   }
+
+   typedef igmp-querier-group-msg {
+      description
+         "IGMP group message.";
+      type enumeration {
+         enum "group-update" {
+            description
+               "Received update for multicast group.";
+         }
+         enum "group-leave" {
+            description
+               "Last host leaving the multicast group.";
+         }
+      }
+   }
+
+   grouping instance-config {
+      description
+         "IGMP Querier instance configuration.";
+
+      container group-limit {
+         description
+            "Maximum number of group membership states.";
+         leaf dynamic-group-limit {
+            type uint32 {
+               range "0..2097152";
+            }
+            default 500;
+            description
+               "Maximum number of dynamic group membership states";
+         }
+      }
+   }
+
+   grouping interface-config {
+      description
+         "IGMP Querier Interface configuration.";
+
+      leaf admin-state {
+         type ciena:admin-state;
+         default enabled;
+         description
+            "Enable/Disable IGMP Querier on an interface(enabled by default).";
+      }
+
+      leaf last-member-query-interval  {
+         type uint16 {
+            range "1000..25500";
+         }
+         units milliseconds;
+         default 1000;
+         description
+            "The Last Member Query Interval is the Max Response Time used to
+             calculate the Max Resp Code inserted into Group-Specific Queries
+             sent in response to Leave Group messages";
+         reference "RFC 3376: IGMP Version 3, Section 8.8";
+      }
+
+      leaf querier-timeout  {
+         type uint16 {
+            range "60..300";
+         }
+         units seconds;
+         description
+            "Sets The Time that the Interface Waits Before Declaring Itself as
+             The Querier.
+             Default:(Robustness Variable * Query Interval) + (Query Response Interval / 2).";
+         reference "RFC 3376: IGMP Version 3, Section 8.5";
+      }
+
+      leaf query-max-response-time  {
+         type uint8 {
+            range "1..240";
+         }
+         units seconds;
+         default 10;
+         description
+            "The Max Response Time used to calculate the Max Response Code inserted
+             into the periodic General Queries";
+         reference "RFC 3376: IGMP Version 3, Section 8.3";
+      }
+
+      leaf query-interval  {
+         type uint16 {
+            range "2..18000";
+         }
+         units seconds;
+         must "../query-interval > ../query-max-response-time" {
+            error-message "The query interval must be "
+               + "larger than the query response interval";
+            description
+               "The value must be greater than the 'query-max-response-time'.";
+         }
+         default 125;
+         description
+            "The Query Interval is the interval between General Queries sent by
+             the Querier.";
+         reference "RFC 3376: IGMP Version 3, Section 8.2";
+      }
+
+      leaf last-member-query-count {
+         type uint8 {
+            range "2..7";
+         }
+         description
+            "The Last Member Query Count is the number of Group-Specific Queries
+             sent before the router assumes there are no local members. The Last
+             Member Query Count is also the number of Group-and-Source-Specific
+             Queries sent before the router assumes there are no listeners for a
+             particular source.
+             Default: Robustness Variable.";
+         reference "RFC 3376: IGMP Version 3, Section 8.9";
+      }
+
+      leaf startup-query-count {
+         type uint8 {
+            range "2..10";
+         }
+         description
+            "The Startup Query Count is the number of Queries sent out on startup,
+             separated by the Startup Query Interval.
+             Default: Robustness Variable.";
+         reference "RFC 3376: IGMP Version 3, Section 8.7";
+      }
+
+      leaf startup-query-interval {
+         type uint16 {
+            range "1..18000";
+         }
+         units seconds;
+         description
+            "The Startup Query Interval is the interval between General Queries
+             sent by a Querier on startup.
+             Default: 1/4 of Query Interval.";
+         reference "RFC 3376: IGMP Version 3, Section 8.6";
+      }
+
+      leaf robustness-variable {
+         type uint8 {
+            range "2..7";
+         }
+         default "2";
+         description
+            "The Robustness Variable allows tuning for the expected packet loss on
+             a network. If a network is expected to be lossy, the Robustness
+             Variable may be increased.";
+         reference "RFC 3376: IGMP Version 3, Section 8.1";
+      }
+
+      leaf version {
+         type igmp-querier-conf-version;
+         default "v3";
+         description
+            "Configure IGMP Version on the Interface.";
+      }
+
+      list access-group {
+         key "group-addr source-list";
+         description
+            "Name of the Prefix List";
+         leaf group-addr {
+            type inet:ipv4-address;
+            description
+               "Multicast Group Address";
+         }
+
+         leaf source-list {
+            type leafref {
+               path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+            }
+            description
+               "Control the Multicast local-membership Groups Learned on an Interface";
+         }
+      }
+
+      container group-limit {
+         description
+            "Maximum number of group membership states.";
+         leaf dynamic-group-limit {
+            type uint32 {
+               range "0..2097152";
+            }
+            default 100;
+            description
+               "Maximum number of dynamic group membership states";
+         }
+      }
+
+      container join-multicast-groups {
+         description
+            "Specify the Multicast Group(s).";
+
+         list join-group {
+            key "group source-addr";
+               description
+                  "Configure A join multicast group (S,G).";
+
+            leaf group {
+               type inet:ipv4-address;
+               description
+                  "Multicast Group Address";
+            }
+
+            leaf source-addr {
+               type inet:ipv4-address;
+               description
+                  "Source Address.";
+            }
+         }
+
+         list static-group {
+            key "group source-addr";
+               description
+                  "Configure A static multicast group (S,G).";
+
+            leaf group {
+               type inet:ipv4-address;
+               description
+                  "Multicast Group Address";
+            }
+
+            leaf source-addr {
+               type inet:ipv4-address;
+               description
+                  "Source Address.";
+            }
+         }
+      }
+   }
+
+   container igmp {
+      description
+         "IGMP Configuration";
+
+      container querier {
+         description
+            "IGMP Querier Configuration";
+
+         list instance {
+            key "tag";
+            max-elements 1;
+            description
+               "IGMP Querier Structure";
+
+            leaf tag {
+               type cn-l3-types:string-max-256 {
+                  pattern '[\S]*';
+               }
+               description
+                  "IGMP Querier Instance ID";
+            }
+
+            uses instance-config;
+
+            container interfaces {
+               description
+                  "All interfaces.";
+               list interface {
+                  key "ifname";
+                  description
+                     "List of IGMP Querier Interfaces.";
+                  leaf ifname {
+                     type leafref {
+                        path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                     }
+                     description
+                        "Name of the Interface which is to be associated with IGMP instance.";
+                  }
+                  uses interface-config;
+               }
+            }
+         }
+      }
+   }
+
+   grouping igmp-interface-state {
+      description
+         "IGMP Interface State.";
+
+      leaf interface-address {
+         type inet:ip-address;
+         description
+            "Local interface address of link";
+      }
+
+      leaf admin-state {
+         type ciena:admin-state;
+         description
+            "Interface IGMP admin state(enabled/disabled).";
+      }
+
+      leaf oper-state {
+         type ciena:up-down-state;
+         description
+            "Interface IGMP oper state(up/down).";
+      }
+
+      leaf version-type {
+         type igmp-querier-oper-version;
+         description
+            "Interface IGMP version.";
+      }
+
+      leaf status-flags {
+         type string;
+         description
+            "Interface IGMP operational flags(active/inactive, querier/non-querier).";
+      }
+
+      leaf dynamic-group-limit-count {
+         type uint32;
+         description
+            "Interface wide dynamic group membership state limit count.";
+      }
+
+      leaf query-interval {
+         type uint16;
+         description
+            "Interface query interval in seconds.";
+      }
+
+      leaf startup-query-interval {
+         type uint16;
+         description
+            "Interface startup query interval in seconds.";
+      }
+
+      leaf startup-query-count {
+         type uint8;
+         description
+            "Interface startup query count.";
+      }
+
+      leaf querier-timeout {
+         type uint32;
+         description
+            "Interface querier timeout in seconds.";
+      }
+
+      leaf query-response-time {
+         type uint16;
+         description
+            "Interface query response time in seconds.";
+      }
+
+      leaf group-membership-interval {
+         type uint32;
+         description
+            "Interface group membership interval in seconds.";
+      }
+
+      leaf last-member-query-count {
+         type uint16;
+         description
+            "Interface last member query count.";
+      }
+
+      leaf last-member-query-interval {
+         type uint16;
+         description
+            "Interface last member query interval in milliseconds.";
+      }
+
+      leaf robustness-variable {
+         type uint8;
+         description
+            "Interface robustness variable.";
+      }
+
+      leaf querying-router {
+         type inet:ipv4-address;
+         description
+            "Active querier router address(It's applicable for non-querier router).";
+      }
+
+      uses igmp-access-group-state;
+   }
+
+   grouping igmp-source-state {
+      description
+         "IGMP Source State.";
+
+      leaf source-addr {
+         type inet:ipv4-address;
+         description
+            "The source for this multicast group traffic.";
+      }
+
+      leaf up-time {
+         type string {
+            length "0..255";
+         }
+         description
+            "Specify the time when a source for IGMP group is discovered(HH:MM:SS).";
+      }
+
+      leaf expire-time {
+         type string {
+            length "0..255";
+         }
+         description
+            "Specify the time by which a IGMP source of this group expired(HH:MM:SS).";
+      }
+
+      leaf flags {
+         type string;
+         description
+            "Source record status flags.
+
+             M-Flag: Source has source specific multicast(SSM) mapping.
+
+             R-Flag: Source is remote(dynamic).
+
+             L-Flag: Source is local.
+
+             S-Flag: Source is static.";
+      }
+   }
+
+   grouping igmp-access-group-state {
+      description
+         "IGMP querier access group state.";
+
+      container access-groups {
+         description
+            "IGMP access group objects.";
+
+         list access-group {
+            key "group-addr";
+            description
+               "List of access group object.";
+            leaf group-addr {
+               type inet:ipv4-address;
+               description
+                  "Multicast group address.";
+            }
+
+            leaf source-access-list {
+               type string;
+               description
+                  "Source access list of IGMP group.";
+            }
+         }
+      }
+   }
+
+   grouping igmp-group-state {
+      description
+         "IGMP Querier Instance.";
+
+      list group-list {
+         key "group-addr ifname";
+         description
+            "List of Multicast IGMP Group.";
+
+         leaf group-addr {
+            type inet:ipv4-address;
+            description
+               "The Multicast group IP address.";
+         }
+
+         leaf ifname {
+            type  string {
+               length "0..255";
+            }
+            description
+               "Interface name";
+         }
+
+         leaf group-state {
+            type igmp-querier-group-state;
+            description
+               "The current state (active/inactive) of the IGMP Group.";
+         }
+
+         leaf up-time {
+            type string {
+               length "0..255";
+            }
+            description
+               "Specify the time when a IGMP group becomes active(HH:MM:SS).";
+         }
+
+         leaf expire-time {
+            type string {
+               length "0..255";
+            }
+            description
+               "Specify the time by which a IGMP group expired(HH:MM:SS).";
+         }
+
+         leaf last-reporter {
+            type inet:ipv4-address;
+            description
+               "Last Reporter of IGMP Multicast Group.";
+         }
+
+         leaf source-count {
+            type uint32;
+            description
+               "Number of hosts joined for Multicast Group.";
+         }
+
+         leaf group-mode {
+            type igmp-querier-group-mode;
+            description
+               "The current mode (exclude/include) of the IGMP Group.";
+         }
+
+         leaf flags {
+            type string;
+            description
+               "Group record status flags.
+
+                M-Flag: Group has source specific multicast(SSM) mapping.
+
+                R-Flag: Group is remote(dynamic).
+
+                L-Flag: Group is configured as local.
+
+                SG-Flag: Group is configured as static group.
+
+                SS-Flag: Group is configured as static group source.";
+         }
+
+         list include-source-list {
+            key "source-addr";
+            description
+               "List of include sources for IGMP group.";
+
+            uses igmp-source-state;
+         }
+
+         list exclude-source-list {
+            key "source-addr";
+            description
+               "List of exclude sources for IGMP group.";
+
+            uses igmp-source-state;
+         }
+      }
+   }
+
+   grouping igmp-statistics {
+      description
+         "IGMP Querier Statistics.";
+
+      container querier-statistics {
+         description
+            "Specifies the IGMP Querier Statistics.";
+
+
+         leaf v2-reports {
+            type yang:counter32;
+            description
+               "Number of v2 Reports received.";
+         }
+
+         leaf v3-reports {
+            type yang:counter32;
+            description
+               "Number of v3 Reports received.";
+         }
+
+         leaf v2-leave {
+            type yang:counter32;
+            description
+               "Number of v2 Leave received.";
+         }
+
+         leaf tx-general-query {
+            type yang:counter32;
+            description
+               "Number of General Query Messages transmitted.";
+         }
+
+         leaf tx-group-query {
+            type yang:counter32;
+            description
+               "Number of Group Query Messages transmitted.";
+         }
+
+         leaf tx-group-source-query {
+            type yang:counter32;
+            description
+               "Number of Group Source Query Messages transmitted.";
+         }
+
+         leaf rx-query {
+            type yang:counter32;
+            description
+               "Number of Membership Query Messages received.";
+         }
+
+         leaf bad-checksum-messages-received {
+            type yang:counter32;
+            description
+               "Number of Packets Received with bad IP checksum.";
+         }
+
+         leaf unknown-packet-type-received {
+            type yang:counter32;
+            description
+               "Number of unknown type IGMP packets received.";
+         }
+      }
+   }
+   
+   container igmp-state {
+      config false;
+      description
+         "IGMP State Objects";
+
+      list querier-state {
+         key "tag";
+         description
+            "IGMP Querier Attributes for each Instance";
+         leaf tag  {
+            type cn-l3-types:string-max-256 {
+               pattern '[\S]*';
+            }
+            description
+               "IGMP Querier Instance ID";
+         }
+
+         leaf interface-count {
+            type uint16;
+            description
+               "Number of interfaces associated to this IGMP instance.";
+         }
+
+         leaf static-group-count {
+            type uint32;
+            description
+               "Number of Static Multicast Groups to this IGMP instance.";
+         }
+
+         leaf dynamic-group-count {
+            type uint32;
+            description
+               "Number of Dynamic Multicast Groups to this IGMP instance.";
+         }
+
+         leaf total-group-count {
+            type uint32;
+            description
+               "Number of total unique multicast groups to this IGMP instance.";
+         }
+
+         leaf dynamic-group-limit-count {
+            type uint32;
+            description
+               "Instance wide dynamic group membership state limit count.";
+         }
+
+         list interface-state {
+            key "ifname";
+            description
+               "IGMP Querier Interface related information";
+            leaf ifname {
+               type string {
+                  length "0..255";
+               }
+               description
+                  "Interface name";
+            }
+
+            leaf static-group-count {
+               type uint16;
+               description
+                  "The number of static multicast groups on interface.";
+            }
+
+            leaf dynamic-group-count {
+               type uint16;
+               description
+                  "The number of dynamic multicast groups on interface.";
+            }
+
+            leaf total-group-count {
+               type uint32;
+               description
+                  "The number of total unique multicast groups on interface.";
+            }
+
+            uses igmp-interface-state;
+            uses igmp-statistics;
+         }
+
+         uses igmp-group-state;
+         uses igmp-statistics;
+      }
+   }
+
+   rpc igmp-querier-clear-state {
+      description
+         "Clear Groups, Statistics on IGMP Interfaces.";
+      input {
+         leaf instance {
+            type cn-l3-types:string-max-256 {
+               pattern '[\S]*';
+            }
+            description
+               "IGMP Querier Instance ID";
+         }
+
+         leaf group-address {
+            type inet:ipv4-address;
+            description
+               "Multicast Group Address.";
+         }
+
+         leaf ifname {
+            type string {
+               length "0..255";
+            }
+            description
+               "Interface name";
+         }
+      }
+
+      output{
+         leaf response {
+            type string;
+            description
+               "The response can be either 'success' or the reason for the failure.";
+         }
+      }
+   }
+
+   rpc igmp-querier-clear-statistics {
+      description
+         "Clear IGMP Querier Statistics.";
+
+      input {
+         leaf instance {
+            type leafref {
+               path "/igmp/querier/instance/tag";
+            }
+            description
+               "Clear IGMP instance and interface statistics";
+         }
+
+         leaf ifname {
+            type string;
+            description
+               "Clear IGMP interface statistics";
+         }
+      }
+
+      output {
+         leaf return-code {
+            type ciena:status;
+            description
+               "RPC Return Code";
+         }
+      }
+   }
+
+   notification igmp-group-events {
+      list multicast-group {
+         description
+            "Defines IGMP Querier Events For Multicast Group";
+
+         leaf tag {
+            type cn-l3-types:string-max-256 {
+               pattern '[\S]*';
+            }
+            description
+               "IGMP instance ID";
+         }
+
+         leaf group-address {
+            type inet:ipv4-address;
+            description
+               "Multicast group address.";
+         }
+
+         leaf igmp-message {
+            type string{
+               length "0..255";
+            }
+            description
+               "IGMP message for multicast group.";
+         }
+
+         leaf igmp-group-mode {
+            type igmp-querier-group-mode;
+            description
+               "The current mode (exclude/include) of the IGMP group.";
+         }
+
+         leaf igmp-group-state {
+            type igmp-querier-group-msg;
+            description
+               "Group updated or leave recieved for multicast group";
+         }
+
+         leaf ifname {
+            type string {
+               length "0..255";
+            }
+            description
+               "Name of the Interface.";
+         }
+
+         leaf source-count {
+            type uint16;
+            description
+               "Number of sources.";
+         }
+      }
+   }
+   
+   notification igmp-querier-election-event {
+      list instance {
+         description
+            "Defines IGMP Querier Instance state change event";
+         leaf tag {
+            type cn-l3-types:string-max-256 {
+               pattern '[\S]*';
+            }
+            description
+               "IGMP Instance ID";
+         }
+         leaf querying-router {
+            type inet:ipv4-address;
+            description
+               "Ip Address Of A Querier.";
+         }
+
+         leaf querier-state {
+            type igmp-querier-election-state;
+            description
+               "IGMP Querier State Querier/Non-Querier";
+         }
+
+         leaf ifname {
+            type string {
+               length "0..255";
+            }
+            description
+               "Name of the interface.";
+         }
+      }
+   }
+}

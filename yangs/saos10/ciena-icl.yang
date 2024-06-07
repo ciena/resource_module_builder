@@ -1,0 +1,384 @@
+module ciena-icl {
+   namespace "http://www.ciena.com/ns/yang/ciena-icl";
+   prefix ciena-icl;
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   import ciena-mef-fd {
+      prefix "ciena-mef-fd";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This module contains the YANG definition for Ciena's MC-LAG ICL communication.
+
+      Copyright (c) 2023 Ciena Corporation.  All rights
+      reserved.
+
+      All information and intellectual property contained in this
+      YANG module (Specification) is, and remains the property
+      of Ciena Corporation. Ciena retains all title and ownership
+      in the Specification, including any revisions.
+
+      Ciena grants all interested parties that access the
+      Specification with the intent to use or distribute (you) a
+      non-exclusive, no-cost license to use and distribute
+      unmodified copies of the Specification solely in connection
+      with the management of Ciena products sold by or on
+      behalf of Ciena, provided this copyright notice and license
+      appear on all copies. Ciena may rescind or modify this
+      license at any time.
+
+      This Specification is supplied 'as is', and Ciena makes no
+      warranty, either express or implied, as to the use, operation,
+      condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.";
+
+   revision "2023-08-09" {
+      description
+         "Initial Version of ICL Config, State and RPC Yang Model.
+          Updated icl-state enum to correct values.
+          Updated the maximum length of ICL instance name.
+          Added feature condition icl in container icl and icl-state and rpc icl-clear-statistics.";
+   }
+
+   //
+   // Typedefs related to ciena-icl
+   //
+
+   typedef icl-state {
+      type enumeration {
+         enum disable {
+            description
+               "Indicates ICL is disabled";
+         }
+         enum enable {
+            description
+               "Indicates ICL is enabled";
+         }
+      }
+      description
+        "This typedef defines ICL state as enable/disable";
+   }
+
+   identity icl-oper-status {
+      description
+         "Represents ICL operational status";
+   }
+
+   identity init  {
+      base icl-oper-status;
+      description
+         "Indicates that the ICL is in init state. The node has
+         just been enabled and is in the process of 
+         evaluating its state"; 
+   }
+
+   identity up   {
+      base icl-oper-status;
+      description
+         "Indicates that the ICL is operationally up.";
+   }
+
+   identity failed   {
+      base icl-oper-status;
+      description
+         "Indicates that the ICL is operationally down.";
+   }
+
+   identity admin-down  {
+      base icl-oper-status;
+      description
+         "Indicates that the ICL is administratively down.";
+   }
+
+   identity none   {
+      base icl-oper-status;
+      description
+         "Indicates that the ICL is in an undefined state.";
+   }
+
+   //
+   // ICL fault types
+   //
+
+   identity icl-fault-type {
+      description
+         "Represents ICL faults";
+   }
+
+   identity rx-timeout {
+      base icl-fault-type;
+      description
+         "Represents Rx timeout fault on the ICL.";
+   }
+
+   identity interval-mismatch {
+      base icl-fault-type;
+      description
+         "Represents interval mismatch fault on the ICL";
+   }
+
+   grouping icl-statistics {
+      description
+         "ICL Statistics.";
+
+      leaf uptime-from-last-failure {
+         type string;
+         description
+            "This object specifies the time for which the ICL has been operationally up." ;
+      }
+
+      leaf total-down-time {
+         type string;
+         description
+            "This object specifies total time for which the ICL has been operationally down." ;
+      }
+
+      leaf downtime-since-last-failure {
+         type string;
+         description
+            "This object specifies the time for which the ICL has been operationally down." ;
+      }
+
+      leaf rx-frames {
+         type yang:counter32;
+         description
+            "This object specifies the number of CICP frames received by the ICL." ;
+      }
+
+      leaf tx-frames {
+         type yang:counter32;
+         description
+            "This object specifies the number of CICP frames transmitted by the ICL." ;
+      }
+
+      leaf rx-unknown-frames {
+         type yang:counter32;
+         description
+            "This object specifies the number of unknown frames received by the ICL." ;
+      }
+
+      leaf rx-heartbeat-frames {
+         type yang:counter32;
+         description
+            "This object specifies the number of Hearbeat frames received by the ICL." ;
+      }
+
+      leaf tx-heartbeat-frames {
+         type yang:counter32;
+         config false;
+         description
+            "This object specifies the number of Hearbeat frames transmitted by the ICL." ;
+      }
+
+      leaf tx-failed-frames {
+         type yang:counter32;
+         description
+            "This object specifies the number of failed to transmit frames." ;
+      }
+
+      leaf up-count {
+         type yang:counter32;
+         description
+            "This object specifies the number of ICL failures." ;
+      }
+
+      leaf rx-config-mismatch {
+         type yang:counter32;
+         description
+            "This object specifies the number of ICL config mismatch frames received." ;
+      }
+   }
+
+   //
+   // Config data related to ciena-icl
+   //
+
+   feature icl {
+      description
+         "Support ICL";
+   }
+
+   container icl {
+      if-feature icl;
+      description
+         "ICL Configuration";
+
+      leaf admin-state {
+         type icl-state;
+         default "enable";
+         description
+            "Setting this control allows ICL to be enabled/disabled
+             on a system wide basis.";
+      }
+
+      list instance {
+         key "name";
+
+         description
+            "List of configurable parameters for ICL";
+
+         leaf name {
+            type string {
+               length "0..32";
+            }
+            description
+               "This object specifies the name of the Inter-chassis link (ICL).";
+         }
+
+         leaf fd-name {
+            type leafref {
+               path "/ciena-mef-fd:fds/ciena-mef-fd:fd/ciena-mef-fd:name";
+            }
+            must "(/ciena-mef-fd:fds/ciena-mef-fd:fd[ciena-mef-fd:name=current()]/ciena-mef-fd:mode='vpls')" {
+                 error-message "Forwarding Domain mode must be set to vpls";
+            }
+            mandatory true;
+            description
+               "This object identifies the forwarding domain 
+                used for control plane signaling on ICL.";
+         }
+
+         leaf remote-mac-address {
+            type yang:mac-address;
+            mandatory true;
+            description
+               "This object specifies the Inter-chassis link remote MAC address.";
+         }
+
+         leaf admin-state {
+            type icl-state;
+            default "enable";
+            description
+               "This object specifies the admin state of the ICL.";
+         } 
+
+         leaf heartbeat-interval {
+            type uint16 {
+                 range "100..30000";
+            }
+            units "milliseconds";
+            default "1000";
+            description
+               "This object specifies the ICL heartbeat interval. The default is 1s.";
+         }
+      }
+   }
+
+   //
+   // Operational Data related to ciena-icl
+   //
+
+   container icl-state {
+      if-feature icl;
+      config false;
+      description
+         "ICL Operational State Objects";
+
+      list instance {
+         key "name";
+         description
+            "List of operational data for each ICL instance";
+
+         leaf name {
+            type string {
+               length "0..32";
+            }
+            description
+               "This object specifies the name of the Inter-chassis link (ICL).";
+         }
+
+         leaf fd-name {
+            type string;
+            description
+               "This object identifies the forwarding domain 
+                used for control plane signaling on ICL";
+         }
+
+         leaf remote-mac-address {
+            type yang:mac-address;
+            description
+               "This object specifies remote MAC address of the ICL";
+         }
+
+         leaf heartbeat-interval {
+            type uint16 {
+                 range "100..30000";
+            }
+            units "milliseconds";
+            description
+               "This object specifies the heartbeat interval of the ICL instance";
+         }
+
+         leaf oper-state {
+            type icl-state;
+            description
+               "This object specifies the ICL operational state.";
+         }
+
+         leaf icl-status {
+            type identityref {
+               base icl-oper-status;
+            }
+            description
+               "This object specifies the reason code for the current operational state of the ICL.";
+         }
+
+         leaf-list icl-fault {
+            type identityref {
+               base icl-fault-type;
+            }
+            description
+               "List of faults on the ICL.";
+         }
+
+         container icl-stats {
+            description
+               "Specifies ICL statistics";
+            uses icl-statistics;
+         }
+      }//instance
+   }//icl-state
+
+   //
+   // Remote Procedure Calls
+   //
+
+   rpc icl-clear-statistics {
+      if-feature icl;
+      description
+         "Clear ICL statistics.";
+
+      input {
+         leaf name {
+            type leafref {
+               path "/icl/instance/name";
+            }
+            description
+               "The name of the ICL whose statistics will be cleared";
+         }
+      }
+
+      output {
+         leaf errstr {
+            type string;
+            description
+               "Error message from the device if RPC failed.";
+         }
+      }
+   } // clear-statistics
+}

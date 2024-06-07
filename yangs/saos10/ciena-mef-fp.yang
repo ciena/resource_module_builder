@@ -1,0 +1,924 @@
+module ciena-mef-fp {
+    namespace "urn:ciena:params:xml:ns:yang:ciena-pn:ciena-mef-fp";
+    prefix "mef-fp";
+
+    import ciena-mef-fd {
+        prefix "mef-fd";
+    }
+
+    import ciena-mef-logical-port {
+        prefix "mef-logical-port";
+    }
+
+    import ciena-mef-classifier {
+        prefix "classifier";
+    }
+
+    import ciena-mef-cos-to-frame-map {
+        prefix "ctf";
+    }
+
+    import ciena-mef-frame-to-cos-map {
+        prefix "ftc";
+    }
+
+    import ciena-mef-flood-containment-profile {
+        prefix "mef-fc";
+    }
+
+    import ciena-mef-meter-profile {
+        prefix "meter";
+    }
+
+    import ciena-mef-egress-qos {
+        prefix "mef-egress-qos";
+    }
+
+    organization
+        "Ciena Corporation";
+ 
+    contact
+        "Web URL: http://www.ciena.com/
+        E-mail:  yang@ciena.com
+        Postal:  7035 Ridge Road
+                 Hanover, Maryland 21076
+                 U.S.A.
+        Phone:   +1 800-921-1144
+        Fax:     +1 410-694-5750";
+
+    description
+        "This YANG module defines Ciena's management data definition for the
+        management of fp.
+     
+        Copyright (c) 2022 Ciena Corporation.  All rights
+        reserved.
+
+        All information and intellectual property contained in this
+        YANG module (Specification) is, and remains the property
+        of Ciena Corporation. Ciena retains all title and ownership
+        in the Specification, including any revisions.
+
+        Ciena grants all interested parties that access the
+        Specification with the intent to use or distribute a
+        non-exclusive, no-cost license to use and distribute
+        unmodified copies of the Specification solely in connection
+        with the management of Ciena products sold by or on
+        behalf of Ciena, provided this copyright notice and license
+        appear on all copies. Ciena may rescind or modify this
+        license at any time.
+
+        This Specification is supplied as is, and Ciena makes no
+        warranty, either express or implied, as to the use, operation,
+        condition, or performance of the Specification. You agree
+        that Ciena has no liability for your use of the Specification.";
+     
+    revision 2023-03-27 {
+       description 
+            "1) Updated pfg-group types to include hub.";
+    }
+
+    revision 2022-02-11 {
+       description 
+            "1) Added descriptions.
+             2) Modified accepted vlan-id range to include vlan-id of 0.
+             3) Updated PFG group types to include dynamic.
+             4) Updated flow-point state to include operational state for the  PFG group.
+             5) Revert back fps-statistics to fps-state for backward compatibility, and re-define fps-state as fps-operational-state.
+             6) Updated flow-point state to show EVPN FXC locally switched status, and included Ciena disclaimer.";
+    }
+
+    revision "2020-01-06" {
+       description 
+           "Update descriptions of normalized-vid";
+    }
+
+    revision "2018-01-09" {
+        description
+            "10.0 Version.";
+        reference
+            "UNI and EVC Definition of Managed Objects (MEF 40), January 2013";
+    }
+
+   /*
+    * typedefs
+    */
+    
+   typedef fp-ref {
+      type leafref {
+         path "/mef-fp:fps/mef-fp:fp/mef-fp:name";
+      }
+      description
+         "This type is used by the data models that need to reference
+          configured flow points";
+   }
+
+   typedef vlan-id {
+      type uint16 {
+         range "0..4094";
+      }
+      description
+         "Represents a IEEE 802.1Q VLAN-ID.";
+   }
+
+   /*
+    * features
+    */
+    
+   /*
+    * groupings
+    */
+   grouping transform {
+        
+        choice frame-type {
+            case stack {
+                list vlan-stack {
+                    key "tag";
+                    description
+                        "This configures VLAN stack on the flow-point.";
+                    
+                    leaf tag {
+                        type uint8;
+			            description
+                            "Dependent on the xform operation, the tag numbers are
+                              stamp => '1' represents outermost tag, '2' next outermost (next inner)
+                              pop => '1' represents pop outermost, '2' represents pop outermost, (always pop from outer)
+                              push => '1' represents push outermost, '2' represents push outermost (always push to outer)";
+                    }
+                    
+                    choice action {
+                        case push {
+                            leaf push-tpid {
+                                type enumeration {
+                                    enum tpid-8100 {
+                                        value 33024;
+                                    }
+                                    enum  tpid-88a8 {
+                                        value 34984;
+                                    }
+                                    enum tpid-9100 {
+                                        value 37120;
+                                    }
+                                }
+                                default tpid-8100;
+                                description
+                                    "This pushes the chosen tag-protocol-identifier in the frame";
+                            }
+                            
+                            leaf push-pcp {
+                                type enumeration {
+                                    enum pcp-0 {
+                                        value 0;
+                                    }
+                                    enum pcp-1 {
+                                        value 1;
+                                    }
+                                    enum pcp-2 {
+                                        value 2;
+                                    }
+                                    enum pcp-3 {
+                                        value 3;
+                                    }
+                                    enum pcp-4 {
+                                        value 4;
+                                    }
+                                    enum pcp-5 {
+                                        value 5;
+                                    }
+                                    enum pcp-6 {
+                                        value 6;
+                                    }
+                                    enum pcp-7 {
+                                        value 7;
+                                    }
+                                    enum map;
+                                }
+                                description
+                                    "This chooses how a priority code point (PCP) is determined on a vlan tag being
+                                    pushed onto a frame (pcp-value/map). The PCP can be used to prioritize different
+                                    classes of traffic.";
+                            }
+                            
+                            leaf push-dei {
+                                type enumeration {
+                                    enum enabled;
+                                    enum disabled;
+                                }
+                                description
+                                    "This enables/disables pushing drop eligibility indicator to indicate frames
+                                    eligible to be dropped in the presence of congestion.";
+                            }
+                            
+                            leaf push-vid {
+                                type vlan-id;
+                                mandatory true;
+                                description
+                                    "This pushes configured VLAN id to the frame.";
+                            }
+                        }
+                        
+                        case pop {
+                            leaf pop-type {
+                                type empty;
+                                description
+                                    "This removes the outermost tag of the frame.";
+                            }
+                        }
+                        
+                        case stamp {
+                            leaf stamp-tpid {
+                                type enumeration {
+                                    enum no-op;
+                                    enum tpid-8100 {
+                                        value 33024;
+                                    }
+                                    enum  tpid-88a8 {
+                                        value 34984;
+                                    }
+                                    enum tpid-9100 {
+                                        value 37120;
+                                    }
+                                }
+                                description
+                                    "This swaps the existing Tag protocol identifier in frame with the chosen one .";
+                            }
+                            
+                            leaf stamp-pcp {
+                                type enumeration {
+                                    enum pcp-0 {
+                                        value 0;
+                                    }
+                                    enum pcp-1 {
+                                        value 1;
+                                    }
+                                    enum pcp-2 {
+                                        value 2;
+                                    }
+                                    enum pcp-3 {
+                                        value 3;
+                                    }
+                                    enum pcp-4 {
+                                        value 4;
+                                    }
+                                    enum pcp-5 {
+                                        value 5;
+                                    }
+                                    enum pcp-6 {
+                                        value 6;
+                                    }
+                                    enum pcp-7 {
+                                        value 7;
+                                    }
+                                    enum no-op;
+                                    enum map;
+                                }
+                                description
+                                    "This swaps the existing Priority code point in frame with the chosen one .";
+                            }
+                            
+                            leaf stamp-dei {
+                                type enumeration {
+                                    enum no-op;
+                                    enum enabled;
+                                    enum disabled;
+                                }    
+                                description
+                                    "Enables/Disables swapping the Drop eligible indicator in frame .";
+                            }
+                            
+                            choice stamp-vid {
+                                case no-op {
+                                    leaf no-op {
+                                        type empty;
+                                        description
+                                            "No Operation chosen for swapping vlan identifier.";
+                                    }
+                                }
+                                case vid-value {
+                                    leaf stamp-vid-value {
+                                        type vlan-id;
+                                        description
+                                            "The vlan identifier that is used for swapping.";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            case untagged {
+                
+                leaf untagged-tpid {
+                    type enumeration {
+                        enum tpid-8100 {
+                            value 33024;
+                        }
+                        enum  tpid-88a8 {
+                            value 34984;
+                        }
+                        enum tpid-9100 {
+                            value 37120;
+                        }
+                    }
+                    description
+                        "The Tag protocol identifier to be added to an untagged frame .";
+                }
+                
+                leaf untagged-pcp {
+                    type enumeration {
+                        enum pcp-0 {
+                            value 0;
+                        }
+                        enum pcp-1 {
+                            value 1;
+                        }
+                        enum pcp-2 {
+                            value 2;
+                        }
+                        enum pcp-3 {
+                            value 3;
+                        }
+                        enum pcp-4 {
+                            value 4;
+                        }
+                        enum pcp-5 {
+                            value 5;
+                        }
+                        enum pcp-6 {
+                            value 6;
+                        }
+                        enum pcp-7 {
+                            value 7;
+                        }
+                        enum map;
+                    }
+                    description
+                        "This configures the chosen priority code point which can be used to prioritize different
+                        classes of traffic.";
+                }
+                    
+                leaf untagged-dei {
+                    type enumeration {
+                        enum enabled;
+                        enum disabled;
+                    }
+                    description
+                        "This enables/disables drop eligibility indicator to indicate untagged frames eligible to be dropped in
+                        the presence of congestion.";
+                }
+                
+                leaf untagged-vid {
+                    type vlan-id;
+                    description
+                        "This configures the untagged vlan identifier .";
+                }
+            }
+        }
+   }
+    
+
+   /*
+    * Configuration.
+    */
+   container fps {
+
+        description
+            "A List of flow-points.";
+
+        list fp {
+            key "name";
+            description
+                "A list of all mef-fp configuration entries.";
+
+            leaf name {
+                type string;
+                description
+                    "This object indicates the flow point identifier. 
+                     The identifier is a text string that is used to identify 
+                     a flow point. 
+                      
+                     Unique string values are chosen to uniquely identify the 
+                     flow point.
+
+                     Octet values of 0x00 through 0x1f are illegal.
+
+                     MEF 26.1 restricts the maximum size identifiers to 45 
+                     octets.";
+               reference
+                   "[MEF 6.1] 6.1; [MEF 7.2] 6.2.1.3";
+            }
+            
+            leaf description {
+                type string;
+                description
+                    "A editable string used to describe this entry.";
+            }
+            
+            leaf fd-name {
+                type leafref {
+                    path "/mef-fd:fds/mef-fd:fd/mef-fd:name";
+                }
+                description
+                   "The forwarding domain that the flow-point is attached to.";
+            }
+            
+            leaf logical-port {
+                type mef-logical-port:logical-port-ref;
+                description
+                   "The logical-port associated with the flow-point.";
+            }
+
+            choice type {
+                case q-in-q {
+                    leaf svlan {
+                        type uint32;
+                        description
+                           "A flow-point of type q-in-q, svlan is outer vlan tag.";
+                    }
+                }
+                case mpls-pw {
+                    leaf mpls-pw {
+                        type empty;
+                        description
+                            "The type of flow-point is MPLS pseudowire.";
+                    }
+                }
+                case uni {
+                    leaf uni {
+                        type empty;
+                        description
+                            "The type of flow-point is uni-port.";
+                    }
+                }
+                case other {
+                    leaf other {
+                        type empty;
+                        description
+                            "A flow-point with no specific type";
+                    }
+                }
+            }
+            
+            leaf mtu-size {
+                type uint32;
+                units "octets";
+                description
+                    "This object indicates the configured EVC maximum service 
+                    frame format size. It must be less than or equal to the 
+                    max-mtu-size. Vendors may choose to go beyond this limit.";
+                reference
+                    "[MEF 6.1] 6.1; [MEF 7.2] 6.2.1.3";
+                default "2000";
+            }
+            
+            
+            leaf admin-state {
+                type enumeration {
+                    enum enabled;
+                    enum disabled;
+                }
+                description
+                   "Enable/disable the admin state.";
+            }
+            
+            list ingress-l2-transform {
+                key "ingress-name";
+
+                description
+                   "Ingress L2-transform configured on this flow-point.";
+                
+                leaf ingress-name {
+                    type string;
+                    description
+                        "Need a key for this list. It cannot be
+                         a choice of several objects but objects
+                         that will always be specified.";
+                }
+                
+                uses transform;  
+            }
+            
+            list egress-l2-transform {
+                key "egress-name";
+
+                description
+                   "Egress L2-transform configured on this flow-point.";
+                
+                leaf egress-name {
+                    type string;
+                    description
+                        "Need a key for this list. It cannot be
+                         a choice of several objects but objects
+                         that will always be specified.";
+                }
+                
+                uses transform;
+            }
+            
+            choice ingress-l3-transform {
+                case map {
+                    leaf ingress-l3-mapped {
+                        type empty;
+                        description
+                           "For an ingress-l3-transform, map internal-cos and internal-color to dscp based on a cos-to-frame-map.";
+                    }
+                }
+                case remark-dscp {
+                    leaf ingress-remark-dscp-value {
+                        type uint8 {
+                            range "0..63";
+                        }
+                        description
+                          "Remark the ingress L2-Switched packet with the DSCP value.";
+                    }
+                }
+            }
+            
+            choice egress-l3-transform {
+                case map {
+                    leaf egress-l3-mapped {
+                        type empty;
+                        description
+                           "For an egress-l3-transform, map internal-cos and internal-color to dscp based on a cos-to-frame-map.";
+                    }
+                }
+                case remark-dscp {
+                    leaf egress-remark-dscp-value {
+                        type uint8 {
+                            range "0..63";
+                        }
+                        description
+                           "Remark the egress L2-Switched packet with the DSCP value.";
+                    }
+                }
+            }
+            
+            choice frame-to-cos {
+                case map {
+                    leaf map-policy {
+                        type enumeration {
+                            enum outer-tag {
+                               description
+                                  "Map to internal cos and color based on outer vlan tag of vlan-tagged frame (one or more tags present).
+                                   Any L2 frame which does not have at least 1 vlan tag is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum inner-tag {
+                               description
+                                  "Map to internal cos and color based on inner vlan tag of vlan-tagged frame (at least 2 tags present).
+                                   Any L2 frame which does not have at least 2 vlan tags is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum mpls-tc {
+                               description
+                                  "Map to internal cos and color based on mpls-tc of outer MPLS Label of L2-frame (if MPLS Label present).
+                                   Any L2 frame which is non-MPLS (after vlan tags) is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum dscp {
+                               description
+                                  "Map to internal cos and color based on dscp field of IP of L2-frame (if IP present).
+                                   Any L2 frame which is non-IP (after vlan tags) is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                            enum dscp-mpls-tc {
+                               description
+                                  "Map to internal cos and color based on on dscp field of IP of L2-frame (if IP present),
+                                   or mpls-tc of outer MPLS Label of L2-frame (if MPLS Label present).
+                                   Any L2 frame which is non-IP or non-MPLS (after vlan tags) is considered non-conforming from frame-to-cos map perspective,
+                                   and the resolution to an internal cos and color is platform specific for non-conforming frames.";
+                            }
+                        }
+                        description
+                           "The fields of frame to map to internal cos and color.";
+                    }
+                    
+                    leaf frame-to-cos-map {
+                        type ftc:frame-to-cos-ref;
+                        description
+                           "A mapping resolving an incoming frame to internal Color and Cos.";
+                    }    
+                }
+                
+                case fixed {
+                    leaf cos {
+                        type uint8 {
+                            range "0..63";
+                        }
+                        description
+                           "An internal label defining the baseline for Class-Of-Service treatment of a frame as it switches through the device.";
+                    }
+                    
+                    leaf color {
+                        type enumeration {
+                            enum green;
+                            enum yellow;
+                            enum red;
+                        }
+                        description
+                           "An internal label assigned to frame defining the treatment of a frame as it switches through the device.";
+                    }           
+                }
+            }
+            
+            leaf cos-to-frame-map {
+                type ctf:cos-to-frame-ref;
+                description
+                   "A mapping resolving an internal color and cos to frame pcp+dei, dscp, mpls-tc.";
+            }
+            
+            leaf flood-containment-profile {
+                type mef-fc:flood-containment-profile-ref;
+                description
+                    "Reference to a Flood Containment Profile definition.";
+            }
+            
+            leaf-list classifier-list {
+                type classifier:classifier-ref;
+                description
+                   "List of classifier templates referenced by flow-point to define their incoming classification.";
+            }
+
+            leaf classifier-list-precedence {
+                type uint32;
+                description
+                   "A precedence value for the flow-point. Lower values take precedence over higher values.";
+            }
+            
+            leaf mac-learning {
+                type enumeration {
+                    enum enabled;
+                    enum disabled;
+                }
+                description
+                   "Enable/disable the MAC learning of flow-point.";
+            }
+
+            leaf meter-profile {
+                type meter:meter-ref;
+                description
+                    "A reference to a Meter Profile.";
+            }
+
+            leaf pfg-group {
+                type enumeration {
+                    enum leaf;
+                    enum root;
+                    enum dynamic;
+                   
+                    enum mesh;
+                    enum spoke;
+
+                    enum group-A;
+                    enum group-B;
+                    enum group-C;
+                    enum group-D;
+                    enum hub;
+                }
+                description
+                    "The Private-Forwarding-Group that the flow-point belongs to for the scope of a
+                    Private-Forwarding-Group-Profile.
+                    Can be leaf/root for a PFG-profile with PFG-type of leaf-and-root or spokemesh-and-leafroot.
+                    Can be mesh/spoke for a PFG-profile with PFG-type of spoke-and-mesh or spokemesh-and-leafroot.
+                    Can be groupA/B/C/D for a PFG-profile with PFG-type of pfg-groups.
+                    Can be leaf/root/dynamic for a PFG-profile with PFG-type dynamic-leaf-and-root.
+                    Can be hub/spoke/dynamic for a PFG-profile with PFG-type dynamic-hub-and-spoke.";
+            }
+
+            leaf queue-group-instance {
+               type mef-egress-qos:queue-group-ref;
+               description
+                  "A reference to a Queue Group Instance.";
+            }
+
+            leaf stats-collection {
+                type enumeration {
+                    enum on;
+                    enum off;
+                }
+                description
+                    "Determines whether stats collection will be turned on or not for a flow-point";
+            }
+
+            list normalized-vid {
+                key "tag";
+                description
+                    "Used to represent normalized-vid values for EVPN FXC, e.g. MPLS label + vid lookup.
+                    The tag number represents the position of the normalized-vid. tag '1' represents outer most tag, tag '2' next outer most, etc.
+                    Note that the normalized-vid is used in conjunction with an ingress-l2-transform of the same flow-point.
+                    That is, an ingress-l2-xform operation of push/stamp is generally used to ensure that the frame contains the normalized-vid
+                    in flow-point to EVPN service-tunnel direction.
+                    In the case of the ingress-l2-transform stamp operation:
+                        - ingress-l2-transform stamp tag 1 (outer) matches normalized-vid tag 1 (outer).
+                        - ingress-l2-transform stamp tag 2 (next outer) matches normalized-vid tag 2 (next outer (aka inner)).
+                    In the case of the ingress-l2-transform push operation:
+                        - ingress-l2-transform push tag 1 (outer most) matches normalized-vid tag 1 (outer), when 1 tag is being pushed via the ingress-l2-transform.
+                        - ingress-l2-transform push tag 2 (next outer most) matches normalized-vid tag 1 (outer), when 2 tags are being pushed via the ingress-l2-transform.
+                        - ingress-l2-transform push tag 1 (outer most) matches normalized-vid tag 2 (next outer (aka inner)), when 2 tags are being pushed via the ingress-l2-transform.";
+
+                leaf tag {
+                    type uint8;
+                    description
+                        "The tag number represents the position of the normalized-vid. '1' represents outer most tag, '2' next outer most, etc. Note that the normalized-vid
+                        is used in conjunction with an ingress-l2-transform of the same flow-point. That is, an ingress-l2-xform operation of push/stamp is generally used
+                        to ensure that the frame contains the normalized-vid in flow-point to EVPN service-tunnel direction. 
+                        In the case of the ingress-l2-transform stamp operation: 
+                            - ingress-l2-transform stamp tag 1 (outer) matches normalized-vid tag 1 (outer). 
+                            - ingress-l2-transform stamp tag 2 (next outer) matches normalized-vid tag 2 (next outer (aka inner)). 
+                        In the case of the ingress-l2-transform push operation: 
+                            - ingress-l2-transform push tag 1 (outer most) matches normalized-vid tag 1 (outer), when 1 tag is being pushed via the ingress-l2-transform. 
+                            - ingress-l2-transform push tag 2 (next outer most) matches normalized-vid tag 1 (outer), when 2 tags are being pushed via the ingress-l2-transform. 
+                            - ingress-l2-transform push tag 1 (outer most) matches normalized-vid tag 2 (next outer (aka inner)), when 2 tags are being pushed via the ingress-l2-transform.";
+                }
+            
+                leaf vlan-id {
+                    type uint16 {
+                        range "1..4094";
+                    }
+                }
+            }
+        }
+   }
+
+   /*
+    * Statistics.
+    */
+   container fps-state {
+      config false;
+
+      description 
+         "Flow Point operational data for all Flow-Points.";
+
+      list fp {
+         key "name";
+         description
+            "The operational data for this Flow Point.";
+
+         leaf name {
+            type string;
+            description
+               "A string that identifies the flow point.";
+         }
+
+         leaf rxAcceptedBytes {
+            type uint64;
+            description
+               "Ingress accepted byte count";
+         }
+
+         leaf rxAcceptedFrames {
+            type uint64;
+            description
+               "Ingress accepted frame count";
+         }
+
+         leaf txForwardedBytes {
+             type uint64;
+             description
+                "Egress forwarded byte count";
+         }
+
+         leaf txForwardedFrames {
+            type uint64;
+            description
+               "Egress forwarded frame count";
+         }
+
+         leaf rxYellowBytes {
+            type uint64;
+            description
+               "Ingress yellow byte count";
+         }
+
+         leaf rxYellowFrames {
+            type uint64;
+            description
+               "Ingress yellow frame count";
+         }
+
+         leaf rxDroppedBytes {
+            type uint64;
+            description
+               "Ingress dropped byte count";
+         }
+
+         leaf rxDroppedFrames {
+            type uint64;
+            description
+               "Ingress dropped frame count";
+         }
+
+      }
+   } // end fps-state
+
+   // fp operational state
+   container fps-operational-state {
+      config false;
+
+      description 
+         "Flow Point operational data for all Flow-Points.";
+
+      list fp {
+         key "name";
+         description
+            "The operational data for this Flow Point.";
+
+         leaf name {
+            type string;
+            description
+               "A string that identifies the flow point.";
+         }
+
+         // Flow-point pfg-operational-state
+         leaf pfg-group {
+            type enumeration {
+                enum leaf {
+	                description 
+                        "Private forwarding group member of type leaf";
+	            }
+                enum root {
+	                description 
+                        "Private forwarding group member of type root";
+	            }
+                enum mesh {
+	                description 
+                        "Private forwarding group member of type mesh";
+	            }
+                enum spoke {
+	                description 
+                        "Private forwarding group member of type spoke";
+	            }
+                enum group-A {
+	                description 
+                        "Private forwarding group member of type group-A";
+	            }
+                enum group-B {
+	                description 
+                        "Private forwarding group member of type group-B";
+	            }
+                enum group-C {
+	                description 
+                        "Private forwarding group member of type group-C";
+	            }
+                enum group-D {
+	                description 
+                        "Private forwarding group member of type group-D";
+	            }
+                enum hub {
+	                description 
+                        "Private forwarding group member of type hub";
+	            }
+            }
+            description
+               "The Operational value of the Private-Forwarding-Group that the flow-point belongs to for the scope of a
+                Private-Forwarding-Group-Profile.
+                Can be leaf/root for a PFG-profile with PFG-type of leaf-and-root or spokemesh-and-leafroot or dynamic-leaf-and-root.
+                Can be mesh/spoke for a PFG-profile with PFG-type of spoke-and-mesh or spokemesh-and-leafroot.
+                Can be groupA/B/C/D for a PFG-profile with PFG-type of pfg-groups.
+                Can be leaf/root/dynamic for a PFG-profile with PFG-type dynamic-leaf-and-root.
+                Can be hub/spoke/dynamic for a PFG-profile with PFG-type dynamic-hub-and-spoke.";
+         }
+
+         leaf locally-switched-state {
+            type boolean;
+            description
+               "Shows the locally switched state of a flow point, which can be true or false, if applicable.";
+         }
+      }
+   } // end fps-operational-state
+
+   /*
+    * RPC
+    */
+   rpc fps-clear-statistics {
+      description "An RPC operation to clear the statistics for one or all Flow-Points.";
+
+      input {
+         choice clear-scope {
+
+            case flow-point {
+               leaf flow-point {
+                  type mef-fp:fp-ref;
+               }
+               description
+                  "Clear stats for this flow-point.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all flow-points.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string; 
+            description 
+               "Status of the clear statistics operation.";
+         }
+      }
+   } // end rpc clear-statistics
+}

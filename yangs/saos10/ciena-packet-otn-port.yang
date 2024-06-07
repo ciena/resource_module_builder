@@ -1,0 +1,1057 @@
+module ciena-packet-otn-port {
+  namespace "http://www.ciena.com/ns/yang/ciena-packet-otn-port";
+  prefix port;
+
+  import ciena-packet-typedefs {
+    prefix cntypes;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines port data for OTN layer ports. These are automatically created by the system. By default, line ports are automatically mapped to client ports via services and service-domains.";
+
+  revision 2022-03-04 {
+    description
+      "Adding new odu rate oduFlex.";
+  }
+
+  revision 2021-01-15 {
+     description
+     "Adding otu-loss-of-channel-power enum in otn-port-event-type, otu-loss-of-channel-power leaf in container otu-line-faults, otu-loss-of-channel-power leaf in otn-port-events notification.";
+  }
+
+  revision 2019-11-02 {
+    description
+      "Adding otn-port-event-type, otn-port-events notification,  odu-terminal-loopback leaf, odu-facility-loopback leaf, and otn-port-event-type leaf.";
+  }
+
+  revision 2019-10-14 {
+    description 
+      "Remove the deviation of admin-state and add line-side-faults";
+  }
+
+  revision 2018-05-17 {
+    description
+      "Based off of ciena-waveserver-port.yang";
+  }
+
+  typedef port-type-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Port type is unknown.";
+      }
+      enum "otn" {
+        status obsolete;
+        description
+          "Port type is OTN. Replaced by OTUk, OTUCn, and OTUCn-Flex types.";
+      }
+      enum "OTUk" {
+        description
+          "Port type is OTUk.";
+      }
+      enum "OTUCn" {
+        description
+          "Port type is OTUCn.";
+      }
+      enum "OTUCn-Flex" {
+        description
+          "Port represents an aggregated logical OTUCn interface.";
+      }
+    }
+    description
+      "Port type";
+  }
+
+  typedef port-rate-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Port rate is unknown.";
+      }
+      enum "OTU4" {
+        description
+          "Port rate is OTU4.";
+      }
+      enum "OTUC1" {
+        description
+          "Port rate is OTUC1.";
+      }
+      enum "OTUC2" {
+        description
+          "Port rate is OTUC2.";
+      }
+      enum "OTUC3" {
+        description
+          "Port rate is OTUC3.";
+      }
+      enum "OTUC4" {
+        description
+          "Port rate is OTUC4.";
+      }
+      enum "OTUC5" {
+        description
+          "Port rate is OTUC5.";
+      }
+      enum "OTUC6" {
+        description
+          "Port rate is OTUC6.";
+      }
+      enum "OTUC7" {
+        description
+          "Port rate is OTUC7.";
+      }
+    }
+    description
+      "Nominal port rate of the specified interface.";
+  }
+
+  typedef port-speed {
+    type decimal64 {
+      fraction-digits 4;
+      range "0.0 .. 1000.0";
+    }
+    units "Gbps";
+    description
+      "Port speed, in Gbps. Decimal value up to 4 digits.";
+  }
+
+  typedef port-operational-state {
+    type enumeration {
+      enum "down" {
+        value 0;
+        description
+          "The port or channel is not carrying traffic due to a failure or because it is disabled.";
+      }
+      enum "up" {
+        value 1;
+        description
+          "The port or channel is enabled and carrying traffic.";
+      }
+      enum "loopback-tx" {
+        value 4;
+        description
+          "The transmit direction of the port loops back internally at the PHY.";
+      }
+      enum "loopback-rx" {
+        value 5;
+        description
+          "The receive direction of the port loops back at the PHY to the transmit.";
+      }
+      enum "fault" {
+        value 7;
+        description
+          "Port or channel is faulted.";
+      }
+      enum "unavailable" {
+        value 11;
+        description
+          "Channel is unavailable due to bandwidth limitation of parent port rate.";
+      }
+      enum "lower-layer-down" {
+        description
+          "Parent layer is down (dependency or server signal failure).";
+      }
+    }
+    description
+      "Port operational state.";
+  }
+
+  typedef payload-type {
+    type string {
+      length "0..4";
+    }
+    description
+      "A string representation of an OPU payload type (PT) byte value in hexadecimal notation, e.g. '0x07'.";
+  }
+
+   typedef otn-port-event-type {
+      type enumeration {
+         enum operational-state {
+            description
+               "OTN Port operational state change (up, down).";
+         }
+         enum otu-lof {
+            description
+               "OTN Port otu-lof.";
+         }
+         enum otu-lof-cleared {
+            description
+               "OTN Port otu-lof-cleared.";
+         }
+         enum otu-bdi {
+            description
+               "OTN Port otu-bdi.";
+         }
+         enum otu-bdi-cleared  {
+            description
+               "OTN Port otu-bdi-cleared.";
+         }
+         enum odu-lom {
+            description
+               "OTN Port odu-lom.";
+         }
+         enum odu-lom-cleared {
+            description
+               "OTN Port odu-lom-cleared.";
+         }
+         enum odu-fecsf {
+            description
+               "OTN Port odu-fecsf.";
+         }
+         enum odu-fecsf-cleared {
+            description
+               "OTN Port odu-fecsf-cleared.";
+         }
+         enum odu-ais {
+            description
+               "OTN Port odu-ais.";
+         }
+         enum odu-ais-cleared {
+            description
+               "OTN Port odu-ais-cleared.";
+         }
+         enum odu-lck {
+            description
+               "OTN Port odu-lck.";
+         }
+         enum odu-lck-cleared {
+            description
+               "OTN Port odu-lck-cleared.";
+         }
+         enum odu-oci {
+            description
+               "OTN Port odu-oci.";
+         }
+         enum odu-oci-cleared {
+            description
+               "OTN Port odu-oci-cleared.";
+         }
+         enum odu-bdi {
+            description
+               "OTN Port odu-bdi.";
+         }
+         enum odu-bdi-cleared {
+            description
+               "OTN Port odu-bdi-cleared";
+         }
+         enum opu-plm {
+            description
+               "OTN Port opu-plm";
+         }
+         enum opu-plm-cleared {
+            description
+               "OTN Port opu-plm-cleared.";
+         }
+         enum otu-loss-of-channel-power {
+            description
+               "OTN port otu-loss-of-channel-power.";
+         }
+         enum otu-loss-of-channel-power-cleared {
+            description
+               "OTN port otu-loss-of-channel-power-cleared.";
+         }
+      }
+      description
+         "A generic event type describing the type of events/notifications triggered by xcvr.";
+   }
+
+  grouping otn-trace-group {
+    description
+      "OTN trail trace identifier (TTI) properties.";
+    leaf mismatch-mode {
+      type cntypes:trace-mismatch-mode;
+      description
+        "The trail trace identifier (TTI) mismatch mode, indicating which fields of the TTI overhead are used for trace mismatch detection.";
+    }
+    leaf mismatch-fail-mode {
+      type cntypes:trace-mismatch-fail-mode;
+      description
+        "The trail trace identifier (TTI) mismatch failure mode. When TTI mismatch condition occurs, this indicates the consequent action taken, e.g. whether or not to raise an alarm.";
+    }
+    leaf tx-sapi {
+      type cntypes:string-maxl-15;
+      description
+        "The source access point identifier (SAPI) portion of the transmitted
+         trace string, up to 15 characters, excluding the first byte in the TTI
+         SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-dapi {
+      type cntypes:string-maxl-15;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         transmitted trace string, up to 15 characters, excluding the first
+         byte in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-oper {
+      type cntypes:string-maxl-32;
+      description
+        "Tx operator-specific trace string, up to 32 characters. If this string value is changed the Expected Rx oper string will also be updated to the same value.";
+    }
+    leaf tx-oper-actual {
+      type cntypes:string-maxl-32;
+      config false;
+      description
+        "The actual operator-specific portion of the transmitted trace string,
+         up to 32 characters. If tx-oper-mode is 'manual' this will be the same
+         as the tx-oper attribute, otherwise it will be a system-generated
+         string.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf tx-oper-mode {
+      type enumeration {
+        enum "manual" {
+          description
+            "The user will manually assign the operator-specific portion of the
+             transmitted trace string. The format is free-form text.";
+        }
+        enum "automatic" {
+          description
+            "The system will automatically configure the operator-specific
+             portion of the transmitted trace string. The format is pre-defined
+             based on chassis MAC address, module, port, sub-port, and channel
+             number of the interface. This is the default mode for OTN line ports.";
+        }
+      }
+      description
+        "Specifies whether to allow manual provisioning of the transmitted TTI
+         string, or let the system assign this value automatically based on a
+         pre-defined format.";
+    }
+    leaf rx-sapi {
+      type cntypes:string-maxl-15;
+      config false;
+      description
+        "The source access point identifier (SAPI) portion of the received
+         trace string, up to 15 characters, excluding the first byte in the TTI
+         SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-dapi {
+      type cntypes:string-maxl-15;
+      config false;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-oper {
+      type cntypes:string-maxl-32;
+      config false;
+      description
+        "Rx operator-specific trace string, up to 32 characters.";
+    }
+    leaf rx-sapi-hex {
+      type string {
+        length "0..30";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The source access point identifier (SAPI) portion of the received
+         trace string, represented in hexadecimal notation, excluding the first
+         byte in the TTI SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-dapi-hex {
+      type string {
+        length "0..30";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The destination access point identifier (DAPI) portion of the
+         received trace string, represented in hexadecimal notation, excluding
+         the first byte in the TTI DAPI overhead, which is implicitly always
+         null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf rx-oper-hex {
+      type string {
+        length "0..64";
+        pattern '[0-9a-fA-F]*';
+      }
+      config false;
+      description
+        "The operator-specific portion of the received trace string, represented
+         in hexadecimal notation.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-sapi {
+      type cntypes:string-maxl-15;
+      description
+        "The expected source access point identifier (SAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI SAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-dapi {
+      type cntypes:string-maxl-15;
+      description
+        "The expected destination access point identifier (DAPI) portion of the
+         received trace string, up to 15 characters, excluding the first byte
+         in the TTI DAPI overhead, which is implicitly always null.";
+      reference
+        "ITU-T G.6709/Y1331";
+    }
+    leaf exp-oper {
+      type cntypes:string-maxl-32;
+      description
+        "Expected Rx operator-specific trace string, up to 32 characters. If this string value is changed the Tx oper string will also be updated to the same value.";
+    }
+  }
+
+  container otn-ports {
+    description
+      "OTN Port configuration and operational data.";
+    list ports {
+      key "port-id";
+      description
+        "Configuration and operational data for the port.";
+      leaf port-id {
+        type cntypes:port-name;
+        description
+          "Unique, access identifier string of the port in '<slot>/<port>' format.";
+      }
+      container id {
+        description
+          "Port identification attributes.";
+        leaf name {
+          type cntypes:port-name;
+          config false;
+          description
+            "Name of the port interface. Format is: '<slot>/<port>' or '<slot>/<majorport>.<minorport>'.";
+        }
+        leaf label {
+          type cntypes:description-string;
+          description
+            "The user-specified label string for this port interface.";
+        }
+        leaf type {
+          type port-type-enum;
+          description
+            "The port interface type.";
+        }
+        leaf rate {
+          type port-rate-enum;
+          config false;
+          description
+            "The port interface rate.";
+        }
+        leaf speed {
+          type port-speed;
+          config false;
+          description
+            "The port speed in Gbps.";
+        }
+        leaf interface-type {
+          type enumeration {
+            enum "i-nni" {
+              value 0;
+              description
+                "Internal Network-to-Network Interface";
+            }
+            enum "uni" {
+              value 1;
+              description
+                "User Network Interface";
+            }
+            enum "e-nni" {
+              value 2;
+              description
+                "External Network-to-Network Interface";
+            }
+          }
+          config false;
+          description
+            "The port interface type.";
+        }
+      }
+      container state {
+        description
+          "Port administrative and operational states.";
+        leaf admin-state {
+          type enumeration {
+            enum "enabled" {
+              value 1;
+              description
+                "Port is administratively enabled and ready to carry traffic.";
+            }
+            enum "disabled" {
+              value 2;
+              description
+                "Port is administratively disabled and not ready to carry traffic.";
+            }
+          }
+          description
+            "Administrative state of the port. Intended for future use.";
+        }
+        leaf operational-state {
+          type port-operational-state;
+          config false;
+          description
+            "The operational state of the port.";
+        }
+        leaf operational-state-duration {
+          type uint32;
+          units "seconds";
+          config false;
+          description
+            "Amount of time since last state transition.";
+        }
+      }
+
+      container properties {
+        description
+          "Port properties.";
+        leaf loopback {
+          type enumeration {
+            enum "disabled" {
+              description
+                "Loopback is disabled.";
+            }
+            enum "rx" {
+              description
+                "Rx loopback is enabled.";
+            }
+            enum "tx" {
+              description
+                "Tx loopback is enabled.";
+            }
+          }
+          description
+            "Port PHY layer loopback. RX loopback is a loopback forwarding ingress traffic from RX port directly to TX port. TX loopback is a loopback forwarding egress traffic from TX port directly to RX port, TX loopback is not supported in I-NNI ports. The RX/TX loopback can only be enabled when the port admin-state is disabled. Enable an RX/TX loopback shall fail when the port has its admin-state enabled. Users shall be able to disable the xcvr/ptp when its child port loopback enabled. Enable xcvr/ptp shall not enable its child port with loopback enabled. A port shall has its operational state rx loopback when rx loopback is enabled, and tx loopback when tx loopback is enabled.";
+        }
+        leaf forward-error-correction {
+          type cntypes:enabled-disabled-enum;
+          status deprecated;
+          description
+            "Forward error correction";
+        }
+        leaf service-index {
+          type cntypes:service-idx;
+          config false;
+          description
+            "The index number of the service the port is attached to. Only applies to UNI interface type.";
+        }
+        leaf service-domain-index {
+          type cntypes:service-domain-idx;
+          config false;
+          description
+            "The index number of the service domain the port is attached to. Only applies to I-NNI interface type.";
+        }
+        container otn {
+          when "../../id/type[.='OTUk' or .='OTUCn' or .='OTUCn-Flex']"  {
+            description
+              "OTN properties container only applies with the port type is 'otn'.";
+          }
+          description
+            "OTN-specific properties.";
+
+          leaf odu-termination {
+            type enumeration {
+              enum terminated {
+                description
+                  "ODUk layer is terminated at this port.";
+              }
+              enum passthrough {
+                description
+                  "ODUk layer is not terminated at this port.";
+              }
+            }
+            description
+              "ODUk termination mode.";
+          }
+          leaf pre-fec-otu-sf-threshold {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.0 .. 1.0";
+            }
+            units "dBQ";
+            status deprecated;
+            description
+              "Pre-FEC OTU Signal Fail threshold value.";
+          }
+          leaf pre-fec-otu-sd-threshold {
+            type decimal64 {
+              fraction-digits 2;
+              range "-1.0 .. 3.50";
+            }
+            units "dBQ";
+            status deprecated;
+            description
+              "Pre-FEC OTU Signal Degrade threshold value.";
+          }
+          leaf otu-sd-threshold {
+            type cntypes:string-sci;
+            description
+              "OTU Signal Degrade threshold value, e.g. '10E-06' to '10E-09'.";
+          }
+          leaf odu-sd-threshold {
+            type cntypes:string-sci;
+            description
+              "ODUk Signal Degrade threshold value, e.g. '10E-05' to '10E-09'.";
+          }
+          leaf conditioning-type {
+            type enumeration {
+              enum "otn" {
+                description
+                  "Standard OTN conditioning type behavior.";
+              }
+              enum "laser-off" {
+                description
+                  "Disable the transmitter consequent action.";
+              }
+            }
+            description
+              "Conditioning type for OTN ports.";
+          }
+          container trace {
+            description
+              "OTN port trace attributes";
+            container section {
+              description
+                "OTUk section trace attributes for this port.";
+              uses otn-trace-group;
+            }
+            container path {
+              description
+                "ODUk path trace attributes for this port.";
+              uses otn-trace-group;
+            }
+          }
+          container otu-line-faults {
+            config false;
+             description
+                "OTU line-faults.";
+             leaf otu-lof {
+                type empty;
+                config false;
+                description
+                   "OTU-LOF, loss-of-frame is occurring when this leaf is present.";
+             }
+             leaf otu-bdi {
+                type empty;
+                config false;
+                description
+                   "OTU-BDI, backward-defect-indication is occurring when this leaf is present.";
+             }
+             leaf otu-loss-of-channel-power {
+                type empty;
+                config false;
+                description
+                  "OTU loss of channel power is occurring when this leaf is present.";
+             }
+          }
+        }
+      }
+      list channels {
+        when "../id/type[.='OTUk' or .='OTUCn' or .='OTUCn-Flex'] and ../properties/otn/odu-termination = 'terminated'" {
+          description
+            "Channels list only applies for OTUk ports that have ODUk layer terminated.";
+        }
+        key "channel-id";
+        description
+          "List of ODU4 channels within the parent OTU port object.";
+        leaf channel-id {
+          type uint8 {
+            range "1..8";
+          }
+          description
+            "Channel number or ODU4 tributary number within the parent OTU port object. Key value for the channels list.";
+        }
+        container id {
+          description
+            "Channel identification attributes.";
+          leaf name {
+            type cntypes:name-string;
+            config false;
+            description
+              "Name of the channel object. Format is: '<slot>-<port>.<channel>'.";
+          }
+          leaf label {
+            type cntypes:description-string;
+            description
+              "The user-specified label string for this channel object.";
+          }
+          leaf type {
+            type enumeration {
+              enum odu {
+                description
+                  "ODU channel.";
+              }
+            }
+            config false;
+            description
+              "The channel interface type.";
+          }
+          leaf rate {
+            type enumeration {
+              enum odu4 {
+                description
+                  "ODU4 rate.";
+              }
+              enum oduFlex {
+                description
+                  "ODUFLEX rate.";
+              }
+            }
+            config false;
+            description
+              "The channel rate.";
+          }
+          leaf speed {
+            type port-speed;
+            config false;
+            description
+              "The channel speed in Gbps.";
+          }
+        }
+
+        container state {
+          description
+            "Channel administrative and operational states.";
+          leaf admin-state {
+            type cntypes:enabled-disabled-enum;
+            description
+              "The configured administrative state of the channel.";
+          }
+          leaf operational-state {
+            type port-operational-state;
+            config false;
+            description
+              "The operational state of the channel.";
+          }
+          leaf operational-state-duration {
+            type uint32;
+            units "seconds";
+            config false;
+            description
+              "Amount of time since last state transition.";
+          }
+          container odu-line-faults {
+            config false;
+             description
+                "ODU line-faults for channel.";
+             leaf odu-lom {
+                type empty;
+                config false;
+                description
+                   "ODU-LOM, loss-of-multiframe is occurring when this leaf is present.";
+             }
+             leaf odu-fecsf {
+                type empty;
+                config false;
+                description
+                   "ODU-FECSF, far-end-client-signal-fail is occurring when this leaf is present.";
+             }
+             leaf odu-ais {
+                type empty;
+                config false;
+                description
+                   "ODU-AIS, alarm-indication-signal is occurring when this leaf is present.";
+             }
+             leaf odu-lck {
+                type empty;
+                config false;
+                description
+                   "ODU-LCK, loss-of-clock is occurring when this leaf is present.";
+             }
+             leaf odu-oci {
+                type empty;
+                config false;
+                description
+                   "ODU-OCI, open-connection-indication is occurring when this leaf is present.";
+             }
+             leaf odu-bdi {
+                type empty;
+                config false;
+                description
+                   "ODU-BDI, backward-defect-indication is occurring when this leaf is present.";
+             }
+          }
+          container opu-line-faults {
+            config false;
+             description
+                "OPU line-faults for channel.";
+             leaf opu-plm {
+                type empty;
+                config false;
+                description
+                   "OPU-PLM, payload-mismatch is occurring when this leaf is present.";
+             }
+          }
+        }
+        container properties {
+          description
+            "Channel properties.";
+          leaf service-index {
+            type cntypes:service-idx;
+            config false;
+            description
+              "The index number of the service the channel is attached to, if applicable.";
+          }
+          leaf service-domain-index {
+            type cntypes:service-domain-idx;
+            config false;
+            description
+              "The index number of the service domain the channel is attached to, if applicable.";
+          }
+          leaf odu-sd-threshold {
+            type cntypes:string-sci;
+            description
+              "ODU4 Signal Degrade threshold value.";
+          }
+          leaf odu-termination {
+            type enumeration {
+              enum terminated {
+                description
+                  "ODU4 layer is terminated at this channel.";
+              }
+              enum passthrough {
+                description
+                  "ODU4 layer is not terminated at this channel.";
+              }
+            }
+            config false;
+            description
+              "ODU4 channel termination mode.";
+          }
+          leaf tx-payload-type {
+            type payload-type;
+            config false;
+            description
+              "The transmitted (and expected) OPU4 payload type for this channel (e.g. 0x07).";
+          }
+          leaf rx-payload-type {
+            type payload-type;
+            config false;
+            description
+              "The actual received OPU4 payload type for this channel (e.g. 0x07).";
+          }
+          container trace {
+            description
+              "ODU4 path trace attributes for this channel.";
+            uses otn-trace-group;
+          }
+          leaf odu-terminal-loopback {
+            type boolean;
+            description
+                "Loopback in the terminal direction. Traffic due to egress the odu is looped back in the ingress direction";
+          }
+          leaf odu-facility-loopback {
+            type boolean;
+            description
+                "Loopback in the facility direction. Traffic ingressing the odu is looped back in the egress direction";
+          }
+        }
+      }
+      leaf otn-port-event-type {
+         config false;
+         type otn-port-event-type;
+         description
+            "Description of the otn-port event types";
+      }
+    }
+  }
+
+  rpc port-trace-copy-rx-to-exp {
+    description
+      "Copy the current received trace value to the expected trace config string.";
+    input {
+      leaf interface-name {
+        type cntypes:string-maxl-32;
+        mandatory true;
+        description
+          "Interface name of the port or channel on which to perform the
+           action. If the trace-layer is 'section' or 'path', this should be a
+           port object identifier. If the trace-layer is 'channel', this should
+           be a channel object identifier.";
+      }
+      leaf trace-layer {
+        type enumeration {
+          enum section {
+            description
+              "Copy the OTUk section rx trace to exp.";
+          }
+          enum path {
+            description
+              "Copy the ODUk path rx trace to exp.";
+          }
+          enum channel {
+            description
+              "Copy the ODU4 channel path rx trace to exp.";
+          }
+        }
+        mandatory true;
+        description
+          "The trace layer on which to perform the copy action, either port
+           section/path or channel.";
+      }
+      leaf trace-type {
+        type enumeration {
+          enum sapi {
+            description
+              "Copy the SAPI portion of the trace string only.";
+          }
+          enum dapi {
+            description
+              "Copy the DAPI portion of the trace string only.";
+          }
+          enum operator {
+            description
+              "Copy the operator-specifiec portion of the trace string only.";
+          }
+        }
+        mandatory true;
+        description
+          "Specifies which portion(s) of the trace string to copy.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cntypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+   notification otn-port-events {
+      list otn-port-event {
+         description
+            "Defines otn-port related events and associated data used to publish change in the state of the otn-port instance.";
+
+         leaf port-id {
+            type leafref {
+               path "/port:otn-ports/port:ports/port:port-id";
+            }
+         } 
+         list event-list {
+            leaf event-type {
+               type leafref {
+                  path "/port:otn-ports/port:ports/otn-port-event-type";
+               }
+               description
+                  "The event-type for the notification. 'any' means any event-type";
+            }
+         }
+         leaf channel {
+            type leafref {
+               path "/port:otn-ports/port:ports[port:port-id=current()/../port:port-id]/port:channels/port:channel-id"; 
+            }
+         }
+         leaf operational-state {
+            type leafref {
+               path "/port:otn-ports/port:ports/port:state/port:operational-state";
+            }
+            description "Otn Port operational state change (up, down etc.)";      
+         }
+         leaf otu-lof {
+            type empty;
+            description "OTU-LOF present.";
+         }
+         leaf otu-lof-cleared {
+            type empty;
+            description "OTU-LOF cleared.";
+         }
+         leaf otu-bdi {
+            type empty;
+            description "OTU-BDI present.";
+         }
+         leaf otu-bdi-cleared {
+            type empty;
+            description "OTU-BDI cleared.";
+         }
+         leaf otu-loss-of-channel-power {
+            type empty;
+            description "OTU loss of channel power present.";
+         }
+         leaf otu-loss-of-channel-power-cleared {
+            type empty;
+            description "OTU loss of channel power cleared.";
+         }
+         leaf odu-lom {
+            type empty;
+            description "ODU-LOM present.";
+         }
+         leaf odu-lom-cleared {
+            type empty;
+            description "ODU-LOM cleared.";
+         }
+         leaf odu-fecsf {
+            type empty;
+            description "ODU-FECSF present.";
+         }
+         leaf odu-fecsf-cleared {
+            type empty;
+            description "ODU-FECSF cleared.";
+         }
+         leaf odu-ais {
+            type empty;
+            description "ODU-AIS present.";
+         }
+         leaf odu-ais-cleared {
+            type empty;
+            description "ODU-AIS cleared.";
+         }
+         leaf odu-lck {
+            type empty;
+            description "ODU-LCK present.";
+         }
+         leaf odu-lck-cleared {
+            type empty;
+            description "ODU-LCK cleared.";
+         }
+         leaf odu-oci {
+            type empty;
+            description "ODU-OCI present.";
+         }
+         leaf odu-oci-cleared {
+            type empty;
+            description "ODU-OCI cleared.";
+         }
+         leaf odu-bdi {
+            type empty;
+            description "ODU-BDI present.";
+         }
+         leaf odu-bdi-cleared {
+            type empty;
+            description "ODU-BDI cleared.";
+         }
+         leaf opu-plm {
+            type empty;
+            description "OPU-PLM present.";
+         }
+         leaf opu-plm-cleared {
+            type empty;
+            description "OPU-PLM cleared.";
+         }
+      }
+   }
+}

@@ -1,0 +1,409 @@
+module ciena-ipv6-router-advertisements {
+  yang-version 1.1;
+  namespace   "http://ciena.com/ns/yang/ciena-ipv6-router-advertisements";
+  prefix "cn-ipv6-router-adv";
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import openconfig-interfaces {
+    prefix oc-if;
+  }
+
+  import ciena-openconfig-if-ip { 
+    prefix cn-ip;
+  }
+
+  import ietf-yang-types {
+    prefix "ietf-yt";
+  }
+
+  import ciena-openconfig-interfaces {
+    prefix cn-if;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "Copyright (c) 2023 Ciena Corporation.  All rights
+     reserved.
+
+     All information and intellectual property contained in this
+     YANG module (Specification) is, and remains the property
+     of Ciena Corporation. Ciena retains all title and ownership
+     in the Specification, including any revisions.
+
+     Ciena grants all interested parties that access the
+     Specification with the intent to use or distribute ('you') a
+     non-exclusive, no-cost license to use and distribute
+     unmodified copies of the Specification solely in connection
+     with the management of Ciena products sold by or on
+     behalf of Ciena, provided this copyright notice and license
+     appear on all copies. Ciena may rescind or modify this
+     license at any time.
+
+     This Specification is supplied 'as is', and Ciena makes no
+     warranty, either express or implied, as to the use, operation,
+     condition, or performance of the Specification. You agree
+     that Ciena has no liability for your use of the Specification.";
+
+  revision "2023-11-03" {
+    description
+      "Initial version of proprietary ipv6 router advertisements model.";
+  }
+
+  // typedef statements
+
+  typedef default-pref-type {
+    description
+      "A Default Router Preference (DRP) type is used to set
+       router preference for default gateway.";
+    type enumeration {
+      enum medium {
+        description
+          "Set the router preference to medium.";
+      }
+      enum high {
+        description
+          "Set the router preference to high.";
+      }
+      enum low {
+        description
+          "Set the router preference to low.";
+      }
+    }
+  }
+
+  augment /oc-if:interfaces/oc-if:interface/cn-ip:ipv6 {
+    description
+      "Augments interface configuration with parameters of IPv6
+       Router Advertisements.";
+    container router-advertisements {
+      when "../../oc-if:config/cn-if:type[.='ip' or .='point-to-point' or .='ip-unnumbered']";
+      description
+        "Support for IPv6 Router Advertisements.";
+      leaf send-advertisements {
+        type boolean;
+        default "false";
+        description
+          "A flag indicating whether or not the router sends
+           periodic Router Advertisements and responds to
+           Router Solicitations.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvSendAdvertisements";
+      }
+      leaf max-rtr-adv-interval {
+        type uint16 {
+          range "4..1800";
+        }
+        units "seconds";
+        default "600";
+        must ". > 9 or (. <= 9 and ../min-rtr-adv-interval)" {
+           error-message "The min-rtr-adv-interval must be configured when max-rtr-adv-interval <= 9";
+        }
+        description
+          "The maximum time allowed between sending unsolicited
+           multicast Router Advertisements from the interface.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - MaxRtrAdvInterval";
+      }
+      leaf min-rtr-adv-interval {
+        type uint16 {
+          range "3..1350";
+        }
+        units "seconds";
+        must ". <= 0.75 * ../max-rtr-adv-interval" {
+          description
+            "The value MUST NOT be greater than 75% of
+             'max-rtr-adv-interval'.";
+        }
+        description
+          "The minimum time allowed between sending unsolicited
+           multicast Router Advertisements from the interface.
+
+           The default value to be used operationally if this
+           leaf is not configured is determined as follows:
+
+           - if max-rtr-adv-interval >= 9 seconds, the default
+             value is 0.33 * max-rtr-adv-interval;
+
+           - otherwise, it is 0.75 * max-rtr-adv-interval.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - MinRtrAdvInterval";
+      }
+      leaf managed-flag {
+        type boolean;
+        default "false";
+        description
+          "The value to be placed in the 'Managed address
+           configuration' flag field in the Router
+           Advertisement.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvManagedFlag";
+      }
+      leaf other-config-flag {
+        type boolean;
+        default "false";
+        description
+          "The value to be placed in the 'Other configuration'
+           flag field in the Router Advertisement.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvOtherConfigFlag";
+      }
+      leaf link-mtu {
+        type uint32 {
+          range "0|1280..9800";
+        }
+        default "0";
+        must ". <= ../../../oc-if:config/mtu or not(../../../oc-if:config/mtu)" {                     
+           error-message "Radv MTU cannot be greater than MTU on interface.";
+        }
+        description
+          "The value to be placed in MTU options sent by the
+           router.  A value of zero indicates that no MTU options
+           are sent.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvLinkMTU";
+      }
+      leaf reachable-time {
+        type uint32 {
+          range "0..3600000";
+        }
+        units "milliseconds";
+        default "0";
+        description
+          "The value to be placed in the Reachable Time field in
+           the Router Advertisement messages sent by the router.
+           A value of zero means unspecified (by this router).";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvReachableTime";
+      }
+      leaf retrans-timer {
+        type uint32;
+        units "milliseconds";
+        default "0";
+        description
+          "The value to be placed in the Retrans Timer field in
+           the Router Advertisement messages sent by the router.
+           A value of zero means unspecified (by this router).";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvRetransTimer";
+      }
+      leaf cur-hop-limit {
+        type uint8;
+        default "64";
+        description
+          "The value to be placed in the Cur Hop Limit field in
+           the Router Advertisement messages sent by the router.
+           A value of zero means unspecified (by this router).
+
+           If this parameter is not configured, the device SHOULD
+           use the IANA-specified value for the default IPv4
+           Time to Live (TTL) parameter that was in effect at the
+           time of implementation.";
+        reference
+          "RFC 3232: Assigned Numbers: RFC 1700 is Replaced by
+                     an On-line Database
+           RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvCurHopLimit
+           IANA: IP Parameters
+                 (https://www.iana.org/assignments/ip-parameters)";
+      }
+      leaf default-lifetime {
+        type uint16 {
+          range "0..9000";
+        }
+        units "seconds";
+        must ". >= ../max-rtr-adv-interval or .= 0" {
+           error-message "The default lifetime must be greater than equal to
+                          max-rtr-adv-interval.";
+        }
+        description
+          "The value to be placed in the Router Lifetime field of
+           Router Advertisements sent from the interface, in
+           seconds.  It MUST be either zero or between
+           max-rtr-adv-interval and 9000 seconds.  A value of zero
+           indicates that the router is not to be used as a
+           default router.  These limits may be overridden by
+           specific documents that describe how IPv6 operates over
+           different link layers.
+
+           If this parameter is not configured, the device SHOULD
+           use a value of 3 * max-rtr-adv-interval.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvDefaultLifetime";
+      }
+      leaf solicit-ra-unicast {
+        type boolean;
+        default "false";
+        description
+          "Send router advertisements as unicast in response to the router
+           solicitation message.";
+      }
+      leaf default-preference {
+        type default-pref-type;
+        default "medium";
+        description
+          "When a node receives Router Advertisement messages from multiple
+           routers,the Default Router Preference (DRP) is used to determine
+           which router to prefer as a default gateway.
+           can be set to Low (1), Medium (0), or High(3).";
+      }
+      leaf source-link-layer-address {
+        type boolean;
+        default "true";
+        description
+          "When set, the link-layer address of the outgoing interface is included in the RA.";
+      }
+      leaf add-interface-addresses {
+        type boolean;
+        default "false";
+        description
+          "Add prefixes from the interface's configured global addresses.";
+      }
+      container prefix-list {
+        description
+          "Support for prefixes to be placed in Prefix
+           Information options in Router Advertisement messages
+           sent from the interface.
+
+           Prefixes that are advertised by default but do not
+           have their entries in the child 'prefix' list are
+           advertised with the default values of all parameters.
+
+           The link-local prefix SHOULD NOT be included in the
+           list of advertised prefixes.";
+        reference
+          "RFC 4861: Neighbor Discovery for IP version 6 (IPv6)
+                     - AdvPrefixList";
+        list prefix {
+          key "prefix-spec";
+          max-elements 16;
+          description
+            "Support for an advertised prefix entry.";
+          leaf prefix-spec {
+            type inet:ipv6-prefix;
+            description
+              "IPv6 address prefix.";
+          }
+          leaf no-advertise {
+            type boolean;
+            default "false";
+            description
+              "The prefix will not be advertised.
+
+               This can be used for removing the prefix from
+               the default set of advertised prefixes.";
+          }
+          leaf valid-lifetime {
+            when "../cn-ipv6-router-adv:no-advertise='false'";
+            type uint32;
+            units "seconds";
+            default "2592000";
+            description
+              "The value to be placed in the Valid Lifetime
+               in the Prefix Information option.  The
+               designated value of all 1's, or (0xffffffff)
+               represents infinity.The value must be greater
+               than preferred-lifetime.";
+            reference
+              "RFC 4861: Neighbor Discovery for IP version 6
+                         (IPv6) - AdvValidLifetime";
+           }
+           leaf on-link-flag {
+             when "../cn-ipv6-router-adv:no-advertise='false'";
+             type boolean;
+             default "true";
+             description
+               "The value to be placed in the on-link flag
+                ('L-bit') field in the Prefix Information
+                option.";
+             reference
+               "RFC 4861: Neighbor Discovery for IP version 6
+                          (IPv6) - AdvOnLinkFlag";
+           }
+           leaf preferred-lifetime {
+             when "../cn-ipv6-router-adv:no-advertise='false'";
+             type uint32;
+             units "seconds";
+             must ". <= ../valid-lifetime" {
+             description
+               "This value MUST NOT be greater than
+                valid-lifetime.";
+             }
+             default "604800";
+             description
+               "The value to be placed in the Preferred
+                Lifetime in the Prefix Information option.
+                The designated value of all 1's, or (0xffffffff)
+                represents infinity.The value must be less than equal
+                to valid-lifetime.";
+             reference
+               "RFC 4861: Neighbor Discovery for IP version 6
+                          (IPv6) - AdvPreferredLifetime";
+           }
+           leaf autonomous-flag {
+             when "../cn-ipv6-router-adv:no-advertise='false'";
+             type boolean;
+             default "true";
+             description
+               "The value to be placed in the Autonomous Flag
+                field in the Prefix Information option.";
+             reference
+               "RFC 4861: Neighbor Discovery for IP version 6
+                          (IPv6) - AdvAutonomousFlag";
+          }
+        }
+      }
+    }
+  }
+
+  augment "/oc-if:interfaces/oc-if:interface/oc-if:state/oc-if:counters" {
+  // CIENA addition: router advertisements and router solicitations statistics parameters
+
+    leaf out-router-adv-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of packets sent for router advertisement.";
+    }
+
+    leaf out-router-adv-octets {
+      type ietf-yt:counter64;
+      description
+        "The number of octets sent for router advertisement.";
+    }
+
+    leaf in-router-solicitation-pkts {
+      type ietf-yt:counter64;
+      description
+        "The number of packets received for router solicitation.";
+    }
+
+    leaf in-router-solicitation-octets {
+      type ietf-yt:counter64;
+      description
+        "The number of octets received for router solicitation.";
+    }
+  }
+}

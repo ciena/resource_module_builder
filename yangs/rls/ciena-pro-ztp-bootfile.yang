@@ -1,0 +1,120 @@
+module ciena-pro-ztp-bootfile {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-ztp-bootfile";
+  prefix ciena-pro-ztp-bootfile;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "This module defines zero touch provisioning bootfile for Ciena's 6500r Platform.";
+
+  revision 2021-10-27 {
+    description
+      "Add registrationId and licenseEncryptedKey for supporting licensing";
+    ciena-common-version:string "1.0.1";
+  }
+  revision 2018-09-07 {
+    description
+      "Initial version";
+    ciena-common-version:string "1.0.0";
+  }
+
+  grouping CienaCommandFile {
+    description
+      "Bootfile structure";
+    leaf name {
+      type string {
+        length "1..63";
+      }
+      mandatory true;
+      description
+        "Product Name";
+    }
+    leaf version {
+      type string {
+        length "1..63";
+      }
+      mandatory true;
+      description
+        "Product Version";
+    }
+    leaf configFilePath {
+      type string {
+        length "1..511";
+      }
+      description
+        "Path to the configuration file. It specifies the location of the configuration file and can be file path or URL";
+    }
+    leaf configFileRule {
+      type enumeration {
+        enum ignoreonfailure {
+          description
+            "The NE completes the ZTP process even if there exist commands that fail to execute.";
+        }
+        enum stopOnFailure {
+          description
+            "The NE stops the ZTP process at the first failed command.";
+        }
+        enum retryOnFailure {
+          description
+            "The NE decommissions the NE and restarts the ZTP process when there exist commands that fail to execute.";
+        }
+        enum autoConfigRouting {
+          description
+            "The NE automatically derives routing protocol provisioning if the config file does not exist.";
+        }
+      }
+      default "retryOnFailure";
+      description
+        "Path to the configuration file. It specifies the NE behavior when a configuration error is detected. Ignore if configFilePath is a script.";
+    }
+    leaf ztpTimeout {
+      type uint16 {
+        range "0..1440";
+      }
+      default "0";
+      description
+        "It specifies the time interval (in minutes) between retries. The default value is 60 minutes and can be overwritten by a value between 30 minutes and 24 hours. After three times of retries, the time interval is adjusted to 24 hours. If the value is 0, the ZTP starts infinite retries without waiting.";
+    }
+    leaf scriptFilePath {
+      type string {
+        length "1..511";
+      }
+      description
+        "Path to the script file. It specifies the location of the script file and can be file path or URL";
+    }
+    leaf licenseFile {
+      type string {
+        length "1..511";
+      }
+      description
+        "Path to the lease file";
+    }
+    leaf registrationId {
+      type string {
+        length "1..63";
+      }
+      description
+        "Registeration ID";
+    }
+    leaf licenseEncryptedKey {
+      type string {
+        length "1..64";
+      }
+      description
+        "License encryption key";
+    }
+    leaf packagePath {
+      type string {
+        length "1..511";
+      }
+      description
+        "Path to the software load";
+    }
+  }
+}

@@ -1,0 +1,831 @@
+module ciena-bfd-types {
+
+  namespace "http://ciena.com/ns/yang/ciena-bfd-types";
+
+  prefix "bfd-types";
+
+  import iana-bfd-types {
+    prefix "iana-bfd-types";
+  }
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
+
+  import ietf-yang-types {
+    prefix "yang";
+  }
+
+  organization
+      "Ciena Corporation";
+
+  contact
+     "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                  U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+     "This YANG module defines Ciena's BFD Types.
+
+      Copyright (c) 2019  Ciena Corporation.  All rights
+      reserved.
+
+      All information contained herein is, and remains the
+      property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained
+      from Ciena Corporation.";
+
+  revision 2023-01-03 {
+     description
+        "Added new initiator session type for Seamless BFD 
+         support on SR candidate-path.
+         Added new IGP client OSPFv3 for BFD.
+         Added group parameters for micro-BFD profile support.
+         Added feature for micro-bfd platform specific support.
+         Added new micro-bfd session type.";
+  }
+
+  revision 2021-07-19 {
+     description
+        "Added support for Seamless-BFD over SR-policy.
+         Added feature name 'seamless-bfd' for general Seamless-BFD
+         feature and 'accelerated-seamless-bfd' for HW support."; 
+  }
+
+  revision 2021-06-30 {
+     description
+        "Added group bfd-session-config-entry-params for bfd session-config-entry.
+         Added group profile-common-params for bfd-profiles container
+         Added new sub-container to enable BFD for IPv6 address family per interface level.";
+  }
+
+  revision 2021-02-01 {
+     description
+       "Added a leaf statistics-collection (on/off).";
+  }
+
+  revision 2020-08-19 {
+     description 
+       "Added bfd-session-type.
+        Added identity bfd-client.
+        Added grouping bfd-client-info.
+        Added grouping session-statistics-summary.
+        Added feature for accelerated BFD.
+        Added an enum of value 3300 (3.3ms).";
+  }
+
+  revision 2010-02-14 {
+     description "Initial revision.";
+  }
+
+  /* Feature definition */
+  feature accelerated-bfd {
+     description
+        "Support for accelerated BFD.";
+  }
+
+  feature seamless-bfd {
+     description
+        "Support for Seamless-BFD as general feature.";
+  }
+
+  feature accelerated-seamless-bfd {
+     description
+        "Support for Seamless-BFD as HW sessions.";
+     if-feature seamless-bfd;
+  }
+  
+  feature micro-bfd {
+    description
+      "Support for micro-bfd as general feature";
+  }
+
+  /*
+   * Identity definitions
+   */
+  identity bfdv1 {
+     description
+        "BFD protocol version 1.";
+     reference
+        "RFC 5880: Bidirectional Forwarding Detection (BFD).";
+  }
+
+  identity path-type {
+     description
+        "Base identity for BFD path type. The path type indicates
+        the type of path on which BFD is running.";
+  }
+
+  identity path-ip-sh {
+     base path-type;
+     description
+        "BFD on IP single hop.";
+     reference
+        "RFC 5881: Bidirectional Forwarding Detection (BFD)
+        for IPv4 and IPv6 (Single Hop).";
+  }
+
+  identity path-ip-mh {
+     base path-type;
+     description
+        "BFD on IP multihop paths.";
+     reference
+        "RFC 5883: Bidirectional Forwarding Detection (BFD) for
+        Multihop Paths.";
+  }
+
+  identity encap-type {
+     description
+        "Base identity for BFD encapsulation type.";
+  }
+
+  identity encap-ip {
+     base encap-type;
+     description
+        "BFD with IP encapsulation.";
+  }
+
+  identity bfd-client {
+     description
+        "Client types for BFD sessions.";
+  }
+
+  identity bfd-client-cli {
+     base bfd-client;
+     description
+        "BFD CLI as client.";
+  }
+
+  identity bfd-client-isis {
+     base bfd-client;
+     description
+        "IGP ISIS as client.";
+  }
+
+  identity bfd-client-ospf {
+     base bfd-client;
+     description
+        "IGP OSPF as client.";
+  }
+
+  identity bfd-client-bgp {
+     base bfd-client;
+     description
+        "BGP as client.";
+  }
+
+  identity bfd-client-ospfv3 {
+     base bfd-client;
+     description
+        "IGP OSPFV3 as client.";
+  }
+
+
+  /*
+   * Type Definitions
+   */
+  typedef discriminator {
+     type uint32;
+     description
+        "BFD discriminator as described in RFC 5880.";
+  }
+
+  typedef state {
+     type enumeration {
+        enum adminDown {
+           value 0;
+           description
+              "BFD session is administratively down";
+        }
+        enum down {
+           value 1;
+           description
+              "BFD session is down";
+        }
+        enum init {
+           value 2;
+           description
+              "BFD session is in init state";
+        }
+        enum up {
+           value 3;
+           description
+              "BFD session is established";
+        }
+     }
+     description
+        "BFD state as defined in RFC 5880.";
+  }
+
+  typedef multiplier {
+     type uint8 {
+        range 3..50;
+     }
+     description
+        "BFD multiplier as described in RFC 5880.";
+  }
+
+  typedef intervals {
+     type enumeration {
+        enum 10000 {
+           value 0;
+           description
+              "10ms interval";
+        }
+        enum 20000 {
+           value 1;
+           description
+              "20ms interval";
+        }
+        enum 50000 {
+           value 2;
+           description
+              "50ms interval";
+        }
+        enum 100000 {
+           value 3;
+           description
+              "100ms interval";
+        }
+        enum 300000 {
+           value 4;
+           description
+              "300ms interval";
+        }
+        enum 1000000 {
+           value 5;
+           description
+              "1second interval";
+        }
+        enum 10000000 {
+           value 6;
+           description
+              "10seconds interval";
+        }
+        enum 3300 {
+           value 7;
+           description
+              "3.3ms interval";
+        }
+     }
+     units microseconds;
+     description
+        "Supported BFD intervals.";
+  }
+
+  typedef bfd-session-type {
+     type enumeration {
+        enum ip-single-hop {
+          value 0;
+          description
+             "IP single-hop BFD session";
+        }
+        enum ip-multi-hop {
+          value 1;
+          description
+             "IP multi-hop BFD session";
+        }
+        enum tp-ingress-corout {
+          value 2;
+          description
+             "Ingress MPLS-TP co-routed LSP BFD session";
+        }
+        enum tp-egress-corout {
+          value 3;
+          description
+             "Egress MPLS-TP co-routed LSP BFD session";
+        }
+        enum mpls-seamless-reflector {
+           description
+              "Seamless-BFD Reflector session.";
+           value 4;
+        }
+        enum sr-policy-seamless-initiator {
+           description
+              "Seamless-BFD over SR-policy Initiator session.";
+           value 5;
+        }
+        enum sr-candidate-path-seamless-initiator {
+           description
+              "Seamless-BFD over SR candidate-path Initiator 
+              session.";
+           value 6;
+        }
+        enum micro-bfd {
+           description
+              "Micro BFD Session.";
+           value 7;
+        }
+     }
+    description
+      "BFD session type, this indicates the path type that BFD is
+       running on";
+  }
+
+  /*
+   * Groupings
+   */
+
+  grouping base-cfg-parms {
+     description "BFD grouping for base config parameters.";
+     leaf local-multiplier {
+        type multiplier;
+        default 3;
+        description
+           "Multiplier transmitted by local system.";
+     }
+
+     leaf desired-min-tx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Desired minimum transmit interval of control packets in microseconds.";
+     }
+
+     leaf required-min-rx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Required minimum receive interval of control packets in microseconds.";
+     }
+
+     leaf accelerate {
+        if-feature accelerated-bfd;
+        type boolean;
+        default false;
+        description
+           "If enabled, BFD will run in an accelerated mode (for example, in hardware).";
+     }
+     leaf statistics-collection {
+        when "../accelerate = 'true'";
+        if-feature accelerated-bfd;
+        type enumeration {
+           enum on {
+              value 0;
+              description
+                 "Statistics-collection will be on for accelerated BFD session";
+           }
+           enum off {
+              value 1;
+              description
+                 "Statistics-collection will be off for accelerated BFD session";
+           }
+        }
+        default off;
+        description
+           "Determines whether statistics collection will be turned on or off for accelerated BFD session.";
+     }
+  }
+
+  grouping base-seamless-bfd-profile-params-grouping {
+     description "Grouping for common profile parameters for any Seamless-BFD Initiator session.";
+     leaf name {
+        description
+           "Profile name for Seamless-BFD Initiator session.";
+        type string {
+           length "1..64";
+        }
+     }
+
+     leaf local-multiplier {
+        description
+           "Multiplier transmitted by local system.";
+        type multiplier;
+        default 3;
+     }
+
+     leaf desired-min-tx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Desired minimum transmit interval of control packets in microseconds.";
+     }
+
+     leaf accelerate {
+        if-feature accelerated-seamless-bfd;
+        type boolean;
+        default true;
+        description
+           "If enabled, BFD will run in an accelerated mode on hardware.";
+     }
+  }
+
+  grouping client-cfg-parms {
+     description
+        "BFD grouping for configuration parameters
+        used by clients of BFD, e.g. IGP or MPLS.";
+
+     leaf enable {
+        type boolean;
+        default false;
+        description
+           "Enable BFD.";
+     }
+  }
+
+  grouping client-cfg-ipv6-parms {
+     description
+        "BFD IPv6 grouping for configuration parameters
+     used by clients of BFD, e.g. IGP or MPLS.";
+
+     leaf enable-ipv6 {
+        type boolean;
+        default false;
+        description
+           "Enable BFD IPv6.";
+     }
+  }
+
+  grouping bgp-client-cfg-parms {
+     description
+        "BFD grouping for configuration parameters for BGP";
+
+     leaf enable {
+        type boolean;
+        default false;
+        description
+           "Enable BFD for BGP.";
+     }
+     leaf multihop {
+        type boolean;
+        default false;
+        when "../enable= 'true'";
+        description
+           "Configure multihop IP BFD for BGP.";
+     }
+  }
+
+  grouping common-cfg-parms {
+     description
+        "BFD grouping for common configuration parameters.";
+
+     uses base-cfg-parms;
+
+     leaf admin-down {
+        type boolean;
+        default false;
+        description
+           "Is the BFD session administratively down.";
+     }
+  }
+
+  grouping all-session {
+     description
+        "BFD session operational information";
+
+     leaf path-type {
+        type identityref {
+           base path-type;
+        }
+        description
+           "BFD path type, this indicates the path type that BFD is
+           running on.";
+     }
+     leaf ip-encapsulation {
+        type boolean;
+        description
+           "Whether BFD encapsulation uses IP.";
+     }
+     leaf local-discriminator {
+        type discriminator;
+        description
+           "Local discriminator used to uniquely identify the BFD session.";
+     }
+     leaf remote-discriminator {
+        type discriminator;
+        description
+           "Descriminator chosen by the remote system.";
+     }
+     leaf source-port {
+        when "../ip-encapsulation = 'true'" {
+           description
+              "Source UDP port valid only when IP encapsulation is used.";
+        }
+        type inet:port-number;
+        description
+           "Source UDP port";
+     }
+     leaf dest-port {
+        when "../ip-encapsulation = 'true'" {
+           description
+              "Destination UDP port valid only when IP encapsulation is used.";
+        }
+        type inet:port-number;
+        description
+           "Destination UDP port.";
+     }
+
+     container session-running {
+        description "BFD session running information.";
+        leaf session-index {
+           type uint32;
+           description
+              "An index used to uniquely identify BFD sessions.";
+        }
+        leaf local-state {
+           type state;
+           description
+              "Local state of the BFD session.";
+        }
+        leaf remote-state {
+           type state;
+           description
+              "Remote state of the BFD session.";
+        }
+        leaf local-diagnostic {
+           type iana-bfd-types:diagnostic;
+           description
+              "Local diagnostic.";
+        }
+        leaf detection-mode {
+           type enumeration {
+              enum async-with-echo {
+                 value "1";
+                 description
+                    "Async with echo.";
+              }
+              enum async-without-echo {
+                 value "2";
+                 description
+                    "Async without echo.";
+              }
+              enum demand-with-echo {
+                 value "3";
+                 description
+                    "Demand with echo.";
+              }
+              enum demand-without-echo {
+                 value "4";
+                 description
+                    "Demand without echo.";
+              }
+           }
+           description
+              "Detection mode.";
+        }
+        leaf negotiated-tx-interval {
+           type uint32;
+           units microseconds;
+           description
+              "Negotiated transmit interval.";
+        }
+        leaf negotiated-rx-interval {
+           type uint32;
+           units microseconds;
+           description
+              "Negotiated receive interval.";
+        }
+        leaf detection-time {
+           type uint32;
+           units microseconds;
+           description
+              "Detection time.";
+        }
+     }
+
+     container session-statistics {
+        description "BFD per-session statistics.";
+
+        leaf last-down-time {
+           type string;
+           description
+              "Time and date of last time this session went down.(HH:MM:SS)";
+        }
+        leaf last-up-time {
+           type string;
+           description
+              "Time and date of last time this session went up.(HH:MM:SS)";
+        }
+        leaf up-count {
+           type yang:counter32;
+           description
+              "The number of times this session has transitioned in the
+              down state.";
+        }
+        leaf receive-packet-count {
+           type yang:counter64;
+           description
+              "Count of received packets in this session. This includes
+              valid and invalid received packets.";
+        }
+        leaf send-packet-count {
+           type yang:counter64;
+           description
+              "Count of sent packets in this session.";
+        }
+     }
+  }
+
+  grouping bfd-client-info {
+     description
+       "BFD client info per session.";
+
+     leaf-list client-info {
+        type identityref {
+          base bfd-client;
+        }
+        description
+          "BFD Client list.";
+     }
+  }
+
+  grouping session-statistics-summary {
+     description
+       "Grouping for session statistics summary.";
+
+     leaf number-of-sessions {
+        type yang:gauge32;
+        description 
+           "Number of BFD sessions.";
+     }
+
+     leaf number-of-sessions-up {
+        type yang:gauge32;
+        description
+           "Number of BFD sessions currently in up state (as defined
+            in RFC 5880).";
+     }
+
+     leaf number-of-sessions-down {
+        type yang:gauge32;
+        description
+          "Number of BFD sessions currently in down or init state
+           but not admin-down (as defined in RFC 5880).";
+     }
+
+     leaf number-of-sessions-admin-down {
+        type yang:gauge32;
+        description
+          "Number of BFD sessions currently in admin-down state (as
+           defined in RFC 5880).";
+     }
+  }
+
+  grouping seamless-reflector-statistics-summary {
+     description
+        "Grouping for Seamless-BFD Reflector session statistics summary.";
+
+     leaf number-of-reflector-sessions {
+        type yang:gauge32;
+        description 
+           "Number of Seamless-BFD reflector sessions.";
+     }
+
+     leaf number-of-reflector-sessions-up {
+        type yang:gauge32;
+        description
+           "Number of Seamless-BFD reflector sessions currently in up state.";
+     }
+
+     leaf number-of-reflector-sessions-admin-down {
+        type yang:gauge32;
+        description
+           "Number of Seamless-BFD reflector sessions currently in admin-down state.";
+     }
+  }
+
+  grouping seamless-initiator-statistics-summary {
+     description
+        "Grouping for Seamless-BFD Initiator session statistics summary.";
+
+     leaf number-of-initiator-sessions {
+        type yang:gauge32;
+        description 
+           "Number of Seamless-BFD initiator sessions.";
+     }
+
+     leaf number-of-initiator-sessions-up {
+        type yang:gauge32;
+        description
+           "Number of Seamless-BFD initiator sessions currently in up state.";
+     }
+
+     leaf number-of-initiator-sessions-down {
+        type yang:gauge32;
+        description
+           "Number of Seamless-BFD initiator sessions currently in down state.";
+     }
+
+     leaf number-of-initiator-sessions-admin-down {
+        type yang:gauge32;
+        description
+           "Number of Seamless-BFD initiator sessions currently in admin-down state.";
+     }
+  }
+
+  grouping profile-common-parms {
+     description
+        "Grouping of common profile parameters.";
+     leaf name {
+        type string {
+           length "1..64";
+        }
+        description
+           "BFD profile name.";
+     }
+
+     leaf local-multiplier {
+        type multiplier;
+        default 3;
+        description
+           "Multiplier transmitted by local system.";
+     }
+
+     leaf desired-min-tx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Desired minimum transmit interval of control packets in microseconds.";
+     }
+
+     leaf required-min-rx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Required minimum receive interval of control packets in microseconds.";
+     }
+
+     leaf accelerate {
+        if-feature accelerated-bfd;
+        type boolean;
+        default true;
+        description
+           "If enabled, BFD will run in an accelerated mode (for example, in hardware).";
+     }
+  }
+
+  grouping micro-bfd-profile-parms {
+     description
+        "Grouping of micro-bfd profile parameters.";
+     leaf name {
+        type string {
+           length "1..64";
+        }
+        description
+           "Micro BFD profile name.";
+     }
+
+     leaf local-multiplier {
+        type multiplier;
+        default 3;
+        description
+           "Multiplier transmitted by local system.";
+     }
+
+     leaf desired-min-tx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Desired minimum transmit interval of control packets in microseconds.";
+     }
+
+     leaf required-min-rx-interval {
+        type intervals;
+        units microseconds;
+        default 100000;
+        description
+           "Required minimum receive interval of control packets in microseconds.";
+     }
+  }
+
+  grouping bfd-session-config-entry-params {
+     description
+        "Grouping of basic BFD session config parameters.";
+
+     leaf admin-down {
+        type boolean;
+        default false;
+        description
+           "Is the BFD session administratively down.";
+     }
+
+     leaf statistics-collection {
+        type enumeration {
+           enum on {
+              value 0;
+              description
+                 "Statistics-collection will be on for accelerated BFD session";
+           }
+           enum off {
+              value 1;
+              description
+                 "Statistics-collection will be off for accelerated BFD session";
+           }
+        }
+        default off;
+        description
+           "Determines whether statistics collection will be turned on or off for accelerated BFD session.";
+     }
+  }
+}

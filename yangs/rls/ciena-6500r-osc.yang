@@ -1,0 +1,201 @@
+module ciena-6500r-osc {
+  yang-version 1.1;
+  namespace "urn:ciena:params:xml:ns:yang:ciena-6500r-osc";
+  prefix oscs;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-6500r-ports {
+    prefix ports;
+  }
+
+  import ciena-pro-osc {
+    prefix ciena-pro-osc;
+  }
+
+  import ciena-common-version {
+    prefix version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module describes Ciena's oscs object for the 6500r platform";
+
+  revision 2020-09-08 {
+    version:version "version" {
+      version:string "1.0.9";
+    }
+    description
+      "Use ciena-pro-osc";
+  }
+  revision 2020-06-30 {
+    version:version "version" {
+      version:string "1.0.8";
+    }
+    description
+      "Fix version formating";
+  }
+  revision 2020-03-11 {
+    version:version "version" {
+      version:string "1.0.7";
+    }
+    description
+      "Changing default for prov-profile to ge-fec-1 ";
+  }
+  revision 2020-03-11 {
+    version:version "version" {
+      version:string "1.0.6";
+    }
+    description
+      "Added profile-type_t type as well as running-profile field. Prov profile type moved to profile-type_t";
+  }
+  revision 2020-02-24 {
+    version:version "version" {
+      version:string "1.0.5";
+    }
+    description
+      "Change the length of osc's name from 64 to 12.";
+  }
+  revision 2020-02-19 {
+    version:version "version" {
+      version:string "1.0.4";
+    }
+    description
+      "Setting prov-profile enum values.";
+  }
+  revision 2020-01-30 {
+    version:version "version" {
+      version:string "1.0.3";
+    }
+    description
+      "Replace fec-mode with prov-profile";
+  }
+  revision 2020-01-29 {
+    version:version "version" {
+      version:string "1.0.2";
+    }
+    description
+      "Intro of remote-defect-indicator";
+  }
+  revision 2019-10-24 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Change diagnostic loss-of-signal to loss-of-frame";
+  }
+  revision 2019-09-12 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Added config false for tx-power and removed tx-power-ranges";
+  }
+  revision 2019-09-03 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Added parameter ranges";
+  }
+  revision 2019-08-28 {
+    version:version "version" {
+      version:string "1.0.1";
+    }
+    description
+      "Changed fec-mode to default config true";
+  }
+  revision 2019-05-10 {
+    version:version "version" {
+      version:string "1.0.0";
+    }
+    description
+      "Added additional info for alarms";
+  }
+  revision 2018-03-01 {
+    description
+      "6500r Release 1.0";
+  }
+
+  typedef profile-type_t {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "To make sure we serialize if we receive a value of 0";
+      }
+      enum "ge-open" {
+        value 1;
+        description
+          "GE Open... ";
+      }
+      enum "ge-fec-1" {
+        value 2;
+        description
+          "GE FEC 1";
+      }
+      enum "oc3" {
+        value 3;
+        description
+          "OC3";
+      }
+      enum "fe-open" {
+        value 4;
+        description
+          "FE Open";
+      }
+      enum "ge-fec-2" {
+        value 5;
+        description
+          "GE FEC 2";
+      }
+    }
+    description
+      "The OSC profile";
+  }
+
+  grouping ciena-6500r-osc-mount {
+    list oscs {
+      key "name";
+      uses ciena-pro-osc:osc-base;
+
+      leaf parent-port {
+        type leafref {
+          path "/ports:port/ports:name";
+        }
+        mandatory true;
+        description
+          "OSC Parent";
+      }
+
+      container diagnostic {
+        config false;
+        description
+          "Facility diagnostic state.";
+        uses ciena-pro-osc:osc-diagnostic;
+
+        leaf alarm-additional-info {
+          type string {
+            length "1..80";
+          }
+          description
+            "Additional info associated to a raised alarm.";
+        }
+      }
+    }
+  }
+
+  grouping ciena-6500r-osc-mount-actions;
+
+  uses ciena-6500r-osc-mount;
+}

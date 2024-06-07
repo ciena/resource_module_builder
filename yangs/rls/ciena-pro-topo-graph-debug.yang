@@ -1,0 +1,143 @@
+module ciena-pro-topo-graph-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-topo-graph-debug";
+  prefix graph;
+
+  import ciena-6500r-types {
+    prefix common-types;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-link {
+    prefix ciena-pro-link;
+  }
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes the private graph data for topo manager";
+
+  revision 2020-09-08 {
+    description
+      "RLS2.1 use ciena-pro-link and ciena-pro-optical-types";
+    version:version "version" {
+      version:string "0.4.0";
+    }
+  }
+  revision 2020-08-20 {
+    description
+      "RLS2.1 Move vertex to ciena-pro-graph-vertex module";
+    version:version "version" {
+      version:string "0.3.0";
+    }
+  }
+  revision 2020-08-18 {
+    description
+      "RLS2.1 add 2 boolean fields and channel frequency list to vertex";
+    version:version "version" {
+      version:string "0.2.0";
+    }
+  }
+  revision 2020-07-20 {
+    description
+      "RLS2.1 remove unused leaf of is-external from arc";
+    version:version "version" {
+      version:string "0.1.0";
+    }
+  }
+  revision 2019-06-05 {
+    description
+      "6500r-series Release 1.1";
+  }
+
+  list arc {
+    key "from to";
+    leaf from {
+      type string {
+        length "1..200";
+      }
+      description
+        "Vertex from name";
+    }
+    leaf to {
+      type string {
+        length "1..200";
+      }
+      description
+        "Vertex to name";
+    }
+    leaf name {
+      type string {
+        length "1..200";
+      }
+      description
+        "Arc name";
+    }
+    leaf link-type {
+      type ciena-pro-link:link-type;
+      default "fiber";
+      description
+        "ciena_pro_link_link_type";
+    }
+    leaf band {
+      type ciena-pro-optical-types:band-occupancy;
+      description
+        "Supported band types";
+    }
+    list freqs {
+      description
+        "List of NMC center frequencies in the link";
+      leaf freq {
+        type uint32;
+      }
+    }
+    config false;
+  }
+
+  rpc get-path {
+    description
+      "Get a path from a given vertex to another. A path is a series of vertices connected together by arcs.
+       Here we assume there is only only possible path. If multiple paths
+       exist then the first one found will be returned";
+    input {
+      leaf from {
+        type string {
+          length "1..200";
+        }
+        description
+          "From vertex.";
+      }
+      leaf to {
+        type string {
+          length "1..200";
+        }
+        description
+          "To vertex.";
+      }
+    }
+    output {
+      list unscoped-vertices {
+        description
+          "List of vertices of the path";
+        key "name";
+        leaf name {
+          type string {
+            length "1..200";
+          }
+          description
+            "Vertex name";
+        }
+      }
+    }
+  }
+}

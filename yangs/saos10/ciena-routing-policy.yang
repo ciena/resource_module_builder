@@ -1,0 +1,1347 @@
+/*
+ * File Name: ciena-routing-policy.yang
+ *
+ * Description: Contains Ciena proprietary YANG model definition for Routing
+ *              Policy module.
+ *
+ * Copyright (c) 2019  Ciena Corp.   All Rights Reserved.
+ *
+ */
+
+module ciena-routing-policy {
+    namespace   "http://ciena.com/ns/yang/ciena/ciena-routing-policy";
+    prefix "rt-pol";
+
+    import ciena-l3-types {
+        prefix cn-l3-types;
+    }
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+
+    import openconfig-interfaces {
+        prefix "oc-if";
+    }
+
+    organization
+        "Ciena Corporation";
+
+    contact
+        "Web URL: http://www.ciena.com/
+         E-mail:  yang@ciena.com
+         Postal:  7035 Ridge Road
+                  Hanover, Maryland 21076
+                     U.S.A.
+         Phone:   +1 800-921-1144
+         Fax:     +1 410-694-5750";
+
+    description
+        "This module contains the Ciena proprietary YANG model
+         for Routing Policy.
+
+         Copyright (c) 2018-2022 Ciena Corporation.  All rights reserved.
+
+         All information and intellectual property contained in this
+         YANG module (Specification) is, and remains the property of
+         Ciena Corporation. Ciena retains all title and ownership in
+         the Specification, including any revisions.
+
+         Ciena grants all interested parties that access the Specification
+         with the intent to use or distribute (you) a non-exclusive,
+         no-cost license to use and distribute unmodified copies of the
+         Specification solely in connection with the management of Ciena
+         products sold by or on behalf of Ciena, provided this copyright
+         notice and license appear on all copies. Ciena may rescind or modify
+         this license at any time.
+
+         This Specification is supplied 'as is', and Ciena makes no
+         warranty, either express or implied, as to the use, operation,
+         condition, or performance of the Specification. You agree
+         that Ciena has no liability for your use of the Specification.
+
+         This module describes a YANG model for routing policy
+         configuration. It is a limited subset of all of the policy
+         configuration parameters available to supports widely used
+         constructs for managing how routes are imported, exported,
+         and modified across different routing protocols.  This module
+         is intended to be used in conjunction with routing protocol
+         configuration modules (e.g., BGP) defined in other models.
+
+         Route policy expression:
+
+         Policies are expressed as a set of top-level policy definitions,
+         each of which consists of a sequence of policy statements.
+         Policy statements consist of simple condition-action tuples.
+         Conditions may include mutiple match or comparison operations,
+         and similarly actions may be multitude of changes to route
+         attributes or a final disposition of accepting or rejecting the
+         route.
+
+         Route policy evaluation:
+
+         Policy definitions are referenced in routing protocol
+         configurations using import and export configuration statements.
+         The arguments are members of an ordered list of named policy
+         definitions which comprise a policy chain, and optionally, an
+         explicit default policy action (i.e., reject or accept).
+
+         Evaluation of each policy definition proceeds by evaluating its
+         corresponding individual policy statements in order.  When a
+         condition statement in a policy statement is satisfied, the
+         corresponding action statement is executed.  If the action
+         statement has either accept-route or reject-route actions,
+         policy evaluation of the current policy definition stops, and
+         no further policy definitions in the chain are evaluated.
+
+         If the condition is not satisfied, then evaluation proceeds to
+         the next policy statement.  If none of the policy statement
+         conditions are satisfied, then evaluation of the current policy
+         definition stops, and the next policy definition in the chain is
+         evaluated.  When the end of the policy chain is reached, the
+         default route disposition action is performed (i.e.,
+         reject-route unless an alternate default action is specified
+         for the chain).
+
+         Policy 'subroutines' (or nested policies) are supported by
+         allowing policy statement conditions to reference another policy
+         definition which applies conditions and actions from the
+         referenced policy before returning to the calling policy
+         statement and resuming evaluation.  If the called policy
+         results in an accept-route (either explicit or by default), then
+         the subroutine returns an effective true value to the calling
+         policy.  Similarly, a reject-route action returns false.  If the
+         subroutine returns true, the calling policy continues to
+         evaluate the remaining conditions (using a modified route if the
+         subroutine performed any changes to the route).";
+
+
+    revision "2023-07-10" {
+        description
+             "Modified RT value leaf type to use ext-comm-rt-max, to extend support for RT-2 and up to 20 RT values.
+              Modified the must clause of extended community to display custom error message.
+              Added support to match color for extended community value in routing-policy.";
+    }
+
+    revision "2022-12-21" {
+        description
+             "Added support for BGP attributes aigp-metric.
+              Removed the range for metric attribute under set container.
+              Added match clause support for EVPN route types 1, 4 and 5.
+              Added support for hit count for EVPN route policy.
+              Added the range for color attribute under set container.
+              Added Support for clearing the hit count for EVPN RT5 route policy";
+    }
+
+    revision "2022-09-22" {
+        description
+             "Added support for opertional data of large community list.
+              Added support for large community in routing-policy.
+              Max-elements of community list and large community list is extended to 128.
+              Updated regular expression for as-path-prepend leaf to allow value 9.
+              Added support for large community list to have max 20 values in each standard.
+              Updated the large-community operational data leaf typedef.";
+    }
+
+    revision "2021-10-25" {
+        description
+             "Added Color attribute associated with TE path in routing-policy.
+              Added a new container for community-list hit-count.";
+    }
+
+    revision "2021-07-09" {
+        description
+             "Added prefix SID attribute in routing-policy.";
+    }
+
+    revision "2020-08-31" {
+        description
+            "Added support for IPv6 Prefix-list and Policy.
+             Adding mode in clear RPC to allow address family based prefix-list clear.";
+    }
+
+    revision "2020-02-21" {
+        description
+            "Added support for OSPF metric-type and route-type.
+             Added State protocol list for displaying both OSPF and BGP hit/ref count";
+    }
+
+    revision "2019-01-10" {
+        description
+            "Revised routing policy model.
+             Removed Tag list.
+             Changed the Prefix key to sequence.
+             Added type list in communities and extended-communities.";
+    }
+
+    revision "2018-11-28" {
+        description "Initial version of proprietary routing policy model.";
+    }
+
+    grouping prefix-set-top {
+        description
+            "Top-level data definitions for a list of prefixes which can
+             be matched in a policy.";
+
+        container  prefix-lists {
+            description
+                "Prefix List.";
+
+            list prefix-list {
+                key "name";
+                max-elements 128;
+                description
+                    "Prefix list rules that are used in match conditions under a policy";
+
+                leaf name  {
+                    type string {
+                        length "0..255";
+                    }
+                    description
+                        "Name of the prefix list. This is used as a label to
+                         reference the set in match conditions.";
+                }
+
+                leaf description  {
+                    type  string {
+                        length "0..255";
+                    }
+                    description
+                        "Description of the prefix list.";
+                }
+
+                leaf mode {
+                    type cn-l3-types:prefix-list-mode;
+                    mandatory "true";
+                    description
+                        "IPv4/IPv6 Address family for prefixes.";
+                }
+
+                list sequence {
+                    key "number";
+                    min-elements 1;
+                    max-elements 255;
+                    description
+                        "List of unique prefixes identified with sequence number.";
+
+                    leaf number  {
+                        type  uint32 {
+                            range "1..4294967294";
+                        }
+                        description
+                            "Sequence number to identify the order in which the prefixes will be applied.";
+                    }
+
+                    leaf ip-prefix  {
+                        type inet:ip-prefix;
+                        mandatory "true";
+                        description
+                            "The prefix member in CIDR notation which may be either IPv4 or IPv6.";
+                    }
+
+                    leaf mask-range {
+                        type string {
+                            pattern '(([0-9]{1,2}|1[0-2][0-8])\.\.([0-9]{1,2}|1[0-2][0-8]))';
+                        }
+                        description
+                            "Specify mask length range e.g 21..24
+                             Defines a range for the mask.
+                             IPv4 ranges: 0-32
+                             IPv6 ranges: 0-128
+
+                             Example: 10.3.192.0/21 through 10.3.192.0/24 would be
+                             expressed as prefix: 10.3.192.0/21,
+                             mask-range: 21..24.
+
+                             Example: 6:5::/121 through 6:5::/124 would be
+                             expressed as prefix: 6:5::/121,
+                             mask-range: 121..124.";
+                    }
+
+                    leaf action {
+                        type  cn-l3-types:action;
+                        mandatory "true";
+                        description
+                            "Action to permit or deny the prefix.";
+                    }
+                }
+            }
+        }
+    }
+
+    grouping bgp-set-top {
+        description
+            "Top-level data definitions for BGP components which can
+             be matched in a policy.";
+
+        container bgp {
+            description
+                "BGP communities, extended communities and as-path.";
+
+            container community-lists {
+                description
+                    "Community List.";
+
+                list community-list {
+                    key "name";
+                    max-elements 128;
+                    description
+                        "Communities that are used in match conditions under policy.";
+
+                    leaf name {
+                        type cn-l3-types:string-max-256;
+                        description
+                            "Name of the community list.";
+                    }
+
+                    list standard {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a standard commmunity type.";
+
+                        leaf value {
+                            type cn-l3-types:std-community-type;
+                            description
+                                "Value for standard community type.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the standard community type.";
+                        }
+                    }
+
+                    list well-known {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a well-known commmunity type.";
+
+                        leaf value {
+                            type cn-l3-types:well-known-community-type;
+                            description
+                                "Value for well-known community type.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the well-known community type.";
+                        }
+                    }
+
+                    list regex {
+                        when "count(../standard)=0 and count(../well-known)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a commmunity with matching regular expression.";
+
+                        leaf value {
+                            type cn-l3-types:string-max-256;
+                            description
+                                "Regular expression for matching commmunity.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny community matching regular expression.";
+                        }
+                    }
+                }
+            }
+
+            container ext-community-lists {
+                description
+                    "Extended community list.";
+
+                list ext-community-list {
+                    key "name";
+                    max-elements 20;
+                    description
+                        "Extended communities that are used in match conditions under policy.";
+
+                    leaf name {
+                        type cn-l3-types:string-max-256;
+                        description
+                            "Name of the extended community list.";
+                    }
+
+                    list route-target {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a route target extended community.";
+
+                        leaf value {
+                            type  cn-l3-types:ext-comm-rt-max;
+                            must "not(contains(.,'2:65535:')) and not(contains(.,'2:4294967295:'))" {
+                                     error-message "Invalid Input: Reserved ASN(65535,4294967295) not allowed in Ext-community value.";
+                            }
+                            description
+                                "Value for route target or site of origin.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended community type.";
+                        }
+                    }
+
+                    list site-of-origin {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a site of origin extended community.";
+
+                        leaf value {
+                            type  cn-l3-types:ext-comm-rt;
+                            description
+                                "Value for site of origin extended community.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended community type.";
+                        }
+                    }
+
+                    list regex {
+                        when "count(../route-target)=0 and count(../site-of-origin)=0 and count(../color)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny extended community with matching regular expression.";
+
+                        leaf value {
+                            type cn-l3-types:string-max-256;
+                            description
+                                "Regular expression for matching extended community.";
+                        }
+                        leaf action
+                        {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended community with matching regular expression.";
+                        }
+                    }
+
+                    list color {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a color extended community.";
+
+                        leaf value {
+                            type uint32 {
+                              range "1..4294967295";
+                            }
+                            description
+                                "Value for color extended community.";
+                        }
+                        leaf action {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended community type.";
+                        }
+                    }
+
+                }
+            }
+
+            container as-path-lists {
+                description
+                    "AS path list.";
+
+                list as-path-list {
+                    key "name";
+                    max-elements 20;
+                    description
+                        "AS paths that are used in match conditions under policy.";
+
+                    leaf name {
+                        type cn-l3-types:string-max-256;
+                        description
+                            "Name of the AS path list.";
+                    }
+
+                    list member {
+                        key "value action";
+                        min-elements 1;
+                        max-elements 20;
+                        description
+                            "AS paths member list to permit/deny a regular-expression.";
+
+                        leaf value {
+                            type cn-l3-types:string-max-256;
+                            description
+                                "Regular-expression to match the BGP AS paths.";
+                        }
+
+                        leaf action {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the extended AS path list.";
+                        }
+                    }
+                }
+            }
+      
+            container large-community-lists {
+                description
+                    "Large community List.";
+
+                list large-community-list {
+                    key "name";
+                    max-elements 128;
+                    description
+                        "Large communities that are used in match conditions under policy.";
+
+                    leaf name {
+                        type cn-l3-types:string-max-256;
+                        description
+                            "Name of the large community list.";
+                    }
+
+                    list standard {
+                        when "count(../regex)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a standard large commmunity type.";
+
+                        leaf value {
+                            type cn-l3-types:large-community-type;
+                            must "not(starts-with(.,' '))" {
+                                 error-message "Invalid Input: Large-community value should not start with space.";
+                            } 
+                            must "not(starts-with(.,'65535:')) and not(contains(.,' 65535:'))" {
+                                 error-message "Invalid Input: Reserved ASN(65535) not allowed in Large-community value.";
+                            }
+                            description
+                                "Value for standard large community type.";
+                        }
+                        leaf action {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny the standard large community type.";
+                        }
+                    }
+                 
+                    list regex {
+                        when "count(../standard)=0";
+                        key "value action";
+                        max-elements 20;
+                        description
+                            "Permit or deny a large commmunity with matching regular expression.";
+
+                        leaf value {
+                            type cn-l3-types:string-max-256;
+                            description
+                                "Regular expression for matching large commmunity.";
+                        }
+                        leaf action {
+                            type  cn-l3-types:action;
+                            description
+                                "Action to permit or deny large community matching regular expression.";
+                        }
+                    }
+                }
+            } 
+        }
+    }
+
+    grouping policy-top {
+        description
+            "Top-level data definitions for policies with match conditions/set actions.";
+
+        container policies {
+            description
+                "Routing Policy.";
+            list policy {
+               key "name";
+               max-elements 128;
+
+                description
+                  "Policies with match conditions/set actions.";
+
+                leaf name  {
+                   type  string {
+                       length "0..255";
+                   }
+                   description
+                       "Name of the top-level policy.";
+                }
+
+                list statement {
+                    key "sequence";
+                    max-elements 20;
+                    description
+                        "Policy statements group conditions and actions within a policy.
+                         They are evaluated in the order specified.";
+
+                    leaf sequence  {
+                        type  uint32 {
+                            range "1..65535";
+                        }
+                        description
+                            "Sequence Number to identify the application order for match/set statements.";
+                    }
+
+                    leaf action {
+                        type  cn-l3-types:action;
+                        mandatory true;
+                        description
+                            "Action to permit or deny the route policy. Default action permit.";
+                    }
+
+                    container match {
+                        description
+                          "Match conditions for routing policy statements.";
+
+                        leaf interface  {
+                            type leafref {
+                                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+                            }
+                            description
+                                "First hop interface of route.";
+                        }
+
+                         leaf route-entry  {
+                            type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                            }
+                            description
+                                "Route-entry of routes specified by prefix-list.";
+                        }
+
+                        leaf peer {
+                            type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                            }
+                            description
+                                "Peer address of route specified by prefix-list.";
+                        }
+
+                        leaf next-hop  {
+                            type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                            }
+                            description
+                                "Next-hop address of route specified by prefix-list.";
+                        }
+                        container evpn  {
+                            description
+                                "Policy match attributes for EVPN address family.";
+                            leaf route-type {
+                                type cn-l3-types:evpn-route-types;
+                                must ". = '1' or . = '4' or . = '5'"{
+                                      error-message
+                                       "Only route types 1, 4 and 5 are supported.";
+                                }
+                                description
+                                    "Specifies the route type to be matched for EVPN address family.";
+                            }
+                        }
+                        leaf tag  {
+                            type  uint32;
+                            description
+                                "Tag of route.";
+                        }
+
+                        leaf origin  {
+                            type  cn-l3-types:origin-type;
+                            description
+                                "Route origin e.g. IGP/EGP.";
+                        }
+
+                        leaf metric  {
+                            type  uint32;
+                            description
+                                "Metric of route.";
+                        }
+
+                        leaf additional-paths {
+                            type  cn-l3-types:additional-paths-type;
+                            description
+                                "All or best (2/3) additional paths in the BGP table.";
+                        }
+
+                        leaf as-path
+                        {
+                            type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:as-path-lists/rt-pol:as-path-list/rt-pol:name";
+                            }
+                            description
+                                "BGP AS path list.";
+                        }
+
+                        list community
+                        {
+                            key "name";
+                            max-elements 1;
+                            description
+                                    "Set actions for community";
+                            leaf name {
+                                type  leafref {
+                                    path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:community-lists/rt-pol:community-list/rt-pol:name";
+                                }
+                                description
+                                    "BGP community list.";
+                            }
+
+                            leaf exact-match
+                            {
+                                type boolean;
+                                default false;
+                                description
+                                    "Do exact matching of communities.";
+                            }
+                        }
+
+                        list ext-community
+                        {
+                            key "name";
+                            max-elements 1;
+                            description
+                                    "Set actions for EXT community";
+                            leaf name {
+                                type  leafref {
+                                    path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:ext-community-lists/rt-pol:ext-community-list/rt-pol:name";
+                                }
+                                description
+                                    "BGP extended community list.";
+                            }
+
+                            leaf exact-match
+                            {
+                                type boolean;
+                                default false;
+                                description
+                                    "Do exact matching of extended communities.";
+                            }
+                        }
+
+                        leaf route-type {
+                            type cn-l3-types:policy-route-type;
+                            description
+                                 "Route type of the route.";
+                        }
+
+                        list large-community {
+                            key "name";
+                            max-elements 1;
+                            description
+                                 "Set actions for large community";
+                            leaf name {
+                                type  leafref {
+                                    path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:large-community-lists/rt-pol:large-community-list/rt-pol:name";
+                                }
+                                description
+                                    "BGP large community list.";
+                            }
+
+                            leaf exact-match {
+                                type boolean;
+                                default false;
+                                description
+                                    "Do exact matching of large communities.";
+                            }
+                        }
+                        
+                    }
+
+                    container set {
+                        description
+                            "Set actions for routing policy statements.";
+
+                       list aggregator {
+                           key "as ip-address";
+                           max-elements 1;
+                           description
+                                    "Set BGP aggregator AS and IP address attribute.";
+                           leaf as {
+                                type  uint32 {
+                                    range "1..4294967295";
+                                }
+                                description
+                                   "BGP aggregator AS number.";
+                            }
+                            leaf ip-address {
+                                type inet:ip-address;
+                                description
+                                    "BGP Aggregator IP address attribute.";
+                            }
+                        }
+
+                        leaf atomic-aggregate{
+                            type boolean;
+                            default "false";
+                            description
+                                "BGP atomic aggregator attribute.";
+                        }
+
+                        leaf tag  {
+                            type  uint32;
+                            description
+                                "Tag value for destination routing protocol.";
+                        }
+
+                        leaf isis-level{
+                            type  cn-l3-types:policy-level-types;
+                            description
+                                "IS-IS level to export route.";
+                        }
+
+                        leaf local-preference {
+                            type  uint32;
+                            description
+                                "BGP local preference path attribute.";
+                        }
+
+                        leaf metric {
+                            type  uint32;
+                            description
+                                "Metric value for destination routing protocol. <0..4294967295>";
+                        }
+
+                        container next-hop  {
+                            description
+                                "Set next-hop as A.B.C.D or as a string peer-address.
+                                 Action for next hop as peer-address or IPv4 address
+                                 or IPv6 global, link-local address.";
+
+                            leaf peer-address {
+                                type empty;
+                                description
+                                    "Set Peer adddress as next-hop for BGP";
+                            }
+                            leaf ip-address {
+                                type inet:ip-address;
+                                description
+                                   "IP address of next hop";
+                            }
+                            leaf ipv6-link-local-address {
+                                type inet:ipv6-address;
+                                description
+                                   "IPv6 Link local address as next hop starts with fe80";
+                            }
+                        }
+
+                        leaf origin {
+                            type  cn-l3-types:origin-type;
+                            description
+                                "Route origin e.g. IGP/EGP.";
+                        }
+
+                        leaf originator-id {
+                            type inet:ip-address;
+                            description
+                                "BGP originator ID attribute.";
+                        }
+
+                        leaf vpnv4-next-hop  {
+                            type inet:ip-address;
+                            description
+                                "BGP vpnv4 next hop address.";
+                        }
+
+                        leaf weight {
+                            type  uint32;
+                            description
+                                "BGP weight for routing table.";
+                        }
+                        leaf as-path-prepend {
+                            type string{
+                                pattern
+                                      '((429496729[0-5]|42949672[0-8]\d|4294967[01]\d{2}|429496[0-6]\d{3}'
+                                    + '|42949[0-5]\d{4}|4294[0-8]\d{5}|429[0-3]\d{6}|42[0-8]\d{7}|'
+                                    + '4[01]\d{8}|[0-3]?\d{1,8}\d|[1-9])\s?)+';
+                            }
+                            description
+                                "BGP AS path number.";
+                        }
+                        leaf community-to-delete
+                        {
+                            type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:community-lists/rt-pol:community-list/rt-pol:name";
+                            }
+                            description
+                                "Delete matching community List.";
+                        }
+
+                        list community {
+                            key "append";
+                            max-elements 1;
+                            description
+                                "Standard or well-known community.";
+
+                            leaf append
+                            {
+                                type cn-l3-types:community-append;
+                                description
+                                    "Add to the existing community.";
+                            }
+
+                            leaf-list standard {
+                                type cn-l3-types:std-community-type;
+                                max-elements 20;
+                                description
+                                    "Standard community number.";
+                            }
+
+                            leaf well-known {
+                                type cn-l3-types:well-known-community-type;
+                                description
+                                    "Well-known community.";
+                            }
+                        }
+
+                        list ext-community-rt {
+                            key "append";
+                            max-elements 1;
+                            description
+                                "Extended community RT list attribute.";
+
+                            leaf append
+                            {
+                                type cn-l3-types:community-append;
+                                description
+                                    "Add to the existing community.";
+                            }
+
+                            leaf-list route-target {
+                                type  cn-l3-types:ext-comm-rt-max;
+                                must "not(contains(.,'2:65535:')) and not(contains(.,'2:4294967295:'))" {
+                                     error-message "Invalid Input: Reserved ASN(65535,4294967295) not allowed in Ext-community value.";
+                                }
+                                max-elements 20;
+                                description
+                                    "Route target of extended community.";
+                            }
+                        }
+
+                        leaf-list ext-community-soo {
+                            type  cn-l3-types:ext-comm-rt;
+                            max-elements 20;
+                            description
+                                "Site-of-Origin of extended community.";
+                        }
+ 
+                        leaf metric-type {
+                            type cn-l3-types:policy-metric-type;
+                            description
+                                "Metric type of the route.";
+                       }
+ 
+                       leaf label-index {
+                           type uint32;
+                           description
+                               "Label Index.";
+                       }
+ 
+                       leaf color {
+                          type uint32 {
+                              range "1..4294967295";
+                          }
+                          description
+                              "Signifies color attribute associated with a TE path.";
+                       }
+
+                       leaf large-community-to-delete {
+                           type  leafref {
+                                path "/rt-pol:routing-policy/rt-pol:bgp/rt-pol:large-community-lists/rt-pol:large-community-list/rt-pol:name";
+                           }
+                           description
+                               "Delete matching large community List.";
+                       }
+
+                       list large-community {
+                           key "append";
+                           max-elements 1;
+                           description
+                               "Standard large community.";
+
+                           leaf append {
+                               type cn-l3-types:community-append;
+                               description
+                                   "Add to the existing large community.";
+                           }
+
+                           leaf-list standard {
+                               type cn-l3-types:large-community-type;
+                               must "not(starts-with(.,' '))" {
+                                  error-message "Invalid Input: Large-community value should not start with space.";
+                               }
+                               must "not(starts-with(.,'65535:')) and not(contains(.,' 65535:'))" {
+                                  error-message "Invalid Input: Reserved ASN(65535) not allowed in Large-community value.";
+                               }
+ 
+                               max-elements 20;
+                               description
+                                   "Standard large community number.";
+                           }
+                       }
+                       list aigp-metric {
+                           key "replace";
+                           max-elements 1;
+                           description
+                               "Replace or Increment AIGP metric value.";
+
+                           leaf replace {
+                               type cn-l3-types:aigp-metric-type;
+                               description
+                                   "Replace or Increment AIGP metric value.";
+                           }
+                           choice metric {
+                               leaf value {
+                                   type  uint32 {
+                                       range "0..4294967295";
+                                   }
+                                   description
+                                       "AIGP metric value.";
+                               }
+                               leaf igp-metric {
+                                   type empty;
+                                   description
+                                       "Internal routing protocol cost.";
+                               }
+                           }
+                       }
+                    }
+                }
+            }
+        }
+    }
+
+    grouping policy-state-top
+    {
+        description
+            "Routing policy state information.";
+
+        list prefix-list {
+            key "name";
+
+            description
+                "Prefix list rules that are used in match conditions under a policy";
+
+            leaf name  {
+                type cn-l3-types:string-max-256;
+                description
+                    "Name of the prefix list.";
+            }
+
+            leaf count {
+                type  uint32;
+                description
+                    "Total number of entries for this prefix-list.";
+            }
+            leaf mode {
+                type cn-l3-types:prefix-list-mode;
+                description
+                   "IPv4/IPv6 Address family for prefixes.";
+            }
+
+            leaf range-count {
+                type  uint32;
+                description
+                    "Total number of range count entries for this prefix-list.";
+            }
+
+            leaf start-sequence {
+                type  uint32;
+                description
+                    "Starting sequence number for this prefix-list.";
+            }
+
+            leaf end-sequence {
+                type  uint32;
+                description
+                    "Ending sequence number for this prefix-list.";
+            }
+
+            list sequence {
+                key "number";
+                description
+                    "List of unique prefixes identified with sequence number.";
+
+                leaf number  {
+                    type  uint32 {
+                        range "1..4294967295";
+                    }
+                    description
+                        "Sequence number to identify the order in which the prefixes will be applied.";
+                }
+
+                leaf ip-prefix  {
+                    type inet:ip-prefix;
+                    description
+                        "The prefix in CIDR notation which may be either IPv4 or IPv6.";
+                }
+
+                leaf mask-range {
+                    type string;
+                    description
+                        "Mask length range e.g 21..24.";
+                }
+
+                leaf action {
+                    type  cn-l3-types:action;
+                    description
+                        "Action to permit or deny the prefix.";
+                }
+
+                leaf ref-count {
+                    type  uint32;
+                    description
+                        "Total number of entries for prefix-list sequence.";
+                }
+
+                leaf hit-count {
+                    type  uint32;
+                    description
+                        "Total number of range count entries for prefix-list sequence.";
+                }
+
+                list protocol {
+                    key "name";
+                    description
+                        "List of protocols to which the prefix-list is applied.";
+
+                    leaf name {
+                        type  cn-l3-types:prefix-list-proto;
+                        description
+                            "Name of the protocol(BGP/OSPF) to which the prefix-list is applied.";   
+                    }
+
+                    leaf ref-count {
+                        type  uint32;
+                        description
+                            "Total number of BGP/OSPF reference count for prefix-list sequence.";
+                    }
+
+                    leaf hit-count {
+                        type  uint32;
+                        description
+                           "Total number of BGP/OSPF hit count entries for prefix-list sequence.";
+                    }
+                }
+            }
+        }
+        list community-list {
+            key "name action value";
+
+            description
+                "Community list rules that are used in match conditions under a policy";
+
+            leaf name  {
+                type cn-l3-types:string-max-256;
+                description
+                    "Name of the community list.";
+            }
+            leaf action  {
+                type  cn-l3-types:action;
+                description
+                    "Action for the community list.";
+            }
+            leaf value  {
+                type cn-l3-types:string-max-256;
+                description
+                    "Value of the community list.";
+            }
+            leaf member  {
+                type cn-l3-types:string-max-256;
+                description
+                    "Type of the community list.";
+            }
+            leaf hit-count {
+                type  uint32;
+                description
+                   "Total hit count for community-list.";
+            }
+        }
+        list ext-community-list {
+           key "name action value";
+
+           description
+               "Ext-Community list rules that are used in match conditions under a policy";
+
+           leaf name  {
+               type cn-l3-types:string-max-256;
+               description
+                   "Name of the ext-community list.";
+           }
+           leaf action  {
+               type  cn-l3-types:action;
+               description
+                   "Action for the ext-community list.";
+           }
+           leaf value  {
+               type cn-l3-types:string-max-680;
+               description
+                   "Value of the ext-community list.";
+           }
+           leaf member  {
+               type cn-l3-types:string-max-256;
+               description
+                   "Type of the ext-community list.";
+           }
+           leaf hit-count {
+               type  uint32;
+               description
+                  "Total hit count for ext-community-list.";
+           }
+        }
+        list large-community-list {
+            key "name action value";
+
+            description
+                "Large community list rules that are used in match conditions under a policy";
+
+            leaf name {
+                type cn-l3-types:string-max-256;
+                description
+                    "Name of the large community list.";
+            }
+            leaf action {
+                type  cn-l3-types:action;
+                description
+                    "Action for the large community list.";
+            }
+            leaf value {
+                type cn-l3-types:string-max-680;
+                description
+                    "Value of the large community list.";
+            }
+            leaf member {
+                type cn-l3-types:string-max-256;
+                description
+                    "Type of the large community list.";
+            }
+            leaf hit-count {
+                type  uint32;
+                description
+                   "Total hit count for large community-list.";
+            }
+        }
+
+        list evpn-route-type {
+           key "name";
+           description
+                 "Policies in use for EVPN address family.";
+           leaf name {
+                 type cn-l3-types:string-max-256;
+                 description
+                       "Name of the evpn routing policy.";
+           }
+           list evpn-policy-statement {
+                key "sequence";
+                description
+                      "Policy statements group conditions and actions within a policy.
+                      They are evaluated in the order specified.";
+                leaf sequence {          
+                      type uint32;
+                      description
+                            "Sequence Number to identify the application order for match statements.";
+                }
+                leaf action {
+                      type cn-l3-types:action;
+                      description
+                            "Action for the EVPN routing policy.";
+                }
+                leaf type {
+                      type cn-l3-types:evpn-route-types;
+                      description
+                            "Specifies the route type to be matched for EVPN address family.";
+                }
+                leaf hit-count {
+                      type uint32;
+                      description
+                            "Total number of hits for the EVPN routing policy.";
+                }
+            }
+        }
+    }
+
+    container routing-policy {
+        description
+            "Policy based routing";
+
+        uses prefix-set-top;
+        uses bgp-set-top;
+        uses policy-top;
+    }
+
+    container routing-policy-state {
+        config false;
+        description
+            "Routing policy state grouping";
+        uses policy-state-top;
+    }
+
+    rpc prefix-list-clear-statistics {
+        description
+            "RPC commands to clear prefix-list statistics";
+        input  {
+            leaf name  {
+                type leafref {
+                    path "/rt-pol:routing-policy/rt-pol:prefix-lists/rt-pol:prefix-list/rt-pol:name";
+                }
+                description
+                    "Prefix list name to be cleared.";
+            }
+
+            leaf prefix  {
+                type inet:ip-prefix;
+                description
+                    "IP prefix to be cleared.";
+            }
+
+            leaf mode {
+                type cn-l3-types:prefix-list-mode;
+                description
+                    "IPv4/IPv6 address family prefix-lists to be cleared";
+            }
+        }
+        output{
+            leaf response {
+                type string;
+                description
+                    "The response could be 'success', or the reason for prefix-list clear failure.";
+            }
+        }
+    }
+
+    rpc evpn-policy-clear-statistics {
+        description
+            "RPC commands to clear evpn-route type statistics";
+        input {
+            leaf name {
+                type leafref {
+                    path "/rt-pol:routing-policy/rt-pol:policies/rt-pol:policy/rt-pol:name";
+                }
+                description
+                    "Specify EVPN route policy name to clear hit count.";
+            }
+        }
+        output {
+            leaf response {
+                type string;
+                description
+                    "The response could be 'success', or the reason for EVPN route types clear command failure.";
+            }
+        }
+
+    }
+
+}

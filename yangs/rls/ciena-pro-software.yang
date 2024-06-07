@@ -1,0 +1,1407 @@
+module ciena-pro-software {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-software";
+  prefix ciena-pro-software;
+
+  import ciena-6500r-types {
+    prefix ciena-6500r-types;
+  }
+
+  import ciena-common-yang {
+    prefix ciena-common;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/";
+  description
+    "This module defines software upgrade support for Ciena's 6500r Platform.";
+
+  revision 2021-04-12 {
+    ciena-common-version:string "1.14.0";
+    description
+      "Removed our restart-reason enum, using the ciena common types definition instead";
+  }
+  revision 2021-03-19 {
+    ciena-common-version:string "1.13.0";
+    description
+      "Added entity-command and entity-result to software component";
+  }
+  revision 2021-02-11 {
+    ciena-common-version:string "1.12.0";
+    description
+      "Added new RPC to update the factory release,
+       \\added associated states and oepration";
+  }
+  revision 2021-02-04 {
+    ciena-common-version:string "1.11.0";
+    description
+      "Added unexpected-restart operation-result code";
+  }
+  revision 2021-01-22 {
+    ciena-common-version:string "1.10.0";
+    description
+      "Added query field to display additional information about the
+       \\operation in progress";
+  }
+  revision 2020-12-14 {
+    ciena-common-version:string "1.9.1";
+    description
+      "Updated operation-result-type descriptions";
+  }
+  revision 2020-12-02 {
+    ciena-common-version:string "1.9.0";
+    description
+      "Added secure erase and several other CE related result types";
+  }
+  revision 2020-11-04 {
+    ciena-common-version:string "1.8.0";
+    description
+      "Added delivered-versions field for the delivery and delete functionality";
+  }
+  revision 2020-10-21 {
+    ciena-common-version:string "1.7.0";
+    description
+      "Added guest-os-enabled operation-result code and RPC common-yang identity";
+  }
+  revision 2020-10-19 {
+    ciena-common-version:string "1.6.0";
+    description
+      "Added component-upgrade-failure operation-result code";
+  }
+  revision 2020-10-15 {
+    ciena-common-version:string "1.5.0";
+    description
+      "Added snmp-command and snmp-result to software component
+       \\clear upgrade-operational-state enum values
+       \\revert rpc and upgrade-operational states
+       \\added minimum-software-release and adopted leafs.";
+  }
+  revision 2020-09-20 {
+    ciena-common-version:string "1.4.0";
+    description
+      "Added an additional-info field to the software-notification to provide extra
+       \\free text information about the state change.";
+  }
+  revision 2020-08-18 {
+    ciena-common-version:string "1.3.0";
+    description
+      "Added invoke restart type, changed software-cancel version to optional and american english.";
+  }
+  revision 2020-08-08 {
+    ciena-common-version:string "1.2.0";
+    description
+      "Added License check failure operation-result and error-code";
+  }
+  revision 2020-07-24 {
+    ciena-common-version:string "1.1.0";
+    description
+      "Added software-audit rpc";
+  }
+  revision 2020-06-16 {
+    ciena-common-version:string "1.0.0";
+    description
+      "Added new operation-result-type value of data-conversion-failure";
+  }
+  revision 2020-04-13 {
+    description
+      "Remove last-upgrade-operational-state and upgrade-operational-state-progress\\
+       \\as they are unused. Update descriptions for better customer understanding.\\
+       \\Folding descriptions at 88 chars.";
+  }
+  revision 2020-03-25 {
+    description
+      "Reorganized operation information under Operation-info structure, added\\
+       \timestamps, and added software- suffix to upgrade-operation enums";
+  }
+  revision 2020-03-21 {
+    description
+      "Unified RPC responses to ciena-common-yang rpc-result-common grouping";
+  }
+  revision 2020-03-04 {
+    description
+      "Moved operation-result to last-operation-result and populated more enums";
+  }
+  revision 2019-12-05 {
+    description
+      "RLS 2.0 Sprint 19 - Add failure explanations and RPC output message grouping";
+  }
+  revision 2019-07-10 {
+    description
+      "RLS 1.1 Sprint 15 - RPC changes, add notifications, unify show software";
+  }
+  revision 2019-06-07 {
+    description
+      "Added load-type and moved mapping data under software container";
+  }
+
+  identity invalid-input {
+    base ciena-common:error-code;
+    description
+      "RPC contained invalid input.";
+  }
+
+  identity invalid-uri {
+    base ciena-common:error-code;
+    description
+      "URI contains invalid sequence or missing expected information.";
+  }
+
+  identity invalid-upgrade-state {
+    base ciena-common:error-code;
+    description
+      "RPC was called during in invalid upgrade operational state.";
+  }
+
+  identity not-supported {
+    base ciena-common:error-code;
+    description
+      "The RPC isn't supported with the given parameters.";
+  }
+
+  identity timeout {
+    base ciena-common:error-code;
+    description
+      "The system took to long to handle the RPC.";
+  }
+
+  identity insufficient-disk-space {
+    base ciena-common:error-code;
+    description
+      "Not enough file system space to handle the RPC request.";
+  }
+
+  identity package-delivery-failure {
+    base ciena-common:error-code;
+    description
+      "Package or the signature couldn't be delivered.";
+  }
+
+  identity package-validation-failure {
+    base ciena-common:error-code;
+    description
+      "Package or the signature couldn't be validated.";
+  }
+
+  identity package-extraction-failure {
+    base ciena-common:error-code;
+    description
+      "Couldn't extract the package or its contents.";
+  }
+
+  identity package-information-unavailable {
+    base ciena-common:error-code;
+    description
+      "Information about the package missing.";
+  }
+
+  identity component-group-failure {
+    base ciena-common:error-code;
+    description
+      "A component group failure stopped the upgrade.";
+  }
+
+  identity upgrade-version-unknown {
+    base ciena-common:error-code;
+    description
+      "Information about the package missing.";
+  }
+
+  identity file-not-found {
+    base ciena-common:error-code;
+    description
+      "An expected file is missing.";
+  }
+
+  identity file-transfer-failure {
+    base ciena-common:error-code;
+    description
+      "Unable to transfer a file.";
+  }
+
+  identity license-check-failure {
+    base ciena-common:error-code;
+    description
+      "License(s) missing on system.";
+  }
+
+  identity guest-os-enabled {
+    base ciena-common:error-code;
+    description
+      "The guest os is enabled, upgrade cannot proceed while it is enabled.";
+  }
+
+  typedef boot-zone {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Boot zone is unknown.";
+      }
+      enum "a" {
+        description
+          "Boot zone A.";
+      }
+      enum "b" {
+        description
+          "Boot zone B.";
+      }
+    }
+    description
+      "The boot zone type.";
+  }
+
+  typedef upgrade-operation {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Unknown upgrade operation.";
+      }
+      enum "none" {
+        description
+          "No upgrade operation to display.";
+      }
+      enum "software-install" {
+        description
+          "Upgrade performed is install, a one step upgrade.";
+      }
+      enum "software-deliver" {
+        description
+          "Upgrade performed is deliver, copying a software package to the NE.";
+      }
+      enum "software-load" {
+        description
+          "Upgrade performed is load.";
+      }
+      enum "software-activate" {
+        description
+          "Upgrade performed is activate.";
+      }
+      enum "software-commit" {
+        description
+          "Upgrade performed is commit.";
+      }
+      enum "software-cancel" {
+        description
+          "An upgrade was cancelled.";
+      }
+      enum "software-delete" {
+        description
+          "A software package was deleted from the NE.";
+      }
+      enum "auto-upgrade" {
+        description
+          "An auto-upgrade was performed.";
+      }
+      enum "software-set-factory-release" {
+        description
+          "Upgrade performed is update the factory release.";
+      }
+    }
+  }
+
+  typedef upgrade-op-state {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+        description
+          "Upgrade operational state is unknown.";
+      }
+      enum "idle" {
+        value 1;
+        description
+          "Software upgrade is idle.";
+      }
+      enum "load-in-progress" {
+        value 2;
+        description
+          "Software load is in progress.";
+      }
+      enum "load-complete" {
+        value 3;
+        description
+          "Software load is complete.";
+      }
+      enum "load-failed" {
+        value 4;
+        description
+          "Software load failed.";
+      }
+      enum "invoke-in-progress" {
+        value 5;
+        description
+          "Software invoke is in progress.";
+      }
+      enum "invoke-complete" {
+        value 6;
+        description
+          "Software invoke is complete.";
+      }
+      enum "invoke-failed" {
+        value 7;
+        description
+          "Software invoke failed.";
+      }
+      enum "installation-in-progress" {
+        value 8;
+        description
+          "Software installation is in progress.";
+      }
+      enum "installation-complete" {
+        value 9;
+        description
+          "Software installation complete.";
+      }
+      enum "installation-failed" {
+        value 10;
+        description
+          "Software installation failed.";
+      }
+      enum "commit-in-progress" {
+        value 11;
+        description
+          "Software commit is in progress.";
+      }
+      enum "commit-complete" {
+        value 12;
+        description
+          "Software commit complete.";
+      }
+      enum "commit-failed" {
+        value 13;
+        description
+          "Software commit failed.";
+      }
+      enum "cancel-in-progress" {
+        value 14;
+        description
+          "Software cancel operation is in progress.";
+      }
+      enum "cancel-complete" {
+        value 15;
+        description
+          "Software cancel operation complete.";
+      }
+      enum "cancel-failed" {
+        value 16;
+        description
+          "Software cancel operation failed.";
+      }
+      enum "delete-in-progress" {
+        value 17;
+        description
+          "Software delete operation is in progress.";
+      }
+      enum "delete-complete" {
+        value 18;
+        description
+          "Software delete operation complete.";
+      }
+      enum "delete-failed" {
+        value 19;
+        description
+          "Software delete operation failed.";
+      }
+      enum "automatic-upgrade-in-progress" {
+        value 20;
+        description
+          "Automatic software upgrade is in progress.";
+      }
+      enum "automatic-upgrade-complete" {
+        value 21;
+        description
+          "Automatic software upgrade complete.";
+      }
+      enum "automatic-upgrade-failed" {
+        value 22;
+        description
+          "Automatic software upgrade failed.";
+      }
+      enum "module-cold-restart-required" {
+        value 23;
+        description
+          "A cold restart is required on one or more modules.";
+      }
+      enum "component-upgrade-in-progress" {
+        value 24;
+        description
+          "A component is upgrading.";
+      }
+      enum "component-upgrade-complete" {
+        value 25;
+        description
+          "A component completed upgrading.";
+      }
+      enum "component-upgrade-failed" {
+        value 26;
+        description
+          "A component failed to upgrade.";
+      }
+      enum "delivery-in-progress" {
+        value 27;
+        description
+          "Load Package delivery is in progress.";
+      }
+      enum "delivery-complete" {
+        value 28;
+        description
+          "Load Package delivery completed.";
+      }
+      enum "delivery-failed" {
+        value 29;
+        description
+          "Load Package delivery failed.";
+      }
+      enum "revert-in-progress" {
+        value 30;
+        description
+          "Software revert is in progress.";
+      }
+      enum "revert-complete" {
+        value 31;
+        description
+          "Software revert is completed.";
+      }
+      enum "revert-failed" {
+        value 32;
+        description
+          "Software revert failed.";
+      }
+      enum "set-factory-release-in-progress" {
+        value 33;
+        description
+          "Updating the factory release is in progress.";
+      }
+      enum "set-factory-release-complete" {
+        value 34;
+        description
+          "Updating the factory release is complete.";
+      }
+      enum "set-factory-release-failed" {
+        value 35;
+        description
+          "Updating the factory release failed.";
+      }
+    }
+    description
+      "Software upgrade operational state.";
+  }
+
+  typedef operation-result-type {
+    type enumeration {
+      enum "ok" {
+        value 0;
+        description
+          "Operation success.";
+      }
+      enum "failed" {
+        value 1;
+        description
+          "Default failure reason";
+      }
+      enum "unknown-error" {
+        value 2;
+        description
+          "Unknown error";
+      }
+      enum "timeout" {
+        value 3;
+        description
+          "Operation timeout occurred";
+      }
+      enum "package-delivery-failure" {
+        value 4;
+        description
+          "Software release package delivery failure";
+      }
+      enum "package-validation-failure" {
+        value 5;
+        description
+          "Software release package validation failure";
+      }
+      enum "insufficient-disk-space" {
+        value 6;
+        description
+          "Minimum available disk space requirement not met";
+      }
+      enum "package-extraction-failure" {
+        value 7;
+        description
+          "Extraction failure on the software release package contents";
+      }
+      enum "system-error" {
+        value 8;
+        description
+          "Internal system error";
+      }
+      enum "dependent-service-error" {
+        value 9;
+        description
+          "Dependent service response unknown";
+      }
+      enum "package-information-unavailable" {
+        value 10;
+        description
+          "Information about software release package missing";
+      }
+      enum "upgrade-version-unknown" {
+        value 11;
+        description
+          "Software release version information is missing or unknown";
+      }
+      enum "authentication-failure" {
+        value 12;
+        description
+          "Authentication failure";
+      }
+      enum "file-not-found" {
+        value 13;
+        description
+          "Required file is missing";
+      }
+      enum "file-transfer-failure" {
+        value 14;
+        description
+          "Unable to transfer a file";
+      }
+      enum "invalid-uri" {
+        value 15;
+        description
+          "URI contains invalid sequence or missing expected information";
+      }
+      enum "invalid-state" {
+        value 16;
+        description
+          "Issued command is not supported in current upgrade operational state";
+      }
+      enum "data-conversion-failure" {
+        value 17;
+        description
+          "Unable to convert system database";
+      }
+      enum "license-check-failure" {
+        value 18;
+        description
+          "License(s) in arrears on system";
+      }
+      enum "component-upgrade-failure" {
+        value 19;
+        description
+          "Component upgrade failure";
+      }
+      enum "guest-os-enabled" {
+        value 20;
+        description
+          "Upgrade cannot proceed while guest operating system is enabled";
+      }
+      enum "secure-erase-in-progress" {
+        value 21;
+        description
+          "There is a secure erase in progress, upgrade cannot proceed until it is complete.";
+      }
+      enum "validation-failure" {
+        value 22;
+        description
+          "There was a failure validating an upgrade requirement such as a file.";
+      }
+      enum "driver-failure" {
+        value 23;
+        description
+          "A device read or write operation failed.";
+      }
+      enum "device-upgrade-failure" {
+        value 24;
+        description
+          "A subtending device failed its upgrade.";
+      }
+      enum "device-state" {
+        value 25;
+        description
+          "The device reported state differs from the expected at the upgrade state.";
+      }
+      enum "unexpected-restart" {
+        value 26;
+        description
+          "An unexpected restart occured.";
+      }
+    }
+  }
+
+  typedef load-type {
+    type enumeration {
+      enum "boot" {
+        value 1;
+        description
+          "Boot load.";
+      }
+      enum "app" {
+        value 2;
+        description
+          "Application load.";
+      }
+      enum "zac" {
+        value 3;
+        description
+          "Zac load.";
+      }
+      enum "eos" {
+        value 4;
+        description
+          "EOS load.";
+      }
+      enum "plug" {
+        value 5;
+        description
+          "Plug load.";
+      }
+    }
+    description
+      "The boot load type.";
+  }
+
+  typedef entity-command-type {
+    type enumeration {
+      enum "load" {
+        value 1;
+      }
+      enum "invoke" {
+        value 2;
+      }
+      enum "commit" {
+        value 3;
+      }
+      enum "cancel" {
+        value 4;
+      }
+      enum "idle" {
+        value 5;
+      }
+      enum "revert" {
+        value 6;
+      }
+    }
+  }
+
+  typedef entity-result-type {
+    type enumeration {
+      enum "unknown" {
+        value 0;
+      }
+      enum "ok" {
+        value 1;
+      }
+      enum "wrong-bank" {
+        value 2;
+      }
+      enum "application-not-valid" {
+        value 3;
+      }
+      enum "cannot-erase-provdata-files" {
+        value 4;
+      }
+      enum "cannot-erase-provdata-flash" {
+        value 5;
+      }
+      enum "software-upgrade-cannot-copy-provdata-files" {
+        value 6;
+      }
+      enum "cannot-erase-application-flash" {
+        value 7;
+      }
+      enum "cannot-copy-application-flash" {
+        value 8;
+      }
+      enum "timeout" {
+        value 9;
+      }
+      enum "conversion-incomplete" {
+        value 10;
+      }
+      enum "conversion-fail" {
+        value 11;
+      }
+      enum "cannot-erase-boot-flash" {
+        value 12;
+      }
+      enum "cannot-copy-boot-flash" {
+        value 13;
+      }
+      enum "boot-not-valid" {
+        value 14;
+      }
+      enum "upgrade-busy" {
+        value 15;
+      }
+      enum "invalid-sequence" {
+        value 16;
+      }
+      enum "load-not-found" {
+        value 17;
+      }
+      enum "max" {
+        value 18;
+      }
+    }
+    description
+      "softwareUpgradeResult OID MIB Values";
+  }
+
+  grouping software-state-basic {
+    description
+      "Generic grouping for software state status.";
+    leaf upgrade-operational-state {
+      type upgrade-op-state;
+      description
+        "Current software manager state.\\
+         \\Examples: <op>-in-progress, <op>-complete, <op>-failed or Idle.";
+    }
+
+    leaf entity-reported-state {
+      type upgrade-op-state;
+      description
+        "Current state reported by the managed upgrade entity.\\
+         \\Examples: <op>-in-progress, <op>-complete, <op>-failed or Idle.";
+    }
+
+    container operation-info {
+      description
+        "Grouping for the operation history information.";
+      container operation-in-progress {
+        description
+          "Grouping for any current active operation parameters.";
+        leaf operation {
+          type upgrade-operation;
+          description
+            "Current software manager operation in progress, if applicable.";
+        }
+
+        leaf additional-info {
+          type string;
+          description
+            "Additional information describing the operation in progress.";
+        }
+
+        leaf start-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the current software manager operation in progress started.\\
+             \\(Not supported in this software release version).";
+        }
+      }
+
+      container last-operation {
+        description
+          "Grouping for the last operation completed, if applicable.\\
+           \\(Currently cleared on CTM restarts).";
+        leaf operation {
+          type upgrade-operation;
+          description
+            "Last completed software manager operation.";
+        }
+
+        leaf result {
+          type operation-result-type;
+          description
+            "Result of the last completed software manager operation.";
+        }
+
+        leaf result-str {
+          type string;
+          description
+            "Result description details of the last completed software manager\\
+             \\operation.";
+        }
+
+        leaf start-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the last software manager operation had started.\\
+             \\(Not supported in this software release version).";
+        }
+
+        leaf end-timestamp {
+          type yang:date-and-time;
+          description
+            "Timestamp when the last software manager operation completed.";
+        }
+      }
+    }
+  }
+
+  grouping software-state {
+    description
+      "Generic grouping for state status detailed information.";
+    uses software-state-basic;
+
+    leaf last-upgrade-operational-state {
+      type upgrade-op-state;
+      description
+        "The previous upgrade operational state.";
+    }
+  }
+
+  grouping software-version-active {
+    description
+      "Generic grouping for active version status.";
+    leaf active-version {
+      type string;
+      description
+        "Target software release version which was activated by an upgrade.\\
+         \\UNKNOWN implies an upgrade is required.\\
+         \\Format: RLS-xx.yy.zz.bbbb";
+    }
+  }
+
+  grouping software-version {
+    description
+      "Generic grouping for version status.";
+    leaf committed-version {
+      type string;
+      description
+        "Last successfully upgraded software release version.\\
+         \\Format: RLS-xx.yy.zz.bbbb";
+    }
+
+    uses software-version-active;
+
+    leaf upgrade-to-version {
+      type string;
+      description
+        "Target software release version of an in-progress upgrade.\\
+         \\Format: RLS-xx.yy.zz.bbbb";
+    }
+
+    leaf running-version {
+      type string;
+      description
+        "Actual software release version that is currently running\\
+         \\and is expected to match active-version after an upgrade is completed.\\
+         \\Format: RLS-xx.yy.zz.bbbb";
+    }
+
+    leaf delivered-versions {
+      type string;
+      description
+        "List of software release versions that are locally available for\\
+         \\shelf level install or load. Format: 'RLS-xx.yy.zz.bbbb, RLS-xx.yy.zz.bbbb'";
+    }
+  }
+
+  grouping module-status {
+    description
+      "Generic grouping for module status.";
+    leaf boot-zone {
+      type boot-zone;
+      description
+        "Specifies active bootable image location for devices equipped with multiple\\
+         \\software images.";
+    }
+
+    leaf last-restart {
+      type string;
+      description
+        "Date and time of last restart if available. Format: 'YYYY-MM-DD HH:MM:SS'.";
+    }
+
+    leaf last-restart-reason {
+      type ciena-pro-types:restart-reason;
+      description
+        "Only supported value for CTM in this release is: system-cold.";
+    }
+
+    leaf boot-image-a {
+      type string;
+      description
+        "Software release version stored in bootable image location A.";
+    }
+
+    leaf boot-image-b {
+      type string;
+      description
+        "Software release version stored in bootable image location B.";
+    }
+  }
+
+  grouping software-entity-state {
+    description
+      "card state information";
+    leaf entity-command {
+      type entity-command-type;
+    }
+
+    leaf entity-result {
+      type entity-result-type;
+    }
+  }
+
+  grouping software-component-adoption {
+    description
+      "Component adoption fields.";
+    leaf adopted {
+      type boolean;
+      description
+        "Indicates whether the component has been adopted in the shelf.";
+    }
+
+    leaf minimum-software-release {
+      type string;
+      description
+        "Minimum supported software release version.";
+    }
+  }
+
+  grouping software-hierarchy {
+    uses software-state-basic;
+
+    uses software-version;
+
+    list component {
+      key "id";
+      description
+        "Upgradable equipment slot number, or logical equipment grouping.\\
+         \\Format: 1, 2, etc; or IM, CTM, CE.";
+      leaf id {
+        type string;
+        mandatory true;
+        description
+          "Unique label for the specific component or logical equipment grouping.\\
+           \\Format: 1, 2, etc; or IM, CTM, CE.";
+      }
+
+      uses software-component-adoption;
+
+      uses software-state-basic;
+
+      uses software-entity-state;
+
+      uses software-version-active;
+
+      uses module-status;
+
+      list device {
+        key "id";
+        description
+          "Sub-entity of a component which has software release specific information.";
+        leaf id {
+          type string;
+          mandatory true;
+          description
+            "Unique label for the specific component sub-entity, which may just be the\\
+             \\device name (e.g 'A9').";
+        }
+
+        uses software-state-basic;
+
+        uses software-version-active;
+
+        uses module-status;
+      }
+    }
+  }
+
+  grouping mapping-data {
+    list sw-mgr-mapping {
+      key "pec version";
+      description
+        "Not supported in this software release version.";
+      leaf pec {
+        type ciena-6500r-types:pec-code;
+        mandatory true;
+        description
+          "Part Number,supporting various formats(e.g. Product equipment code,3-4-3)";
+      }
+
+      leaf version {
+        type uint16;
+        description
+          "Software version or firmware Id";
+      }
+
+      leaf-list supported-shelves {
+        type ciena-6500r-types:shelf-type;
+        description
+          "List of supported shelf types";
+      }
+
+      leaf hardware-id {
+        type string;
+        description
+          "Hardware ID";
+      }
+
+      leaf min-hw-baseline {
+        type string;
+        mandatory true;
+        description
+          "Minimum hardware baseline";
+      }
+
+      leaf min-sw-release {
+        type string;
+        mandatory true;
+        description
+          "Minimum software release supported";
+      }
+
+      list load-lineup {
+        key "target-device";
+        leaf target-device {
+          type load-type;
+          description
+            "Target device, can be FW, APPL, ...";
+        }
+
+        leaf filename-prefix {
+          type string;
+          description
+            "Filename prefix";
+        }
+
+        leaf restart-type {
+          type enumeration {
+            enum "cold";
+            enum "warm";
+          }
+          description
+            "Restart type";
+        }
+      }
+    }
+  }
+
+  grouping release-version {
+    description
+      "Grouping for specifying release version in rpc.";
+    choice release {
+      mandatory true;
+      case has-version {
+        leaf version {
+          type string;
+          description
+            "The load version string.";
+        }
+      }
+
+      case has-uri {
+        leaf uri {
+          type string;
+          description
+            "The URL specifying the remote location and package name to be installed.\\
+             \\Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+        }
+      }
+    }
+  }
+
+  grouping target-component {
+    description
+      "Grouping for RPC input specifying which component the command targets.";
+    leaf path {
+      type string;
+      description
+        "Deprecated by component.";
+    }
+
+    leaf component {
+      type string;
+      description
+        "Upgradable equipment slot number, or logical equipment grouping.\\
+         \\Format: 1, 2, etc; or IM, CTM, CE";
+    }
+  }
+
+  container software {
+    config false;
+    description
+      "Software manager release information, operation history and status of\\
+       \\installation/upgrades.";
+    uses software-hierarchy;
+
+    uses mapping-data;
+  }
+
+  rpc software-install {
+    description
+      "Perform one-step software upgrade (automated load, activate, and commit)\\
+       \\using the provided parameters (uri or version; [component]).";
+    input {
+      uses target-component;
+
+      leaf uri {
+        type string;
+        description
+          "The URL specifying the remote location and package name to be installed.\\
+           \\Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+      }
+
+      leaf version {
+        type string;
+        description
+          "Pre-delivered software release version to be installed.\\
+           \\(Expected pre-delivery location: /var/op/ap/pub/loadmgmt/)\\
+           \\Format: RLS-xx.yy.zz.bbbb";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-deliver {
+    description
+      "Transfer a software release package to the shelf.";
+    input {
+      uses target-component;
+
+      leaf uri {
+        type string;
+        mandatory true;
+        description
+          "URL specifying the remote location and package name to be delivered.\\
+           \\Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-load {
+    description
+      "Perform staging and load of the software release using the provided parameters\\
+       \\(uri or version; [component]). Upon completion the shelf, components and/or\\
+       \\devices will be prepared for activation.";
+    input {
+      uses target-component;
+
+      leaf uri {
+        type string;
+        description
+          "URL specifying the remote location and package name to be loaded.\\
+           \\Example format is 'scp://<uid>:<pwd>@<ip-address>/<path>/<filename>'.";
+      }
+
+      leaf version {
+        type string;
+        description
+          "Pre-delivered software release version to be loaded.\\
+           \\(Expected pre-delivery location: /var/op/ap/pub/loadmgmt/)\\
+           \\Format: RLS-xx.yy.zz.bbbb";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-invoke {
+    description
+      "Deprecated in favour of software-activate. Perform software-activate.";
+    input {
+      uses target-component;
+
+      leaf version {
+        type string;
+        description
+          "Not applicable for software-invoke.";
+      }
+
+      leaf restart-type {
+        type enumeration {
+          enum "cold";
+          enum "warm";
+        }
+        description
+          "Restart type";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-activate {
+    description
+      "Perform activation (restart into the target software release, against the shelf\\
+       \\or [component]). Upon completion the shelf, components and/or devices will be\\
+       \\running the target software release and prepared for commit.";
+    input {
+      uses target-component;
+
+      leaf version {
+        type string;
+        description
+          "Not applicable for software-activate.";
+      }
+
+      leaf restart-type {
+        type enumeration {
+          enum "cold";
+          enum "warm";
+        }
+        description
+          "Restart type";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-delete {
+    description
+      "Remove a software release package from the shelf.";
+    input {
+      uses target-component;
+
+      leaf version {
+        type string;
+        mandatory true;
+        description
+          "The load version string.";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-commit {
+    description
+      "Perform software commit operation in the current load has not been committed\\
+       \\and it is in boot completion state.";
+    input {
+      uses target-component;
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-cancel {
+    description
+      "Specific to IM component. Returns entity to committed software release version.";
+    input {
+      uses target-component;
+
+      leaf version {
+        type string;
+        description
+          "Format: RLS-xx.yy.zz.bbbb (To be deprecated).";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-revert {
+    description
+      "Specific to an IM card. Instruct a card to perform a revert operation.";
+    input {
+      uses target-component;
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-ready {
+    description
+      "Check the software manager for upgrade readiness. (Disk space availability,\\
+       \\Upgrade State, etc)";
+
+    output {
+      leaf ready {
+        type boolean;
+        mandatory true;
+        description
+          "Return describing whether software manager is ready for an upgrade command";
+      }
+    }
+  }
+
+  rpc software-upgrade-in-progress {
+    description
+      "Checks whether the software manager is currently performing an upgrade";
+
+    output {
+      leaf upgrade-in-progress {
+        type boolean;
+        mandatory true;
+        description
+          "Returns true if there is currently an upgrade-in-progress";
+      }
+    }
+  }
+
+  rpc software-audit {
+    description
+      "Perform software audit operation";
+    input {
+      uses target-component;
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  rpc software-set-factory-release {
+    description
+      "Update the factory release";
+    input {
+      leaf version {
+        type string;
+        mandatory true;
+        description
+          "Pre-delivered software release version to use as the factory release.\\
+           \\Format: RLS-xx.yy.zz.bbbb";
+      }
+    }
+
+    output {
+      uses ciena-common:rpc-result-common;
+    }
+  }
+
+  notification software-notification {
+    description
+      "This notification is sent to report status events from the upgrade service.";
+    uses software-state;
+
+    uses software-version;
+
+    leaf component-path {
+      type string;
+      description
+        "The path of the notifying component";
+    }
+
+    leaf additional-info {
+      type string;
+      description
+        "Additional information describing the status event notification.";
+    }
+  }
+}

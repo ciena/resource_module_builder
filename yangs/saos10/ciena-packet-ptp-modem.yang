@@ -1,0 +1,474 @@
+module ciena-packet-ptp-modem {
+  namespace "http://www.ciena.com/ns/yang/ciena-packet-ptp-modem";
+  prefix ptp-modem;
+
+  import ciena-packet-typedefs {
+    prefix cntypes;
+  }
+  import ciena-packet-ptp {
+    prefix ptp;
+  }
+  import ciena-packet-xcvr {
+    prefix xcvr;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines modem-transceiver PTP data. It
+     augments the ciena-packet-ptp module. The PTP model represents the
+     signal carried by the modem transceiver at a physical line port. The PTP
+     objects are automatically provisioned during service module installation.";
+
+  revision 2023-09-12 {
+    description
+      "Enhancing must check in grid-spacing config.";
+  }
+
+  revision 2021-09-07 {
+    description
+      "Adding new container grid-spacing under
+       properties/ptp:transmitter.
+       Adding must check to block grid-spacing
+       config for Wavelogic Ai.";
+  }
+
+  revision 2019-11-01 {
+    description
+      "Adding 250 and 500 values to reach limit";
+  }
+
+  revision 2019-03-20 {
+    description
+      "Enabled PTP properties config for more xcvr types";
+  }
+
+  revision 2018-05-17 {
+    description
+      "Based off of ciena-waveserver-ptp-modem.yang";
+  }
+  augment "/ptp:ptps/ptp:ptp/ptp:properties/ptp:transmitter" {
+    description
+      "PTP transmitter properties";
+    container frequency {
+      description
+        "Tx Frequency attributes.";
+      leaf value {
+        type cntypes:modem-frequency;
+        units "GHz";
+        description
+          "The configured modem frequency value (GHz). Frequency cannot be
+           modified while Admin State is enabled (except when changing from
+           zero value to another value).";
+      }
+      leaf min-value {
+        type cntypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "The minimum supported frequency value, in GHz.";
+      }
+      leaf max-value {
+        type cntypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "The maximum supported frequency value, in GHz.";
+      }
+      leaf actual {
+        type cntypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "The actual transmitter frequency value applied on the modem (GHz).";
+      }
+    }
+    container power {
+      description
+        "Tx Power attributes.";
+      leaf value {
+        type cntypes:tx-power-lvl;
+        units "dBm";
+        description
+          "The provisioned transmit power in dBm.";
+      }
+      leaf min-value {
+        type cntypes:decimal-1-dig;
+        units "dBm";
+        config false;
+        description
+          "The minimum supported tx power value, in dBm.";
+      }
+      leaf max-value {
+        type cntypes:decimal-1-dig;
+        units "dBm";
+        config false;
+        description
+          "The maximum supported tx power value, in dBm.";
+      }
+      leaf actual {
+        type cntypes:tx-power-lvl;
+        units "dBm";
+        config false;
+        description
+          "The actual optical transmit power value, in dBm.";
+      }
+    }
+    container grid-spacing {
+      must "not(../../xcvr-type = 'WaveLogic Ai')" {
+        error-message
+          "grid-spacing not supported on Wavelogic Ai ports";
+      }
+      description
+        "Tx grid spacing attributes.";
+      leaf value {
+        type cntypes:grid-spac-enum;
+        units "GHz";
+        description
+          "The configured modem grid spacing value. Default is 50GHz";
+      }
+    }
+  }
+  augment "/ptp:ptps/ptp:ptp/ptp:properties" {
+    description
+      "PTP properties specific to PTP modem.";
+    container line-system {
+      description
+        "Line System related attributes.";
+      leaf type {
+        type cntypes:line-sys-enum;
+        description
+          "Line system type. Default is coloured";
+      }
+    }
+    container modem {
+      description
+        "PTP Modem configuration and operational attributes.";
+      leaf baud-rate {
+        type uint32;
+        units "Gbaud";
+        config false;
+        description
+          "The baud rate value, based off the mode of the parent XCVR.";
+      }
+      leaf class {
+        type cntypes:modem-class;
+        description
+          "The modem class type, terrestrial or submarine. Configuration requires
+           proper license installed.";
+      }
+      leaf far-end-class {
+        type cntypes:modem-class;
+        config false;
+        description
+          "The modem class type on the remote end of the line, terrestrial or
+           submarine, if available.";
+      }
+      leaf reach-limit {
+        type int16 {
+          range "0|250|500|1000|2000|3500|5000|9000|14000";
+        }
+        units "km";
+        description
+          "The maximum reach allowed in km. The possible values are [250, 500, 1000, 2000,
+           5000] for terrestrial modem class, and [3500, 9000, 14000] for
+           submarine modem class. Configuration requires proper license installed.
+           [0] if the value is unknown/unavailable or inapplicable.";
+      }
+      leaf actual-reach {
+        type int16;
+        units "km";
+        config false;
+        description
+          "The actual applied reach value, in km. The possible values are [250, 500, 1000,
+           2000, 5000] for terrestrial modem class, and [3500, 9000, 14000] for
+           submarine modem class. Configuration requires proper license installed.
+           [0] if the value is unknown/unavailable or inapplicable.";
+      }
+      leaf link-optimization-mode {
+        type cntypes:link-optimization-mode;
+        description
+          "Link Optimization Mode. Default is standard.";
+      }
+      leaf actual-link-optimization-mode {
+        type cntypes:link-optimization-mode;
+        config false;
+        description
+          "Actual Link Optimization mode applied on the modem, if available.";
+      }
+      leaf laser-tuning-mode {
+        type enumeration {
+          enum "normal" {
+            description
+              "Normal (performance-optimized) laser tuning mode.";
+          }
+          enum "accelerated" {
+            description
+              "Accelerated laser tuning mode.";
+          }
+          enum "fast" {
+            description
+              "Fast laser tuning mode.";
+          }
+        }
+        description
+          "This is the Tuning Mode, which can be set as normal (performance-
+           optimized), accelerated, or fast tuning mode. Default is normal.";
+      }
+      leaf laser-centering-mode {
+        type enumeration {
+          enum "disabled" {
+            description
+              "Laser centering disabled.";
+          }
+          enum "enabled" {
+            description
+              "Laser centering enabled.";
+          }
+          enum "holdover" {
+            description
+              "Laser centering in holdover mode.";
+          }
+        }
+        description
+          "This parameter is used to configure which laser centering mode to
+           apply to the OTM signal.";
+      }
+      leaf laser-centering-range {
+        type decimal64 {
+          fraction-digits 1;
+          range "0.0 .. 3.0";
+        }
+        units "GHz";
+        description
+          "This parameter is used to configure the laser centering range.";
+      }
+      leaf laser-shutdown-mode {
+        type enumeration {
+          enum "accelerated" {
+            description
+              "Laser shutdown accelerated mode.";
+          }
+          enum "normal" {
+            description
+              "Laser shutdown normal mode.";
+          }
+        }
+        description
+          "Laser shutdown mode.";
+      }
+      leaf expected-restoration-time {
+        type uint32 {
+          range "0..255";
+        }
+        units "seconds";
+        description
+          "Expected link restoration time, in seconds. Prevents the laser from
+           dithering for a given period of time after traffic loss in order to
+           minimize re-acquisition time. Default is 10 seconds.";
+      }
+      leaf channel-contention-detection-avoidance {
+        type cntypes:enabled-disabled-enum;
+        description
+          "Enables or disables the channel contention detection and avoidance
+           feature. This feature is used to detect the situation where the modem
+           port turns on a wavelength (or frequency in Gridless mode) that is in
+           use by an existing L0 connection on a colorless network. This feature
+           will be triggered by new frequency provisioning and will automatically
+           detects if the provisioned frequency is already used. If the
+           provisioned frequency is already used, it declares channel contention,
+           and then it will hold the Line port TX in a low power state (<-35 dBm)
+           and will raise a Channel Contention alarm. This feature will also
+           provide a mechanism to allow user to manually release the Line port TX
+           from being held in a low power state while the channel collision
+           declared.";
+      }
+      leaf tx-power-reduction-state {
+        type cntypes:enabled-disabled-enum;
+        description
+          "This parameter is used to enable Tx blanking functionality. Default is
+           Disabled.";
+      }
+      leaf tx-dispersion-compensation-mode {
+        type enumeration {
+          enum "automatic" {
+            description
+              "Automatic Tx dispersion compensation management mode. This is the
+               default.";
+          }
+          enum "fixed" {
+            description
+              "Fixed Tx dispersion compensation management mode.";
+          }
+          enum "search" {
+            description
+              "Search Tx dispersion compensation management mode.";
+          }
+        }
+        description
+          "Tx dispersion compensation management mode.";
+      }
+      leaf tx-dispersion-precompensation-value {
+        type int32 {
+          range "-44500..1200000";
+        }
+        units "ps/nm";
+        description
+          "Tx compensation dispersion value, in ps/nm. Default is 0 for automatic
+           mode.";
+      }
+      leaf tx-path-dispersion-value {
+        type int32 {
+          range "-89000..1244500";
+        }
+        units "ps/nm";
+        description
+          "Tx path dispersion value, in ps/nm.";
+      }
+      leaf tx-dispersion-min {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Tx dispersion minimum value, in ps/nm.";
+      }
+      leaf tx-dispersion-max {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Tx dispersion maximum value, in ps/nm.";
+      }
+      leaf actual-tx-link-dispersion {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Total actual Tx link dispersion, in ps/nm.";
+      }
+      leaf actual-rx-link-dispersion {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Total actual Rx link dispersion, in ps/nm.";
+      }
+      leaf actual-tx-precompensation-dispersion {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Actual Tx precompensation dispersion value, in ps/nm. This is the
+           total link dispersion in the near-to-far direction.";
+      }
+      leaf rx-post-compensation-dispersion {
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Rx post-compensation dispersion, in ps/nm.";
+      }
+      leaf estimated-instance-of-differential-group-delay {
+        type cntypes:decimal-3-dig;
+        units "ps";
+        config false;
+        description
+          "Estimated instance of differential group delay, in picoseconds (ps).";
+      }
+      leaf mean-supported-differential-group-delay {
+        type cntypes:decimal-3-dig;
+        units "ps";
+        config false;
+        description
+          "Mean supported differential group delay, in picoseconds (ps).";
+      }
+      leaf estimated-round-trip-delay {
+        type uint32;
+        units "us";
+        config false;
+        description
+          "Estimated round trip delay, in microseconds (us).";
+      }
+      leaf estimated-unidirectional-latency {
+        type uint32;
+        units "us";
+        config false;
+        description
+          "Estimated unidirectional latency, in microseconds (us).";
+      }
+      leaf estimated-fiber-length {
+        type uint32;
+        units "km";
+        config false;
+        description
+          "Estimated fiber length, in kilometers (km).";
+      }
+      leaf allocated-spectral-width {
+        type cntypes:decimal-1-dig;
+        units "GHz";
+        config false;
+        description
+          "Allocated spectral width, in GHz.";
+      }
+      leaf min-spectral-width {
+        type cntypes:decimal-1-dig;
+        units "GHz";
+        config false;
+        description
+          "Minimum spectral width, in GHz.";
+      }
+      leaf supported-3dbm-signal-bandwidth {
+        type cntypes:decimal-1-dig;
+        units "GHz";
+        config false;
+        description
+          "Supported 3 dBm signal bandwidth, in GHz.";
+      }
+      leaf supported-10dbm-signal-bandwidth {
+        type cntypes:decimal-1-dig;
+        units "GHz";
+        config false;
+        description
+          "Supported 10 dBm signal bandwidth, in GHz.";
+      }
+    }//end container modem
+
+  }//end augment to ptps/properties
+
+  augment "/ptp:ptps/ptp:ptp/ptp:properties/ptp:lanes/ptp:lane/ptp:rx/ptp:power" {
+    description
+      "PTP Rx power properties specific to PTP modem.";
+    container optical-channel-power {
+      config false;
+      description
+        "The actual Rx power attributes for the channel to which the receiver is tuned.";
+      uses xcvr:optical-power-group;
+    }
+  }//end augment to ptps/properties/lanes/lane/rx/power
+
+  augment "/ptp:ptps/ptp:ptp/ptp:properties/ptp:lanes/ptp:lane/ptp:rx/ptp:status" {
+    description
+      "PTP Rx status properties specific to PTP modem.";
+    container optical-channel-power {
+      config false;
+      description
+        "Optical Channel Rx Power high/low alarm/warning status/thresholds,
+         where applicable for the XCVR type.";
+      uses xcvr:optical-power-status-group;
+      uses xcvr:optical-power-threshold-group;
+      leaf loss-of-signal {
+        type boolean;
+        description
+          "Rx Loss of Optical Channel.";
+      }
+    }
+  }//end augment to ptps/properties/lanes/lane/rx/status
+
+}

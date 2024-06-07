@@ -1,0 +1,122 @@
+module ciena-pro-pm-debug {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-pm-debug";
+  prefix pm-debug;
+
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-pro-pm-types {
+    prefix pm-types;
+  }
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com";
+  description
+    "This module describes Ciena's pm runtime objects for the Bifrost platform";
+
+  revision 2022-04-07 {
+    description
+      "Remove enable-dc-logging and add set-bin-interval";
+    ciena-common-version:string "1.1.0";
+  }
+  revision 2022-02-18 {
+    description
+      "Change 6500r platform to Bifrost platform";
+    ciena-common-version:string "1.0.0";
+  }
+  revision 2019-10-03 {
+    description
+      "Initial revision";
+  }
+
+  container pm-debug {
+    list log {
+      key "number";
+      leaf number {
+        type uint32;
+        description
+          "log number";
+      }
+      leaf msg {
+        type string;
+        config false;
+        mandatory true;
+        description
+          "log data";
+      }
+      leaf log-time {
+        type ietf-yang:date-and-time;
+        mandatory true;
+        description
+          "Represents the time when the data is being read";
+      }
+    }
+    leaf enable-slot-mgr-polling {
+      type uint32;
+      default "0";
+      description
+        "turn slot-mgr circuit-pack polling on or off";
+    }
+    list control {
+      key "name";
+      leaf name {
+        type string;
+        description
+          "The name of the function to be enbled or not";
+      }
+      leaf enable {
+        type uint32;
+        default "0";
+        description
+          "enbled or not";
+      }
+    }
+    leaf set-bin-interval {
+      type uint16 {
+        range "2..59";
+      }
+      default "15";
+      description
+        "Must be > 1 and < 60; Must be dividible by 60";
+    }
+    leaf enable-a {
+      type uint32;
+      default "0";
+    }
+    leaf enable-b {
+      type uint32;
+      default "0";
+    }
+    leaf enable-c {
+      type uint32;
+      default "0";
+    }
+    list dc-data {
+      key "pm-resource-instance";
+      leaf pm-resource-instance {
+        type instance-identifier;
+        mandatory true;
+        description
+          "Retrieves all PM associate with the resource instance";
+      }
+      leaf enable-dcvalue-logging {
+        type uint32;
+        default "0";
+        description
+          "turn data collector value logging on or off";
+      }
+      list dc-val {
+        key "measid";
+        leaf measid {
+          type string;
+        }
+        uses pm-types:pm-measurement;
+      }
+    }
+  }
+}

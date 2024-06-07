@@ -1,0 +1,137 @@
+module ciena-ietf-alarms-profile {
+  namespace "http://www.ciena.com/ns/yang/ciena-ietf-alarms-profile";
+  prefix "ciena-profile";
+
+  import ciena-ietf-alarms {
+    prefix ciena-al;
+  }
+
+  import ietf-alarms {
+    prefix al;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena's augmentations to the draft-ietf-ccamp-alarm-module-01 model.
+
+     Copyright (c) 2021 Ciena Corporation.  All rights
+     reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision "2021-08-09" {
+    description
+      "Support for Alarm Profiling";
+  }
+
+  typedef severity {
+    type al:severity;
+    description
+      "Configurable Alarm severity";
+  }
+
+  augment "/al:alarms" {
+    list alarm-profile {
+      key "alarm-type-id alarm-type-qualifier-match resource";
+      ordered-by user;
+      description
+        "This list is used to assign further information or
+         configuration for each alarm type.  This module supports a
+         mechanism where the client can override the system-default
+         alarm severity levels.  The 'alarm-profile' is also a useful
+         augmentation point for specific additions to alarm types.";
+      leaf alarm-type-id {
+        type ciena-al:alarm-types;
+        description
+          "The alarm type identifier to match.";
+      }
+      leaf alarm-type-qualifier-match {
+        type string {
+          length "1..512";
+        }
+        description
+          "An XML schema regular expression that is used to match the
+           alarm type qualifier.";
+        reference
+          "XML Schema Part 2: Datatypes Second Edition,
+           World Wide Web Consortium Recommendation
+           REC-xmlschema-2-20041028";
+      }
+      leaf resource {
+        type string {
+          length "1..512";
+        }
+        description
+          "Specifies which resources to match.";
+      }
+      leaf description {
+        type string {
+          length "1..512";
+        }
+        mandatory true;
+        description
+          "A description of the alarm profile.";
+      }
+      leaf max-alarm-status-changes {
+        type uint16;
+        default 16;
+        description
+          "The status-change entries are kept in a circular list
+           per alarm.  When this number is exceeded, the oldest
+           status change entry is automatically removed.";
+      }
+      leaf max-alarm-operator-state-changes {
+        type uint16;
+        default 4;
+        description
+          "The state-change entries are kept in a circular list
+           per alarm.  When this number is exceeded, the oldest
+           status change entry is automatically removed.";
+      }
+      container alarm-severity-assignment-profile {
+        description
+          "The client can override the system-default severity
+           level.";
+        reference
+          "ITU-T Recommendation M.3100:
+             Generic network information model
+           ITU-T Recommendation M.3160:
+             Generic, protocol-neutral management information model";
+        leaf-list severity-level {
+          type severity;
+          ordered-by user;
+          description
+            "Specifies the configured severity level(s) for the
+             matching alarm.  If the alarm has several severity
+             levels, the leaf-list shall be given in rising severity
+             order.  The original M3100/M3160 ASAP function only
+             allows for a one-to-one mapping between alarm type and
+             severity, but since YANG module supports stateful
+             alarms, the mapping must allow for several severity
+             levels.
+
+             Assume a high-utilization alarm type with two thresholds
+             with the system-default severity levels of threshold1 =
+             warning and threshold2 = minor.  Setting this leaf-list
+             to (minor, major) will assign the severity levels as
+             threshold1 = minor and threshold2 = major";
+        }
+      }
+    }
+  }
+}

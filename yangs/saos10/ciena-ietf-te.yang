@@ -1,0 +1,1300 @@
+module ciena-ietf-te {
+  namespace "http://ciena.com/ns/yang/ciena-ietf-te";
+  prefix ciena-te;
+
+  /* Import TE types */
+
+  import ietf-te-types {
+    prefix te-types;
+  }
+
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-openconfig-interfaces {
+    prefix "cn-oc-if";
+  }
+
+  import ciena-l3-types {
+    prefix cn-l3-types;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+     Hanover, Maryland 21076
+     U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "Copyright (c) 2022 Ciena Corporation.  All rights
+    reserved.
+
+    All information and intellectual property contained in this
+    YANG module (Specification) is, and remains the property
+    of Ciena Corporation. Ciena retains all title and ownership
+    in the Specification, including any revisions.
+
+    Ciena grants all interested parties that access the
+    Specification with the intent to use or distribute (you) a
+    non-exclusive, no-cost license to use and distribute
+    unmodified copies of the Specification solely in connection
+    with the management of Ciena products sold by or on
+    behalf of Ciena, provided this copyright notice and license
+    appear on all copies. Ciena may rescind or modify this
+    license at any time.
+
+    This Specification is supplied 'as is', and Ciena makes no
+    warranty, either express or implied, as to the use, operation,
+    condition, or performance of the Specification. You agree
+    that Ciena has no liability for your use of the Specification";
+
+  revision "2023-09-11" {
+    description
+      "Added intent template functionality.
+       Added TE database oper data.
+       Added color template functionality.
+       Added color template oper data.
+       Added reserved bandwidth per priority oper.";
+  }
+
+  revision "2022-06-24" {
+    description
+      "Added TE metric's default value.
+       Added TE performance Advertisement profile name type change. 
+       Added TE performance metrics advertisement profiles.
+       Added TE bandwidth change threshold under TE globals.
+       Added TE igp distribute timer under TE globals.
+       Updated default value and units for igp timer under TE globals.";
+  }
+
+  revision "2020-10-28" {
+    description
+      "Initial version";
+    reference
+      "IETF-DRAFT: A YANG Data Model for Traffic Engineering Tunnels, Label Switched Paths and Interfaces 
+       and RFC 8795";
+  }
+
+  grouping max-link-bandwidth-config {
+    description
+      "Maximum bandwidth grouping";
+    leaf max-link-bandwidth {
+      type te-types:te-bandwidth;
+      description
+         "Maximum bandwidth that can be seen on this link in this
+         direction.  It is a string containing a non-negative decimal or 
+         formatted as external hexadecimal-significant character 
+         sequences specified in IEEE 754 and ISO/IEC C99. 
+         Units are in bytes per second.";
+    }
+  }
+
+  grouping max-resv-link-bandwidth-config {
+    description
+      "Maximum reservable bandwidth grouping";
+    choice max-resv-link-bandwidth-type {
+      description
+        "Maximum reservable bandwidth type choice";
+      case value {
+        leaf max-resv-link-bandwidth {
+          type te-types:te-bandwidth;
+          description
+            "Maximum amount of bandwidth that can be reserved in this
+            direction in this link.  It is a string containing a non-negative 
+            decimal or formatted as external hexadecimal-significant 
+            character sequences specified in IEEE 754 and ISO/IEC C99. 
+            Units are in bytes per second.";
+        }
+      }
+      case percent {
+        leaf max-resv-link-bandwidth-percent {
+          type uint32 {
+            range "1..100";
+          }
+          description
+            "Percentage of max-link-bandwidth that can be reserved in this
+             direction in this link.";
+        }
+      }
+    }
+  }
+
+  grouping te-delay-metric-config {
+    description
+      "Delay metric grouping";
+    leaf te-delay-metric {
+      type uint32 {
+        range "1..16777215";
+      }
+      units microseconds;
+      description
+        "Traffic Engineering unidirectional delay metric.";
+    }
+  }
+
+  grouping te-metric-extensions-threshold-config {
+    description
+      "Configurable thresholds for advertising TE Metric Extensions.";
+    leaf delay-maximum-threshold {
+      type uint32;
+      units microseconds;
+      description
+        "Maximum threshold exceeding which Unidirectional delay is considered anomalous.
+         Value greater than zero.";
+    }
+  }
+
+  /* TE interface metric */
+
+  grouping te-metric-config {
+    description
+      "TE interface metric grouping.";
+    leaf te-metric {
+      type te-types:te-metric {
+        range "1..16777215";
+      }
+      default "10";
+      description
+        "TE interface metric.";
+    }
+  }
+
+  /**
+   * TE interface device groupings
+   */
+
+  grouping te-admin-groups-config {
+    description
+      "TE interface affinities grouping.";
+    choice admin-group-type {
+      description
+        "TE interface administrative groups
+         representation type.";
+      case named-admin-groups {
+        list named-admin-groups {
+          if-feature "te-types:extended-admin-groups";
+          if-feature "te-types:named-extended-admin-groups";
+          key "named-admin-group";
+          description
+            "A list of named admin-group entries.";
+          leaf named-admin-group {
+            type leafref {
+              path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                   "/ciena-te:named-admin-group/ciena-te:name";
+            }
+            description
+              "A named admin-group entry.";
+          }
+        }
+      }
+    }
+  }
+
+  /* TE interface SRLGs */
+
+  grouping te-srlgs-config {
+    description
+      "TE interface SRLG grouping.";
+    choice srlg-type {
+      description
+        "Choice of SRLG configuration.";
+      case value-srlgs {
+        list srlg-values {
+          key "value";
+          description
+            "List of SRLG values that
+             this link is part of.";
+          leaf value {
+            type uint32 {
+              range "0..4294967295";
+            }
+            description
+              "Value of the SRLG";
+          }
+        }
+      }
+    }
+  }
+
+
+  grouping performance-advertisement-profile {
+    description
+      "Performance advertisement profile grouping.";
+    leaf performance-advertisement-profile {
+      type leafref {
+        path "/ciena-te:te/ciena-te:globals/ciena-te:performance-advertisement-profiles/ciena-te:performance-advertisement-profile/ciena-te:name";
+      }
+      description
+        "Performance advertisement profile name.";
+    }
+  }
+
+  /* TE interface attributes grouping */
+
+  grouping te-attributes {
+    description
+      "TE attributes configuration grouping.";
+    uses te-metric-config;
+    uses te-delay-metric-config;
+    uses te-admin-groups-config;
+    uses te-srlgs-config;
+    uses max-link-bandwidth-config;
+    uses max-resv-link-bandwidth-config;
+    uses te-metric-extensions-threshold-config;
+    uses performance-advertisement-profile;
+  }
+
+  /**
+   * TE global device groupings
+   */
+  /* TE interface container data */
+
+  grouping interfaces-grouping {
+    description
+      "TE interface configuration data grouping.";
+    container interfaces {
+      description
+        "Configuration data model for TE interfaces.";
+      list interface {
+        key "interface";
+        description
+          "TE interfaces.";
+        leaf interface {
+          type leafref {
+             path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          must "/oc-if:interfaces/oc-if:interface[oc-if:name=current()]"
+               + "/oc-if:config/cn-oc-if:type[.='ip' or .='ip-unnumbered' or .='point-to-point']"
+          {
+            error-message "TE properties can be set only on 'ip', 'ip-unnumbered' and 'point-to-point' interface";
+          }
+
+          description
+            "TE interface name.";
+        }
+
+        leaf admin-status {
+          type te-types:te-admin-status;
+          default "up";
+          description
+            "The administrative state of the link.
+             If status is down then no TE attribute will be signalled";
+        }
+
+        /* TE interface parameters */
+        uses te-attributes;
+      }
+    }
+  }
+
+  /**
+   * TE global generic groupings
+   */
+  /* Global named admin-groups configuration data */
+
+  grouping named-admin-groups-properties {
+    description
+      "Global named administrative groups configuration
+       grouping.";
+    leaf name {
+      type string{
+        length "1..31";
+      }
+      description
+        "A string name that uniquely identifies a TE
+         interface named admin-group.";
+    }
+    leaf bit-position {
+      type uint32 {
+        range "0..31";
+      }
+      mandatory true;
+      description
+        "Bit position representing the administrative group.";
+      reference
+        "RFC3209 and RFC7308";
+    }
+  }
+
+  grouping named-admin-groups {
+    description
+      "Global named administrative groups configuration
+       grouping.";
+    container named-admin-groups {
+      description
+        "TE named admin groups container.";
+      list named-admin-group {
+        if-feature "te-types:extended-admin-groups";
+        if-feature "te-types:named-extended-admin-groups";
+        key "name";
+        description
+          "List of named TE admin-groups.";
+        uses named-admin-groups-properties;
+      }
+    }
+  }
+  
+  grouping te-intent-templates-admin-group-config {
+      description
+         "Configuration data for intent templates";
+
+      leaf-list exclude-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which none must be specified for the links on the path.";
+      }
+      leaf-list include-all-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which all must be specified for the links on the path.";
+      }
+      leaf-list include-any-group {
+         if-feature "te-types:extended-admin-groups";
+         if-feature "te-types:named-extended-admin-groups";
+         type leafref {
+            path "/ciena-te:te/ciena-te:globals/ciena-te:named-admin-groups" +
+                 "/ciena-te:named-admin-group/ciena-te:name";
+         }
+         description
+            "List of named admin groups of which any must be specified for the links on the path.";
+      }
+   }
+  
+  grouping te-intent-templates-admin-group-top {
+      description
+         "Top-level grouping ";
+      container admin-groups {
+         description
+            "Admin groups constraints for the path.";
+         uses te-intent-templates-admin-group-config;
+      }
+   }
+
+  grouping intent-templates-properties {
+    description
+      "Global intent templates configuration
+       grouping.";
+    leaf name {
+      type string{
+        length "1..31";
+      }
+      default "default";
+      description
+        "A name that uniquely identifies an intent template.
+        The name 'default' identifies the default intent template.";
+    }
+    leaf path-metric-type {
+      type enumeration {
+        enum te {
+         description
+           "Traffic Engineering metric.";
+        }
+        enum igp {
+         description
+           "Interior Gateway Protocol metric.";
+        }
+        enum latency {
+         description
+           "Link latency metric.";
+        }
+      }
+      default "igp";
+      description
+        "Metric type for the path.";
+    }
+    uses "te-intent-templates-admin-group-top";
+  }
+
+  grouping dynamic-path-properties {
+    description
+      "Dynamic path properties of the candidate path.";
+
+    container dynamic {
+      presence "Dynamic path calculation.";
+      description
+        "Dynamic path properties.";
+
+      leaf pce-delegate {
+        type boolean;
+        default "false";
+        description
+          "Enable delegating of the candidate path to PCE.";
+      }
+
+      list intent-template {
+        key "name";
+        max-elements 1;
+        description
+          "Intent templates for dynamic path calculation.";
+
+        leaf name {
+          type leafref {
+            path "/ciena-te:traffic-engineering/ciena-te:intent-templates/ciena-te:intent-template/ciena-te:name";
+          }
+          description 
+            "Reference to intent template name."; 
+        }
+      }
+    }
+  }
+
+  grouping color-templates-properties {
+    description
+      "Global color templates configuration grouping.";
+
+    leaf color {
+      type uint32;
+      default 0;
+      description
+        "A color value that uniquely identifies a color template.
+        The value 0 identifies as the default color template.";
+    }
+
+    leaf description {
+      type string;
+      description
+        "Description of color template.";
+    }
+
+    leaf source {
+      type inet:ip-address;
+      description 
+        "Source ip address for SR policies.";
+    }
+
+    leaf admin-state {
+      type cn-l3-types:sr-policy-admin-cfg-type;
+      description
+        "Administrative state for SR policies.";
+    }
+
+    container candidate-paths {
+      description 
+        "SR policy candidate path(s).";
+
+      list candidate-path {
+        key "preference";
+        description
+          "SR policy Candidate path(s) list entry.";
+
+        leaf preference {
+          type uint32;
+          description
+            "Candidate path preference.";
+        }
+
+        leaf description {
+          type string {
+            length "0..255";
+          }
+          description 
+            "Candidate path description.";
+        }
+
+        leaf name {
+          type string {
+            length "0..255";
+          }
+          description 
+            "Candidate path name.";
+        }
+        uses dynamic-path-properties;
+      }
+    }
+  }
+
+  grouping color-templates-state-properties {
+    description
+      "Color template operational state grouping.";
+
+    leaf color {
+      type uint32;
+      description
+        "A color value that uniquely identifies a color template.";
+    }
+
+    leaf description {
+      type string;
+      description
+        "Description of color template.";
+    }
+
+    leaf admin-state {
+      type cn-l3-types:sr-policy-admin-cfg-type;
+      description
+        "Administrative state for SR policies.";
+    }
+
+    leaf configuration-completeness {
+      type enumeration {
+        enum Complete {
+          description
+            "Color template configuration is sufficient to request a dynamically computed segment list.";
+        }
+        enum Incomplete {
+          description
+            "Color template configuration is not sufficient to request a dynamically computed segment list."; 
+        }
+      }
+      description
+        "Indicates whether color template configuration is sufficiently complete to request a dynamically computed segment list.";
+    }
+
+    leaf source {
+      type inet:ip-address;
+      description
+        "Source IP address for SR policies.";
+    }
+
+    container number-of-sr-policies {
+      description
+        "Number of SR policies created.";
+
+      list policies-for-service-color {
+        key "service-color";
+
+        leaf service-color {
+          type uint32;
+          description
+            "Color requested by the service.";
+        }
+
+        leaf count {
+          type uint32;
+          description
+            "Number of SR policies created for service color.";
+        }
+      }
+    }
+
+    container candidate-paths {
+      description
+        "SR policy candidate path(s).";
+
+      list candidate-path {
+        key "preference";
+        description
+          "SR policy candidate path(s) list entry.";
+
+        leaf preference {
+          type uint32;
+          description
+            "Candidate path preference.";
+        }
+
+        leaf name {
+          type string;
+          description
+              "Candidate path name.";
+        }
+
+        leaf description {
+          type string {
+            length "0..255";
+          }
+          description
+            "Candidate path description.";
+        }
+
+        leaf dynamic-path-type {
+          type enumeration {
+            enum Headend-computed-path {
+              description
+                "Headend computed path.";
+            }
+            enum PCE-delegate {
+              description
+                "PCE delegated path.";
+            }
+          }
+          description
+            "Specifies path type as headend computed or PCE delegated.";
+        }
+
+        list intent-templates {
+          key "name";
+          max-elements 1;
+          description
+            "Intent templates for dynamic path calculation.";
+
+          leaf name {
+            type string;
+            description
+              "Intent template name.";
+          }
+        }
+      }
+    }
+  }
+
+  grouping intent-templates {
+    description
+      "Intent templates.";
+    container intent-templates {
+      description
+        "Intent templates container.";
+      list intent-template {
+        key "name";
+        description
+          "List of intent templates.";
+        uses intent-templates-properties;
+      }
+    }
+  }
+
+  grouping color-templates {
+    description
+      "Color templates.";
+    container color-templates {
+      description
+        "Color templates container.";
+      list color-template {
+        key "color";
+        description
+          "List of color templates.";
+        uses color-templates-properties;
+      }
+    }
+  }
+
+  grouping color-templates-state {
+    description
+      "Color templates grouping.";
+    container color-templates {
+      description
+        "Color templates container.";
+      list color-template {
+        key "color";
+        description
+          "List of color templates.";
+        uses color-templates-state-properties;
+      }
+    }
+  }
+
+  grouping performance-advertisement-profiles {
+    description
+      "Grouping for Performance advertisement profiles.";
+    container performance-advertisement-profiles {
+      description
+        "Performance advertisement profile container.";
+
+      list performance-advertisement-profile {
+        key "name";
+        max-elements 128;
+        description
+          "Performance advertisement profile.";
+
+        leaf name  {
+          type cn-l3-types:string-max-256;
+          description
+            "Performance advertisement profile name.";
+        }
+
+        leaf description  {
+          type cn-l3-types:string-max-256;
+          description
+            "Performance advertisement profile description.";
+        }
+
+        leaf enable {
+          type boolean;
+          default "true";
+          description
+            "Enable/Disable Performance advertisement.";
+        }
+
+        leaf protocol-accelerated-interval {
+          type uint16 {
+            range "1..3600";
+          }
+          units seconds;
+          default "10";
+          description
+            "Interval, in seconds, for TE performance metric computation. 
+             This provides accelerated computation in case measurement
+             protocol has higher measurement interval."; 
+        }
+
+        leaf max-advertisements {
+          type uint16 {
+            range "1..3600";
+          }
+          default "30";
+          description
+            "Maximum number of periodic and accelerated advertisements allowed within maximum 
+             advertisement-interval (3600 sec).
+             Exceeding this limit, periodic advertisements are delayed by suppression-interval 
+             till the expiry of maximum advertisement-interval.";
+        }
+
+        container throttle {
+          description
+            "Throttling of TE performance metric advertisements.";
+
+          container advertisement-periodic {
+            description
+              "Periodic advertisements of TE performance metrics.";
+
+            leaf advertisement-interval {
+              type uint16 {
+                range "30..3600";
+              }
+              units seconds;
+              default "120";
+              description
+                "Interval, in seconds, to advertise the TE performance metric values.
+                 Note: Advertisement interval should be greater than measurement 
+                       interval used by the measurement protocol.";
+            }
+
+            leaf suppression-interval {
+              type uint16 {
+                range "0..3600";
+              }
+              units seconds;
+              default "120";
+              description
+                "Interval, in seconds, to suppress periodic advertisement of the TE 
+                 performance metric values.";
+            }
+
+            container threshold-out {
+              description
+                "Thresholds for periodic advertisements of TE performance metrics.";
+
+              leaf one-way-min-delay {
+                type uint16 {
+                  range "0..100";
+                }
+                default "10";
+                units "percent";
+                description
+                  "Percentage change in Unidirectional minimum delay metric.";
+              }
+
+              leaf one-way-delay-min-change {
+                type uint32 {
+                  range "0..500000";
+                }
+                units "microseconds";
+                default "1000";
+                description
+                  "Minimum change, in microseconds, in Unidirectional minimum delay metric."; 
+              }
+            }
+          }
+
+          container  advertisement-accelerated {
+            description
+              "Accelerated advertisements of TE performance metrics.";
+
+            leaf enable {
+              type boolean;
+              default "false";
+              description
+                "Enable/Disable accelerated advertisement of TE performance metrics.";
+            }
+
+            container threshold {
+              description
+                "Thresholds for accelerated advertisements of TE performance metrics.";
+
+              leaf one-way-min-delay {
+                type uint16 {
+                  range "0..100";
+                }
+                default "15";
+                units "percent";
+                description
+                  "Percentage change in Unidirectional minimum delay metric.";
+              }
+
+              leaf one-way-delay-min-change {
+                type uint32 {
+                  range "0..500000";
+                }
+                units "microseconds";
+                default "500";
+                description
+                  "Minimum change, in microseconds, in Unidirectional minimum delay metric.";
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  grouping bandwidth-change-threshold {
+    description
+      "Bandwidth threshold configuration grouping";
+
+    container bandwidth-change-threshold {
+      description
+        "Global bandwidth threshold configuration that 
+         applies to all the interfaces.";
+
+      container up-threshold {
+        description
+          "Thresholds for up bandwidth advertisements.";
+
+        leaf up-threshold1 {
+          type uint16 {
+            range "0..100";
+          }
+          default "5";
+          units "percent";
+          description
+            "Percentage of up threshold value for advertisement of bandwidth.";
+        }
+      }
+    
+      container down-threshold {
+        description
+          "Thresholds for down bandwidth advertisements.";
+
+        leaf down-threshold1 {
+          type uint16 {
+            range "0..100";
+          }
+          default "5";
+          units "percent";
+          description
+            "Percentage of down threshold value for advertisement of bandwidth.";
+        }
+      }
+    }
+  }
+
+  grouping igp-bandwidth-distribute-timer {
+    description
+      "Igp timer grouping for bandwidth distribution.";
+   
+    container igp-bandwidth-distribute-timer {
+      description
+        "Igp timer container for bandwidth distribution.";
+
+      leaf igp-bandwidth-distribute-time {
+        type uint32 {
+          range "0..4294967295";
+        }
+        default "15";
+        units "seconds";
+        description
+          "Interval at which igp will distribute bandwidth information in seconds.";
+      }
+    }
+  }
+
+  /* TE globals container data */
+
+  grouping globals-grouping {
+    description
+      "Globals TE system-wide configuration data grouping.";
+    container globals {
+      description
+        "Globals TE system-wide configuration data container.";
+      uses named-admin-groups;
+      uses performance-advertisement-profiles;
+      uses bandwidth-change-threshold;
+      uses igp-bandwidth-distribute-timer;
+    }
+  }
+
+ grouping performance-thresholds {
+    description
+      "Performance thresholds grouping.";
+    container performance-thresholds {
+      description
+        "Performance thresholds container.";
+      uses performance-advertisement-profile;
+  }
+ }
+
+  /**
+   * TE device container data
+   */
+  container te {
+    description
+      "TE global container.";
+      /* TE Global Data */
+      uses globals-grouping;
+      uses interfaces-grouping;
+      uses performance-thresholds;
+  }
+
+  container traffic-engineering {
+    description
+      "Traffic Engineering container.";
+      uses intent-templates;
+      uses color-templates;
+  }
+
+  container traffic-engineering-state {
+    config "false";
+    description
+      "Traffic Engineering operational state container.";
+      uses color-templates-state;
+  }
+
+  container te-state {
+    config false;
+    description
+      "TE global container information.";
+
+    container interfaces {
+      description
+        "Configuration data model for TE interfaces.";
+
+      list interface {
+        key "interface";
+        description
+          "TE interfaces.";
+
+        leaf interface {
+          type leafref {
+             path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+          }
+          description
+            "TE interface name.";
+        }
+
+        leaf link-index {
+          type uint64; 
+          description
+            "The link identifier represents a unique value, which is
+            locally defined in a router.";
+        }
+      }
+    }
+
+    /* TE database Oper data */
+    container database {
+      description
+        "TE database information.";
+
+      leaf maximum-sid-depth {
+        type uint32;
+        description
+          "Maximum SID Depth for Segment Routing";
+      }
+
+      list isis-instance {
+        key "tag";
+        description
+          "ISIS Instance";
+
+        leaf tag {
+          type string;
+          description
+            "Tag of ISIS instance";
+        }
+
+        list level-db {
+          key "level-type";
+          description
+            "ISIS level type";
+
+          leaf level-type {
+            type  cn-l3-types:isis-level-types;
+            description
+              "Level of an ISIS node - can be level-1, level-2 or level-1-2";
+          }
+
+          leaf local-lsp-id {
+            type  string;
+            description
+              "Local LSP identifier";
+          }
+
+          list lsp {
+            key "sys-id";
+            description
+              "LSP information";
+
+            leaf sys-id {
+              type string;
+              description
+                "System identifier";
+            }
+
+            leaf te-router-id {
+              type string;
+              description
+                "Router identifier";
+            }
+
+            list srgb {
+              key "start range";
+              description 
+                "SRGB information";
+
+              leaf start {
+                type uint32;
+                description
+                  "Start value";
+              }
+
+              leaf range {
+                type uint32;
+                description
+                  "Range value";
+              }
+            }
+
+            list algorithm {
+              key "value";
+              description 
+                "Algorithm information";
+
+              leaf value {
+                type uint32;
+                description
+                  "Algorithm count";
+              }
+            }
+
+            list prefix {
+              key "prefix-ip";
+              description 
+                "Prefix IP information";
+
+              leaf prefix-ip {
+                type string;
+                description
+                  "Prefix IP address";
+              }
+
+              leaf prefix-len {
+                type uint32;
+                description
+                  "Prefix IP address length";
+              }
+
+              list algorithms {
+                key "sr-algorithm";
+                description
+                  "Segment routing algorithms information";
+
+                leaf sr-algorithm {
+                  type uint8;
+                  description
+                    "SR algorithm, can be 0,1,128-255";
+                }
+
+                leaf db-sid-type {
+                  description
+                  "Type of SID can be index or absolute";
+                  type enumeration {
+                    enum index {
+                      description
+                        "Type as index";
+                      value 1;
+                    }
+                    enum absolute-value {
+                      description
+                        "Type as absolute";
+                      value 2;
+                    }
+                  }
+                }
+
+                leaf flags {
+                  type uint32;
+                  description
+                    "Flags set for a prefix";
+                }
+
+                leaf sid {
+                  type uint32;
+                  description
+                    "Value of SID";
+                }
+              }
+            }
+
+            list is-reachability {
+              key "index";
+              description
+                "ISIS reachability information container ";
+
+              leaf index {
+                type uint32;
+                description
+                  "Index of interface";
+              }
+
+              leaf ifindex {
+                type uint32;
+                description
+                  "Ifindex of interface";
+              }
+
+              leaf local-address {
+                type string;
+                description
+                  "Local IP address value";
+              }
+
+              leaf remote-address {
+                type string;
+                description
+                  "Remote IP address value";
+              }
+
+              leaf adjacency-sid {
+                type uint32;
+                description
+                  "Adjacency SID value";
+              }
+
+              leaf flags {
+                type uint8;
+                description
+                  "Flags value";
+              }
+
+              leaf affinity {
+                type uint32;
+                description
+                  "Affinity value";
+              }
+
+              leaf igp-metric {
+                type uint32;
+                description
+                  "IGP metric value";
+              }
+
+              leaf te-metric {
+                type uint32;
+                description
+                  "TE metric value";
+              }
+
+              leaf remote-te-router-id {
+                type string;
+                description
+                  "Router ID of remote router";
+              }
+
+              container latency {
+                description
+                  "Latency parameters information";
+
+                leaf delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of delay in seconds";
+                }
+
+                leaf minimum-delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of minimum delay in seconds";
+                }
+
+                leaf maximum-delay {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of maximum delay in seconds";
+                }
+
+                leaf delay-variation {
+                  type uint32;
+                  units seconds;
+                  description
+                    "Value of delay variation in seconds";
+                }
+              }
+
+              leaf is-local-link {
+                type boolean;
+                default "false";
+                description
+                  "Flag to check if the link is local or not";
+              }
+
+              container bandwidths {
+                description
+                  "Bandwidth metrics information";
+
+                leaf maximum-link-bandwidth {
+                  type string;
+                  description
+                    "Maximum bandwidth of link in bytes per second";
+                }
+
+                leaf maximum-reserved-bandwidth {
+                  type string;
+                  description
+                    "Maximum reserved bandwidth in bytes per second";
+                }
+
+                list unreserved-bandwidth {
+                  key "priority";
+                  description
+                    "Unreserved bandwidth information";
+
+                  leaf priority {
+                    type uint8;
+                    description
+                      "Priority value";
+                  }
+
+                  leaf value {
+                    type string;
+                    description
+                      "Unreserved bandwidth value in bytes per second";
+                  }
+                }
+                list reserved-bandwidth {
+                  key "priority";
+                  description
+                    "Reserved bandwidth information";
+
+                  leaf priority {
+                    type uint8;
+                    description
+                      "Priority value";
+                  }
+
+                  leaf value {
+                    type string;
+                    description
+                      "Reserved bandwidth value in bytes per second";
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

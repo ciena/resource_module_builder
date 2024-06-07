@@ -1,0 +1,109 @@
+module ciena-wavelogic-manager-host-ra-management {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-wavelogic-manager-host-ra-management";
+  prefix wlmgr-host-ra-mgmt;
+
+  import ciena-common-version {
+    prefix version;
+  }
+  import ciena-pro-coherent-device-common-types {
+    prefix coherent-device-common-types;
+  }
+  import ciena-pro-coherent-device-types {
+    prefix coherent-device-type;
+  }
+  import ciena-ddy-msg {
+    prefix ddy-msg;
+  }
+  import ciena-ddm-zmq {
+    prefix ddm-zmq;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "Wavelogic Manager VWS r/a management module";
+
+  revision 2023-09-25 {
+    description
+      "import protocols-grouping from ddm-msg, added augment for ddm-zmq,
+       and changed module name";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  grouping ra-device-mapping-group {
+    description
+      "Grouping that contains the mapping of wavelogic-device to the RA management entry";
+    leaf device-id {
+      type coherent-device-type:device-id-type;
+      description
+        "Wavelogic-device ID.";
+    }
+    leaf ra-name {
+      type coherent-device-common-types:string255;
+      description
+        "The name string of assocated RA.";
+    }
+  }
+
+  container host-ra-management {
+    list ra-management {
+      key "ra-name";
+      description
+        "The list of managed wavelogic-ra in VWS system.";
+      leaf ra-name {
+        type coherent-device-common-types:string255;
+        description
+          "The name string of managed RA";
+      }
+      leaf domain {
+        type string {
+          length "0..271";
+        }
+        description
+          "The name of the domain.";
+      }
+      leaf host-managed-domain {
+        type boolean;
+        description
+          "Indicates that the domain is created by the host and already exists";
+      }
+      uses ddy-msg:protocols-grouping;
+      container diagnostics {
+        config false;
+        leaf loss-of-association {
+          type boolean;
+          description
+            "Indicates that this RA is not reachable.";
+        }
+      }
+    }
+    list managed-device-ra-mapping {
+      key "device-id";
+      description
+        "The list of mappings which associate wavelogic-device entries to RA entries in ra-management list.";
+      uses ra-device-mapping-group;
+    }
+    list discovered-device-ra-mapping {
+      key "device-id";
+      config false;
+      description
+        "The list of wavelogic-device entries which have not yet been provisioned,
+         but for which a notification has been received from a RA in ra-management list.";
+      uses ra-device-mapping-group;
+    }
+  }
+
+  augment "/wlmgr-host-ra-mgmt:host-ra-management/ra-management/protocols" {
+    when "wlmgr-host-ra-mgmt:type = 'wlmgr-host-ra-mgmt:zmq'";
+    uses ddm-zmq:zmq-options;
+  }
+}

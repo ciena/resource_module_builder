@@ -1,0 +1,1330 @@
+module ciena-waveserver-interfaces {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-interfaces";
+  prefix if;
+
+  import yuma-ncx {
+    prefix ncx;
+  }
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+  import ciena-ui {
+    prefix ui;
+  }
+  import ciena-swagger {
+    prefix swagger;
+  }
+  swagger:support "true";
+
+  organization "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This module defines Ethernet and IP management interfaces support for
+     Ciena's Waveserver Platform.";
+
+  revision 2019-07-30 {
+    description
+      "Added container 'bgp'.
+       Added grouping 'bgp-route-properties-group'.
+       Added enum 'redundant-bgp' in 'management-if-properties-group/mode'.
+       Added rpc 'waveserver-interfaces-bgp-clear'.
+       Deleted leaf 'index' as key in 'list logical-interface'.
+       Deleted leaf 'index' from 'list logical-interface/id' container.
+       Added leaf 'name' as key for 'list logical-interface'.
+       Removed 'when' statement for 'logical-interface/properties/ipv4' and 
+          'logical-interface/properties/ipv6' containers.
+       Added container 'inband-if-neighbor-status'.";
+    reference "Waveserver Ai R1.5 user's guide.";
+  }
+
+  revision 2019-02-20 {
+    description
+      "Added access control list (ACL) support for IPv6.
+       Added 'grouping acl-properties-group'.
+       Added 'grouping route-gateway-group'. 
+       Added container 'logical-interface/stacks'.
+       Added container 'logical-interface/properties/ipv6'.
+       Added 'list ipv6-static-route'.
+       Added 'list ipv6-dynamic-route'.
+       Added 'list ipv4-dynamic-route'.
+       Added 'rpc waveserver-interfaces-ipv6-stack-flush'.
+       Added typedef for 'ip-address-type', 'stack-preference'.
+       Added 'type' and 'associated-physical-interface' to 'logical-interface/id'.
+       Removed 'max-elements' from 'physical-interface' and 'logical-interface' lists.
+       Removed 'management' container from the 'physical-interface' list.
+       Updated values for 'physical-interface/id/type'.
+       Updated values for 'physical-interface/properties/ethernet/speed'.";
+    reference "Waveserver Ai R1.4 user's guide.";
+  }
+
+  revision 2018-06-26 {
+    description
+      "Added access control list (ACL) support.";
+    reference "Waveserver Ai R1.3 user's guide.";
+  }
+
+  revision 2018-04-27 {
+    description
+      "Waveserver Platform Data Model
+       The initial definition of the interfaces external data model.";
+    reference "Waveserver Ai R1.2 user's guide.";
+  }
+
+  typedef ip-protocol-type {
+    type uint8 {
+      range "0..255";
+    }
+    description
+      "The IP protocol expressed as an integer value. 0 indicates ALL protocols.";
+    reference
+      "IANA Assigned Internet Protocol Numbers";
+  }
+
+  typedef ip-address-type {
+    type enumeration {
+      enum "manual" {
+        description
+          "Manually assigned IP address.";
+      }
+      enum "dhcp" {
+        description
+          "DHCP-assigned dynamic IPv4 address.";
+      }
+      enum "apipa" {
+        description
+          "The Automatic Private IP Addressing (APIPA) assigned IP address.";
+      }
+      enum "dhcpv6" {
+        description
+          "DHCP assigned dynamic IPv6 address.";
+      }
+      enum "slaac" {
+        description
+          "Stateless Address Auto-configuration.";
+      }
+      enum "local" {
+        description
+          "Local or internal IP address.";
+      }
+    }
+    description
+      "The IP address type.";
+  }
+
+  typedef acl-action {
+    type enumeration {
+      enum "allow" {
+        description
+          "Allow the IP packet matching the specified filter.";
+      }
+      enum "drop" {
+        description
+          "Drop the IP packet matching the specified filter.";
+      }
+    }
+    description
+      "The ACL forwarding action type.";
+  }
+
+  typedef stack-preference {
+    type enumeration {
+      enum "ipv4" {
+        description
+          "Stack preference is IPv4.";
+      }
+      enum "ipv6" {
+        description
+          "Stack preference is IPv6.";
+      }
+    }
+    description
+      "The interface stack preference.";
+  }
+
+  grouping management-if-properties-group {
+    description
+      "Common group of attributes for physical management interfaces.";
+    leaf mode {
+      ui:ui-name "Management Port Mode";
+      type enumeration {
+        enum "management" {
+          description
+            "Management port is configured as a local management interface.
+             This is the default mode.";
+        }
+        enum "wayside-channel" {
+          description
+            "Management port is configured as a wayside communications channel.";
+        }
+        enum "redundant-bgp" {
+          description
+            "Management port is configured to run BGP protocol.";
+        }
+      }
+      description
+        "Management port mode. Specifies whether the port is configured as a
+         local management interface or wayside communications channel (carry
+         through).";
+    }
+  }//end management-if-properties-group
+
+  grouping ethernet-if-properties-group {
+    description
+      "Common group of attributes for physical Ethernet interfaces.";
+    leaf speed {
+      ui:ui-name "Port Speed";
+      type enumeration {
+        enum "Unknown" {
+          description
+            "Unknown port speed.";
+        }
+        enum "10M" {
+          value 10;
+          description
+            "10 Mbps Ethernet port speed.";
+        }
+        enum "13M" {
+          value 13;
+          description
+            "13 Mbps Ethernet port speed.";
+        }
+        enum "100M" {
+          value 100;
+          description
+            "100 Mbps Ethernet port speed.";
+        }
+        enum "1G" {
+          value 1000;
+          description
+            "1 Gbps Ethernet port speed.";
+        }
+        enum "10G" {
+          value 10000;
+          description
+            "10 Gbps Ethernet port speed.";
+        }
+      }
+      config false;
+      description
+        "Ethernet port speed. For ports with auto-negotiation enabled, this
+         represents the negotiated port speed.";
+    }
+    leaf duplex {
+      ui:ui-name "Duplex";
+      type enumeration {
+        enum "Unknown" {
+          description
+            "Unknown port duplex.";
+        }
+        enum "full" {
+          description
+            "Port is full-duplex.";
+        }
+        enum "half" {
+          description
+            "Port is half-duplex.";
+        }
+      }
+      config false;
+      description
+        "Ethernet interface duplex mode. For ports with auto-negotiation
+         enabled, this represents the negotiated duplex mode.";
+    }
+    leaf flow-control {
+      type boolean;
+      config false;
+      description
+        "Specifies whether this interface will participate in Ethernet flow
+         control, via pause frames.";
+    }
+    leaf auto-negotiation {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the interface should negotiate common transmission
+         parameters, such as speed, duplex, and flow control with its peer.";
+      reference
+        "IEEE 802.3-2012 auto-negotiation transmission parameters";
+    }
+    leaf mac-address {
+      ui:ui-name "MAC Address";
+      type cienawstypes:mac-string;
+      config false;
+      description
+        "The system-assigned MAC address of the Ethernet interface.";
+    }
+  }//end ethernet-if-properties-group
+
+  grouping route-next-hop-group {
+    description
+      "Common group of attributes for IP routing next-hop entries.";
+    leaf metric {
+      type uint32 {
+        range "0..2147483648";
+      }
+      default 0;
+      description
+        "Routing metric cost.";
+    }
+    leaf associated-interface {
+      type cienawstypes:string-maxl-16;
+      config false;
+      description
+        "Reference to the associated logical-interface name of the route entry.
+         Defaults to the 'local' interface for routes within the subnet
+         associated with the active IP address configured on the local
+         management interface.";
+    }
+    leaf static {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the route entry is user-created (static) or
+         dynamically created by a routing protocol.";
+    }
+    leaf active {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the route is active (present in the kernel IP
+         routing table).";
+    }
+  }//end route-next-hop-group
+
+  grouping route-gateway-group {
+    description
+      "Common group of attributes for IP routing gateway entries.";
+    leaf associated-interface {
+      type cienawstypes:string-maxl-16;
+      config false;
+      description
+        "Reference to the associated logical-interface name of the route entry.
+         Defaults to the 'local' interface for routes within the subnet
+         associated with the active IP address configured on the local
+         management interface.";
+    }
+    leaf static {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the route entry is user-created (static) or
+         dynamically created by a routing protocol.";
+    }
+    leaf active {
+      type boolean;
+      config false;
+      description
+        "Specifies whether the route is active (present in the kernel IP
+         routing table).";
+    }
+  }//end route-gateway-group
+
+  grouping acl-properties-group {
+    description
+      "All the configuration data of ACL entry.";
+    leaf protocol {
+      type ip-protocol-type;
+      description
+        "The transport protocol of the IPv4 packet to match. A value of 0
+         matches ALL protocols, 1=ICMP, 6=TCP, and 17=UDP.";
+      reference
+        "IANA Assigned Internet Protocol Numbers";
+    }
+    leaf source-ip-address {
+      type cienawstypes:ip-opt-prefix;
+      mandatory true;
+      description
+        "The source IPv4 or IPv4 address and optional prefix length for this ACL
+         entry.";
+    }
+    leaf source-port {
+      type uint16 {
+        range "0..65535";
+      }
+      description
+        "Source TCP or UDP port number, if applicable. 0 indicates 'all'
+         or wildcard matching behavior.";
+    }
+    leaf destination-ip-address {
+      type cienawstypes:ip-opt-prefix;
+      description
+        "The destination IPv4 or IPv6 address and optional prefix length for this
+         ACL entry.";
+    }
+    leaf destination-port {
+      type uint16 {
+        range "0..65535";
+      }
+      description
+        "Source TCP or UDP port number, if applicable. 0 indicates 'all'
+         or wildcard matching behavior.";
+    }
+    leaf action {
+      type acl-action;
+      mandatory true;
+      description
+        "The forwarding action defined for packets matching the filtering
+         rules for this ACL entry.";
+    }
+  }//end acl-properties-group
+
+  grouping bgp-route-properties-group {
+    description
+      "Operational fields for various BGP route types.";
+
+    leaf network {
+      ui:ui-name "Network";
+      type cienawstypes:string-maxl-32;
+      description
+        "Network address.";
+    }
+    leaf next-hop {
+      ui:ui-name "Next Hop";
+      type cienawstypes:string-maxl-32;
+      description
+        "Next hop.";
+    }
+    leaf metric {
+      ui:ui-name "Metric";
+      type int32;
+      description
+        "Metric.";
+    }
+    leaf local-preference {
+      ui:ui-name "Local Preference";
+      type int32;
+      description
+        "Local preference.";
+    }
+    leaf weight {
+      ui:ui-name "Weight";
+      type int32;
+      description
+        "Weight.";
+    }
+    leaf path {
+      ui:ui-name "Path";
+      type cienawstypes:string-maxl-256;
+      description
+        "Autonomous System Path.";
+    }
+  }//end bgp-route-properties-group
+
+  container waveserver-interfaces {
+    description
+      "Top level container for configuration and operational data for physical
+       and logical network interfaces.";
+
+    list physical-interface {
+      ncx:user-write "update";
+      key "name";
+      description
+        "List of physical Ethernet management interfaces (or interface ports).";
+      leaf name {
+        type leafref {
+          path "../id/name";
+        }
+        description
+          "References the system-assigned name of the interface.";
+      }
+      container id {
+        description
+          "Identification information of this management interface.";
+        leaf name {
+          type cienawstypes:string-maxl-16;
+          description
+            "The system-assigned name of the physical interface (e.g. ifp0-dcn-1,
+             ifp0-ilan-1, ifp0-1-1, etc.). The names are predefined.";
+        }
+        leaf type {
+          type enumeration {
+            enum "Unknown" {
+              description
+                "Interface port type is unknown.";
+            }
+            enum "DCN" {
+              description
+                "Interface port type is DCN.";
+            }
+            enum "ILAN" {
+              description
+                "Interface port type is ILAN.";
+            }
+            enum "GCC0" {
+              description
+                "Interface port type is GCC0.";
+            }
+            enum "OSC" {
+              description
+                "Interface port type is OSC.";
+            }
+          }
+          config false;
+          description
+            "The physical interface port type.";
+        }
+        leaf ifindex {
+          type uint32;
+          config false;
+          description
+            "The system-assigned interface index number, corresponding to the
+             ifIndex in SNMP IF-MIB.";
+          reference
+            "RFC 2863 - The Interfaces Group MIB";
+        }
+      }
+      container state {
+        description
+          "Physical management interface state information.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether Admin State is enabled or disabled for this management
+             interface.";
+        }
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Operational state of this management interface.";
+        }
+      }
+      container properties {
+        description
+          "All the configuration data of the physical management interface.";
+        container ethernet {
+          config false;
+          description
+            "Ethernet interface attributes.";
+
+          uses ethernet-if-properties-group;
+        }
+      }//end properties
+    }//end physical-interface
+
+    list logical-interface {
+      ncx:user-write "update";
+      key "name";
+      description
+        "List of logical IP management interfaces (e.g. 'local').";
+
+      leaf name {
+        type leafref {
+          path "../id/name";
+        }
+        description
+          "References the system-assigned name of the logical interface.";
+      }
+      container id {
+        description
+          "Identification information of this logical management interface.";
+        leaf name {
+          type cienawstypes:string-maxl-16;
+          description
+            "The name of the logical management interface, e.g. 'local'.";
+        }
+        leaf ifindex {
+          type uint32;
+          config false;
+          description
+            "The system-assigned interface index number, corresponding to the
+             ifIndex in SNMP IF-MIB.";
+          reference
+            "RFC 2863 - The Interfaces Group MIB";
+        }
+        leaf internal {
+          type boolean;
+          config false;
+          description
+            "Specifies whether the logical-interface is an internal interface,
+             such as in-band GCC/OSC, or external management interface.";
+        }
+        leaf bgp {
+          type boolean;
+          config false;
+          description
+            "Specifies whether the logical-interface is a bgp interface.";
+        }
+        leaf-list associated-physical-interface {
+          type leafref {
+            path "../../../physical-interface/id/name";
+          }
+          config false;
+          description
+            "Reference to the entry or entries in the physical-interface list
+             associated with this logical-interface instance. For bridged
+             interfaces, such as the 'local' management interface, there may be
+             more than one physical interface associated with the same logical
+             interface.";
+        }
+      }
+      container state {
+        description
+          "Logical interface state information.";
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether Admin State is enabled or disabled for this management
+             interface.";
+        }
+        leaf operational-state {
+          type cienawstypes:up-down-enum;
+          config false;
+          description
+            "Operational state of this management interface.";
+        }
+      }
+
+      container inband-if-neighbor-status {
+        config false;
+        description
+          "IPv4 OSPF and IPv6 OSPF neighbor status for the internal inband (GCC/OSC) interfaces.";
+        leaf metric {
+          type uint32;
+          description
+            "The metric for this interface.";
+        }
+        leaf ipv4-neighbor-router-id {
+          type string {
+             length "0..40";
+          }
+          description
+            "The IPv4 neighbor router id.";
+        }
+        leaf ipv4-operational-state {
+          type cienawstypes:up-down-enum;
+          description
+            "The IPv4 operational state.";
+        }
+        leaf ipv6-neighbor-router-id {
+          type string {
+             length "0..40";
+          }
+          description
+            "The IPv6 neighbor route id.";
+        }
+        leaf ipv6-operational-state {
+          type cienawstypes:up-down-enum;
+          description
+            "The IPv6 Operational state.";
+        }
+      }
+      container properties {
+        description
+          "All the configuration data of the logical management interface.";
+        container ipv4 {
+          //when "../../id/internal = 'false'" {
+          //  description
+          //    "The ipv4 properties container only applies to external interfaces.";
+          //}
+          description
+            "IPv4 configuration and operational data. It only applies to external interfaces";
+          leaf admin-state {
+            type cienawstypes:enabled-disabled-enum;
+            description
+              "Whether IPv4 stack is enabled or disabled on this interface.
+               Always enabled for the local management interface.";
+          }
+          leaf user-ip-address {
+            type cienawstypes:ipv4-prefix;
+            description
+              "The user-configured IPv4 address and prefix on the interface.";
+          }
+          leaf oper-ip-address {
+            type cienawstypes:ipv4-prefix;
+            config false;
+            description
+              "The operational IPv4 address and prefix on the interface.";
+          }
+          leaf dhcp-ip-address {
+            type cienawstypes:ipv4-prefix;
+            config false;
+            description
+              "The DHCP-assigned IPv4 address and prefix on the interface.";
+          }
+          leaf apipa-ip-address {
+            type cienawstypes:ipv4-prefix;
+            config false;
+            description
+              "The Automatic Private IP Addressing (APIPA) assigned IPv4 address
+               and prefix on the interface.";
+          }
+          leaf user-gateway {
+            type cienawstypes:ipv4-address;
+            description
+              "The user-configured primary IPv4 gateway on the interface.";
+          }
+          leaf backup-gateway {
+            type cienawstypes:ipv4-address;
+            description
+              "The user-configured backup IPv4 gateway on the interface.";
+          }
+          leaf oper-gateway {
+            type cienawstypes:ipv4-address;
+            config false;
+            description
+              "The operational IPv4 gateway on the interface.";
+          }
+          leaf dhcp-gateway {
+            type cienawstypes:ipv4-address;
+            config false;
+            description
+              "The DHCP-assigned IPv4 gateway on the interface.";
+          }
+        }//end ipv4
+
+        container ipv6 
+        {
+          //when "../../id/internal = 'false'" {
+          //  description
+          //    "The ipv6 properties container only applies to external interfaces.";
+          //}
+          description
+            "IPv6 configuration and operational data. It only applies to external interfaces";
+
+          list user-ip-address {
+            key "ip-address";
+            max-elements 2;
+            description
+              "List of provisioned IPv6 addresses.";
+            leaf ip-address {
+              type cienawstypes:ipv6-prefix;
+              description
+                "The user-configured IPv6 address and prefix on the interface.";
+            }
+          }//end  user-ip-address
+
+          list oper-ip-address {
+            key "ip-address";
+            config false;
+            description
+              "List of operational IPv6 addresses.";
+            leaf ip-address {
+              type cienawstypes:ipv6-prefix;
+              description
+                "The operational IPv6 address and prefix on the interface.";
+            }
+            leaf source {
+              type ip-address-type;
+              description
+                "The IPv6 address type.";
+            }
+            leaf dad-failure {
+              type boolean;
+              description
+                "The IPv6 address has dad failure or not.";
+            }
+          }//end oper-ip-address
+
+          container gateway-configuration {
+            description
+              "All the configuration data of IPv6 gateway.";
+            leaf ip-address {
+              type cienawstypes:ipv6-address;
+              description
+                "The user-configured IPv6 gateway on the interface.";
+            }
+            leaf source {
+              type ip-address-type;
+              description
+                "The IPv6 gateway address type.";
+            }
+            leaf operational-state {
+              type cienawstypes:enabled-disabled-enum;
+              config false;
+              description
+                "Operational state of the gateway.";
+            }
+          }
+
+          list oper-gateway {
+            key "ip-address";
+            config false;
+            description
+              "List of operational IPv6 gateways.";
+            leaf ip-address {
+              type cienawstypes:ipv6-address;
+              description
+                "The operational IPv6 gateway address.";
+            }
+            leaf source {
+              type ip-address-type;
+              description
+                "The IPv6 gateway address type.";
+            }
+            leaf metric {
+              type uint32;
+              description
+                "The metric for this gateway address.";
+            }
+            leaf interface-name {
+              type cienawstypes:string-maxl-16;
+              description
+                "The name of the logical management interface, e.g. 'local'.";
+            }
+          }//end oper-gateway
+        } //end ipv6
+      }//end properties
+    }//end logical-interface
+
+    container routes {
+      description
+        "Top-level container for IP route configuration and operational data.";
+      list ipv4-static-route {
+        key "destination";
+        max-elements 32;
+        description
+          "List of IPv4 static routing entries.";
+        leaf destination {
+          type cienawstypes:ipv4-prefix;
+          description
+            "IPv4 route destination prefix for the static route. Only one static
+             routing entry per unique destination ip/prefix can be configured.";
+        }
+        list next-hop {
+          swagger:hidden "true";
+          key "index";
+          min-elements 1;
+          max-elements 1;
+          description
+            "A list of next-hop entries associated with the static route.";
+          leaf index {
+            type uint32 {
+              range "1";
+            }
+            description
+              "The index key of the entry in the next-hop list. Currently only
+               one static entry is supported per destination prefix, so the
+               index should always be 1.";
+          }
+          leaf ip-address {
+            type cienawstypes:ipv4-address;
+            description
+              "IPv4 route next-hop or gateway address associated with the route. If
+               not specified, the default gateway value for the local management
+               interface will be used.";
+          }
+
+          uses route-next-hop-group;
+
+        }//end next-hop
+      }//end ipv4-static-route
+
+      list ipv4-dynamic-route {
+        key "destination";
+        config false;
+        description
+          "List of IPv4 dynamic routing entries.";
+        leaf destination {
+          type cienawstypes:ipv4-prefix;
+          description
+            "IPv4 route destination prefix for the dynamic route.";
+        }
+        list next-hop {
+          swagger:hidden "true";
+          key "index";
+          min-elements 1;
+          max-elements 1;
+          description
+            "A list of next-hop entries associated with the dynamic route.";
+          leaf index {
+            type uint32 {
+              range "1";
+            }
+            description
+              "The index key of the entry in the next-hop list. Currently only
+               one entry is supported per destination prefix, so the
+               index should always be 1.";
+          }
+          leaf ip-address {
+            type cienawstypes:ipv4-address;
+            description
+              "IPv4 route next-hop or gateway address associated with the route.";
+          }
+
+          uses route-next-hop-group;
+
+        }//end next-hop
+      }//end ipv4-dynamic-route
+
+      list ipv6-static-route {
+        key "destination gateway metric";
+        max-elements 32;
+        description
+          "List of IPv6 static routing entries.";
+        leaf destination {
+          type cienawstypes:ipv6-prefix;
+          description
+            "IPv6 route destination prefix for the static route. Only one static
+             routing entry per unique destination ip/prefix can be configured.";
+        }
+        leaf gateway {
+            type cienawstypes:ipv6-address;
+            description
+              "IPv6 route gateway address associated with the route. If
+               not specified, the default gateway value for the local management
+               interface will be used.";
+        }
+        leaf metric {
+          type uint32 {
+            range "0..2147483648";
+          }
+          description
+            "Routing metric cost.";
+        }
+        uses route-gateway-group;
+      }//end ipv6-static-route
+
+      list ipv6-dynamic-route {
+        key "destination gateway metric";
+        config false;
+        description
+          "List of IPv6 dynamic routing entries.";
+
+        leaf destination {
+          type cienawstypes:ipv6-prefix;
+          description
+            "IPv6 route destination prefix for the dynamic route. Only one dynamic
+             routing entry per unique destination ip/prefix.";
+        }
+        leaf gateway {
+            type cienawstypes:ipv6-address;
+            description
+              "IPv6 route gateway address associated with the route. If
+               not specified, the default gateway value for the local management
+               interface will be used.";
+        }
+        leaf metric {
+          type uint32 {
+            range "0..2147483648";
+          }
+          description
+            "Routing metric cost.";
+        }
+
+        uses route-gateway-group;
+      }//end ipv6-dynamic-route
+    }//end routes
+
+    container stacks {
+      description
+        "Top-level container for IP stacks configuration and operational data.";
+      container ipv6-stack-state {
+        description
+          "IPv6 stack state configuration and operational data.";
+        leaf state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "IPv6 stack state.";
+        }
+        leaf preference {
+          type stack-preference;
+          description
+            "Interface stack preference. IPv4 or IPv6.";
+        }
+        leaf accept-router-advertisement {
+          type boolean;
+          description
+            "Whether accept the router advertisement.";
+        }
+        leaf max-slaac-addresses {
+          type uint32 {
+            range "1..32";
+          }
+          description
+            "Max number of the SLAAC addresses.";
+        }
+      }//end ipv6-stack-state
+    }//end stacks
+
+    container acl {
+      description
+        "Top-level container for Access Control List configuration for the
+         local management interface. Not currently supported on Waveserver.";
+
+      list ipv4-acl-entry {
+        key "index";
+        max-elements 100;
+        description
+          "List IPv4 ACL entries.";
+        leaf index {
+          type uint32;
+          description
+            "The index uniquely identifies the ACL entry in the IPv4 list, and
+             indicates the order in which the ACL entries are applied.";
+        }
+
+        container properties {
+          description
+            "All the configuration data of ACL entry.";
+
+          uses acl-properties-group;
+        }
+      }//end ipv4-acl-entry
+
+      list ipv6-acl-entry {
+        key "index";
+        max-elements 100;
+        description
+          "List IPv6 ACL entries.";
+        leaf index {
+          type uint32;
+          description
+            "The index uniquely identifies the ACL entry in the IPv6 list, and
+             indicates the order in which the ACL entries are applied.";
+        }
+        container properties {
+          description
+            "All the configuration data of ACL entry.";
+
+          uses acl-properties-group;
+        }
+      }//end ipv6-acl-entry
+    }//end acl
+
+    container bgp {
+      ui:ui-name "BGP";
+      description
+        "Waveserver Border Gateway Protocol (BGP) configuration data and peer 
+         information.";
+
+      container state {
+        ui:ui-name "State";
+        description
+          "BGP state information.";
+
+        leaf admin-state {
+          type cienawstypes:enabled-disabled-enum;
+          description
+            "Whether Admin State is enabled or disabled for BGP protocol.";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type cienawstypes:enabled-disabled-enum;
+          config false;
+          description
+            "Operational state of BGP protocol.";
+        }
+      }//end state
+
+      container properties {
+        ui:ui-name "Properties";
+        description
+          "BGP properties.";
+
+        leaf autonomous-system {
+          ui:ui-name "Autonomous System";
+          type uint32;
+          description
+            "This is the autonomous system number which is an identification 
+             number for the node. An autonomous system is a group of networks 
+             under a common administration. Each node within that group gets 
+             an AS number.";
+        }
+        leaf keep-alive-time {
+          ui:ui-name "Keep Alive Time";
+          type uint16 {
+            range "1..65535";
+          }
+          units "seconds";
+          description
+            "The time in seconds between sending a keep-alive heartbeat between 
+             BGP nodes.";
+        }
+        leaf holdoff-time {
+          ui:ui-name "Holdoff Time";
+          type uint16 {
+            range "3..65535";
+          }
+          units "seconds";
+          description
+            "The time in seconds that the node waits to receive a keep-alive 
+             message. If the node does not receive a keep-alive within the 
+             hold-off time, it will mark the BGP connection as down. The 
+             hold-off timer should be set to at least 3 times the keep-alive 
+             timer.";
+        }
+        leaf advertised-network {
+          ui:ui-name "Advertised Network";
+          type cienawstypes:ipv4-prefix;
+          config false;
+          description
+            "IP address (with mask) of the advertised network.";
+        }
+      }//properties
+
+      list peer {
+        ncx:user-write "update";
+        key "name";
+        description
+          "A list of BGP peers. BGP peers are created by the system when BGP 
+           is enabled. Users are not allowed to create or delete peers";
+        ui:ui-name "Peer";
+      
+        leaf name {
+          ui:ui-name "Name";
+          type enumeration {
+            enum "peer-1" {
+              value 0;
+              description
+                "Peer 1 node";
+            }
+            enum "peer-2" {
+              value 1;
+              description
+                "Peer 2 node";
+            }
+          }
+          description
+            "Peer name. Read-only attribute.";
+        }
+        leaf interface {
+          ui:ui-name "Interface";
+          type leafref {
+            path "../../../physical-interface/id/name";
+          }
+          description
+            "The name of the peer interface, e.g. 'dcn', 'ilan-1'.";
+        }
+        leaf ip {
+          ui:ui-name "IP";
+          type cienawstypes:ipv4-address;
+          description
+            "IP address of peer.";
+        }
+        leaf up-time {
+          ui:ui-name "Up Time";
+          type cienawstypes:string-maxl-16;
+          config false;
+          description
+            "System up time since last failure, in human-readable string format. 
+             (year, day, hour, minute, second, etc.)";
+        }
+        leaf operational-state {
+          ui:ui-name "Operational State";
+          type enumeration {
+            enum "established" {
+              value 0;
+              description
+                "Peer established";
+            }
+            enum "active" {
+              value 1;
+              description
+                "Peer active";
+            }
+          }
+          config false;
+          description
+            "Operational state of the peer.";
+        }
+        leaf autonomous-system {
+          ui:ui-name "Autonomous System";
+          type uint32;
+          description
+            "Autonomous system number of the peer.";
+        }
+        leaf messages-received {
+          ui:ui-name "Messages Received";
+          type uint32;
+          config false;
+          description
+            "The number of BGP protocol messages received on this interface.";
+        }
+        leaf messages-sent {
+          ui:ui-name "Messages Sent";
+          type uint32;
+          config false;
+          description
+            "The number of BGP protocol messages sent on this interface.";
+        }
+      
+        list received-routes {
+          ui:ui-name "Received Routes";
+          key "route-index";
+          config false;
+          description
+            "Collection of BGP routes, expressed in AS group hops, that this 
+             node has received from the peer as reachable from its interface.";
+
+          leaf route-index {
+            ui:ui-name "Route-Index";
+            type uint32;
+            description
+              "Route Index.";
+          }
+
+          uses bgp-route-properties-group;
+        }//received-routes
+
+        list advertised-routes {
+          ui:ui-name "Advertised Routes";
+          key "route-index";
+          config false;
+          description
+            "Collection of BGP routes, expressed in AS group hops, that this 
+             node has advertised to the peer as reachable from this interface.";
+
+          leaf route-index {
+            ui:ui-name "Route-Index";
+            type uint32;
+            description
+              "Route Index.";
+          }
+
+          uses bgp-route-properties-group;
+        }//advertised-routes
+      }//end peer
+
+      list runtime-routes {
+        ui:ui-name "Runtime Routes";
+        key "route-index";
+        config false;
+        description
+          "Collection of current routes that the local node can access from 
+           all interfaces and an indication of which peer has access to which
+           route.";
+
+        leaf route-index {
+          ui:ui-name "Route-Index";
+          type uint32;
+          mandatory true;
+          description
+            "Route Index.";
+        }
+        leaf prefix {
+          ui:ui-name "Prefix";
+          type cienawstypes:string-maxl-32;
+          description
+            "Route prefix.";
+        }
+        leaf gateway {
+          ui:ui-name "Gateway";
+          type cienawstypes:string-maxl-32;
+          description
+            "The IP address of the gateway that this route is accessible through.";
+        }
+        leaf interface {
+          ui:ui-name "Interface";
+          type cienawstypes:string-maxl-16;
+          description
+            "The interface that this route is accessible through.";
+        }
+        leaf up-time {
+          ui:ui-name "Up Time";
+          type cienawstypes:string-maxl-16;
+          description
+            "System UP time that this route has been accessible, in 
+             human-readable string format.
+             (year, day, hour, minute, second, etc.)";
+        }
+        leaf type {
+          ui:ui-name "Type";
+          type cienawstypes:string-maxl-32;
+          description
+            "Route type.";
+        }
+      }//end runtime-routes-list
+    }//end bgp
+  }//end waveserver-interfaces
+
+  rpc waveserver-interfaces-ipv4-acl-clear-all {
+    description
+      "Clear all IPv4 entries from the ACL table.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-interfaces-ipv6-acl-clear-all {
+    description
+      "Clear all IPv6 entries from the ACL table.";
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-interfaces-ipv6-stack-flush {
+    description
+      "Flush IPv6 SLAAC addresses.";
+    input {
+      leaf interface-name {
+        type cienawstypes:string-maxl-16;
+        description
+          "The name of the logical management interface, e.g. 'local'.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+
+  rpc waveserver-interfaces-bgp-clear {
+    description
+      "Reset the BGP session.";
+    input {
+      leaf reset-type {
+        type enumeration {
+          enum "hard" {
+            value 0;
+            description
+              "BGP network is torn down and recreated.";
+          }
+          enum "soft" {
+            value 1;
+            description
+              "BGP network remains intact but Waveserver sends BGP route update message to peer(s).";
+          }
+        }
+        mandatory true;
+        description
+          "Type of BGP session reset operation.";
+      }
+    }
+    output {
+      leaf return-code {
+        type uint32;
+        description
+          "return code: 0 is success; non-zero is failure";
+      }
+      leaf return-string {
+        type cienawstypes:string-maxl-254;
+        description
+          "Return code description";
+      }
+    }
+  }
+}

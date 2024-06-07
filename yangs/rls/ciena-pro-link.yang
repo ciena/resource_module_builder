@@ -1,0 +1,448 @@
+module ciena-pro-link {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-link";
+  prefix pro-link;
+
+  import ciena-common-version {
+    prefix ciena-common-version;
+  }
+
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  import ciena-pro-optical-types {
+    prefix ciena-pro-optical-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's link object.";
+
+  revision 2021-05-25 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.5.0";
+    }
+    description
+      "Introduced OTDR and MANUAL in fiber-length-source enumeration";
+  }
+  revision 2021-04-14 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.4.0";
+    }
+    description
+      "Introduced expected-fiber-length and fiber-length-source";
+  }
+  revision 2021-03-31 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.3.0";
+    }
+    description
+      "Introduce wdl-coeff binary leaf.";
+  }
+  revision 2021-01-14 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.2.0";
+    }
+    description
+      "introduced high-fiber-loss-major-severity and measured-loss-source";
+  }
+  revision 2020-09-29 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.1.0";
+    }
+    description
+      "expected-physical-loss and diagnostic changed to configurable ";
+  }
+  revision 2020-09-15 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "3.0.0";
+    }
+    description
+      "pinch-compensation-threshold leaf removed";
+  }
+  revision 2020-09-08 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "2.0.0";
+    }
+    description
+      "fiber-break-suspected renamed to fiber-break-detected";
+  }
+  revision 2020-08-01 {
+    ciena-common-version:version "version" {
+      ciena-common-version:string "1.0.0";
+    }
+    description
+      "Initial version";
+  }
+
+  typedef link-type {
+    type enumeration {
+      enum "unknown";
+      enum "fiber";
+      enum "mpo-cable";
+      enum "logical";
+      enum "line-fiber";
+      enum "logical-line-fiber";
+    }
+  }
+
+  typedef loss-type-enum {
+    type enumeration {
+      enum "measured";
+      enum "calculated";
+    }
+  }
+
+  typedef state-enum {
+    type enumeration {
+      enum "Enabled";
+      enum "Disabled";
+    }
+  }
+
+  typedef length-source-type {
+    type enumeration {
+      enum "LOSS" {
+        description
+          "Calculated based on measured-physical-loss and default fiber coefficients";
+      }
+      enum "OTDR" {
+        description
+          "OTDR based fiber length measurement";
+      }
+      enum "MANUAL" {
+        description
+          "User provided expected-fiber-length";
+      }
+    }
+    description
+      "Source type of fiber length measurement";
+  }
+
+  grouping loss-desc {
+    leaf spectral-type {
+      type ciena-pro-optical-types:band-occupancy;
+      description
+        "type of band occupancy";
+    }
+
+    leaf loss-type {
+      type loss-type-enum;
+      description
+        "type of loss";
+    }
+  }
+
+  grouping loss-value {
+    leaf value {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      description
+        "the loss value";
+    }
+
+    leaf baseline {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      description
+        "the baseline loss";
+    }
+  }
+
+  grouping loss-attributes {
+    leaf insertion-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The loss inherent to the link including connectors and devices aggregated with the link";
+    }
+
+    leaf excess-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "A loss budget for unknown elements which may be present in a link. eg. patch panels";
+    }
+
+    leaf high-fiber-loss-minor-threshold {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "3.0";
+      description
+        "A fixed threshold combined with the expected loss to determine whether to raise or clear high fiber loss minor alarm.";
+    }
+
+    leaf high-fiber-loss-major-threshold {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "10.0";
+      description
+        "A fixed threshold combined with the expected loss to determine whether to raise or clear high fiber loss major alarm.";
+    }
+
+    leaf measured-physical-loss-baseline {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The baseline loss of the link based on the measured physical loss.";
+    }
+
+    leaf baseline-loss-threshold {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The amount of compensation that will occur above the baseline amount.";
+    }
+
+    leaf expected-physical-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      description
+        "overall expected loss of a link derived by software by summing up the relevant system and user supplied losses";
+    }
+
+    leaf actual-measured-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The actual measured fiber power loss between From and To point of a link";
+    }
+
+    leaf measured-physical-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The physical loss of the link derived from power measurement";
+    }
+
+    leaf measured-loss-source {
+      type ciena-pro-optical-types:band-occupancy;
+      description
+        "Power type used to evaluate measured losses. eg. Total, OSC, and Telemetry";
+    }
+
+    leaf wdl-coeff {
+      type binary {
+        length "8";
+      }
+      description
+        "The Wavelength Dependent Loss (WDL) coefficients, each encoded in signed 16 bits
+         in network byte order.
+         Each link can have up to 4 integer coefficients.
+         The order of encoding is A0, A1, A2, A3.
+         The formula that uses these coefficients is:
+         (A3*(f-fc)^3 + A2*(f-fc)^2 + A1*(f-fc) + A0) * 0.0001";
+    }
+  }
+
+  grouping line-fiber-attributes {
+    leaf fiber-length {
+      type uint64;
+      units "m";
+      default "0";
+      description
+        "The fiber length derived by the system in meters";
+    }
+
+    leaf expected-fiber-length {
+      type uint64;
+      units "m";
+      default "0";
+      description
+        "The expected fiber length provided by an external source in meters";
+    }
+
+    leaf fiber-length-source {
+      type length-source-type;
+      description
+        "Source used to derive fiber-length";
+    }
+
+    leaf expected-line-fiber-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.0";
+      description
+        "The expected physical line fiber loss provisioned by the user.";
+    }
+
+    leaf repair-margin {
+      type ciena-pro-optical-types:gain-loss;
+      description
+        "The fiber repair margin";
+    }
+
+    leaf input-patch-panel-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.5";
+      description
+        "The patch panel loss at the input of the fiber.";
+    }
+
+    leaf output-patch-panel-loss {
+      type ciena-pro-optical-types:loss-dB-1-precision;
+      default "0.5";
+      description
+        "The patch panel loss at the output of the fiber.";
+    }
+  }
+
+  grouping logical-properties {
+    list physical-link {
+      key "link-name";
+      leaf link-name {
+        type instance-identifier;
+        description
+          "Physical link identifier.";
+      }
+    }
+  }
+
+  grouping mpo-cable-properties {
+    list subport-link {
+      key "link-name";
+      leaf link-name {
+        type instance-identifier;
+        description
+          "Subport link identifier.";
+      }
+    }
+  }
+
+  grouping link-base {
+    leaf name {
+      type string;
+      description
+        "Link name";
+    }
+
+    leaf from {
+      type instance-identifier;
+      description
+        "From port identifier";
+    }
+
+    leaf to {
+      type instance-identifier;
+      description
+        "To port identifier";
+    }
+
+    leaf from-label {
+      type string;
+      description
+        "Supports use case where far end source port is not in the yang hierarchy. eg. foreign object";
+    }
+
+    leaf to-label {
+      type string;
+      description
+        "Supports use case where far end destination port is not in the yang hierarchy. eg. foreign object";
+    }
+
+    leaf link-type {
+      type link-type;
+      default "fiber";
+    }
+
+    list facilities {
+      key "name";
+      leaf name {
+        type string;
+      }
+
+      leaf object-name {
+        type instance-identifier;
+        description
+          "A reference to an object.";
+      }
+
+      leaf auto-provisioning {
+        type boolean;
+      }
+
+      leaf delete-supported {
+        type boolean;
+      }
+    }
+
+    list loss {
+      when "../link-type = line-fiber or ../link-type = logical-line-fiber";
+      key "spectral-type loss-type";
+      uses loss-desc;
+
+      uses loss-value;
+    }
+
+    uses loss-attributes {
+      when "../link-type = fiber or ../link-type = line-fiber or ../link-type = logical";
+    }
+
+    uses logical-properties {
+      when "../link-type = logical";
+    }
+
+    uses line-fiber-attributes {
+      when "../link-type = line-fiber";
+    }
+
+    uses mpo-cable-properties {
+      when "../link-type = mpo-cable";
+    }
+
+    leaf pinch-compensation {
+      type state-enum;
+      default "Enabled";
+      description
+        "pinch compensation state";
+    }
+
+    uses ciena-pro-types:admin-state;
+
+    container optical-constraints {
+      leaf band-info {
+        type ciena-pro-optical-types:band-occupancy;
+        description
+          "supported band types of the link";
+      }
+
+      leaf min-freq {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Minimum frequency of the link";
+      }
+
+      leaf max-freq {
+        type ciena-pro-optical-types:frequency;
+        description
+          "Maximum frequency of the link";
+      }
+    }
+  }
+
+  grouping link-diagnostic {
+    leaf high-fiber-loss {
+      type boolean;
+    }
+
+    leaf fiber-break-detected {
+      type boolean;
+    }
+
+    leaf high-fiber-loss-major-severity {
+      type boolean;
+    }
+  }
+
+  grouping link {
+    uses link-base;
+
+    container diagnostic {
+      description
+        "Diagnostics representing alarms against link object";
+      uses link-diagnostic;
+    }
+  }
+}

@@ -1,0 +1,173 @@
+module ciena-pro-neighbours {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-neighbours";
+  prefix neighbours;
+
+  import ietf-inet-types {
+    prefix ietf;
+  }
+  import ciena-common-version {
+    prefix version;
+  }
+  import ietf-yang-types {
+    prefix ietf-yang;
+  }
+  import ciena-pro-types {
+    prefix ciena-pro-types;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This model captures information about neighbours.";
+
+  revision 2021-12-16 {
+    description
+      "Add network source type.";
+    version:version "version" {
+      version:string "1.2.1";
+    }
+  }
+  revision 2020-12-15 {
+    description
+      "Add platform type to neighbour list.";
+    version:version "version" {
+      version:string "1.2.0";
+    }
+  }
+  revision 2020-11-10 {
+    description
+      "Add cv disaggregated source type";
+    reference
+      "RLS 2.1.61, RLS 2.2";
+    version:version "version" {
+      version:string "1.1.0";
+    }
+  }
+  revision 2018-10-16 {
+    description
+      "Initial Revision";
+    version:version "version" {
+      version:string "1.0.0";
+    }
+  }
+
+  identity source-type {
+    description
+      "This identity describes sources for neighbour discovery";
+  }
+
+  identity lldp {
+    base source-type;
+    description
+      "Link Layer Discovery Protocol";
+  }
+
+  identity ndp {
+    base source-type;
+    description
+      "Neighbor Discovery Protocol";
+  }
+
+  identity ospf {
+    base source-type;
+    description
+      "Open Shortest Path First";
+  }
+
+  identity configured {
+    base source-type;
+    description
+      "Manually provisioned";
+  }
+
+  identity cv {
+    base source-type;
+    description
+      "Connection Validation";
+  }
+
+  identity cv-disaggregated {
+    base source-type;
+    description
+      "Connection Validation neighbor discovered in dis-aggregated configurations where there is no comms setup between the Degree shelves. ";
+  }
+
+  identity debug {
+    base source-type;
+    description
+      "It is used to manipulate discovered neighbours.";
+  }
+
+  identity network {
+    base source-type;
+    description
+      "The neighbour is somewhere in the network but is not part of the same site.";
+  }
+
+  list neighbours {
+    key "name";
+    leaf name {
+      type string;
+      description
+        "The name of the neighbour";
+    }
+    leaf ip-address {
+      type ietf:ip-address;
+      description
+        "The IP address of the neighbour";
+    }
+    leaf ipv6-address {
+      type ietf:ipv6-address-no-zone;
+      description
+        "The IPv6 address of neighbour.";
+    }
+    leaf mac-address {
+      type ietf-yang:mac-address;
+      description
+        "The MAC address of the neighbour";
+    }
+    list end-points {
+      description
+        "List of the end-points from which the given neighbour is accessible.";
+      key "local-interface";
+      leaf local-interface {
+        type instance-identifier;
+        description
+          "Local interface where the neighbour was discovered";
+      }
+      leaf neighbour-interface {
+        type string;
+        description
+          "Interface on the neighbouring node which is adjacent to the local interface above";
+      }
+      leaf source {
+        type identityref {
+          base source-type;
+        }
+        description
+          "The source for the neighbour entry";
+      }
+      leaf staleness-counter {
+        type uint16;
+        description
+          "The counter which indicates the number of times a particular entry is being stale.
+           This is now used to indicate the stale count for CV RX data as CV latency is high.";
+      }
+    }
+    leaf platform-type {
+      type identityref {
+        base ciena-pro-types:platform-type;
+      }
+      description
+        "Platform type of the neighbour. Examples: 6500, RLS, 5400, Waveserver.";
+    }
+    config false;
+  }
+}

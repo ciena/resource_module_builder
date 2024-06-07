@@ -1,0 +1,611 @@
+module ciena-software-mgmt-augmentation {
+  namespace "http://www.ciena.com/ns/yang/ciena-software-mgmt-aug";
+  prefix "ciena-software-management-aug";
+
+  import ciena-software-mgmt { prefix software-mgmt; }
+  import ietf-yang-types { prefix yang; }
+  import ciena-packet-xcvr { prefix xcvr; }
+  import openconfig-platform { prefix "oc-platform"; }
+
+  revision 2023-06-07 {
+     description "Updated when statement of revert-timeout parameter of software-install rpc.";
+  }
+  revision 2023-03-20 {
+     description
+       "Update xpath for software activate/install.";
+  }
+
+  revision 2021-09-07 {
+     description
+       "Added software-state-qsfpdd-firmware container to software-state.
+        Added qsfpdd-firmware enum in software-type.
+        Added qsfpdd-firmware to software activate and install rpcs xcvr-id leaf-list.
+        Added onie-fwpkg enumeration to software-type.
+        Added software-state-onie-fwpkg container to software-state.
+        Added fru-module-fpga-firmware container to software-state.
+        Added software-signing option to the software container.";
+  }
+
+  revision 2020-12-22 {
+     description
+       "Added revert-timeout parameter to software-install RPC.
+        Added software-state-detail leaf to software-state/package container.
+        Added software management event notification.";
+  }
+
+  revision 2020-02-17 {
+     description
+       "Defined swtype-id grouping and added into software download,
+        activate, install, remove rpcs.
+        Defined xcvr-id-leafref-type typedef.
+        Added leaf-list xcvr-id into software activate and install rpcs.
+        Defined software-upgrade-status typedef.
+        Added software-state-cfp2-dco-firmware container to software-state.
+        Added software-state-pon-ctrl-onu-firmware container to software-state.
+        Added description to the package-verification-data grouping.
+        Added description to the hash-algorithm leaf.";
+  }
+
+  revision 2019-09-30 {
+     description "Initial revision.";
+  }
+
+  typedef software-upgrade-status {
+    type enumeration {
+      enum invalid {
+        description
+          "Invalid";
+      }
+      enum idle {
+        description
+          "Idle";
+      }
+      enum not-applicable {
+        description
+          "Not applicable";
+      }
+      enum upgrading {
+        description
+          "Upgrading";
+      }
+      enum verification-failure {
+        description
+          "Verification failure";
+      }
+      enum upgrade-successful {
+        description
+          "Upgrade successful";
+      }
+      enum upgrade-failure {
+        description
+          "Upgrade failure";
+      }
+    }
+    description
+      "Software upgrade state";
+  }
+
+  identity hash-algorithm {
+    description
+      "A base identity for hash algorithm verification.";
+  }
+
+  identity sha-256 {
+    base hash-algorithm;
+    description
+      "The SHA-256 algorithm.";
+    reference
+      "RFC 6234: US Secure Hash Algorithms";
+  }
+
+  grouping package-verification-data {
+    leaf hash-algorithm {
+       type identityref {
+          base hash-algorithm;
+       }
+       default sha-256;
+       description
+         "Hash algorithm corresponding to the hash-value.";
+    }
+    leaf hash-value {
+       type yang:hex-string;
+       description
+         "Hex-encoded hash value used to verify the the package.";
+    }
+    description
+      "Grouping of data containing hash verification data used by s/w operations.";
+  }
+
+  augment /software-mgmt:software-download/software-mgmt:input {
+    description
+      "Augmentation of software-download to include package-verification-data
+       to support validation of package file downloads.";
+    uses package-verification-data;
+  }
+
+  augment /software-mgmt:software-install/software-mgmt:input {
+    description
+      "Augmentation of software-install to include package-verification-data
+       to support validation of package file downloads.";
+    uses package-verification-data;
+  }
+
+  augment /software-mgmt:software {
+    description
+      "Augmentation of software container to add additional
+       leaf to allow software-signing to enable/disable.";
+
+    leaf software-signing {
+      type enumeration {
+        enum disable {
+          value 0;
+          description
+            "Disables software-signing";
+        }
+        enum enable {
+          value 1;
+          description
+            "Enables software-signing";
+        }
+      }
+      default disable;
+      description
+        "Software-signing to enable or disable to do signature verification for
+         software download and install if enabled for FIPS compliant devices.";
+    }
+  }
+
+  typedef software-type {
+    type enumeration {
+      enum package-manifest {
+        description
+          "Device software package manifest.";
+      }
+      enum cfp2-dco-firmware {
+        description
+          "Firmware for CFP2 DCO transceiver.";
+      }
+      enum pon-ctrl-onu-firmware {
+        description
+          "Firmware for PON ONU module.";
+      }
+      enum onie-fwpkg {
+        description
+          "Image installable by onie-fwpkg tool.";
+      }
+      enum qsfpdd-firmware {
+        description
+          "Firmware for QSFPDD transceiver.";
+      }
+    }
+    description
+      "Enumerated value identifying the type of software being specified in an rpc.";
+  }
+
+  grouping swtype-id {
+    leaf sw-type {
+       type software-type;
+       default package-manifest;
+       description
+         "Type of software used by the rpc";
+    }
+    description
+      "Grouping of software identifier information used by an rpc.";
+  }
+
+  typedef xcvr-id-leafref-type {
+    type leafref {
+      path "/xcvr:xcvrs" +
+           "/xcvr:xcvr" +
+           "/xcvr:xcvr-id";
+    }
+    description
+      "Software xcvr-id leafref type.";
+  }
+
+  augment /software-mgmt:software-state {
+    description
+      "Augmentation of the software-state container to add a container
+       that contains state information specific to cfp2-dco-firmware.";
+
+    container software-state-cfp2-dco-firmware {
+      description
+        "Software information related to the management of firmware
+         associated with cfp2-dco-firmware swtype.";
+
+      list xcvr-software-state {
+        key "xcvr-id";
+        leaf xcvr-id {
+           type xcvr-id-leafref-type;
+         description
+           "Reference to xcvr-id.";
+        }
+        leaf running-image-version {
+          type string;
+          description
+            "Version of cfp2-dco-firmware currently running on the xcvr.";
+        }
+        leaf upgrade-status {
+          type ciena-software-management-aug:software-upgrade-status;
+          description
+            "The current status of firmware upgrade operation on the xcvr.";
+        }
+        leaf upgrade-image {
+          type string;
+          description
+            "Name of cfp2-dco-firmware image corresponding to the upgrade-status of the xcvr.";
+        }
+
+        description
+          "List of xcvrs providing current firmware version and upgrade status.";
+      }
+
+      leaf-list downloaded-image {
+        type string;
+        description
+          "Name of downloaded cfp2-dco-firmware image.";
+      }
+
+      leaf-list preloaded-image {
+        type string;
+        description
+          "Name of pre-loaded cfp2-dco-firmware image.";
+      }
+    }
+
+    container software-state-qsfpdd-firmware {
+      description
+        "Software information related to the management of firmware
+         associated with QSFPDD-firmware swtype.";
+
+      list xcvr-software-state {
+        key "xcvr-id";
+        leaf xcvr-id {
+          type xcvr-id-leafref-type;
+          description
+            "Reference to xcvr-id.";
+        }
+        leaf running-image-version {
+          type string;
+          description
+            "Version of QSFPDD-firmware currently running on the XCVR.";
+        }
+        leaf upgrade-status {
+          type ciena-software-management-aug:software-upgrade-status;
+          description
+            "The current status of firmware upgrade operation on the XCVR.";
+        }
+        leaf upgrade-image {
+          type string;
+          description
+            "Name of QSFPDD-firmware image corresponding to the upgrade-status of the XCVR.";
+        }
+
+        description
+          "List of XCVRs providing current firmware version and upgrade status.";
+      }
+
+      leaf-list downloaded-image {
+        type string;
+        description
+          "Name of downloaded QSFPDD-firmware image.";
+      }
+
+      leaf-list preloaded-image {
+        type string;
+        description
+          "Name of pre-loaded QSFPDD-firmware image.";
+      }
+    }
+  }
+
+  augment /software-mgmt:software-state {
+    description
+      "Augmentation of the software-state container to add a container
+       that contains state information specific to pon-ctrl-onu-firmware.";
+
+    container software-state-pon-ctrl-onu-firmware {
+      description
+        "Software information related to the management of firmware
+         associated with pon-ctrl-onu-firmware swtype.";
+
+      leaf-list downloaded-image {
+        type string;
+        description
+          "Name of downloaded pon-ctrl-onu-firmware image.";
+      }
+    }
+  }
+
+  typedef onie-fwpkg-result {
+    type enumeration {
+      enum success {
+        description
+          "Operation successful";
+      }
+      enum fail {
+        description
+          "Operation failed";
+      }
+    }
+    description
+      "Result of the onie-fwpkg operation";
+  }
+
+  augment /software-mgmt:software-state {
+    description
+      "Augmentation of the software-state container to add a container
+       that contains state information specific to onie-fwpkg images.";
+
+    container software-state-onie-fwpkg {
+      description
+        "Software information related to the management of firmware
+         associated with onie-fwpkg swtype.";
+
+      list result-summary {
+        key "name";
+        leaf name {
+          type string;
+          description
+            "Name of onie-fwpkg image.";
+        }
+        leaf version {
+          type string;
+          description
+            "Version of onie-fwpkg image.";
+        }
+        leaf result {
+          type onie-fwpkg-result;
+          description
+            "Result of the activation operation of the onie-fwpkg image.";
+        }
+        leaf date {
+          type string;
+          description
+            "Date of the activation operation of the onie-fwpkg image.";
+        }
+        description
+          "Summary results report of onie-fwpkg tool.";
+      }
+
+      list result-detail {
+        key "name";
+        leaf name {
+           type string;
+         description
+           "Name of onie-fwpkg image.";
+        }
+        list detail {
+          key "field";
+          leaf field {
+             type string;
+           description
+             "Detailed result summary field.";
+          }
+          leaf value {
+             type string;
+           description
+             "Detailed result summary value.";
+          }
+        }
+        description
+          "Detailed results report of onie-fwpkg tool.";
+      }
+
+      leaf-list downloaded-image {
+        type string;
+        description
+          "Name of downloaded onie-fwpkg image.";
+      }
+    }
+  }
+
+  augment /software-mgmt:software-state {
+    description
+      "Augmentation of the software-state container to add a container
+       that contains state information specific to FRU module's FPGAs firmware.";
+
+    container fru-module-fpga-firmware {
+      description
+        "Software information related to the management of firmware
+         associated with FRU module's FPGAs.";
+
+      list fru-module {
+        description
+          "List of FRU modules present in the slots.";
+
+        key "slot-name";
+
+        leaf slot-name {
+          description
+            "Reference to slot-name.";
+          type leafref {
+             path "/oc-platform:components" +
+                  "/oc-platform:component" +
+                  "/oc-platform:config" +
+                  "/oc-platform:name";
+          }
+        }
+
+        leaf fru-type {
+          type string;
+          description
+            "FRU type of inserted FRU module in slot.";
+        }
+
+        leaf fpga-present {
+          type boolean;
+          description
+            "FPGA presence status whether present or not";
+        }
+
+        list fpga-version {
+          description
+            "Version information for all FPGA present in FRU module.";
+
+          key "name";
+
+          leaf name {
+            type string;
+            description
+              "Name of the FPGA.";
+          }
+
+          leaf running-version {
+            type string;
+            description
+              "Running version of the FPGA.";
+          }
+
+          leaf available-version {
+            type string;
+            description
+              "Available version of the FPGA.";
+          }
+        }
+      }
+    }
+  }
+
+  augment /software-mgmt:software-state/software-mgmt:package {
+    description
+      "Augmentation of software-state/package container to add additional
+       leaf to allow the reporting of additional detail related to the
+       software-status.";
+
+    leaf package-status-detail {
+      type string;
+      description
+        "Additional level of detail pertaining to the package-status.";
+    }
+  }
+
+  augment /software-mgmt:software-activate/software-mgmt:input {
+    description
+      "Augmentation of software-activate rpc to include additional input
+       parameters that are specific to the type of software that is being
+       activated.";
+    uses swtype-id;
+
+    leaf-list xcvr-id {
+      when "../sw-type = 'cfp2-dco-firmware' or
+            ../sw-type = 'qsfpdd-firmware'" {
+        description
+          "Xcvr-id used for cfp2-dco-firmware or qsfpdd-firmware activation.";
+      }
+      type xcvr-id-leafref-type;
+      description
+        "Reference to xcvr-id.";
+    }
+  }
+
+  augment /software-mgmt:software-download/software-mgmt:input {
+    description
+      "Augmentation of software-download rpc to include additional input
+       parameters that are specific to the type of software that is being
+       downloaded.";
+    uses swtype-id;
+  }
+
+  augment /software-mgmt:software-install/software-mgmt:input {
+    description
+      "Augmentation of software-install rpc to include additional input
+       parameters that are specific to the type of software that is being
+       installed.";
+    uses swtype-id;
+
+    leaf-list xcvr-id {
+      when "../sw-type = 'cfp2-dco-firmware' or
+            ../sw-type = 'qsfpdd-firmware'" +
+           "and ../defer-activation='false'" {
+        description
+          "Xcvr-id used for cfp2-dco-firmware or qsfpdd-firmware activation.";
+      }
+      type xcvr-id-leafref-type;
+      description
+        "Reference to xcvr-id.";
+    }
+  }
+
+  augment /software-mgmt:software-install/software-mgmt:input {
+    description
+      "Augmentation of software-install rpc to include additional input
+       parameter to allow for a revert-timer value to be specified.";
+
+    leaf revert-timeout {
+      when "../defer-activation='false'";
+      type uint32 {
+        range "60..65535";
+      }
+      units seconds;
+      description
+        "The time interval between the completion of the software
+         install command and the automatic reversion of the software
+         to the previous running version.  The user must issue the
+         software-cancel revert-timer command before the end of this
+         interval to prevent the reversion of the software.";
+    }
+  }
+
+  augment /software-mgmt:software-remove/software-mgmt:input {
+    description
+      "Augmentation of software-remove rpc to include additional input
+       parameters that are specific to the type of software that is being
+       removed.";
+    uses swtype-id;
+  }
+
+  typedef software-mgmt-status {
+    type enumeration {
+      enum download-failed {
+        description
+          "Software download operation failed.";
+      }
+      enum install-failed {
+        description
+          "Software install operation failed.";
+      }
+      enum activate-failed {
+        description
+          "Software activate operation failed.";
+      }
+      enum remove-failed {
+        description
+          "Software remove operation failed.";
+      }
+      enum download-failed-cleared {
+        description
+          "Software download operation failed cleared.";
+      }
+      enum install-failed-cleared {
+        description
+          "Software install operation failed cleared.";
+      }
+      enum activate-failed-cleared {
+        description
+          "Software activate operation failed cleared.";
+      }
+      enum remove-failed-cleared {
+        description
+          "Software remove operation failed cleared.";
+      }
+    }
+    description
+      "Event status values for a software operation.";
+  }
+
+  notification software-mgmt-event {
+     leaf status {
+        type software-mgmt-status;
+        description
+           "Status of software-mgmt event notification.";
+     }
+     leaf package-name {
+        type string;
+        description
+           "Name of the package.";
+     }
+     description
+        "Software management event notification.";
+  }
+}

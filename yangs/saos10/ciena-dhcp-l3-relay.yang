@@ -1,0 +1,448 @@
+module ciena-dhcp-l3-relay {
+  yang-version "1";
+  namespace "http://ciena.com/dhcpl3relay/yang/ciena-dhcp-l3-relay";
+  prefix "ciena-dhcp-l3-relay";
+  
+  import ciena-types {
+    prefix ciena;
+  }
+    
+  import openconfig-interfaces {
+    prefix "oc-if";
+  }
+
+  import ciena-mef-fp {
+    prefix "mef-fp";
+  }
+
+  import ciena-vrf {
+    prefix "vrf";
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ciena-openconfig-if-ip {
+    prefix "cn-ip";
+  }
+
+  organization
+    "Ciena Corporation";
+  
+  contact
+    "Web URL: http://www.ciena.com/
+     E-mail:  yang@ciena.com
+     Postal:  7035 Ridge Road
+              Hanover, Maryland 21076
+              U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+
+  description
+    "This module contains the Ciena proprietary YANG deviations 
+     of the openconfig-interfaces YANG module.
+
+     Copyright (c) 2017 Ciena Corporation.  All rights reserved.
+
+     All information contained herein is, and remains
+     the property of Ciena Corporation. Dissemination of this
+     information or reproduction of this material is strictly
+     forbidden unless prior written permission is obtained from
+     Ciena Corporation.";
+
+  revision "2023-09-12" {
+    description
+      "Adding support of gateway address as part of DHCPv4 L3 Relay config.
+       Adding support of primary and secondary giaddr config in DHCPv4 L3 relay config.
+       Updating the description of relay-name, admin-enabled and option-82 leaf.
+       Updating the description of relay-name with string length info.
+       Updating the default value of rid-string, cid-string, admin-enabled and option-82 leaf.
+       Removing the unsupported untrusted-fp-drops as part of state data of DHCPv4 L3 Relay config.";
+    reference
+      "";
+  }
+
+  revision "2021-08-04" {
+    description
+      "Updated for vrf aware dhcp relay.";
+    reference
+      "";
+  }
+
+  revision "2018-11-01" {
+    description
+      "Updated leaf ip-interface from type string to type
+       oc-if:base-interface-ref for leafref dependency.
+       Updated leaf flow-point from type string to type
+       mef-fp:fp-ref for leafref dependency.";
+    reference
+      "";
+  }
+
+  revision "2018-08-23" {
+    description
+      "Initial version";
+    reference
+      "";
+  }
+  
+  //dhcp-l3-relay types
+  
+  identity option-82-setting {
+    description
+      "Settings for option-82.";
+  }
+  
+  identity option-82-on {
+    base "option-82-setting";
+    description
+      "Turn on option-82.";
+  }
+  
+  identity option-82-off {
+    base "option-82-setting";
+    description
+      "Turn off option-82.";
+  }
+  
+  identity option-82-replace {
+    base "option-82-setting";
+    description
+      "Set option-82 to replace.";
+  }
+
+  identity remote-id-type {
+    description
+      "Type for remote-id-type.";
+  }
+  
+  identity remote-id-device-hostname {
+    base "remote-id-type";
+    description
+      "Set remote-id-type to use device-hostname.";
+  }
+
+  identity remote-id-device-mac-address {
+    base "remote-id-type";
+    description
+      "Set remote-id-type to use device-mac-address.";
+  }
+
+  identity remote-id-rid-string {
+    base "remote-id-type";
+    description
+      "Set remote-id-type to use an rid-string.";
+  }
+
+  identity circuit-id-type {
+    description
+      "Type for circuit-id-type.";
+  }
+  
+  identity circuit-id-interface-name {
+    base "circuit-id-type";
+    description
+      "Set circuit-id-type to use interface-name.";
+  }
+
+  identity circuit-id-cid-string {
+    base "circuit-id-type";
+    description
+      "Set circuit-id-type to use an cid-string.";
+  }
+
+  //containers
+
+  grouping remote-id {
+    leaf remote-id-type {
+      type identityref {
+        base remote-id-type;
+      }
+      default remote-id-device-mac-address;
+      description
+        "Use to specify remote ID as device-hostname/device-mac-address/rid-string.";
+    }
+    leaf rid-string {
+      type string {
+        length "1..64";
+      }
+      description
+        "The string value for rid-string.";
+    }
+  }
+
+  grouping circuit-id {
+    leaf circuit-id-type {
+      type identityref {
+        base circuit-id-type;
+      }
+      default circuit-id-interface-name;
+      description
+        "Use to specify circuit ID as cid-string/interface-name.";
+    }
+  }
+
+  grouping ip-interface {
+    list ip-interfaces {
+      key "ip-interface";
+        description
+          "A list of the ip-interfaces.";
+        leaf ip-interface {
+          type oc-if:base-interface-ref;
+          description
+            "The name of the ip-interface.";
+        }
+        leaf ip-interface-enabled {
+          type boolean;
+        description
+          "Use to enable/disable ip-interface.";
+        }
+        leaf ip-interface-trusted {
+          type boolean;
+          description
+            "Use to enable/disable trusted ip-interface.";
+        }
+        leaf cid-string {
+          type string {
+            length "1..64";
+          }
+          description
+            "The string value for cid-string.";
+        }
+        list flow-points {
+          key flow-point;
+          description
+            "A list of flow points.";
+          leaf flow-point {
+            type mef-fp:fp-ref;
+            description
+              "The name of a flow point.";
+          }
+          leaf flow-point-trusted {
+            type boolean;
+            description
+              "Use to enable/disable trust for flow point.";
+            }            
+        }//flow-points        
+        container giaddr {
+          description
+            "IPv4 address of interface to be used as
+             gateway address for relay packets to request
+             DHCP response from a specific subnet.";
+          choice giaddr {
+            case primary {
+              leaf primary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../ip-interface]/cn-ip:ipv4/cn-ip:addresses/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Primary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+            case secondary {
+              leaf secondary {
+                type leafref {
+                  path "/oc-if:interfaces/oc-if:interface[oc-if:name = current()/../../ip-interface]/cn-ip:ipv4/cn-ip:addresses/cn-ip:secondary/cn-ip:address/cn-ip:ip";
+                }
+                description
+                  "Secondary address of interface to be used as
+                   gateway address for relay packets to request
+                   DHCP response from a specific subnet.";
+              }
+            }
+          }
+        }
+        container state {
+          config false;
+          description
+            "Operational data for DHCP L3 Relay Agent instance.";
+          leaf server-packets-relayed {
+            type uint32;
+            description
+              "The number of server packets relayed to the server.";
+          }
+          leaf server-packet-errors {
+            type uint32;
+            description
+              "The number of server packet errors.";
+          }
+          leaf agent-option-errors {
+            type uint32;
+            description
+              "The number of agent option errors.";
+          }
+          leaf server-packet-received {
+            type uint32;
+            description
+              "The number of server packets received.";
+          }
+          leaf client-packet-received {
+            type uint32;
+            description
+              "The number of client packets received.";
+          }
+          leaf untrusted-if-drops {
+            type uint32;
+            description
+              "The number of packets dropped because the interface is not trusted.";
+          }
+          leaf giaddr {
+            type inet:ipv4-address;
+            description
+              "IPv4 address of interface to be used as
+               gateway address for relay packets to request
+               DHCP response from a specific subnet.";
+          }
+        }//l3-relay-agent-instance-if-oper-data
+      }//ip-interfaces
+  }
+
+  grouping option-82 {
+    leaf option-82 {
+      type identityref {
+        base option-82-setting;
+      }
+      default option-82-off;
+      description
+        "Set option 82 to on/off/replace.";
+    }
+    leaf encapsulate-option-82 {
+      type boolean;
+      description
+        "Enable/disable encapsulation of option 82.";
+    }
+    leaf enable-vss-option {
+      type boolean;
+      default false;
+      description
+        "Enables DHCPv4 VSS sub-option(151) and DHCPv4 VSS control 
+         sub-option(152) carried in the option 82. This option is 
+         used by the relay agent to tell the VPN for every DHCP request 
+         it passes on to the DHCP server.VRF name is used as the VPN 
+         identifier in VSS information.";
+      reference
+        "IETF RFC 6607 - Virtual Subnet Selection Options for DHCPv4 and
+         DHCPv6";
+    }
+  }
+  // typedef statements
+
+  container l3-relay-agent {
+    description
+      "Top-level grouping for each DHCPv4 l3 relay.";
+
+    list instance {
+      key "relay-name";
+      description 
+        "A list of DHCPv4 L3 Relay instances.";
+      leaf relay-name {
+        type string;
+        description
+          "The name of an individual DHCPv4 L3 Relay instance (length: 1..64)";
+      }
+      leaf admin-enabled {
+        type boolean;
+           default false;
+        description
+          "Use to enable/disable DHCPv4 L3 Relay instance.";
+      }
+      list dhcp-server-addresses {
+        key "dhcp-server-address";
+        description 
+          "A list of dhcp-servers.";
+        leaf dhcp-server-address {
+          type string;
+          description
+            "The address of a dhcp server.";
+        }
+        leaf vrf-name {
+          type leafref {
+            path "/vrf:vrf/vrf:vrfName";
+          }
+          default "default";
+          description
+            "Set a particular Virtual Routing and Forwarding(VRF) instance
+             to be used for DHCP server";
+        }
+        container state {
+          config false;
+          description
+            "Operational data for DHCP L3 Relay Agent instance.";
+          leaf packets-relayed {
+            type uint32;
+            description
+              "The number of packets relayed to the server.";
+          }
+          leaf packets-relay-error {
+            type uint32;
+            description
+              "The number of packets relay errors.";
+          }
+        }//l3-relay-agent-instance-dhcp-server-oper-data          
+      }//dhcp-server-addresss    
+      leaf verify-dhcp-reply {
+        type boolean;
+        description
+          "Verify validity of DHCP server reply.";
+      }
+      uses ip-interface;
+      uses remote-id;
+      uses circuit-id;
+      uses option-82;
+      
+      container state {
+        config false;
+        description
+          "Operational data for DHCP L3 Relay Agent instance.";
+        leaf oper-status {
+          type ciena:oper-state;
+          description
+            "The operational state of the dhcp-l3-relay instance.";
+        }
+        leaf status-message {
+          type string;
+          description
+            "The current status of the dhcp-l3-relay instance.";
+        }
+        leaf option-82-replaced {
+          type uint32;
+          description
+            "Option 82 Replaced data.";
+        }
+        leaf option-82-added {
+          type uint32;
+          description
+            "Option 82 Added data.";
+        }
+        leaf option-82-off {
+          type uint32;
+          description
+            "Option 82 Off data.";
+        }
+        leaf bad-cid {
+          type uint32;
+          description
+            "Bad Circuit ID data.";
+        }
+        leaf client-spoofed-packets {
+          type uint32;
+          description
+            "The number of packets spoofed by the client.";
+        }
+        leaf server-spoofed-packets {
+          type uint32;
+          description
+            "The number of packets spoofed by the server.";
+        }
+      }//l3-relay-agent-instance-oper-data
+    }//instance
+  }//relay-agent
+
+  rpc dhcp-relay-agent-stats-clear {
+    description
+      "Clear dhcp-l3-relay statistics.";
+  }
+}

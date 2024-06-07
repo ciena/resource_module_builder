@@ -1,0 +1,478 @@
+module ciena-waveserver-xcvr-modem {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-xcvr-modem";
+  prefix xcvr-modem;
+
+  import ciena-waveserver-typedefs {
+    prefix cienawstypes;
+  }
+
+  import ciena-waveserver-xcvr {
+    prefix xcvr;
+  }
+
+  import ciena-ui {
+    prefix ui;
+  }
+
+  import ciena-ddf {
+    prefix ddf;
+  }
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This YANG module defines Ciena's XCVR modem specific data for the NETCONF protocol. It will augment the ciena-waveserver-xcvr module.";
+
+  revision 2021-02-10 {
+    description
+      "Removed unsupported/deprecated leafs from 'equipment-status' augment container:
+         temperature-warning, data-link-suspect, clock-suspect, loss-of-synchronization-tick.
+       Updated last-restart-time description.";
+    reference
+      "Waveserver OS R2.1 user's guide.";
+  }
+  revision 2020-10-28 {
+    description
+      "Removed 'leaf supported-link-optimization-modes', replaced with
+               'list supported-link-optimization-modes'.";
+    reference
+      "Waveserver OS R2.0.3 user's guide.";
+  }
+  revision 2020-06-24 {
+    description
+      "Added 'typedef xcvr-mating-mode-enum'.
+       Added leaves 'mate-mode', 'mate' to the augment for 'container properties'.";
+    reference
+      "Waveserver OS R2.0.2 user's guide.";
+  }
+  revision 2020-03-09 {
+    description
+      "Added 'WaveLogic 5e' to 'when' statements for augmentation.
+       Added augment for 'container properties', support service profile settings.
+       Added 'typedef state-machine-max-duration-enum',
+             'typedef cold-restart-required-enum'.
+       Added augment for '/waveserver-xcvrs/xcvrs/properties/vendor-data/properties/device-id'.";
+    reference
+      "Waveserver OS R2.0 user's guide.";
+  }
+  revision 2018-05-07 {
+    description
+      "Removed 'supported-modes' leaf in vendor-data properties. This is moved to the common xcvr module.
+       Add supported link-optimization-mode attributes to the supported-modes list via augmentation.";
+    reference
+      "Waveserver Ai R1.2 user's guide.";
+  }
+  revision 2017-10-24 {
+    description
+      "Changed type for 'frequency-min' and 'frequency-max' leafs from int to decimal.
+       Changed type for 'tx-dispersion-min' and 'tx-dispersion-max' from unsigned to signed int.";
+    reference
+      "Waveserver Ai R1.1 user's guide.";
+  }
+  revision 2017-08-28 {
+    description
+      "Waveserver Platform Data Model
+       Migrated from Waveserver Classic R1.4 YANG model.
+       Updated namespace to 'ciena-waveserver'.
+       Added 'c-band', 'l-band', and 'frequency-resolution' to 'transmitter-technology' container.
+       Removed 'modulation-support' container and added 'supported-modes' to 'vendor-data/properties' container.
+       Added 'temperature-critical' and 'temperature-warning' to 'diagnostics/device' container.
+       Removed 'wavelength-control' and 'wavelength-tolerance' attributes.
+       Removed 'transport-protocols' and 'line-system-support' containers.";
+    reference
+      "Waveserver Ai R1.0 user's guide.";
+  }
+
+  typedef last-restart-type-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Unknown restart type.";
+      }
+      enum "cold" {
+        description
+          "Restart type is cold.";
+      }
+      enum "warm" {
+        description
+          "Restart type is warm.";
+      }
+      enum "Invalid" {
+        description
+          "Restart type is invalid.";
+      }
+    }
+    description
+      "Define the enum for modem last restart type.";
+  }
+
+  typedef cold-restart-required-enum {
+    type enumeration {
+      enum "unknown" {
+        description
+          "Unknown.";
+      }
+      enum "yes" {
+        description
+          "Cold restart is required.";
+      }
+      enum "no" {
+        description
+          "Cold restart is not required.";
+      }
+      enum "Invalid" {
+        description
+          "Invalid.";
+      }
+    }
+    description
+      "Define the enum for whether cold restart is required.";
+  }
+
+  typedef xcvr-mating-mode-enum {
+    type enumeration {
+      enum "none" {
+        description
+          "None.";
+      }
+      enum "primary" {
+        description
+          "Primary of the mated lines.";
+      }
+      enum "member" {
+        description
+          "Member of the mated lines.";
+      }
+    }
+    description
+      "Define the enum for XCVR line mating type.";
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties" {
+    ddf:ddf-struct-version "WLOsProps";
+    description
+      "XCVR properties specific to modem XCVRs.";
+    leaf service-profile {
+      ui:ui-name "Service Profile";
+      type cienawstypes:xcvr-service-profile;
+      description
+        "Line transceiver's service profile. Only applicable if a transceiver type is 'WaveLogic 5e'.";
+    }
+
+    leaf mate-mode {
+      ui:ui-name "Mate Mode";
+      type xcvr-mating-mode-enum;
+      config false;
+      description
+        "Line transceiver's mating mode. Only applicable if a transceiver type is 'WaveLogic 5e'.";
+    }
+
+    leaf mate {
+      ui:ui-name "Mate";
+      type leafref {
+        path "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:xcvr-id";
+      }
+      config false;
+      description
+        "Line transceiver's mate XCVR ID. Only applicable if a transceiver type is 'WaveLogic 5e'.";
+    }
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:device-id" {
+    ddf:ddf-struct-version "WLOsVDataPropsDeviceId";
+    when "../../../xcvr:type = 'WaveLogic 5e'" {
+      description
+        "XCVR device-id properties specific to modem XCVR with type 'WaveLogic 5e'.";
+    }
+    description
+      "XCVR device-id properties specific to  modem XCVR with type 'WaveLogic 5e'.";
+    leaf firmware-initializing {
+      type cienawstypes:yes-no-enum;
+      config false;
+      description
+        "Indicate whether modem is initializing.";
+    }
+
+    leaf firmware-version {
+      type string {
+        length "0..32";
+      }
+      config false;
+      description
+        "Modem's active (current running) firmware major and minor revision (in format of major.minor).";
+    }
+
+    leaf firmware-state {
+      type cienawstypes:xcvr-firmware-state-enum;
+      config false;
+      description
+        "Modem's firmware state.";
+    }
+
+    leaf cold-restart-required {
+      type cold-restart-required-enum;
+      config false;
+      description
+        "Indication whether cold restart is required.";
+    }
+
+    leaf last-restart-type {
+      type last-restart-type-enum;
+      config false;
+      description
+        "Modem last restart type.";
+    }
+
+    leaf last-restart-time {
+      type string {
+        length "0..40";
+      }
+      config false;
+      description
+        "Last modem restart time, in 'YYYY-MM-DDTHH:MM:SS[+|-]hh:mm'
+         format, or omitted if not applicable or unavailable.
+
+         The string format follows IETF yang date-and-time specifications, compliant
+         with RFC-6991. The base date and time portion of the string represents
+         Coordinated Universal Time (UTC), and a non-zero hh:mm offset suffix indicates the
+         system-configured local timezone offset at the time the event was recorded, and not
+         necessarily when it was retrieved.
+
+         When system timezone is set to UTC or no time-offset value is provisioned,
+         the '+00:00' suffix will be used to indicate UTC time with no local offset.";
+      reference
+        "RFC 3339: Date and Time on the Internet: Timestamps
+         RFC 6991: Common Yang Data Types";
+    }
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:diagnostic-monitoring" {
+    ddf:ddf-struct-version "WL3VendorDMT";
+    when "../../../xcvr:type = 'WaveLogic Ai' or ../../../xcvr:type = 'WaveLogic 5e'" {
+      description
+        "XCVR vendor diagnostic-monitoring properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR vendor diagnostic-monitoring properties specific to modem XCVRs.";
+    leaf diagnostic-support {
+      ui:ui-name "Diagnostic Support";
+      type cienawstypes:yes-no-enum;
+      config false;
+      description
+        "Diagnostic Monitoring, is Diagnostic Support turned on.";
+    }
+
+    leaf dispersion-measurement {
+      ui:ui-name "Dispersion Measurement";
+      type cienawstypes:yes-no-enum;
+      config false;
+      description
+        "Diagnostic Monitoring, is Dispersion Measurement turned on.";
+    }
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties" {
+    ddf:ddf-struct-version "WL3VDataProps";
+    when "../../xcvr:type = 'WaveLogic Ai' or ../../xcvr:type = 'WaveLogic 5e'" {
+      description
+        "XCVR vendor properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR vendor properties specific to modem XCVRs.";
+    container transmitter-technology {
+      ui:ui-name "Transmitter Technology";
+      config false;
+      description
+        "Modem Transmitter Technology properties/capabilities.";
+      leaf tunable {
+        ui:ui-name "Transmitter Tunable";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Modem Transmitter Technology, Tunable.";
+      }
+
+      leaf wavelength-min {
+        ui:ui-name "Transmitter Wavelength Min";
+        type cienawstypes:decimal-2-dig;
+        units "nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Wavelength Min value, in nanometers.";
+      }
+
+      leaf wavelength-max {
+        ui:ui-name "Transmitter Wavelength Max";
+        type cienawstypes:decimal-2-dig;
+        units "nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Wavelength Max value, in nanometers.";
+      }
+
+      leaf frequency-min {
+        ui:ui-name "Transmitter Frequency Min";
+        type cienawstypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "Modem Transmitter Technology, minimum supported frequency, in GHz.";
+      }
+
+      leaf frequency-max {
+        ui:ui-name "Transmitter Frequency Max";
+        type cienawstypes:modem-frequency;
+        units "GHz";
+        config false;
+        description
+          "Modem Transmitter Technology, maximum supported frequency, in GHz.";
+      }
+
+      leaf frequency-resolution {
+        ui:ui-name "Transmitter Frequency Resolution";
+        type uint32;
+        units "MHz";
+        config false;
+        description
+          "Modem Transmitter Technology, frequency resolution, in MHz.";
+      }
+
+      leaf tx-dispersion-min {
+        ui:ui-name "Transmitter Tx Dispersion Min";
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Tx Dispersion Min (ps/nm).";
+      }
+
+      leaf tx-dispersion-max {
+        ui:ui-name "Transmitter Tx Dispersion Max";
+        type int32;
+        units "ps/nm";
+        config false;
+        description
+          "Modem Transmitter Technology, Tx Dispersion Max (ps/nm).";
+      }
+
+      leaf edfa {
+        ui:ui-name "EDFA";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem is an EDFA modem.";
+      }
+
+      leaf c-band {
+        ui:ui-name "C-Band";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem supports C-Band frequencies.";
+      }
+
+      leaf l-band {
+        ui:ui-name "L-Band";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Whether this modem supports L-Band frequencies.";
+      }
+    }
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:vendor-data/xcvr:properties/xcvr:supported-modes" {
+    ddf:ddf-struct-version "AiSuppModeProps";
+    when "../../../xcvr:type = 'WaveLogic Ai' or ../../../xcvr:type = 'WaveLogic 5e'" {
+      description
+        "XCVR supported-mode properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR supported-mode properties specific to modem XCVRs.";
+    leaf default-link-optimization-mode {
+      type cienawstypes:link-optimization-mode;
+      description
+        "The default link optimization mode for this XCVR mode.";
+    }
+
+    list supported-link-optimization-modes {
+      key "link-optimization-mode";
+      config false;
+      description
+        "The list of supported link optimization modes and associated attributes for this XCVR mode.";
+      leaf link-optimization-mode {
+        type cienawstypes:string-maxl-32;
+        description
+          "The name of the link optimization mode.";
+      }
+
+      leaf effective-signal-to-noise-ratio-reference {
+        type cienawstypes:decimal-3-dig;
+        description
+          "Effective Signal-to-Noise Ratio (ESNR) reference.";
+      }
+    }
+  }
+
+  augment "/xcvr:waveserver-xcvrs/xcvr:xcvrs/xcvr:properties/xcvr:diagnostics/xcvr:device" {
+    ddf:ddf-struct-version "WL3DiagDeviceData";
+    when "../../xcvr:type = 'WaveLogic Ai' or ../../xcvr:type = 'WaveLogic 5e'" {
+      description
+        "XCVR device diagnostic properties specific to modem XCVRs.";
+    }
+    description
+      "XCVR device diagnostic properties specific to modem XCVRs.";
+    container equipment-status {
+      ui:ui-name "Equipment Status";
+      config false;
+      description
+        "XCVR modem equipment status properties.";
+      leaf transmitter-state {
+        ui:ui-name "Transmitter State";
+        type cienawstypes:enabled-disabled-enum;
+        config false;
+        description
+          "Transmitter State of the Modem.";
+      }
+
+      leaf equipment-out-of-spec {
+        ui:ui-name "Equipment Out of Spec";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Equipment Out of Spec raised.";
+      }
+
+      leaf temperature-critical {
+        ui:ui-name "Temperature Critical";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is there a critical temperature alarm currently raised.";
+      }
+
+      leaf equipment-failure {
+        ui:ui-name "Equipment Failure";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Equipment Failure raised.";
+      }
+
+      leaf comms-link-suspect {
+        ui:ui-name "Comms Link Suspect";
+        type cienawstypes:yes-no-enum;
+        config false;
+        description
+          "Is the alarm associated with Comms Link Suspect raised.";
+      }
+    }
+  }
+}

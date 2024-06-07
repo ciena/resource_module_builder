@@ -1,0 +1,261 @@
+module ciena-pm-data-binning {
+   namespace "http://www.ciena.com/ns/yang/ciena-ndpm-data-binning";
+   prefix "ciena-pm-data-binning";
+
+   import ciena-types {
+      prefix cn-types;
+   }
+
+   import ciena-pm-data-binning-types {
+      prefix cn-pmdb-types;
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's configuration and operational data for
+       the binning of network device health and performance monitoring
+       statistics collected across a network device's functional modules.
+
+       Copyright (c) 2020 Ciena Corporation. All rights
+       reserved.
+
+       All information contained herein is, and remains
+       the property of Ciena Corporation. Dissemination of this
+       information or reproduction of this material is strictly
+       forbidden unless prior written permission is obtained from
+       Ciena Corporation.";
+
+   revision 2020-10-09 {
+      description
+         "Initial version for proposing the binning of network device health
+          and performance monitoring.";
+      reference
+         "No Specific Reference. Standard not available";
+   }
+
+   grouping bin-instances-properties-common {
+      description
+         "This grouping defines sub-nodes common to all pm bin instances.";
+      leaf instance-id {
+         type string;
+         description
+            "Instance identifier string.";
+      }
+      leaf bin-duration {
+         type uint32 {
+            range "5..1440";
+         }
+         units "minutes";
+         default 15;
+         description
+            "Configure the bin-duration at which sampled raw-stats are packed
+             as a bin. Default 15min interval.";
+      }
+      leaf resource-path {
+         type instance-identifier {
+            require-instance false;
+         }
+         description
+            "Xpath to monitored node.";
+         mandatory true;
+      }
+   }
+
+   grouping bin-instance-properties-common-config {
+      description
+         "This grouping defines sub-nodes common to all config nodes of pm bin
+          instances.";
+      uses bin-instances-properties-common;
+      leaf admin-state {
+         type cn-types:state;
+         default "enabled";
+         description
+            "Enable or disable the pm instance.";
+      }
+      leaf gnmi-offset {
+         type uint32 {
+            range "0..86400";
+         }
+         units "seconds";
+         default 0;
+         description
+            "Number of seconds after bin interval completion to offset the
+             transmission of this particular pm instance's data bin to its
+             GNMI subscribers. The upper range is statically matched to the
+             max possible bin-duration, and also is dynamically limited by
+             the configured bin-duration for this particular pm instance.
+             Default value 0 means data bin will be sent immediately to GNMI
+             subscribers after completion of bin interval.";
+      }
+   }
+
+   grouping bin-instance-properties-common-oper {
+      description
+         "This grouping collects sub-nodes common to all oper-data and
+          oper-stat nodes of pm bin instances.";
+      uses bin-instances-properties-common;
+      leaf auto-created {
+         type boolean;
+         description
+            "True if pm instance was auto-created by the system.";
+      }
+   }
+
+   grouping bin-instance-properties-common-data {
+      description
+         "This grouping defines sub-nodes common to all operational data nodes
+          of pm bin instances.";
+      uses bin-instance-properties-common-oper;
+      leaf start-time {
+         type string;
+         description
+            "Start of bin instance formatted in accordance to RFC 3339.";
+      }
+   }
+
+   grouping bin-instance-metrics-common-data {
+      description
+         "This grouping defines sub-nodes related to specific pm metrics that
+          are common to all pm bin instances.";
+      list metrics {
+         description
+            "List of metrics gathered for one instance.";
+         key "name";
+         leaf name {
+            type string;
+            description
+               "Name of individual metric.";
+         }
+         leaf value {
+            type string;
+            description
+               "Value of individual metric.";
+         }
+      }
+   }
+
+   grouping bin-properties-stats-common-data {
+      description
+         "This grouping defines sub-nodes relevant to pm-binning operational
+          stats useful for diagnostics.";
+      leaf oper-state {
+         description
+            "Operational state of the corresponding node. Additional
+             information regarding state may be available in status-msg
+             if applicable.";
+         type cn-pmdb-types:cn-pmdb-oper-state;
+      }
+      leaf status-msg {
+         type string;
+         description
+            "Additional details of the node's operational status.";
+      }
+
+   }
+
+   grouping bin-global-properties-stats-data {
+      description
+         "This grouping defines sub-nodes relevant to global operational
+          stats useful for diagnostics.";
+      uses bin-properties-stats-common-data;
+   }
+
+   grouping bin-instance-properties-stats-data {
+      description
+         "This grouping defines sub-nodes relevant to per-instance operational
+          stats useful for diagnostics.";
+      uses bin-instance-properties-common-oper;
+      uses bin-properties-stats-common-data;
+   }
+
+   container pm-data-binning {
+      description
+         "Network Device Health and Performance Monitoring data binning -
+          configuration and operational data.";
+
+      container global-config {
+         description
+            "Network device health and performance monitored data binning global
+             configuration.";
+
+         leaf admin-state {
+            type cn-types:state;
+            default "disabled";
+            description
+               "Global admin state for turning on/off of this feature";
+         }
+
+         leaf user-created-mode {
+            type cn-types:state;
+            default "disabled";
+            description
+               "Enable/Disable collection mode of user-created to accept user
+                configurations for configurable instance and bin properties.
+                Default disabled.";
+         }
+      }
+
+      container instances-config {
+         description
+            "PM binning instance configuration.";
+         list instance {
+            description
+               "List of PM data binning instances. Please note that the 
+                maximum number of allowed configured instances may be
+                dynamically restricted by hardware limitations.";
+            key "instance-id"; // Comes from grouping bin-instance-properties-common-config
+            uses bin-instance-properties-common-config;
+         }
+      }
+
+      container instances-data {
+         description
+            "PM binning instance operational data.";
+         config false;
+         list instance {
+            description
+               "List of PM data binning instances.";
+            key "instance-id"; // Comes from grouping bin-instance-properties-common-data
+            uses bin-instance-properties-common-data;
+
+            container current-bin {
+               description
+                  "Stats collected during current time duration.";
+               uses bin-instance-metrics-common-data;
+            }
+         }
+      }
+   }
+
+   container pm-data-binning-stats {
+      config false;
+      description
+         "Operational statuses and statistics for pm data binning.";
+      container global-stats {
+         description
+            "Pm binning global operational stats.";
+         uses bin-global-properties-stats-data;
+      }
+      container instances-stats {
+         description
+            "Pm instance-related operational stats.";
+         list instance-stats {
+            description
+               "Per-instance stats.";
+            key "instance-id"; // Comes from grouping bin-instance-properties-stats-data
+            uses bin-instance-properties-stats-data;
+         }
+      }
+   }
+}

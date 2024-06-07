@@ -1,0 +1,392 @@
+module ciena-snmp-agent {
+  namespace "http://ciena.com/ns/yang/ciena-snmp-agent";
+  prefix ciena-snmp-agent;
+
+  import ietf-snmp {
+    prefix snmp;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-netconf-acm {
+    prefix nacm;
+  }
+
+  organization
+    "Ciena Corporation";
+
+  contact
+    "Web URL: http://www.ciena.com/
+    E-mail:  yang@ciena.com
+    Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+    Phone:   +1 800-921-1144
+    Fax:     +1 410-694-5750";
+
+  description
+    "This YANG module defines Ciena augmentations to the ietf-snmp.yang
+     module.
+
+    Copyright (c) 2018 Ciena Corporation.  All rights reserved.
+
+         All information contained herein is, and remains
+         the property of Ciena Corporation. Dissemination of this
+         information or reproduction of this material is strictly
+         forbidden unless prior written permission is obtained from
+         Ciena Corporation.";
+  
+  revision "2023-01-11"
+  {
+    description
+      "Added supported objects for clear text password for SNMPv3 user";
+    reference
+      "No specific reference or standard available";
+  }
+
+  revision "2021-10-05"
+  {
+    description
+      "Initial version";
+    reference
+      "RFC 6020: YANG - A Data Modeling Language for
+       the Network Configuration Protocol (NETCONF).
+       No specific reference; standard not available.";
+  }
+
+  typedef snmp-password {
+    type string; 
+    nacm:default-deny-all;
+    description
+      "Plain text password that will turn into a localized key";
+  }
+
+  grouping key {
+    description
+      "Base grouping for secret keys.";
+    
+    leaf key {
+      type yang:hex-string;
+      nacm:default-deny-all;
+      description
+        "Localized key specified as a list of colon-specified
+         hexadecimal octets.";
+    }
+
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+  
+  grouping aes192 {
+    description
+      "Base grouping for AES192 nodes.";
+
+    container aes192 {
+      description
+        "Configurable parameters for AES192 encryption.";
+
+      uses key;
+      reference
+        "The AES192-EDE Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+
+  grouping aes256 {
+    description
+      "Base grouping for AES256 nodes.";
+
+    container aes256 {
+      description
+        "Configurable parameters for AES256 encryption.";
+
+      uses key;
+      reference
+        "The AES256-EDE Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+
+  grouping triple-des {
+    description
+      "Base grouping for 3DES nodes.";
+
+    container triple-des {
+      description
+        "Configurable parameters for 3DES encryption.";
+
+      uses key;
+      reference
+        "The 3DES-EDE Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+  grouping sha224 {
+    description
+      "Base grouping for SHA224 nodes.";
+
+    container sha224 {
+      description
+        "Support of SHA224 Protocol as part of Authentication Config.";
+
+      uses key;
+      reference
+        "The HMAC-SHA2-224 Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+  grouping sha256 {
+    description
+      "Base grouping for SHA256 nodes.";
+
+    container sha256 {
+      description
+        "Support of SHA256 Protocol as part of Authentication Config.";
+
+      uses key;
+      reference
+        "The HMAC-SHA2-256 Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+  grouping sha384 {
+    description
+      "Base grouping for SHA384 nodes.";
+
+    container sha384 {
+      description
+        "Support of SHA384 Protocol as part of Authentication Config.";
+
+      uses key;
+      reference
+        "The HMAC-SHA2-384 Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+  grouping sha512 {
+    description
+      "Base grouping for SHA512 nodes.";
+
+    container sha512 {
+      description
+        "Support of SHA512 Protocol as part of Authentication Config.";
+
+      uses key;
+      reference
+        "The HMAC-SHA2-512 Symmetric Encryption Protocol.
+         This is the protocol as specified in
+         draft-reeder-snmpv3-usm-3desede-00, and in the
+         updates to that draft available at
+         http://www.snmp.com/eso/.";
+    }
+  }
+
+  augment /snmp:snmp {
+    description
+      "Augmentation for the addition of snmp enable/disable nodes.";
+    container agent {
+      description
+        "Support for snmp enable/disable node[Default state: enable]";
+      leaf admin-state {
+        description
+          "Enable or disable the administrative state of snmp agent";
+        type enumeration {
+            enum disable { value 0; }
+            enum enable { value 1; }
+        }
+        default enable;
+      }
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:priv/snmp:protocol {
+    description
+      "Augmentation for the addition of advance encryption nodes for local user.";
+
+    case aes192 {
+      uses aes192;
+    }
+
+    case aes256 {
+      uses aes256;
+    }
+
+    case triple-des {
+      uses triple-des;
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:priv/snmp:protocol {
+    description
+      "Augmentation for the addition of advance encryption nodes for remote user.";
+
+    case aes192 {
+      uses aes192;
+    }
+
+    case aes256 {
+      uses aes256;
+    }
+
+    case triple-des {
+      uses triple-des;
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:auth/snmp:protocol {
+    description
+      "Augmentation for the addition of advance authentication nodes for local user.";
+
+    case sha224 {
+      uses sha224;
+    }
+
+    case sha256 {
+      uses sha256;
+    }
+
+    case sha384 {
+      uses sha384;
+    }
+
+    case sha512 {
+      uses sha512;
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:auth/snmp:protocol {
+    description
+      "Augmentation for the addition of advance authentication nodes for remote user.";
+
+    case sha224 {
+      uses sha224;
+    }
+
+    case sha256 {
+      uses sha256;
+    }
+
+    case sha384 {
+      uses sha384;
+    }
+
+    case sha512 {
+      uses sha512;
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:auth/snmp:protocol/snmp:md5/snmp:md5 {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:auth/snmp:protocol/snmp:sha/snmp:sha {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:priv/snmp:protocol/snmp:des/snmp:des {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:local/snmp:user/snmp:priv/snmp:protocol/snmp:aes/snmp:aes {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:auth/snmp:protocol/snmp:md5/snmp:md5 {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:auth/snmp:protocol/snmp:sha/snmp:sha {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:priv/snmp:protocol/snmp:des/snmp:des {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+
+  augment
+    /snmp:snmp/snmp:usm/snmp:remote/snmp:user/snmp:priv/snmp:protocol/snmp:aes/snmp:aes {
+    description
+      "Augmentation for the addition of password nodes.";
+    leaf password {
+      type snmp-password;
+      description
+        "Plain text password that will be cleared.";
+    }
+  }
+}

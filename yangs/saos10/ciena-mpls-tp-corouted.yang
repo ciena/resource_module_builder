@@ -1,0 +1,824 @@
+module ciena-mpls-tp-corouted {
+   namespace "http://ciena.com/ns/yang/ciena-mpls-tp-corouted";
+   prefix tp;
+
+   import ietf-yang-types {
+      prefix yang;
+   }
+
+   import ietf-inet-types {
+      prefix inet;
+   }
+
+   import openconfig-interfaces {
+      prefix "oc-if";
+   }
+
+   import ciena-openconfig-interfaces {
+      prefix "cn-oc-if";
+   }
+
+   import ciena-l3-types {
+      prefix "tp-cn-l3-types";
+   }
+
+   organization
+      "Ciena Corporation";
+
+   contact
+      "Web URL: http://www.ciena.com/
+      E-mail:  yang@ciena.com
+      Postal:  7035 Ridge Road
+      Hanover, Maryland 21076
+      U.S.A.
+      Phone:   +1 800-921-1144
+      Fax:     +1 410-694-5750";
+
+   description
+      "This YANG module defines Ciena's specific Mpls Tp Corouted Tunnels
+      Copyright (c) 2016 Ciena Corporation.  All rights reserved.
+
+      All information contained herein is, and remains
+      the property of Ciena Corporation. Dissemination of this
+      information or reproduction of this material is strictly
+      forbidden unless prior written permission is obtained from
+      Ciena Corporation.";
+
+   revision "2020-01-24" {
+      description
+         "Initial version";
+   }  
+
+   typedef tp-tunnel-protection-reason {
+      type enumeration {
+         enum no-fault {
+            value 0;
+            description
+               "No fault on Tunnel";
+         }
+         enum next-hop-down {
+            value 1;
+            description
+               "Tunnel is down because of next hop down";
+         }
+         enum bfd-fault {
+            value 2;
+            description
+               "Tunnel is down because of BFD fault";
+         }
+         enum manual-switchover{
+            value 3;
+            description
+               "User Triggered manual switchover";
+         }
+         enum admin-down{
+            value 4;
+            description
+               " Tunnel Admin down";
+         }
+      }
+   }
+
+   grouping config-primary-tunnel {
+      description
+         "Configuration related to primary-tunnel for a backup tunnel";
+
+      container primary-tunnel-configuration {
+	     description 
+               "Configuration related to primary-tunnel for a backup tunnel";
+         leaf primary-tunnel-name {
+            type string { 
+               length "1..48";
+            }       
+            description
+               "Primary tunnel name";
+         }
+
+         leaf primary-tunnel-type {
+            type tp-cn-l3-types:tunnel-type;
+            description
+               "Primary tunnel type";
+         }
+      }
+   }
+
+   grouping  tp-corouted-tunnel-path-segment-options {
+      description 
+         "Configuration related to path segment options";
+
+       container forward-out-segment {
+          description 
+             "Give information about lsp forward out path";
+
+          leaf next-hop-ip {
+             type inet:ip-address;
+             description
+               "Next Hop Ip to be set";
+          }
+ 
+          leaf out-interface-type {
+             type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-oc-if:type";
+             }
+             description
+               "Interface type used for forward segment";
+          }
+               
+          leaf out-interface-name {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+             }
+             description 
+               "Outgoing Interface name for forward segment";
+          }
+               
+          choice next-hop-mac {
+            description
+              "Next hop Mac address ";
+            default resolve-dynamically;
+            case resolve-dynamically {
+               leaf resolve-next-hop-mac-dynamically {
+                  type empty;
+                  description
+                     "Next hop mac should resolve dynamically if out interfaces
+                     is an IP interface";
+               }
+            }
+            case use-static-mac{
+               leaf use-static-next-hop-mac {
+                  type empty;
+                  description
+                     "This is for providing static Nexthop mac Address";
+               }
+            }
+            case use-standard-mac {
+               leaf use-standard-next-hop-mac {
+                  type empty;
+                  description
+                     "This is used in un-numbered Ip interface to allow
+                      use of standard MAC ";
+               }
+            }            
+          }
+
+          leaf forward-out-label {
+             type uint32;
+             description
+                "Forward out label";
+          }                   
+       }
+       
+       container reverse-out-segment {
+          description 
+               "Give information about lsp reverse out path";
+
+          leaf prev-hop-ip {
+             type inet:ip-address;
+             description
+               "Prev Hop IP to be set";
+          }
+
+          leaf out-interface-type {
+             type leafref {
+               path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-oc-if:type";
+             }
+             description
+               "Interface type used for reverse segment";
+          }
+        
+          leaf out-interface-name {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+             }
+             description
+               "Outgoing Interface name for reverse segment";
+          }
+
+          choice prev-hop-mac {
+             description
+               "Previous hop Mac address ";
+             default resolve-dynamically;
+             case resolve-dynamically {
+                leaf resolve-prev-hop-mac-dynamically {
+                   type empty;
+                   description
+                     "Prev hop mac-address should resolve dynamically if out interfaces 
+                      is an IP interface";
+                }
+             }
+             case use-static-mac {
+                leaf use-static-prev-hop-mac {
+                   type empty;
+                   description
+                     "This is used in un-numbered case where out interface 
+                      is an ethernet";
+                }
+             }
+             case use-standard-mac {
+                leaf use-standard-prev-hop-mac {
+                   type empty;
+                   description
+                     "This is used in un-numbered case when out interface is ethernet 
+                      and prev hop mac-address is not static";
+                }
+             }            
+          }
+           
+          leaf reverse-out-label {
+             type uint32;
+             description
+               "Reverse out label";
+          }
+       }
+      
+       container forward-in-segment {
+          description 
+               "Give information about lsp forward in path";
+
+          leaf forward-in-label {
+             type uint32;
+             description
+               "Forward in label";
+          }
+       }
+
+       container reverse-in-segment {
+          description 
+             "Give information about lsp reverse in path";
+
+          leaf reverse-in-label {
+             type uint32;
+             description
+                "Reverse in label";
+          }
+       }
+    }
+
+
+   grouping tx-rx-stats-collection-grouping {
+      description
+         "counters for tx statistics";
+      leaf forward-out-tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the forward-out path of tunnel";
+      }
+
+      leaf reverse-out-tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the reverse-out path of tunnel";
+      }
+
+      leaf forward-out-tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the forward-out path of tunnel";
+      }
+
+      leaf reverse-out-tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the reverse-out path of tunnel";
+      }
+
+      leaf dropped-forward-out-tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the forward-out path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-reverse-out-tx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes sent on the reverse-out of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-forward-out-tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the forward-out path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-reverse-out-tx-packets {
+         type yang:counter64;
+         description
+            "The number of packets sent on the reverse-out path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf forward-in-rx-bytes {
+         type yang:counter64;
+         description
+            "the number of bytes received on the forward-in path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf reverse-in-rx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes received on the reverse-in of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf forward-in-rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the forward-in path of tunnel";
+      }
+
+      leaf reverse-in-rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the reverse-in path of tunnel";
+      }
+
+      leaf dropped-forward-in-rx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes received on the forward-in path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-reverse-in-rx-bytes {
+         type yang:counter64;
+         description
+            "The number of bytes received on the reverse-in of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-forward-in-rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the forward-in path of tunnel that
+            were chosen to be dropped";
+      }
+
+      leaf dropped-reverse-in-rx-packets {
+         type yang:counter64;
+         description
+            "The number of packets received on the reverse-in path of tunnel that
+            were chosen to be dropped";
+      }
+   }
+
+
+   container tp-corouted-tunnels {
+      description
+         "The list of MPLS TP corouted tunnels on this device";
+      list tunnel {
+         key "name source-ip destination-ip";
+         description 
+            "An MPLS tp corouted tunnel key";
+
+         leaf name {
+            type string {
+               length "1..48";
+            }
+            description 
+               "An MPLS tp corouted tunnel name";
+          }
+
+          leaf source-ip {
+             type inet:ip-address;
+             description
+                "Source IP to be set";
+          }
+
+          leaf destination-ip {
+             type  inet:ip-address;
+             description
+               "Destination IP to be set";
+          }
+      
+          leaf tunnel-type {
+             type tp-cn-l3-types:tunnel-type;
+             description 
+                "This is an enumeration which defines different tunnel types";
+          }
+                          
+          uses tp-corouted-tunnel-path-segment-options; 
+
+          leaf tunnel-role-type {
+             type enumeration {
+                enum primary {
+                   description
+                     "Specifies tunnel is primary";
+                }
+                enum backup {
+                   description
+                     "Specifies tunnel is backup";
+                }
+             }
+             description
+                "Specifies tp tunnel is primary or backup";
+          }
+    
+          uses config-primary-tunnel;
+
+          leaf backup-selection-weight {
+             type uint32;
+             description 
+                "Weight used to select best backup path";
+          }
+                   
+          leaf reversion-hold-time {
+             units seconds;
+             type  uint16 {
+                range "0..3600";
+             }  
+             default 30;
+             description 
+                "Reversion hold timer";
+          }
+       
+          leaf source-tunnel-id {
+             type uint32;
+             description
+                "Source id of tunnel";
+          }
+        
+          leaf destination-tunnel-id {
+             type uint32;
+             description
+                "Destination id of tunnel";
+          }
+
+          leaf tunnel-admin-state {
+             type enumeration {
+                enum enable {
+                  description
+                    "Specifies tunnel admin state as enable";
+                }
+                enum disable {
+                  description
+                    "Specifies tunnel admin state as disable";
+                }
+             }
+             default "enable";
+             description
+                 "Specifies tunnel admin state as enable or disable";         
+          }
+
+          leaf ttl-cos-profile {
+             type empty;
+             description
+                "TTL Cos Profile name";
+          }             
+
+          leaf tp-tunnel-stats-collection {
+             type enumeration {
+                enum off {
+                   description
+                      "Specifies statistics collection on tunnel is OFF";
+                }
+                enum on {
+                   description
+                      "Specifies statistics collection on tunnel is ON";
+                }
+             }
+             default "off";
+             description
+                "Turn on/off statistics collection on the tunnel";
+          }
+
+          leaf tunnel-reversion-state {
+             type enumeration {
+                enum enable {
+                  description
+                    "Specifies tunnel reversion state as enable";
+                }
+                enum disable {
+                  description
+                    "Specifies tunnel reversion state as disable";
+                }
+             }
+             default "enable";
+             description
+                 "Specifies tunnel reversion state as enable or disable";
+          }
+        
+       }
+    }
+
+    container tp-corouted-tunnel-state {
+       config false;
+       description
+          "An static Mpls tp corouted tunnel information";
+
+       list tunnel {
+          key "name source-ip destination-ip";
+          description
+             "Operational Data for tunnel";
+
+          leaf name {
+             type leafref {
+                path /tp:tp-corouted-tunnels/tp:tunnel/tp:name;
+             }
+             description
+                "TP corouted tunnel name";
+          }
+
+          leaf source-ip {
+             type  inet:ip-address;
+             description
+                "Destination IP Address";
+          }
+
+          leaf destination-ip {
+             type inet:ip-address;
+             description
+                "Source IP Address";
+          }
+
+          leaf tunnel-index {
+             type uint32;
+             description
+                "Identifies tunnel";
+          }
+
+          leaf oper-status {
+             type string;
+             description
+                "MPLS tp tunnel operational status";
+          }
+
+          leaf admin-status {
+             type string;
+             description
+                "MPLS tp tunnel admin status";
+          }
+
+          leaf tunnel-type {
+             type tp-cn-l3-types:tunnel-type;
+             description
+                "This is an enumeration which defines different tunnel types";
+          }
+
+          leaf tunnel-if-name {
+             type string;
+             description
+                "Gives Tunnel Interface name";
+          }
+
+          leaf next-hop-ip {
+             type inet:ip-address;
+             description
+                "Next Hop IP address";
+          }
+
+          leaf out-interface-type {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-oc-if:type";
+             }
+             description
+                "Interface type for forward segment";
+          }
+
+          leaf out-interface-name {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+             }
+             description
+                "Interface name for forward segment";
+          }
+         
+          leaf reverse-out-interface-type {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:config/cn-oc-if:type";
+             }
+             description
+                "Interface type for reverse segment";
+          }
+        
+          leaf reverse-out-interface-name {
+             type leafref {
+                path "/oc-if:interfaces/oc-if:interface/oc-if:name";
+             }
+             description
+                "Interface name for reverse segment";
+          }
+
+          leaf forward-out-label {
+             type uint32;
+             description
+                "Forward out label";
+          }
+
+          leaf prev-hop-ip {
+             type inet:ip-address;
+             description
+                "Prev Hop IP Address";
+          }
+
+          leaf reverse-out-label {
+             type uint32;
+             description
+                "Reverse out label";
+          }
+
+          leaf forward-in-label {
+             type uint32;
+             description
+                "Forward in label";
+          }
+
+          leaf reverse-in-label {
+             type uint32;
+             description
+                "Forward in label";
+          }
+
+          leaf tunnel-role-type {
+             type enumeration {
+                enum primary {
+                   description
+                      "specifies tunnel is primary";
+                }
+                enum backup {
+                   description
+                      "specifies tunnel is backup";
+                }
+             }
+
+             description
+                "Specifies tp tunnel is primary or backup";
+          }
+
+          leaf backup-tunnel {
+             type string;
+             description
+                "Backup tunnel name";
+          }
+
+          leaf primary-tunnel {
+             type string;
+             description
+                "Primary tunnel name";
+          }
+
+          leaf reversion-hold-time {
+             units seconds;
+             type  uint16 {
+                range "0..3600";
+             }
+             description
+                "Reversion hold timer";
+          }
+
+          leaf ttl-cos-profile {
+             type string;
+             description
+                "TTL cos profile name";
+          }
+
+          leaf tp-tunnel-protection-reason {
+             type tp-tunnel-protection-reason;
+             description
+                "Reason of Tunnel down.";
+          }
+          leaf stats-collection {
+             type string;
+             description
+                "Tunnel statistics are on/off per tunnel";
+          }
+
+          leaf tunnel-state {
+             type enumeration {
+                enum active {
+                   description
+                      "Specifies tunnel is active";
+                }
+                enum standby {
+                   description
+                      "Specifies tunnel is standby";
+                }
+             }
+             description
+                "Specifies tp tunnel is active or standby";
+          }      
+       }
+    }
+
+    container tunnel-statistics {
+       config false;
+       description
+          "Tunnel statistics";
+
+       list tunnel {
+          key "name source-ip destination-ip";
+          description
+             "Operational Data for tunnel";
+
+          leaf name {
+             type leafref {
+                path "/tp:tp-corouted-tunnels/tp:tunnel/tp:name";
+             }
+             description
+                "tp corouted tunnel name ";
+          }
+
+          leaf source-ip {
+             type  inet:ip-address;
+             description
+                "Destination Ip Address";
+          }
+
+          leaf destination-ip {
+             type inet:ip-address;
+             description
+                "Source IP Address";
+          }
+
+          uses tx-rx-stats-collection-grouping;
+       }
+    }
+
+    rpc tunnel-switchover {
+      input  { 
+        leaf primary-tunnel-name {
+           type leafref {
+              path "/tp:tp-corouted-tunnels/tp:tunnel/tp:name";
+           }
+           mandatory true;
+           description
+              "Name of primary tunnel for which switchover is required.";
+        }
+
+        leaf primary-tunnel-source-ip {
+           type inet:ip-address;
+           mandatory true;
+           description
+              "Source-IP of primary tunnel for which switchover is required.";
+        }
+
+        leaf primary-tunnel-destination-ip {
+           type inet:ip-address;
+           mandatory true;
+           description
+              "Destination-IP of primary tunnel for which switchover is required.";
+        }
+
+        choice switchover-options {
+           description
+              "provides tunnel switchover option ";
+           case backup-switchover {
+              leaf switch-to-backup {
+                 type empty;
+                 description
+                    "Switch to backup tunnel for a particular primary tunnel";
+              }
+           }
+           case primary-switchover {
+              leaf revert-to-primary {
+                 type empty;
+                 description
+                    "This is used for reverting to a primary tunnel";
+              }
+           }
+        }
+      }
+      output {
+         leaf response {
+            type string;
+            description
+               "The response could be 'success', or the reason for tunnel switchover failure";
+         }
+      }
+    }
+
+    rpc tp-tunnel-clear-statistics {
+       input {
+          leaf tunnel-name {
+             type leafref {
+                path "/tp:tp-corouted-tunnels/tp:tunnel/tp:name";
+             }
+             description
+                "Tunnel name";
+          }
+
+          leaf source-ip {
+             type inet:ip-address;
+             description
+                "Tunnel source IP";
+          }
+
+          leaf destination-ip {
+             type inet:ip-address;
+             description
+                "Tunnel Destination IP";
+          }
+
+       }
+       output {
+          leaf response {
+             type string;
+             description
+                "The response could be 'success', or the reason for tunnel-clear-statistics failure";
+          }
+       }
+    }
+}

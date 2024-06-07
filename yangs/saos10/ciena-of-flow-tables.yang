@@ -1,0 +1,576 @@
+module ciena-of-flow-tables {
+   namespace "http://www.ciena.com/ns/yang/ciena-pn/ciena-of-flows-tables";
+   prefix "of-flow-tables";
+
+   import ciena-of-types {
+      prefix "of-types";
+   }
+
+   import ciena-of-vfsi {
+      prefix "of-vfsi";
+   }
+
+   import ciena-of-group-tables {
+      prefix "of-group-tables";
+   }
+
+   organization
+      "Ciena Corporation";
+    
+   contact
+      "Web URL: http://www.ciena.com/
+       E-mail:  yang@ciena.com
+       Postal:  7035 Ridge Road
+                Hanover, Maryland 21076
+                    U.S.A.
+       Phone:   +1 800-921-1144
+       Fax:     +1 410-694-5750";
+    
+   description
+      "This YANG module defines Ciena's management data definition for the definition of 
+       Open Flow Flow Tables.";
+    
+   revision "2018-09-14" {
+      description
+         "Initial Version.";
+   }
+
+/*
+ * typedefs
+ */
+
+   typedef flow-table-ref {
+      type leafref {
+         path "/of-flow-tables:of-flow-tables/of-flow-tables:of-flow-table/of-flow-tables:name";
+      }
+      description
+         "This type is used by data models that need to reference
+          configured flow tables.";
+   }
+
+   typedef flow-table-number-ref {
+      type leafref {
+         path "/of-flow-tables:of-flow-tables/of-flow-tables:of-flow-table/of-flow-tables:table-number";
+      }
+      description
+         "This type is used by data models that need to reference
+          configured flow tables by table-number.";
+   }
+
+   typedef flow-table-entry-ref {
+      type leafref {
+         path "/of-flow-tables:of-flow-tables/of-flow-tables:of-flow-table-entry/of-flow-tables:entry-number";
+      }
+      description
+         "This type is used by data models that need to reference
+          configured flow table entries.";
+   }
+
+   grouping of-match-fields {
+
+      description
+         "These are the match fields that can be used in the flow table entries.
+          As in the OpenFlow protocol, packets progress through the pipeline of 
+          tables.  At each table, packets are associated with a particular flow based
+          on the flow match criteria and the packet header and ingress port (as well
+          as the priority of the flow entry).
+          
+          Each flow entry can have zero or more match criteria.  So all the leaf 
+          nodes below are optional.";
+
+      leaf in-logical-port {
+         type of-types:logical-port;
+      }
+      leaf in-physical-port {
+         type of-types:physical-port;
+      }
+      leaf metadata {
+         type of-types:metadata;
+      }
+      leaf source-mac {
+         type of-types:mac;
+      }
+      leaf source-mac-mask {
+         type of-types:mac-mask;
+      }
+      leaf destination-mac {
+         type of-types:mac;
+      }
+      leaf destination-mac-mask {
+         type of-types:mac-mask;
+      }
+      container vtag-stack {
+         uses of-types:vtag-stack;
+      }
+      leaf dscp {
+         type of-types:dscp;
+      }
+      leaf ecn {
+         type of-types:ecn;
+      }
+      leaf ip-protocol {
+         type of-types:ip-protocol;
+      }
+      leaf ip-source-prefix {
+         type of-types:ip-address-prefix;
+      }
+      leaf ip-destination-prefix {
+         type of-types:ip-address-prefix;
+      }
+      leaf l4-source-port {
+         type of-types:l4-port;
+      }
+      leaf l4-destination-port {
+         type of-types:l4-port;
+      }
+      leaf ethertype {
+         type of-types:ethertype;
+      }
+      container mpls-label-stack {
+         uses of-types:mpls-label-stack;
+      }
+      leaf icmpv4-type {
+         type of-types:icmpv4-type;
+      }
+      leaf icmpv4-code {
+         type of-types:icmpv4-code;
+      }
+      leaf icmpv6-type {
+         type of-types:icmpv6-type;
+      }
+      leaf icmpv6-code {
+         type of-types:icmpv6-code;
+      }
+      leaf arp-opcode {
+         type of-types:arp-opcode;
+      }
+      leaf arp-source-ip-address {
+         type of-types:ipv4-address;
+      }
+      leaf arp-target-ip-address {
+         type of-types:ipv4-address;
+      }
+      leaf arp-source-mac-address {
+         type of-types:mac;
+      }
+      leaf arp-target-mac-address {
+         type of-types:mac;
+      }
+      leaf ipv6-flow-label {
+         type of-types:ipv6-flow-label;
+      }
+      leaf ndp-target-ip-address {
+         type of-types:ipv6-address;
+      }
+      leaf ipv6-extension-header {
+         type of-types:ipv6-extension-header;
+      }
+      leaf ndp-source-mac-address {
+         type of-types:mac;
+      }
+      leaf ndp-target-mac-address {
+         type of-types:mac;
+      }
+      leaf tunnel-id {
+         type of-types:tunnel-id;
+      }
+   }
+
+   grouping of-instruction-set {
+
+      description
+         "These are the instructions that can be used in the flow table entries.
+          As in the OpenFlow protocol, packets progress through the pipeline of 
+          tables.  At each table, packets are matched to a flow entry, and the
+          instructions for that flow entry are applied to the packet.
+          
+          Each flow entry can have zero or instructions.  So all the leaf notes
+          below are optional.  There can be at most one instruction of each type.";
+
+      leaf goto-table {
+         type of-flow-tables:flow-table-ref;
+         description
+            "Indicates the next table in the processing pipeline. The table must
+             be a subsequent table based on the OF-DPA table definitions.";
+      }
+
+      container write-metadata {
+
+         description
+            "Each packet can have associated metadata as it traverses the pipeline.
+             This instruction writes masked metadata to into the metadata field.";
+
+         presence "Metadata Value";
+
+         leaf metadata-value {
+            type of-types:metadata;
+            mandatory true;
+         }
+         leaf metadata_mask {
+            type of-types:metadata;
+         }
+      }
+
+      container write-actions {
+
+         description
+            "Merges the specified actions into the current action set associated
+             with the packet.";
+
+         uses of-types:action-set;
+
+         leaf group-id {
+            type of-group-tables:group-table-entry-ref;
+         }
+      }  
+         
+      container apply-actions {
+
+         description
+            "Applies the specified actions to the packet immediately, without change 
+             to the action set associated with the packet.";
+
+         uses of-types:action-set;
+
+         leaf group-id {
+            type of-group-tables:group-table-entry-ref;
+         }
+      }
+
+      leaf clear-actions {
+
+         description
+            "Clears all actions in the action set associated with the packet.";
+
+         type empty;
+      }
+    }
+/*
+ * features
+ */
+
+/*
+ * Configuration model.
+ */
+
+   container of-flow-tables {
+
+      description
+         "The configuration model for flow tables include a list of pre-created
+          flow tables, and a flat list of flow table entries, where each entry is
+          associated to a particular flow table by a reference.";
+
+      list of-flow-table {
+
+         description
+            "This is the list of OpenFlow-like Flow Tables.  These are automatically
+             created and configured by the switch, and should not be created by the
+             controller. The flow tables correspond to the Broadcom OF-DPA 2.0 tables.
+             Only the table-description should be configured by the controller.
+             
+             The flow table entries in this list do not contain the actual flow 
+             entries.  Those are in a separate list, with each flow entry pointing
+             to the table which logically containers it.";
+
+         key "name vfsi-id";
+            
+         leaf name {
+            type of-types:name;
+            description
+               "This object indicates the identifier and is a text string that is 
+                used to identify a Flow Table. Unique string values are chosen to 
+                uniquely identify the flow-table.  A Flow Table can be considered 
+                to be a stage in a Forwarding Plane Pipeline.
+                This element cannot be modified by the controller.";
+         }
+
+         leaf vfsi-id {
+            type of-vfsi:vfsi-id-ref;
+            description
+               "An identifier of a Virtual Flow Switch Instance that this Flow Table belongs to.
+                This element should not be modified by the controller.";
+         }
+
+         leaf table-number {
+            type of-types:table-number;
+            description
+               "An identifier of the Open Flow Table.  This element should not be
+                modified by the controller.";
+            mandatory true;
+         }
+
+         leaf table-description {
+            type string {
+               length "1..127";
+            }
+            description
+               "A more detailed description that an operator can use to describe 
+                the Flow Table.";
+         }
+
+         leaf default-table {
+            config false;
+            type empty;
+            description
+               "Table is a default Table. (e.g. autogenerated by a flowswitch)";
+         }
+      }
+
+      list of-flow-table-entry {
+
+         description
+            "This is the list of OpenFlow-like flow entries.  The controller creates
+             and modifies these flow entries (along with the group table entries) to
+             directly control the switch forwarding plane.
+             
+             The flow table entries are in a flat list, but they are logically
+             associated with a specific flow table by the flow-table reference.
+             This association is important, as the packet processing proceeds through
+             the pipeline table-by-table, and only the flows associated with a
+             particular table are considered during each stage.
+             
+             Unlike OpenFlow flow tables, where the match criteria define the flow
+             entry, these flow entries have an explicit entry-number to uniquely 
+             identify the flow.";
+
+         key "entry-number vfsi-id";
+
+         leaf entry-number {
+            type of-types:entry-id;
+            description
+               "An identifier to uniquely identify the flow entry (unique across
+                all flow tables).";
+         }
+
+         leaf vfsi-id {
+            type of-vfsi:vfsi-id-ref;
+            description
+               "An identifier of a Virtual Flow Switch Instance that this Flow Table belongs to.";
+         }
+
+         leaf entry-description {
+            type string {
+               length "1..127";
+            }
+            description
+               "A more detailed description that an operator can use to describe 
+                the Flow Table Entry.";
+         }
+
+         leaf flow-table {
+            type of-flow-tables:flow-table-ref;
+            description
+               "A reference to a Flow Table.";
+            mandatory true;
+         }
+
+         container match {
+            uses of-match-fields;
+            description
+               "The match fields to classify a particular packet to this flow rule.";
+         }
+
+         leaf priority {
+            type of-types:priority;
+            description
+               "A priority precedence for an flow entry within an Open Flow Table.
+                Higher value priority value wins over a lower priority value within 
+                the same flow table when multiple matches could occur.";
+            mandatory true;
+         }
+
+         container instruction-set {
+            uses of-instruction-set;
+            description
+               "The instructions which are applied to the packet when it matches this
+                flow entry.";
+         }
+
+         leaf idle-timeout {
+            type of-types:timeout;
+         }
+
+         leaf hard-timeout {
+            type of-types:timeout;
+         }
+
+         leaf cookie {
+            type of-types:cookie;
+         }
+
+         leaf stats-collection {
+            type of-types:stats-collection;            
+            description
+               "Determines whether stats collection will be turned on or not for a 
+                flow-table-entry.";
+         }
+
+         leaf default-entry {
+            config false;
+            type empty;
+            description
+               "Entry is a default Entry. (e.g. autogenerated by a flowswitch)";
+         }
+      }
+   }
+
+   container of-flow-tables-state {
+      config false;
+
+      list of-flow-table {
+
+         description
+            "The statistics associated with a flow table (vs. a flow entry).";
+
+         key "name vfsi-id";
+            
+         leaf name {
+            type of-types:name;
+            description
+               "An identifier of the Open Flow Table.";
+         }
+
+         leaf vfsi-id {
+            type of-types:vfsi-id;
+            description
+               "An identifier of a Virtual Flow Switch Instance that this Flow Table belongs to.";
+         }
+
+         uses of-types:of-flow-table-statistics;
+      }
+
+      list of-flow-table-entry {
+      
+         description
+            "The statistics associated with particular flow entry.";
+
+         key "entry-number vfsi-id";
+
+         leaf entry-number {
+            type of-types:entry-id;
+            description
+               "An identifier of the Open Flow Table Entry within an Open Flow Table.";
+         }
+
+         leaf vfsi-id {
+            type of-types:vfsi-id;
+            description
+               "An identifier of a Virtual Flow Switch Instance that this Flow Table belongs to.";
+         }
+
+         container statistics {
+            uses of-types:of-flow-statistics;
+         }
+
+         leaf flow-entry-status {
+            type of-types:entry-status;
+            description
+               "indicates the current status of the flow entry relative to the actual
+                hardware data plane.";
+         }
+
+         leaf cookie {
+            type uint64;
+         }
+      }
+   }
+   /*
+    * RPC
+    */
+   rpc of-flow-table-clear-statistics {
+      description "An RPC operation to clear the statistics for one or more Flow Tables.";
+
+      input {
+         choice clear-scope {
+
+            case flow-table {
+               leaf flow-table {
+                  type of-flow-tables:flow-table-ref;
+               }
+               leaf flow-table-vfsi {
+                  type of-vfsi:vfsi-id-ref;
+               }
+               description
+                  "Clear stats for this flow-table.";
+            }
+
+            case vfsi {
+               leaf vfsi {
+                  type of-vfsi:vfsi-id-ref;
+               }
+               description
+                  "Clear stats for all flow-tables within a vfsi.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all flow-tables.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string; 
+            description 
+               "Status of the clear statistics operation.";
+         }
+      }
+   } // end rpc clear-statistics
+
+   rpc of-flow-table-entry-clear-statistics {
+      description "An RPC operation to clear the statistics for one or more Flow Table Entries.";
+
+      input {
+         choice clear-scope {
+
+            case flow-table-entry {
+               leaf flow-table-entry {
+                  type of-flow-tables:flow-table-entry-ref;
+               }
+               leaf flow-table-entry-vfsi {
+                  type of-vfsi:vfsi-id-ref;
+               }
+               description
+                  "Clear stats for this flow-table-entry.";
+            }
+
+            case flow-table {
+               leaf flow-table {
+                  type of-flow-tables:flow-table-ref;
+               }
+               leaf flow-table-vfsi {
+                  type of-vfsi:vfsi-id-ref;
+               }
+               description
+                  "Clear stats for all flow-table-entries within a flow-table.";
+            }
+
+            case vfsi {
+               leaf vfsi {
+                  type of-vfsi:vfsi-id-ref;
+               }
+               description
+                  "Clear stats for all flow-table-entries within a vfsi.";
+            }
+
+            case all {
+               leaf all {
+                  type empty;
+               }
+               description
+                  "Clear stats for all flow-table-entries.";
+            }
+         }
+      }
+      output {
+         leaf status {
+            type string; 
+            description 
+               "Status of the clear statistics operation.";
+         }
+      }
+   } // end rpc clear-statistics
+}

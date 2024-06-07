@@ -1,0 +1,107 @@
+module ciena-pro-graph {
+  namespace "urn:ciena:params:xml:ns:yang:ciena-pro-graph";
+  prefix graph;
+
+  organization
+    "Ciena Corporation";
+  contact
+    "Web URL: http://www.ciena.com/
+     Postal:  7035 Ridge Road
+             Hanover, Maryland 21076
+             U.S.A.
+     Phone:   +1 800-921-1144
+     Fax:     +1 410-694-5750";
+  description
+    "This modules describes Ciena's scaler object for the 6500r-Series platform";
+
+  revision 2018-05-04 {
+    description
+      "6500r-series Release 1.0";
+  }
+
+  typedef graph-instance-type {
+    type uint8;
+    description
+      "Graph instance. A given vertex and arc belong to a given graph. The graph it belong to is specified by the graph instance.";
+  }
+
+  list vertices {
+    key "graphInstance name";
+    leaf graphInstance {
+      type graph-instance-type;
+      description
+        " Specify which graph a given vertex belong to";
+    }
+    leaf name {
+      type string {
+        length "1..200";
+      }
+      description
+        "Vertex name";
+    }
+  }
+  list arcs {
+    key "graphInstance from to";
+    leaf graphInstance {
+      type graph-instance-type;
+      description
+        " Specify which graph a given arc belong to";
+    }
+    leaf from {
+      type string {
+        length "1..200";
+      }
+      description
+        "Vertex from name";
+    }
+    leaf to {
+      type string {
+        length "1..200";
+      }
+      description
+        "Vertex to name";
+    }
+  }
+
+  rpc get-path {
+    description
+      "Get a path from a given vertex to another. A path is a series of vertices connected together by arcs.
+       Here we assume there is only only possible path. If multiple paths
+       exist then the first one found will be returned";
+    input {
+      leaf graphInstance {
+        type graph-instance-type;
+        description
+          " Specify which graph this call is for: shelf or site";
+      }
+      leaf from {
+        type string {
+          length "1..200";
+        }
+        description
+          "From vertex.";
+      }
+      leaf to {
+        type string {
+          length "1..200";
+        }
+        description
+          "To vertex.";
+      }
+    }
+    output {
+      list unscoped-vertices {
+        description
+          "List of vertices of the path";
+        key "name";
+        leaf name {
+          type string {
+            length "1..200";
+          }
+          description
+            "Vertex name";
+        }
+      }
+    }
+  }
+}
