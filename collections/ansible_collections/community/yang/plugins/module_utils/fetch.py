@@ -101,7 +101,10 @@ class SchemaStore(object):
             except ConnectionError as e:
                 raise ValueError(to_text(e))
             res_json = xmltodict.parse(response, dict_constructor=dict)
-            data_model = res_json["rpc-reply"]["data"]["#text"]
+            rpc_reply_key = next((key for key in res_json if key.endswith(":rpc-reply") or key == "rpc-reply"), None)
+            if rpc_reply_key is None:
+                raise ValueError("No rpc-reply key found in the response")
+            data_model = res_json[rpc_reply_key]["data"]["#text"]
             if self._debug:
                 self._debug("Fetched '%s' yang model" % schema_id)
             result["fetched"][schema_id] = data_model
@@ -128,7 +131,7 @@ class SchemaStore(object):
 
         if found:
             result["fetched"][schema_id] = data_model
-            importre = re.compile(r"import (.+) {")
+            importre = re.compile(r"import (\S+) {")
             all_found = importre.findall(data_model)
             all_found = [re.sub("['\"]", "", imp) for imp in all_found]
 
