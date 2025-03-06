@@ -59,8 +59,8 @@ def order_dict(obj, priority_keys):
         return obj
 
 
-def get_nested_schema(schema, config_path):
-    keys = config_path.split(".")
+def get_nested_schema(schema, sub_path):
+    keys = sub_path.split(".")
     for key in keys:
         schema = schema.get(key, {})
         if not schema:
@@ -81,11 +81,11 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 help="ansible debug",
             ),
             optparse.make_option(
-                "-i",
-                "--yaml-mappings-file",
-                dest="yaml_mappings_file",
-                help="Path to the YAML file containing input mappings",
-                default=None,  # No default value
+                "-n",
+                "--network-os",
+                dest="network_os",
+                help="Specify the network OS",
+                default="saos10",  # Default value
             ),
         ]
 
@@ -103,6 +103,9 @@ class AnsiblePlugin(plugin.PyangPlugin):
         if ctx.opts.ansible_debug:
             logging.basicConfig(level=logging.DEBUG)
             print("")
+        if ctx.opts.network_os:
+            network_os = ctx.opts.network_os
+            logging.debug("network_os: %s", ctx.opts.network_os)
 
         # Extract the namespace
         namespace = root_stmt.search_one("namespace")
@@ -112,7 +115,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
             xml_namespace = "No namespace found"
 
         schema = produce_schema(root_stmt)
-        converted_schema = convert_schema_to_ansible(schema, xml_namespace, root_stmt)
+        converted_schema = convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os)
 
         priority_keys = [
             "GENERATOR_VERSION",
@@ -212,19 +215,17 @@ def produce_schema(root_stmt):
     return result
 
 
-def convert_schema_to_ansible(schema, xml_namespace, root_stmt):
+def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
     logging.warning(f"xml_namespace: {xml_namespace}")
     if len(schema) == 1:
         config = next(iter(schema.values()))
 
-        network_os = "saos10" # Pass this in
         resource = None
         xml_root_key = None
         xml_items = None
-        config_path = None
         module_name = None
-        short_description = f"Manage {resource} on Ciena {network_os} devices"
         description = None
+        short_description = None
         author = "Ciena"
 
         # Attempt to derive values from the YANG model
@@ -241,13 +242,15 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt):
                     )
                     continue
                 resource = child.arg
+                short_description = f"Manage {resource} on Ciena {network_os} devices"
                 xml_root_key = child.arg
+                module_name = f"{network_os}_{resource}"
                 # Derive XML_ITEMS from the items in the container
                 for sub_child in child.i_children:
                     if sub_child.keyword == "list":
                         xml_items = sub_child.arg
+                        config = get_nested_schema(config, f"suboptions.{xml_items}")
                         break
-                config_path = f"suboptions.{child.arg}"
                 # Extract short_description from the container description
                 description_stmt = child.search_one("description")
                 if description_stmt:
