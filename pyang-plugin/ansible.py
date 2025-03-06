@@ -1,5 +1,4 @@
-"""Ansible output plugin
-"""
+"""Ansible output plugin"""
 
 # pylint: disable=C0111
 
@@ -112,18 +111,8 @@ class AnsiblePlugin(plugin.PyangPlugin):
         else:
             xml_namespace = "No namespace found"
 
-        mappings_file = ctx.opts.yaml_mappings_file
-        if not mappings_file:
-            raise error.EmitError(
-                "YAML mappings file path is required. Use --yaml-mappings-file to specify the path."
-            )
-
-        imput_mappings = load_mappings(mappings_file)
-
         schema = produce_schema(root_stmt)
-        converted_schema = convert_schema_to_ansible(
-            schema, xml_namespace, imput_mappings
-        )
+        converted_schema = convert_schema_to_ansible(schema, xml_namespace, root_stmt)
 
         priority_keys = [
             "GENERATOR_VERSION",
@@ -223,14 +212,46 @@ def produce_schema(root_stmt):
     return result
 
 
-def convert_schema_to_ansible(schema, xml_namespace, input_mappings):
+def convert_schema_to_ansible(schema, xml_namespace, root_stmt):
     logging.warning(f"xml_namespace: {xml_namespace}")
     if len(schema) == 1:
         config = next(iter(schema.values()))
 
-        # Get the nested schema based on the config path
-        if input_mappings.get("config_path"):
-            config = get_nested_schema(config, input_mappings.get("config_path"))
+        network_os = "saos10" # Pass this in
+        resource = None
+        xml_root_key = None
+        xml_items = None
+        config_path = None
+        module_name = None
+        short_description = f"Manage {resource} on Ciena {network_os} devices"
+        description = None
+        author = "Ciena"
+
+        # Attempt to derive values from the YANG model
+        for child in root_stmt.i_children:
+            if child.keyword == "module":
+                module_name = child.arg
+            elif child.keyword == "container":
+                # Skip config false containers
+                if not child.i_config:
+                    logging.debug(
+                        "Skipping config false container: %s %s",
+                        child.keyword,
+                        child.arg,
+                    )
+                    continue
+                resource = child.arg
+                xml_root_key = child.arg
+                # Derive XML_ITEMS from the items in the container
+                for sub_child in child.i_children:
+                    if sub_child.keyword == "list":
+                        xml_items = sub_child.arg
+                        break
+                config_path = f"suboptions.{child.arg}"
+                # Extract short_description from the container description
+                description_stmt = child.search_one("description")
+                if description_stmt:
+                    description = preprocess_string(description_stmt.arg)
 
         result = {
             "GENERATOR_VERSION": "2.0",
@@ -239,26 +260,25 @@ def convert_schema_to_ansible(schema, xml_namespace, input_mappings):
                 "status": ["preview"],
                 "supported_by": "network",
             },
-            "NETWORK_OS": input_mappings.get("NETWORK_OS"),
-            "RESOURCE": input_mappings.get("RESOURCE"),
-            "COPYRIGHT": "Copyright 2023 Ciena",
-            "XML_NAMESPACE": input_mappings.get("XML_NAMESPACE"),
-            "XML_ROOT_KEY": input_mappings.get("XML_ROOT_KEY"),
-            "XML_ITEMS": input_mappings.get("XML_ITEMS"),
+            "NETWORK_OS": network_os,
+            "RESOURCE": resource,
+            "COPYRIGHT": "Copyright 2025 Ciena",
+            "XML_NAMESPACE": xml_namespace,
+            "XML_ROOT_KEY": xml_root_key,
+            "XML_ITEMS": xml_items,
             "DOCUMENTATION": {},
             "requirements": ["ncclient (>=v0.6.4)"],
             "notes": [
                 "This module requires the netconf system service be enabled on the remote device being managed.",
                 "This module works with connection C(netconf)",
             ],
-            "EXAMPLES": input_mappings.get("EXAMPLES"),
+            # TODO: Derive file list
+            "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],
         }
-        result["DOCUMENTATION"]["module"] = input_mappings.get("module")
-        result["DOCUMENTATION"]["short_description"] = input_mappings.get(
-            "short_description"
-        )
-        result["DOCUMENTATION"]["description"] = input_mappings.get("description")
-        result["DOCUMENTATION"]["author"] = input_mappings.get("author")
+        result["DOCUMENTATION"]["module"] = module_name
+        result["DOCUMENTATION"]["short_description"] = short_description
+        result["DOCUMENTATION"]["description"] = description
+        result["DOCUMENTATION"]["author"] = author
         result["DOCUMENTATION"]["options"] = dict(config=config)
         result["DOCUMENTATION"]["options"]["state"] = {
             "choices": ["merged", "deleted"],
