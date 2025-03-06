@@ -13,6 +13,8 @@ saos10_yangs=(
 network_os=saos10
 for yang in ${saos10_yangs[@]}; do
   pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang > rmb_models/$network_os/$yang.yml
+  mkdir -p models/$network_os/$yang
+  cp rmb_models/$network_os/$yang.yml models/$network_os/$yang/model.yml
 done
 
 # WAVESERVERAi
@@ -45,4 +47,6 @@ waveserverai_yangs=(
 network_os=waveserverai
 for yang in ${waveserverai_yangs[@]}; do
   pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang > rmb_models/$network_os/$yang.yml
+  mkdir -p models/$network_os/$yang
+  cp rmb_models/$network_os/$yang.yml models/$network_os/$yang/model.yml
 done
