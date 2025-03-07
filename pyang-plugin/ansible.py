@@ -349,7 +349,10 @@ def produce_leaf(stmt):
     mandatory = stmt.search_one("mandatory")
     is_mandatory = mandatory is not None and mandatory.arg == "true"
 
-    if not is_mandatory:
+    # Check if the leaf is a key in a list
+    is_key = stmt.parent.keyword == "list" and arg in stmt.parent.search_one("key").arg.split()
+
+    if not is_mandatory and not is_key:
         required = False
     else:
         required = True

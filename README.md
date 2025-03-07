@@ -21,6 +21,7 @@ pip install git+https://github.com/ansible-network/collection_prep.git
 ansible-playbook yang_get.yml
 # Convert the yangs to RMB json
 ./generate_models.sh
+# Create the merged example files
 
 # Generate the module code
 ansible-playbook generate_saos10.yml
