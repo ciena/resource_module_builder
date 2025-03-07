@@ -2,19 +2,22 @@
 export PYANG_PLUGINPATH=/home/jgroom/src/resource_module_builder/pyang-plugin
 # SAOS 10
 saos10_yangs=(
+  ciena-bgp
+  ciena-ldp
   ciena-mef-classifier
   ciena-mef-fd
   ciena-mef-fp
   ciena-mef-logical-port
+  ciena-mpls
   openconfig-system
-  ciena-system
   ciena-rib
 )
 network_os=saos10
 for yang in ${saos10_yangs[@]}; do
   pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang > rmb_models/$network_os/$yang.yml
-  mkdir -p models/$network_os/$yang
-  cp rmb_models/$network_os/$yang.yml models/$network_os/$yang/model.yml
+  resource=$(yq -e .RESOURCE models/$network_os/$yang/model.yml)
+  mkdir -p models/$network_os/$resource
+  cp rmb_models/$network_os/$yang.yml models/$network_os/$resource/model.yml
 done
 
 # WAVESERVERAi
@@ -47,6 +50,7 @@ waveserverai_yangs=(
 network_os=waveserverai
 for yang in ${waveserverai_yangs[@]}; do
   pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang > rmb_models/$network_os/$yang.yml
-  mkdir -p models/$network_os/$yang
-  cp rmb_models/$network_os/$yang.yml models/$network_os/$yang/model.yml
+  resource=$(yq -e .RESOURCE models/$network_os/$yang/model.yml)
+  mkdir -p models/$network_os/$resource
+  cp rmb_models/$network_os/$yang.yml models/$network_os/$resource/model.yml
 done

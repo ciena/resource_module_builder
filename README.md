@@ -20,15 +20,7 @@ pip install git+https://github.com/ansible-network/collection_prep.git
 # Download some yangs for the device type you are working on
 ansible-playbook yang_get.yml
 # Convert the yangs to RMB json
-./generate_ymls.sh
-# Move the output of the into the model's yml file
-RESOURCE=system && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE
-RESOURCE=pm && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE
-RESOURCE=aaa && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE
-
-RESOURCE=xcvrs && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE.suboptions.$RESOURCE
-RESOURCE=ports && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE.suboptions.$RESOURCE
-RESOURCE=ptps && python3 insert.py -i models/waveserver5/$RESOURCE.yml -r models/waveserver5/$RESOURCE/waveserver5_$RESOURCE.yml -k waveserver_$RESOURCE.suboptions.$RESOURCE
+./generate_models.sh
 
 # Generate the module code
 ansible-playbook generate_saos10.yml
