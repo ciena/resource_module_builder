@@ -208,9 +208,7 @@ def produce_schema(root_stmt):
                 )
             else:
                 logging.warning(
-                    "keyword not in data_definition_keywords: %s %s",
-                    child.keyword,
-                    child.arg,
+                    "keyword not in data_definition_keywords: %s %s", child.keyword, child.arg
                 )
     return result
 
@@ -360,9 +358,15 @@ def produce_leaf(stmt):
     description = stmt.search_one("description")
     if description is not None:
         description_str = preprocess_string(description.arg)
+        if is_key:
+            list_parent = stmt.parent.arg
+            description_str += f" ({list_parent} list key)"
     else:
         logging.warning("No description found for: %s %s", stmt.keyword, stmt.arg)
         description_str = "No description available"
+        if is_key:
+            list_parent = stmt.parent.arg
+            description_str += f" ({list_parent} list key)"
 
     return {arg: {**type_str, "description": description_str, "required": required}}
 
