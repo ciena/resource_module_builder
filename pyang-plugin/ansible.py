@@ -192,7 +192,7 @@ def find_stmt_by_path(module, path):
 
 
 def produce_schema(root_stmt):
-    logging.debug("in produce_schema: %s %s", root_stmt.keyword, root_stmt.arg)
+    logging.warning("Producting Schema: %s %s", root_stmt.keyword, root_stmt.arg)
     result = {}
 
     for child in root_stmt.i_children:
@@ -210,6 +210,12 @@ def produce_schema(root_stmt):
                     child.keyword,
                     child.arg,
                 )
+            elif child.keyword == "notification":
+                logging.debug(
+                    "skipping notification. keyword not in data_definition_keywords: %s %s",
+                    child.keyword,
+                    child.arg,
+                )
             else:
                 logging.warning(
                     "keyword not in data_definition_keywords: %s %s",
@@ -220,7 +226,7 @@ def produce_schema(root_stmt):
 
 
 def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
-    logging.warning(f"xml_namespace: {xml_namespace}")
+    logging.warning(f"Converting schema to Ansible xml_namespace: {xml_namespace}\n")
     if len(schema) == 1:
         config = next(iter(schema.values()))
 
