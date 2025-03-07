@@ -115,7 +115,9 @@ class AnsiblePlugin(plugin.PyangPlugin):
             xml_namespace = "No namespace found"
 
         schema = produce_schema(root_stmt)
-        converted_schema = convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os)
+        converted_schema = convert_schema_to_ansible(
+            schema, xml_namespace, root_stmt, network_os
+        )
 
         priority_keys = [
             "GENERATOR_VERSION",
@@ -134,9 +136,10 @@ class AnsiblePlugin(plugin.PyangPlugin):
             "suboptions",
         ]
         ordered_data = order_dict(converted_schema, priority_keys)
+        final_data = reorder_required_first(ordered_data)
 
         yaml_data = yaml.dump(
-            ordered_data,
+            final_data,
             Dumper=CustomDumper,
             default_flow_style=False,
             width=140,
@@ -208,7 +211,9 @@ def produce_schema(root_stmt):
                 )
             else:
                 logging.warning(
-                    "keyword not in data_definition_keywords: %s %s", child.keyword, child.arg
+                    "keyword not in data_definition_keywords: %s %s",
+                    child.keyword,
+                    child.arg,
                 )
     return result
 
@@ -348,7 +353,10 @@ def produce_leaf(stmt):
     is_mandatory = mandatory is not None and mandatory.arg == "true"
 
     # Check if the leaf is a key in a list
-    is_key = stmt.parent.keyword == "list" and arg in stmt.parent.search_one("key").arg.split()
+    is_key = (
+        stmt.parent.keyword == "list"
+        and arg in stmt.parent.search_one("key").arg.split()
+    )
 
     if not is_mandatory and not is_key:
         required = False
@@ -641,3 +649,30 @@ def qualify_name(stmt):
         qualified_name = stmt.arg
         return qualified_name.replace("-", "_")
     return stmt.arg.replace("-", "_")
+
+
+# New post-processing function to reorder suboptions
+def reorder_required_first(data):
+    """
+    Post-process the schema to ensure required suboptions appear first.
+    """
+    if isinstance(data, dict):
+        # Process suboptions if present
+        if "suboptions" in data and isinstance(data["suboptions"], dict):
+            suboptions = data["suboptions"]
+            required_items = OrderedDict(
+                (k, v) for k, v in suboptions.items() if v.get("required", False)
+            )
+            other_items = OrderedDict(
+                (k, v) for k, v in suboptions.items() if not v.get("required", False)
+            )
+            data["suboptions"] = OrderedDict(
+                list(required_items.items()) + list(other_items.items())
+            )
+
+        # Recursively process all dictionary values
+        return OrderedDict((k, reorder_required_first(v)) for k, v in data.items())
+    elif isinstance(data, list):
+        return [reorder_required_first(item) for item in data]
+    else:
+        return data

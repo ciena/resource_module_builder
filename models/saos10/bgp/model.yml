@@ -21,11 +21,43 @@ DOCUMENTATION:
       type: list
       elements: dict
       suboptions:
+        as:
+          description: Local autonomous system number. Uses the 32-bit as-number type from the model in RFC 6991. (instance list key)
+          type: int
+          required: true
         address_family:
           description: List BGP address family that takes AFI and SAFI related configuration
           type: list
           elements: dict
           suboptions:
+            afi:
+              description: Enter the IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
+                list key)
+              type: str
+              required: true
+              choices:
+              - ipv4
+              - ipv6
+              - vpnv4
+              - vpnv6
+              - rtfilter
+              - l2vpn
+              - link-state
+              - all
+            safi:
+              description: Configure sub address family such as unicast (address-family list key)
+              type: str
+              required: true
+              choices:
+              - unicast
+              - multicast
+              - labeled-unicast
+              - l2vpn-vpls
+              - evpn
+              - vpn-unicast
+              - rtfilter-unicast
+              - link-state
+              - all
             additional_paths:
               description: Container to configure additional path attributes for a peer.
               type: dict
@@ -47,20 +79,6 @@ DOCUMENTATION:
                   description: Enable BGP add-path advertisement
                   type: bool
                   required: false
-            afi:
-              description: Enter the IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
-                list key)
-              type: str
-              required: true
-              choices:
-              - ipv4
-              - ipv6
-              - vpnv4
-              - vpnv6
-              - rtfilter
-              - l2vpn
-              - link-state
-              - all
             aggregate_address:
               description: Configure BGP aggregate entries to to minimize the size of routing tables
               type: list
@@ -128,23 +146,6 @@ DOCUMENTATION:
               type: list
               elements: dict
               suboptions:
-                instance:
-                  description: Redistribute the routes from a specific OSPF/ISIS instance
-                  type: list
-                  elements: dict
-                  suboptions:
-                    policy:
-                      description: Routing Policy to apply during redistribution
-                      type: str
-                      required: false
-                    tag:
-                      description: Tag could be instance id of OSPFv2, OSPFv3 or ISIS (instance list key)
-                      type: str
-                      required: true
-                policy:
-                  description: Routing Policy to apply during redistribution
-                  type: str
-                  required: false
                 protocol:
                   description: Protocol to redistribute into BGP (redistribute list key)
                   type: str
@@ -156,24 +157,27 @@ DOCUMENTATION:
                   - rip
                   - isis
                   - ospf
+                instance:
+                  description: Redistribute the routes from a specific OSPF/ISIS instance
+                  type: list
+                  elements: dict
+                  suboptions:
+                    tag:
+                      description: Tag could be instance id of OSPFv2, OSPFv3 or ISIS (instance list key)
+                      type: str
+                      required: true
+                    policy:
+                      description: Routing Policy to apply during redistribution
+                      type: str
+                      required: false
+                policy:
+                  description: Routing Policy to apply during redistribution
+                  type: str
+                  required: false
             route_reflector:
               description: Configure as route reflector for an address family
               type: bool
               required: false
-            safi:
-              description: Configure sub address family such as unicast (address-family list key)
-              type: str
-              required: true
-              choices:
-              - unicast
-              - multicast
-              - labeled-unicast
-              - l2vpn-vpls
-              - evpn
-              - vpn-unicast
-              - rtfilter-unicast
-              - link-state
-              - all
             segment_routing:
               description: BGP SR enable/disable
               type: str
@@ -214,10 +218,6 @@ DOCUMENTATION:
             should lead to readvertisement of AIGP value.
           type: int
           required: false
-        as:
-          description: Local autonomous system number. Uses the 32-bit as-number type from the model in RFC 6991. (instance list key)
-          type: int
-          required: true
         cluster_id:
           description: BGP route reflector cluster ID route-reflector cluster id to use when local router is configured as a route reflector.
             Commonly set at the group level, but allows a different cluster id to be set for each peer.
@@ -347,19 +347,28 @@ DOCUMENTATION:
           type: list
           elements: dict
           suboptions:
-            description:
-              description: An optional textual description (intended primarily for use with a peer or group
-              type: str
-              required: false
             address:
               description: Address of the BGP peer, either in IPv4 or IPv6 (peer list key)
               type: str
               required: true
+            description:
+              description: An optional textual description (intended primarily for use with a peer or group
+              type: str
+              required: false
             address_family:
               description: Peer address family configuration such as vpnv4 unicast
               type: list
               elements: dict
               suboptions:
+                afi:
+                  description: IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
+                    list key)
+                  type: str
+                  required: true
+                safi:
+                  description: Configure sub address family such as unicast (address-family list key)
+                  type: str
+                  required: true
                 activate:
                   description: Whether the BGP peer is enabled. In cases where the enabled leaf is set to false, the local system should not initiate
                     connections to the neighbor, and should not respond to TCP connections attempts from the neighbor. If the state of the BGP
@@ -401,11 +410,6 @@ DOCUMENTATION:
                       choices:
                       - vpnv4
                       - vpnv6
-                afi:
-                  description: IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
-                    list key)
-                  type: str
-                  required: true
                 aigp:
                   description: AIGP behavior for the specified BGP neighbor or peer group of the specified BGP instance (identified by AS number)
                     and address family.
@@ -570,10 +574,6 @@ DOCUMENTATION:
                   description: Configure the peer as a route reflector client.
                   type: bool
                   required: false
-                safi:
-                  description: Configure sub address family such as unicast (address-family list key)
-                  type: str
-                  required: true
                 soft_reconfiguration_inbound:
                   description: Store updates for inbound soft reconfiguration. Soft-reconfiguration may be used in lieu of BGP route refresh capability.
                     Using this enables local storage of all the received routes and their attributes.
@@ -687,6 +687,10 @@ DOCUMENTATION:
           type: list
           elements: dict
           suboptions:
+            name:
+              description: Name of the peer group template that can be attached to a peer (peer-group list key)
+              type: str
+              required: true
             description:
               description: An optional textual description (intended primarily for use with a peer or group
               type: str
@@ -696,6 +700,15 @@ DOCUMENTATION:
               type: list
               elements: dict
               suboptions:
+                afi:
+                  description: IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
+                    list key)
+                  type: str
+                  required: true
+                safi:
+                  description: Configure sub address family such as unicast (address-family list key)
+                  type: str
+                  required: true
                 activate:
                   description: Whether the BGP peer is enabled. In cases where the enabled leaf is set to false, the local system should not initiate
                     connections to the neighbor, and should not respond to TCP connections attempts from the neighbor. If the state of the BGP
@@ -737,11 +750,6 @@ DOCUMENTATION:
                       choices:
                       - vpnv4
                       - vpnv6
-                afi:
-                  description: IPv4, or VPNv4 address family mode allowing configuration of address-family specific parameters (address-family
-                    list key)
-                  type: str
-                  required: true
                 aigp:
                   description: AIGP behavior for the specified BGP neighbor or peer group of the specified BGP instance (identified by AS number)
                     and address family.
@@ -906,10 +914,6 @@ DOCUMENTATION:
                   description: Configure the peer as a route reflector client.
                   type: bool
                   required: false
-                safi:
-                  description: Configure sub address family such as unicast (address-family list key)
-                  type: str
-                  required: true
                 soft_reconfiguration_inbound:
                   description: Store updates for inbound soft reconfiguration. Soft-reconfiguration may be used in lieu of BGP route refresh capability.
                     Using this enables local storage of all the received routes and their attributes.
@@ -993,10 +997,6 @@ DOCUMENTATION:
                 4721 and serves to reduce the number of UPDATE messages transmitted when a particular set of NLRI exhibit instability.
               type: int
               required: false
-            name:
-              description: Name of the peer group template that can be attached to a peer (peer-group list key)
-              type: str
-              required: true
             passive:
               description: Wait for peers to issue requests to open a BGP session, rather than initiating sessions from the local router.
               type: bool
@@ -1136,6 +1136,12 @@ DOCUMENTATION:
                   choices:
                   - ipv4
                   - ipv6
+                safi:
+                  description: VRF SAFI type. Configure sub address family such as unicast (vrf-address-family list key)
+                  type: str
+                  required: true
+                  choices:
+                  - unicast
                 aggregate_address:
                   description: Configure BGP aggregate entries to to minimize the size of routing tables
                   type: list
@@ -1182,6 +1188,14 @@ DOCUMENTATION:
                   type: list
                   elements: dict
                   suboptions:
+                    address:
+                      description: Address of the BGP peer, either in IPv4 or IPv6 (peer list key)
+                      type: str
+                      required: true
+                    remote_as:
+                      description: Remote AS number for this peer
+                      type: int
+                      required: true
                     description:
                       description: An optional textual description (intended primarily for use with a peer or group
                       type: str
@@ -1192,10 +1206,6 @@ DOCUMENTATION:
                         of the BGP session is ESTABLISHED at the time that this leaf is set to false, the BGP session should be ceased.
                       type: bool
                       required: false
-                    address:
-                      description: Address of the BGP peer, either in IPv4 or IPv6 (peer list key)
-                      type: str
-                      required: true
                     aigp:
                       description: AIGP behavior for the specified BGP neighbor or peer group of the specified BGP instance (identified by AS
                         number) and address family.
@@ -1408,10 +1418,6 @@ DOCUMENTATION:
                           description: Prefix List name. specify a prefix list for filtering BGP advertisements. (prefix-list list key)
                           type: str
                           required: true
-                    remote_as:
-                      description: Remote AS number for this peer
-                      type: int
-                      required: true
                     remove_private_as:
                       description: Remove private AS numbers from the outbound updates and do not advertise these to the internet. This command
                         is used with eBgp peers only.
@@ -1455,23 +1461,6 @@ DOCUMENTATION:
                   type: list
                   elements: dict
                   suboptions:
-                    instance:
-                      description: Redistribute the routes from a specific OSPF/ISIS instance
-                      type: list
-                      elements: dict
-                      suboptions:
-                        policy:
-                          description: Routing Policy to apply during redistribution
-                          type: str
-                          required: false
-                        tag:
-                          description: Tag could be instance id of OSPFv2, OSPFv3 or ISIS (instance list key)
-                          type: str
-                          required: true
-                    policy:
-                      description: Routing Policy to apply during redistribution
-                      type: str
-                      required: false
                     protocol:
                       description: Protocol to redistribute into BGP (redistribute list key)
                       type: str
@@ -1483,6 +1472,23 @@ DOCUMENTATION:
                       - rip
                       - isis
                       - ospf
+                    instance:
+                      description: Redistribute the routes from a specific OSPF/ISIS instance
+                      type: list
+                      elements: dict
+                      suboptions:
+                        tag:
+                          description: Tag could be instance id of OSPFv2, OSPFv3 or ISIS (instance list key)
+                          type: str
+                          required: true
+                        policy:
+                          description: Routing Policy to apply during redistribution
+                          type: str
+                          required: false
+                    policy:
+                      description: Routing Policy to apply during redistribution
+                      type: str
+                      required: false
                 route_target:
                   description: Route Target list that takes route target id and direction
                   type: list
@@ -1504,12 +1510,6 @@ DOCUMENTATION:
                         2;4-octet-asn;2-octet-number. Some valid examples are; 0;100;100, 1;1.1.1.1;100, and 2;65535;100. (route-target list key)
                       type: str
                       required: true
-                safi:
-                  description: VRF SAFI type. Configure sub address family such as unicast (vrf-address-family list key)
-                  type: str
-                  required: true
-                  choices:
-                  - unicast
                 segment_routing_srv6:
                   description: No description available
                   type: dict
