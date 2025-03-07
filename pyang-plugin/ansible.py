@@ -311,6 +311,17 @@ def produce_type(type_stmt):
     logging.debug("In produce_type with: %s %s", type_stmt.keyword, type_stmt.arg)
     type_id = type_stmt.arg
 
+    # Follow typedef chain to resolve the base type
+    while hasattr(type_stmt, "i_typedef") and type_stmt.i_typedef is not None:
+        logging.debug(
+            "Following typedef chain for: %s %s (typedef) %s",
+            type_stmt.keyword,
+            type_stmt.arg,
+            type_stmt.i_typedef,
+        )
+        type_stmt = type_stmt.i_typedef.search_one("type")
+        type_id = type_stmt.arg
+
     if types.is_base_type(type_id):
         if type_id in _numeric_type_trans_tbl:
             type_str = numeric_type_trans(type_id)
@@ -321,16 +332,8 @@ def produce_type(type_stmt):
                 "Missing mapping of base type: %s %s", type_stmt.keyword, type_stmt.arg
             )
             type_str = {"type": "str", "description": "Missing description for: %s %s"}
-    elif hasattr(type_stmt, "i_typedef") and type_stmt.i_typedef is not None:
-        logging.debug(
-            "Found typedef type in: %s %s (typedef) %s",
-            type_stmt.keyword,
-            type_stmt.arg,
-            type_stmt.i_typedef,
-        )
-        typedef_type_stmt = type_stmt.i_typedef.search_one("type")
-        typedef_type = produce_type(typedef_type_stmt)
-        type_str = typedef_type
+    elif type_id in _other_type_trans_tbl:
+        type_str = other_type_trans(type_id, type_stmt)
     else:
         logging.warning(
             "Missing mapping of: %s %s",
@@ -432,7 +435,8 @@ def produce_leaf_list(stmt):
         return {}
 
     type_stmt = stmt.search_one("type")
-    type_id = type_stmt.arg
+    type_str = produce_type(type_stmt)
+
     description = stmt.search_one("description")
     if description is not None:
         description_str = preprocess_string(description.arg)
@@ -440,26 +444,19 @@ def produce_leaf_list(stmt):
         logging.warning("No description found for: %s %s", stmt.keyword, stmt.arg)
         description_str = "No description available"
 
-    if types.is_base_type(type_id) or type_id in _other_type_trans_tbl:
-        type_str = produce_type(type_stmt)
-        result = {
-            arg: {
-                "type": "list",
-                "elements": "dict",
-                "description": description_str,
-                "suboptions": {arg: type_str},
-            }
+    result = {
+        arg: {
+            "type": "list",
+            "elements": type_str["type"],
+            "description": description_str,
         }
-    else:
-        logging.warning(
-            "Missing mapping of base type: %s %s, type: %s",
-            stmt.keyword,
-            stmt.arg,
-            type_id,
-        )
-        result = {arg: {"type": "str", "description": description_str}}
-    return result
+    }
 
+    if "choices" in type_str:
+        result[arg]["choices"] = type_str["choices"]
+
+    logging.debug("In produce_leaf_list for %s, returning %s", stmt.arg, result)
+    return result
 
 def produce_container(stmt):
     logging.debug("in produce_container: %s %s", stmt.keyword, stmt.arg)
@@ -576,7 +573,10 @@ def enumeration_trans(stmt):
 
 def bits_trans(stmt):
     logging.debug("in bits_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "str"}
+    result = {"type": "list", "elements": "str", "choices": []}
+    for bit in stmt.search("bit"):
+        result["choices"].append(bit.arg)
+    logging.debug("In bits_trans for %s, returning %s", stmt.arg, result)
     return result
 
 
