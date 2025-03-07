@@ -126,6 +126,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
             "XML_NAMESPACE",
             "XML_ROOT_KEY",
             "XML_ITEMS",
+            "XML_ITEMS_KEY",
             "module",
             "short_description",
             "description",
@@ -226,6 +227,7 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
         resource = None
         xml_root_key = None
         xml_items = None
+        xml_items_key = None
         module_name = None
         description = None
         short_description = None
@@ -252,6 +254,8 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
                 for sub_child in child.i_children:
                     if sub_child.keyword == "list":
                         xml_items = sub_child.arg
+                        # check which key is used for the list
+                        xml_items_key = sub_child.search_one("key").arg
                         config = get_nested_schema(config, f"suboptions.{xml_items}")
                         break
                 # Extract short_description from the container description
@@ -272,6 +276,7 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
             "XML_NAMESPACE": xml_namespace,
             "XML_ROOT_KEY": xml_root_key,
             "XML_ITEMS": xml_items,
+            "XML_ITEMS_KEY": xml_items_key,
             "DOCUMENTATION": {},
             "requirements": ["ncclient (>=v0.6.4)"],
             "notes": [
