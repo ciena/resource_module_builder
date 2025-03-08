@@ -16,9 +16,11 @@ from pyang import statements
 from pyang import types
 from pyang import error
 
-sys.setrecursionlimit(2000)
+# Set recursion limit - increased for safety, but depth checks are better
+sys.setrecursionlimit(3000)
 
 
+# Custom YAML Dumper for OrderedDict support
 class CustomDumper(yaml.SafeDumper):
     pass
 
@@ -31,8 +33,16 @@ CustomDumper.add_representer(OrderedDict, represent_ordered_dict)
 
 
 def load_mappings(file_path):
-    with open(file_path, "r") as file:
-        return yaml.safe_load(file)
+    """Loads YAML mappings from a file."""
+    try:
+        with open(file_path, "r") as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError:
+        logging.error(f"Mapping file not found: {file_path}")
+        return {}  # Or raise, depending on desired behavior
+    except yaml.YAMLError as e:
+        logging.error(f"Error parsing YAML file {file_path}: {e}")
+        return {}  # Or raise
 
 
 def pyang_plugin_init():
@@ -40,34 +50,27 @@ def pyang_plugin_init():
 
 
 def order_dict(obj, priority_keys):
-    """
-    Order dictionary keys with specified keys first, followed by others alphabetically.
-    """
+    """Orders dictionary keys with specified keys first, followed by others alphabetically."""
     if isinstance(obj, dict):
-        # Create an ordered dictionary with prioritized keys
         ordered = OrderedDict((k, obj[k]) for k in priority_keys if k in obj)
-
-        # Add the remaining keys in alphabetical order
         for key in sorted(obj.keys()):
             if key not in ordered:
                 ordered[key] = obj[key]
-
-        # Recursively apply ordering to nested dictionaries
         return OrderedDict(
             (k, order_dict(v, priority_keys)) for k, v in ordered.items()
         )
     elif isinstance(obj, list):
         return [order_dict(element, priority_keys) for element in obj]
-    else:
-        return obj
+    return obj
 
 
 def get_nested_schema(schema, sub_path):
+    """Retrieves a nested schema element by its path."""
     keys = sub_path.split(".")
     for key in keys:
         schema = schema.get(key, {})
         if not schema:
-            break
+            return {}  # Or None, depending on the use case
     return schema
 
 
@@ -81,48 +84,60 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 "--ansible-debug",
                 dest="ansible_debug",
                 action="store_true",
-                help="ansible debug",
+                help="Enable debugging output for the Ansible plugin.",
             ),
             optparse.make_option(
                 "-n",
                 "--network-os",
                 dest="network_os",
-                help="Specify the network OS",
-                default="saos10",  # Default value
+                default="saos10",
+                help="Specify the network operating system (default: saos10).",
             ),
         ]
 
-        group = optparser.add_option_group("ansible-specific options")
+        group = optparser.add_option_group("Ansible-specific options")
         group.add_options(optlist)
 
     def setup_ctx(self, ctx):
-        ctx.opts.stmts = None
+        ctx.opts.stmts = None  # Not used in this plugin
 
     def setup_fmt(self, ctx):
         ctx.implicit_errors = False
 
     def emit(self, ctx, modules, fd):
+        if not modules:
+            logging.error("No modules provided to emit.")
+            return
+
         root_stmt = modules[0]
+
+        # Configure logging based on debug option
         if ctx.opts.ansible_debug:
             logging.basicConfig(level=logging.DEBUG)
-            print("")
-        if ctx.opts.network_os:
-            network_os = ctx.opts.network_os
-            logging.debug("network_os: %s", ctx.opts.network_os)
-
-        # Extract the namespace
-        namespace = root_stmt.search_one("namespace")
-        if namespace:
-            xml_namespace = namespace.arg
         else:
-            raise error.EmitError("No namespace found in module\n")
+            logging.basicConfig(level=logging.WARNING)  # Or INFO, as appropriate
 
-        logging.warning(f"\n****\nProducing Schema: {xml_namespace}")
-        schema = produce_schema(root_stmt)
-        logging.warning(f"Converting schema to Ansible: {xml_namespace}\n****\n")
-        converted_schema = convert_schema_to_ansible(
-            schema, xml_namespace, root_stmt, network_os
-        )
+        network_os = ctx.opts.network_os
+        logging.debug(f"network_os: {network_os}")
+
+        # Extract namespace; raise a more specific exception
+        namespace_stmt = root_stmt.search_one("namespace")
+        if not namespace_stmt:
+            raise error.EmitError("YANG module must contain a namespace statement.")
+        xml_namespace = namespace_stmt.arg
+
+        logging.info(f"Producing schema for namespace: {xml_namespace}")
+        try:
+            schema = produce_schema(root_stmt)
+            logging.info(f"Converting schema to Ansible format: {xml_namespace}")
+            converted_schema = convert_schema_to_ansible(
+                schema, xml_namespace, root_stmt, network_os
+            )
+        except Exception as e:
+            logging.error(
+                f"Error during schema processing: {e}", exc_info=ctx.opts.ansible_debug
+            )  # Show stack trace only in debug mode
+            return  # Stop processing if schema generation/conversion failed.
 
         priority_keys = [
             "GENERATOR_VERSION",
@@ -144,31 +159,38 @@ class AnsiblePlugin(plugin.PyangPlugin):
         ordered_data = order_dict(converted_schema, priority_keys)
         final_data = reorder_required_first(ordered_data)
 
-        yaml_data = yaml.dump(
-            final_data,
-            Dumper=CustomDumper,
-            default_flow_style=False,
-            width=140,
-            indent=2,
-            allow_unicode=True,
-        )
-        fd.write(yaml_data)
+        try:
+            # Use safe dumping to prevent arbitrary code execution
+            yaml_data = yaml.dump(
+                final_data,
+                Dumper=CustomDumper,
+                default_flow_style=False,
+                width=140,
+                indent=2,
+                allow_unicode=True,
+                sort_keys=False,  # Preserve order from OrderedDict
+            )
+            fd.write(yaml_data)
+        except yaml.YAMLError as e:
+            logging.error(f"Error writing YAML output: {e}")
 
 
 def preprocess_string(s):
-    result = re.sub(r"\s+", " ", s)
-    return result.replace(":", ";")
+    """Cleans up description strings."""
+    # Replace multiple spaces with single space and colons with semicolons.
+    return re.sub(r"\s+", " ", s).replace(":", ";")
 
 
 def find_stmt_by_path(module, path):
-    logging.debug(
-        "in find_stmt_by_path with: %s %s path: %s", module.keyword, module.arg, path
-    )
+    """Finds a statement within the module by its path."""
+    logging.debug(f"Finding statement by path: {path} in module {module.arg}")
 
-    if path is not None:
-        spath = path.split("/")
-        if spath[0] == "":
-            spath = spath[1:]
+    if not path:
+        return None
+
+    spath = path.split("/")
+    if spath[0] == "":
+        spath = spath[1:]  # Handle absolute paths
 
     children = [
         child
@@ -176,261 +198,249 @@ def find_stmt_by_path(module, path):
         if child.keyword in statements.data_definition_keywords
     ]
 
-    while spath is not None and len(spath) > 0:
-        match = [
-            child
-            for child in children
-            if child.arg == spath[0]
-            and child.keyword in statements.data_definition_keywords
-        ]
-        if len(match) > 0:
-            logging.debug("Match on: %s, path: %s", match[0].arg, spath)
-            spath = spath[1:]
-            children = match[0].i_children
-            logging.debug("Path is now: %s", spath)
+    current_node = None
+    for i, segment in enumerate(spath):
+        match = [child for child in children if child.arg == segment]
+        if match:
+            current_node = match[0]
+            if i < len(spath) - 1:
+                children = [
+                    c
+                    for c in current_node.i_children
+                    if c.keyword in statements.data_definition_keywords
+                ]
         else:
-            logging.warning("Miss at %s, path: %s", children, spath)
-            raise error.EmitError("Path '%s' does not exist in module" % path)
+            logging.warning(f"Path segment not found: {segment} in path {path}")
+            return None
 
-    logging.debug("Ended up with %s %s", match[0].keyword, match[0].arg)
-    return match[0]
+    logging.debug(f"Found statement: {current_node.keyword} {current_node.arg}")
+    return current_node
 
 
 def produce_schema(root_stmt):
-    logging.warning("Producing Schema: %s %s", root_stmt.keyword, root_stmt.arg)
+    """Produces the intermediate schema representation from the YANG module."""
+    logging.debug(f"Producing schema for: {root_stmt.keyword} {root_stmt.arg}")
     result = {}
 
     for child in root_stmt.i_children:
-        logging.debug("Processing child: %s %s", child.keyword, child.arg)
+        logging.debug(f"Processing child: {child.keyword} {child.arg}")
         if child.keyword in statements.data_definition_keywords:
             if child.keyword in producers:
-                logging.debug("keyword hit on: %s %s", child.keyword, child.arg)
                 try:
-                    add = producers[child.keyword](child)
-                    result.update(add)
+                    result.update(producers[child.keyword](child))
                 except Exception as e:
                     logging.error(
-                        "Error processing child: %s %s, error: %s",
-                        child.keyword,
-                        child.arg,
-                        str(e),
+                        f"Error processing child {child.keyword} {child.arg}: {e}",
+                        exc_info=True,
                     )
             else:
-                logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
+                logging.warning(f"Unsupported keyword: {child.keyword} {child.arg}")
+        elif child.keyword in ("rpc", "notification"):
+            logging.debug(
+                f"Skipping non-data definition keyword: {child.keyword} {child.arg}"
+            )
         else:
-            if child.keyword == "rpc":
-                logging.debug(
-                    "skipping rpc. keyword not in data_definition_keywords: %s %s",
-                    child.keyword,
-                    child.arg,
-                )
-            elif child.keyword == "notification":
-                logging.debug(
-                    "skipping notification. keyword not in data_definition_keywords: %s %s",
-                    child.keyword,
-                    child.arg,
-                )
-            else:
-                logging.warning(
-                    "keyword not in data_definition_keywords: %s %s",
-                    child.keyword,
-                    child.arg,
-                )
+            logging.warning(f"Unexpected keyword: {child.keyword} {child.arg}")
     return result
 
 
 def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
-    if len(schema) == 1:
-        config = next(iter(schema.values()))
+    """Converts the schema to Ansible module documentation format."""
 
-        resource = None
-        xml_root_key = None
-        xml_items = None
-        xml_items_key = None
-        module_name = None
-        description = None
-        short_description = None
-        author = "Ciena"
+    if not schema:
+        raise error.EmitError("Schema is empty.")
 
-        # Attempt to derive values from the YANG model
-        for child in root_stmt.i_children:
-            if child.keyword == "module":
-                module_name = child.arg
-            elif child.keyword == "container":
-                # Skip config false containers
-                if not child.i_config:
-                    logging.debug(
-                        "Skipping config false container: %s %s",
-                        child.keyword,
-                        child.arg,
-                    )
-                    continue
-                resource = child.arg
-                short_description = f"Manage {resource} on Ciena {network_os} devices"
-                xml_root_key = child.arg
-                module_name = f"{network_os}_{resource}"
-                # Derive XML_ITEMS from the items in the container
-                for sub_child in child.i_children:
-                    if sub_child.keyword == "list":
-                        xml_items = sub_child.arg
-                        # check which key is used for the list
-                        xml_items_key = sub_child.search_one("key").arg
-                        config = get_nested_schema(config, f"suboptions.{xml_items}")
-                        break
-                # Extract short_description from the container description
-                description_stmt = child.search_one("description")
-                if description_stmt:
-                    description = preprocess_string(description_stmt.arg)
-
-        result = {
-            "GENERATOR_VERSION": "2.0",
-            "ANSIBLE_METADATA": {
-                "metadata_version": "2.0",
-                "status": ["preview"],
-                "supported_by": "network",
-            },
-            "NETWORK_OS": network_os,
-            "RESOURCE": resource,
-            "COPYRIGHT": "Copyright 2025 Ciena",
-            "XML_NAMESPACE": xml_namespace,
-            "XML_ROOT_KEY": xml_root_key,
-            "XML_ITEMS": xml_items,
-            "XML_ITEMS_KEY": xml_items_key,
-            "DOCUMENTATION": {},
-            "requirements": ["ncclient (>=v0.6.4)"],
-            "notes": [
-                "This module requires the netconf system service be enabled on the remote device being managed.",
-                "This module works with connection C(netconf)",
-            ],
-            # TODO: Derive file list
-            "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],
-        }
-        result["DOCUMENTATION"]["module"] = module_name
-        result["DOCUMENTATION"]["short_description"] = short_description
-        result["DOCUMENTATION"]["description"] = description
-        result["DOCUMENTATION"]["author"] = author
-        result["DOCUMENTATION"]["options"] = dict(config=config)
-        result["DOCUMENTATION"]["options"]["state"] = {
-            "choices": ["merged", "deleted"],
-            "default": "merged",
-            "description": "The state of the configuration after module completion.",
-            "type": "str",
-        }
-        return result
-    elif len(schema) > 1:
-        logging.error(f"too many top level keys in schema: {schema.keys()}")
+    if len(schema) > 1:
         raise error.EmitError(
-            "Multiple top-level keys found in the schema. Expected only one."
+            "Multiple top-level keys found in schema. Expected only one."
         )
-    else:
-        raise error.EmitError(f"No top-level keys found in the schema: {xml_namespace}")
+
+    config = next(iter(schema.values()))
+
+    resource = None
+    xml_root_key = None
+    xml_items = None
+    xml_items_key = None
+    module_name = None
+    description = None
+    short_description = None
+    author = "Ciena"
+
+    for child in root_stmt.i_children:
+        if child.keyword == "module":
+            module_name = child.arg
+        elif child.keyword == "container":
+            if not child.i_config:
+                logging.debug(f"Skipping config false container: {child.arg}")
+                continue
+
+            resource = child.arg
+            short_description = f"Manage {resource} on Ciena {network_os} devices"
+            xml_root_key = child.arg
+            module_name = f"{network_os}_{resource.replace('-', '_')}"
+
+            for sub_child in child.i_children:
+                if sub_child.keyword == "list":
+                    xml_items = sub_child.arg
+                    key_stmt = sub_child.search_one("key")
+                    if key_stmt:
+                        xml_items_key = key_stmt.arg
+                    else:
+                        xml_items_key = None
+
+                    config = get_nested_schema(config, f"suboptions.{xml_items}")
+                    break
+
+            description_stmt = child.search_one("description")
+            if description_stmt:
+                description = preprocess_string(description_stmt.arg)
+
+    result = {
+        "GENERATOR_VERSION": "2.0",
+        "ANSIBLE_METADATA": {
+            "metadata_version": "2.0",
+            "status": ["preview"],
+            "supported_by": "network",
+        },
+        "NETWORK_OS": network_os,
+        "RESOURCE": resource,
+        "COPYRIGHT": "Copyright 2025 Ciena",
+        "XML_NAMESPACE": xml_namespace,
+        "XML_ROOT_KEY": xml_root_key,
+        "XML_ITEMS": xml_items,
+        "XML_ITEMS_KEY": xml_items_key,
+        "DOCUMENTATION": {},
+        "requirements": ["ncclient (>=v0.6.4)"],
+        "notes": [
+            "This module requires the netconf system service be enabled on the remote device being managed.",
+            "This module works with connection C(netconf)",
+        ],
+        "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],  # Placeholder
+    }
+    result["DOCUMENTATION"]["module"] = module_name
+    result["DOCUMENTATION"]["short_description"] = short_description
+    result["DOCUMENTATION"]["description"] = description
+    result["DOCUMENTATION"]["author"] = author
+    result["DOCUMENTATION"]["options"] = dict(config=config)
+    result["DOCUMENTATION"]["options"]["state"] = {
+        "choices": ["merged", "deleted"],
+        "default": "merged",
+        "description": "The state of the configuration after module completion.",
+        "type": "str",
+    }
+    return result
 
 
 def produce_type(type_stmt):
-    logging.debug("In produce_type with: %s %s", type_stmt.keyword, type_stmt.arg)
+    """Produces the Ansible type information for a given YANG type."""
+    logging.debug(f"Producing type for: {type_stmt.keyword} {type_stmt.arg}")
     type_id = type_stmt.arg
 
-    # Follow typedef chain to resolve the base type
     while hasattr(type_stmt, "i_typedef") and type_stmt.i_typedef is not None:
         logging.debug(
-            "Following typedef chain for: %s %s (typedef) %s",
-            type_stmt.keyword,
-            type_stmt.arg,
-            type_stmt.i_typedef,
+            f"Following typedef chain for: {type_stmt.arg} (typedef: {type_stmt.i_typedef.arg})"
         )
         type_stmt = type_stmt.i_typedef.search_one("type")
+        if not type_stmt:
+            logging.error(f"Typedef {type_stmt.i_typedef.arg} does not define a type")
+            return {"type": "str", "description": "Error: Invalid typedef"}
         type_id = type_stmt.arg
 
     if types.is_base_type(type_id):
         if type_id in _numeric_type_trans_tbl:
-            type_str = numeric_type_trans(type_id)
+            type_info = numeric_type_trans(type_id)
         elif type_id in _other_type_trans_tbl:
-            type_str = other_type_trans(type_id, type_stmt)
+            type_info = _other_type_trans_tbl[type_id](type_stmt)
         else:
-            logging.warning(
-                "Missing mapping of base type: %s %s", type_stmt.keyword, type_stmt.arg
-            )
-            type_str = {"type": "str", "description": "Missing description for: %s %s"}
+            logging.warning(f"Missing mapping for base type: {type_id}")
+            type_info = {
+                "type": "str",
+                "description": f"Missing mapping for type: {type_id}",
+            }
     elif type_id in _other_type_trans_tbl:
-        type_str = other_type_trans(type_id, type_stmt)
+        type_info = _other_type_trans_tbl[type_id](type_stmt)
     else:
-        logging.warning(
-            "Missing mapping of: %s %s",
-            type_stmt.keyword,
-            type_stmt.arg,
-            type_stmt.i_typedef,
-        )
-        type_str = {"type": "str"}
-    return type_str
+        logging.warning(f"Missing mapping for type: {type_id}")
+        type_info = {
+            "type": "str",
+            "description": f"Missing mapping for type: {type_id}",
+        }
+
+    return type_info
 
 
 def produce_leaf(stmt):
-    logging.debug("in produce_leaf: %s %s", stmt.keyword, stmt.arg)
+    """Produces the Ansible option for a YANG leaf."""
+    logging.debug(f"Producing leaf: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    # Check if the leaf is configurable
     if not stmt.i_config:
-        logging.debug("Skipping non-configurable leaf: %s", arg)
+        logging.debug(f"Skipping non-configurable leaf: {arg}")
         return {}
 
     type_stmt = stmt.search_one("type")
-    type_str = produce_type(type_stmt)
+    if not type_stmt:
+        logging.error(f"Leaf {stmt.arg} has no type defined.")
+        return {arg: {"type": "str", "description": "Error: Missing type definition"}}
+    type_info = produce_type(type_stmt)
+    if not type_info:
+        logging.error(f"Failed to produce type info for {stmt.arg}")
+        return {arg: {"type": "str", "description": "Error: Could not determine type"}}
 
     mandatory = stmt.search_one("mandatory")
     is_mandatory = mandatory is not None and mandatory.arg == "true"
 
-    # Check if the leaf is a key in a list
     is_key = (
         stmt.parent.keyword == "list"
-        and arg in stmt.parent.search_one("key").arg.split()
+        and stmt.arg in stmt.parent.search_one("key").arg.split()
     )
 
-    if not is_mandatory and not is_key:
-        required = False
-    else:
-        required = True
+    required = is_mandatory or is_key
 
-    description = stmt.search_one("description")
-    if description is not None:
-        description_str = preprocess_string(description.arg)
-        if is_key:
-            list_parent = stmt.parent.arg
-            description_str += f" ({list_parent} list key)"
-    else:
-        logging.warning("No description found for: %s %s", stmt.keyword, stmt.arg)
-        description_str = "No description available"
-        if is_key:
-            list_parent = stmt.parent.arg
-            description_str += f" ({list_parent} list key)"
+    description_stmt = stmt.search_one("description")
+    description_str = (
+        preprocess_string(description_stmt.arg)
+        if description_stmt
+        else "No description available"
+    )
 
-    return {arg: {**type_str, "description": description_str, "required": required}}
+    if is_key:
+        list_parent = stmt.parent.arg
+        description_str += f" (Key for list: {list_parent})"
+
+    result = {arg: {**type_info, "description": description_str, "required": required}}
+    return result
 
 
 def produce_list(stmt):
-    logging.debug("in produce_list: %s %s", stmt.keyword, stmt.arg)
+    """Produces the Ansible option for a YANG list."""
+    logging.debug(f"Producing list: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    # Check if the leaf is configurable
     if not stmt.i_config:
-        logging.debug("Skipping non-configurable leaf: %s", arg)
+        logging.debug(f"Skipping non-configurable list: {arg}")
         return {}
 
     suboptions_dict = {}
-    if hasattr(stmt, "i_children"):
-        for child in stmt.i_children:
-            if child.keyword in producers:
-                logging.debug("keyword hit on: %s %s", child.keyword, child.arg)
+    for child in stmt.i_children:
+        if child.keyword in producers:
+            try:
                 child_data = producers[child.keyword](child)
-                for key, value in child_data.items():
-                    suboptions_dict[key] = value
-            else:
-                logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
+                suboptions_dict.update(child_data)
+            except Exception as e:
+                logging.error(
+                    f"Error processing child {child.keyword} {child.arg} in list {stmt.arg}: {e}",
+                    exc_info=True,
+                )
+        else:
+            logging.warning(f"Unsupported keyword in list: {child.keyword} {child.arg}")
 
-    description = stmt.search_one("description")
-    if description is not None:
-        description_str = preprocess_string(description.arg)
-    else:
-        description_str = "No description available"
+    description_stmt = stmt.search_one("description")
+    description_str = (
+        preprocess_string(description_stmt.arg)
+        if description_stmt
+        else "No description available"
+    )
 
     result = {
         arg: {
@@ -440,76 +450,82 @@ def produce_list(stmt):
             "suboptions": suboptions_dict,
         }
     }
-    logging.debug("In produce_list for %s, returning %s", stmt.arg, result)
+    logging.debug(f"Result for list {stmt.arg}: {result}")
     return result
 
 
 def produce_leaf_list(stmt):
-    logging.debug("in produce_leaf_list: %s %s", stmt.keyword, stmt.arg)
+    """Produces the Ansible option for a YANG leaf-list."""
+    logging.debug(f"Producing leaf-list: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    # Check if the leaf is configurable
     if not stmt.i_config:
-        logging.debug("Skipping non-configurable leaf: %s", arg)
+        logging.debug(f"Skipping non-configurable leaf-list: {arg}")
         return {}
 
     type_stmt = stmt.search_one("type")
-    type_str = produce_type(type_stmt)
+    if not type_stmt:
+        logging.error(f"Leaf-list {stmt.arg} has no type defined")
+        return {arg: {"type": "str", "description": "Error, missing type definition."}}
 
-    description = stmt.search_one("description")
-    if description is not None:
-        description_str = preprocess_string(description.arg)
-    else:
-        logging.warning("No description found for: %s %s", stmt.keyword, stmt.arg)
-        description_str = "No description available"
+    type_info = produce_type(type_stmt)
+    if not type_info:
+        logging.error(f"Failed to produce type info for {stmt.arg}")
+        return {arg: {"type": "str", "description": "Error: Could not determine type"}}
+
+    description_stmt = stmt.search_one("description")
+    description_str = (
+        preprocess_string(description_stmt.arg)
+        if description_stmt
+        else "No description available"
+    )
 
     result = {
         arg: {
             "type": "list",
-            "elements": type_str["type"],
+            "elements": type_info["type"],
             "description": description_str,
         }
     }
 
-    if "choices" in type_str:
-        result[arg]["choices"] = type_str["choices"]
+    if "choices" in type_info:
+        result[arg]["choices"] = type_info["choices"]
 
-    logging.debug("In produce_leaf_list for %s, returning %s", stmt.arg, result)
+    logging.debug(f"Result for leaf-list {stmt.arg}: {result}")
     return result
 
 
 def produce_container(stmt):
-    logging.debug("in produce_container: %s %s", stmt.keyword, stmt.arg)
+    """Produces the Ansible option for a YANG container."""
+    logging.debug(f"Producing container: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    # Check if the container is configurable
     if not stmt.i_config:
-        logging.debug("Skipping non-configurable container: %s", arg)
+        logging.debug(f"Skipping non-configurable container: {arg}")
         return {}
 
     suboptions_dict = {}
-    if hasattr(stmt, "i_children"):
-        for child in stmt.i_children:
-            if child.keyword in producers:
-                logging.debug("keyword hit on: %s %s", child.keyword, child.arg)
-                try:
-                    child_data = producers[child.keyword](child)
-                    suboptions_dict.update(child_data)
-                except Exception as e:
-                    logging.error(
-                        "Error processing child: %s %s, error: %s",
-                        child.keyword,
-                        child.arg,
-                        str(e),
-                    )
-            else:
-                logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
+    for child in stmt.i_children:
+        if child.keyword in producers:
+            try:
+                child_data = producers[child.keyword](child)
+                suboptions_dict.update(child_data)
+            except Exception as e:
+                logging.error(
+                    f"Error processing child {child.keyword} {child.arg} in container {stmt.arg}: {e}",
+                    exc_info=True,
+                )
+        else:
+            logging.warning(
+                f"Unsupported keyword in container: {child.keyword} {child.arg}"
+            )
 
-    description = stmt.search_one("description")
-    if description is not None:
-        description_str = preprocess_string(description.arg)
-    else:
-        description_str = "No description available"
+    description_stmt = stmt.search_one("description")
+    description_str = (
+        preprocess_string(description_stmt.arg)
+        if description_stmt
+        else "No description available"
+    )
 
     result = {
         arg: {
@@ -518,43 +534,51 @@ def produce_container(stmt):
             "suboptions": suboptions_dict,
         }
     }
-    logging.debug("In produce_container, returning %s", result)
+    logging.debug(f"Result for container {stmt.arg}: {result}")
     return result
 
 
 def produce_choice(stmt):
-    logging.debug("in produce_choice: %s %s", stmt.keyword, stmt.arg)
-
+    """Produces the Ansible option for a YANG choice."""
+    logging.debug(f"Producing choice: {stmt.arg}")
     result = {}
 
-    # https://tools.ietf.org/html/rfc6020#section-7.9.2
     for case in stmt.search("case"):
-        if hasattr(case, "i_children"):
-            for child in case.i_children:
-                if child.keyword in producers:
-                    logging.debug(
-                        "keyword hit on (long version): %s %s", child.keyword, child.arg
-                    )
+        for child in case.i_children:
+            if child.keyword in producers:
+                try:
                     result.update(producers[child.keyword](child))
-                else:
-                    logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
+                except Exception as e:
+                    logging.error(
+                        f"Error processing child {child.keyword} {child.arg} in choice case {case.arg}: {e}",
+                        exc_info=True,
+                    )
+            else:
+                logging.warning(
+                    f"Unsupported keyword in choice case: {child.keyword} {child.arg}"
+                )
 
-    # Short ("case-less") version
-    #  https://tools.ietf.org/html/rfc6020#section-7.9.2
     for child in stmt.substmts:
-        logging.debug("checking on keywords with: %s %s", child.keyword, child.arg)
-        if child.keyword in ["container", "leaf", "list", "leaf-list"]:
-            logging.debug(
-                "keyword hit on (short version): %s %s", child.keyword, child.arg
-            )
-            result.update(producers[child.keyword](child))
+        if child.keyword in ("container", "leaf", "list", "leaf-list"):
+            if child.keyword in producers:
+                try:
+                    result.update(producers[child.keyword](child))
+                except Exception as e:
+                    logging.error(
+                        f"Error processing shorthand child {child.keyword} {child.arg} in choice {stmt.arg}: {e}",
+                        exc_info=True,
+                    )
+            else:
+                logging.warning(
+                    f"Unsupported keyword in shorthand choice: {child.keyword} {child.arg}"
+                )
 
-    logging.debug("In produce_choice, returning %s", result)
+    logging.debug(f"Result for choice {stmt.arg}: {result}")
     return result
 
 
+# Mapping of YANG keywords to producer functions
 producers = {
-    # "module":     produce_module,
     "container": produce_container,
     "list": produce_list,
     "leaf-list": produce_leaf_list,
@@ -562,8 +586,8 @@ producers = {
     "choice": produce_choice,
 }
 
+# Mapping of numeric YANG types to Ansible types
 _numeric_type_trans_tbl = {
-    # https://tools.ietf.org/html/draft-ietf-netmod-yang-json-02#section-6
     "int8": ("int", None),
     "int16": ("int", None),
     "int32": ("int", "int32"),
@@ -577,121 +601,182 @@ _numeric_type_trans_tbl = {
 
 
 def numeric_type_trans(type_id):
+    """Translates numeric YANG types to Ansible types."""
     trans_type = _numeric_type_trans_tbl[type_id][0]
-    # Should include format string in return value
-    # tformat = _numeric_type_trans_tbl[dtype][1]
-    return {
-        "type": trans_type,
-    }
+    return {"type": trans_type}
 
 
 def string_trans(stmt):
-    logging.debug("in string_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "str"}
-    return result
+    """Translates the YANG string type to Ansible."""
+    logging.debug(f"Translating string type: {stmt.arg}")
+    return {"type": "str"}
 
 
 def enumeration_trans(stmt):
-    logging.debug("in enumeration_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "str", "choices": []}
-    for enum in stmt.search("enum"):
-        result["choices"].append(enum.arg)
-    logging.debug("In enumeration_trans for %s, returning %s", stmt.arg, result)
-    return result
+    """Translates the YANG enumeration type to Ansible."""
+    logging.debug(f"Translating enumeration type: {stmt.arg}")
+    choices = [enum.arg for enum in stmt.search("enum")]
+    return {"type": "str", "choices": choices}
 
 
 def bits_trans(stmt):
-    logging.debug("in bits_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "list", "elements": "str", "choices": []}
-    for bit in stmt.search("bit"):
-        result["choices"].append(bit.arg)
-    logging.debug("In bits_trans for %s, returning %s", stmt.arg, result)
-    return result
+    """Translates the YANG bits type to Ansible."""
+    logging.debug(f"Translating bits type: {stmt.arg}")
+    choices = [bit.arg for bit in stmt.search("bit")]
+    return {"type": "list", "elements": "str", "choices": choices}
 
 
 def boolean_trans(stmt):
-    logging.debug("in boolean_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "bool"}
-    return result
+    """Translates the YANG boolean type to Ansible."""
+    logging.debug(f"Translating boolean type: {stmt.arg}")
+    return {"type": "bool"}
 
 
 def empty_trans(stmt):
-    logging.debug("in empty_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "list", "suboptions": [{"type": "null"}]}
-    # Likely needs more/other work per:
-    #  https://tools.ietf.org/html/draft-ietf-netmod-yang-json-10#section-6.9
-    return result
+    """Translates the YANG empty type to Ansible."""
+    logging.debug(f"Translating empty type: {stmt.arg}")
+    return {"type": "list", "elements": "str", "choices": ["null"]}
 
 
 def union_trans(stmt):
-    logging.debug("in union_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    result = {"type": "str"}
-    return result
+    """Translates the YANG union type to Ansible."""
+    logging.debug(f"Translating union type: {stmt.arg}")
+    return {"type": "str"}
 
 
 def instance_identifier_trans(stmt):
-    logging.debug(
-        "in instance_identifier_trans with stmt %s %s", stmt.keyword, stmt.arg
-    )
-    result = {"type": "str"}
-    return result
+    """Translates the YANG instance-identifier type to Ansible."""
+    logging.debug(f"Translating instance-identifier type: {stmt.arg}")
+    return {"type": "str"}
 
 
 def leafref_trans(stmt):
-    logging.debug("in leafref_trans with stmt %s %s", stmt.keyword, stmt.arg)
-    # TODO: Need to resolve i_leafref_ptr here
-    result = {"type": "str"}
-    return result
+    """Translates the YANG leafref type to Ansible."""
+    logging.debug(f"Translating leafref type: {stmt.arg}")
+    return {"type": "str"}
 
 
-def find_identity(module, identity_name):
+def find_identity(module, identity_name, searched_modules=None):
+    """Finds an identity statement, preventing circular dependency loops.
+
+    Args:
+        module: The module to search in.
+        identity_name: The name of the identity to find.
+        searched_modules: A set of modules that have already been searched
+                          to prevent infinite recursion.
+    """
+
+    logging.debug(f"Searching for identity '{identity_name}' in module '{module.arg}'")
+
+    if searched_modules is None:
+        searched_modules = set()
+
+    if module in searched_modules:
+        logging.debug(
+            f"Module '{module.arg}' already searched for identity '{identity_name}'."
+        )
+        return None
+
+    searched_modules.add(module)
+
     for identity in module.search("identity"):
         if identity.arg == identity_name:
+            logging.debug(f"Found identity '{identity_name}' in module '{module.arg}'")
             return identity
+
     for imp in module.search("import"):
         imported_module = imp.i_module
-        identity_stmt = find_identity(imported_module, identity_name)
-        if identity_stmt:
-            return identity_stmt
+        if imported_module:
+            identity_stmt = find_identity(
+                imported_module, identity_name, searched_modules
+            )
+            if identity_stmt:
+                return identity_stmt
+
+    logging.debug(f"Identity '{identity_name}' not found in module '{module.arg}'")
     return None
 
 
-def collect_derived_identities(base_identity_stmt):
-    derived_identities = []
+def collect_derived_identities(
+    base_identity_stmt, collected_identities=None, searched_modules=None
+):
+    """Collects derived identities, preventing circular dependencies.
+
+    Args:
+      base_identity_stmt: The base identity statement.
+      collected_identities:  Set of already collected identities (to avoid duplicates).
+      searched_modules: Set of modules already searched (to avoid infinite loops).
+    """
+
+    logging.debug(f"Collecting derived identities for '{base_identity_stmt.arg}'")
+
+    if collected_identities is None:
+        collected_identities = set()
+    if searched_modules is None:
+        searched_modules = set()
+
     module = base_identity_stmt.i_module
-    for identity in module.search("identity"):
-        base_stmt = identity.search_one("base")
-        if base_stmt and base_stmt.arg == base_identity_stmt.arg:
-            derived_identities.append(identity.arg)
-            derived_identities.extend(collect_derived_identities(identity))
-    for imp in module.search("import"):
-        imported_module = imp.i_module
-        for identity in imported_module.search("identity"):
-            base_stmt = identity.search_one("base")
-            if base_stmt and base_stmt.arg == base_identity_stmt.arg:
-                derived_identities.append(identity.arg)
-                derived_identities.extend(collect_derived_identities(identity))
-    return derived_identities
+
+    if module in searched_modules:
+        logging.debug(
+            f"Module '{module.arg}' already searched in collect_derived_identities."
+        )
+        return list(collected_identities)  # Return what we have so far
+
+    searched_modules.add(module)
+
+    def _collect_recursive(identity_stmt):
+        if identity_stmt.arg in collected_identities:
+            logging.debug(f"Identity '{identity_stmt.arg}' already collected.")
+            return  # Avoid duplicates
+
+        collected_identities.add(identity_stmt.arg)
+        logging.debug(f"Collected identity: '{identity_stmt.arg}'")
+
+        # Search in the current module
+        for other_identity in module.search("identity"):
+            base_stmt = other_identity.search_one("base")
+            if base_stmt and base_stmt.arg == identity_stmt.arg:
+                _collect_recursive(other_identity)
+
+        # Search in imported modules
+        for imp in module.search("import"):
+            imported_module = imp.i_module
+            if imported_module:
+                for other_identity in imported_module.search("identity"):
+                    base_stmt = other_identity.search_one("base")
+                    if base_stmt and base_stmt.arg == identity_stmt.arg:
+                        _collect_recursive(other_identity)
+
+    _collect_recursive(base_identity_stmt)
+    logging.debug(
+        f"Derived identities for '{base_identity_stmt.arg}': {list(collected_identities)}"
+    )
+    return list(collected_identities)
 
 
 def identityref_trans(stmt):
-    logging.debug("in identityref_trans with stmt %s %s", stmt.keyword, stmt.arg)
+    """Translates the YANG identityref type to Ansible."""
+    logging.debug(f"Translating identityref type: {stmt.arg}")
     base_stmt = stmt.search_one("base")
     if base_stmt:
         base_identity_stmt = find_identity(stmt.i_module, base_stmt.arg)
         if base_identity_stmt:
             derived_identities = collect_derived_identities(base_identity_stmt)
-            result = {"type": "str", "choices": derived_identities}
+            return {"type": "str", "choices": derived_identities}
         else:
-            result = {"type": "str", "base": base_stmt.arg}
+            logging.warning(f"Base identity not found: {base_stmt.arg}")
+            return {
+                "type": "str",
+                "description": f"Base identity '{base_stmt.arg}' not found.",
+            }
     else:
-        result = {"type": "str"}
-    logging.debug("In identityref_trans for %s, returning %s", stmt.arg, result)
-    return result
+        logging.warning("identityref has no base.")
+        return {"type": "str", "description": "Identityref with no base."}
 
 
+# Mapping of other YANG types to Ansible types
 _other_type_trans_tbl = {
-    # https://tools.ietf.org/html/draft-ietf-netmod-yang-json-02#section-6
     "string": string_trans,
     "enumeration": enumeration_trans,
     "bits": bits_trans,
@@ -701,44 +786,31 @@ _other_type_trans_tbl = {
     "instance-identifier": instance_identifier_trans,
     "leafref": leafref_trans,
     "identityref": identityref_trans,
-    "empty": string_trans,
 }
 
 
-def other_type_trans(dtype, stmt):
-    return _other_type_trans_tbl[dtype](stmt)
+def other_type_trans(type_id, stmt):
+    """Translates other YANG types to Ansible types using the lookup table."""
+    return _other_type_trans_tbl[type_id](stmt)
 
 
 def qualify_name(stmt):
-    # From: draft-ietf-netmod-yang-json
-    # A namespace-qualified member name MUST be used for all members of a
-    # top-level JSON object, and then also whenever the namespaces of the
-    # data node and its parent node are different.  In all other cases, the
-    # simple form of the member name MUST be used.
-    if stmt.parent.parent is None:  # We're on top
-        pfx = stmt.i_module.arg
-        logging.debug("In qualify_name with: %s %s on top", stmt.keyword, stmt.arg)
+    """Qualifies the name of a statement based on its namespace."""
+    if stmt.parent.parent is None:
+        prefix = stmt.i_module.arg
         qualified_name = stmt.arg
-        return qualified_name.replace("-", "_")
-    if stmt.top.arg != stmt.parent.top.arg:  # Parent node is different
-        pfx = stmt.top.arg
-        logging.debug(
-            "In qualify_name with: %s %s and parent is different",
-            stmt.keyword,
-            stmt.arg,
-        )
+    elif stmt.top.arg != stmt.parent.top.arg:
+        prefix = stmt.top.arg
         qualified_name = stmt.arg
-        return qualified_name.replace("-", "_")
-    return stmt.arg.replace("-", "_")
+    else:
+        qualified_name = stmt.arg
+
+    return qualified_name.replace("-", "_")
 
 
-# New post-processing function to reorder suboptions
 def reorder_required_first(data):
-    """
-    Post-process the schema to ensure required suboptions appear first.
-    """
+    """Reorders suboptions to place required ones first."""
     if isinstance(data, dict):
-        # Process suboptions if present
         if "suboptions" in data and isinstance(data["suboptions"], dict):
             suboptions = data["suboptions"]
             required_items = OrderedDict(
@@ -751,9 +823,7 @@ def reorder_required_first(data):
                 list(required_items.items()) + list(other_items.items())
             )
 
-        # Recursively process all dictionary values
         return OrderedDict((k, reorder_required_first(v)) for k, v in data.items())
     elif isinstance(data, list):
         return [reorder_required_first(item) for item in data]
-    else:
-        return data
+    return data
