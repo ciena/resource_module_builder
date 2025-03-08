@@ -8,12 +8,15 @@ import re
 import yaml
 import optparse
 import logging
+import sys
 from collections import OrderedDict
 
 from pyang import plugin
 from pyang import statements
 from pyang import types
 from pyang import error
+
+sys.setrecursionlimit(2000)
 
 
 class CustomDumper(yaml.SafeDumper):
@@ -112,9 +115,11 @@ class AnsiblePlugin(plugin.PyangPlugin):
         if namespace:
             xml_namespace = namespace.arg
         else:
-            xml_namespace = "No namespace found"
+            raise error.EmitError("No namespace found in module\n")
 
+        logging.warning(f"\n****\nProducing Schema: {xml_namespace}")
         schema = produce_schema(root_stmt)
+        logging.warning(f"Converting schema to Ansible: {xml_namespace}\n****\n")
         converted_schema = convert_schema_to_ansible(
             schema, xml_namespace, root_stmt, network_os
         )
@@ -192,15 +197,24 @@ def find_stmt_by_path(module, path):
 
 
 def produce_schema(root_stmt):
-    logging.warning("Producting Schema: %s %s", root_stmt.keyword, root_stmt.arg)
+    logging.warning("Producing Schema: %s %s", root_stmt.keyword, root_stmt.arg)
     result = {}
 
     for child in root_stmt.i_children:
+        logging.debug("Processing child: %s %s", child.keyword, child.arg)
         if child.keyword in statements.data_definition_keywords:
             if child.keyword in producers:
                 logging.debug("keyword hit on: %s %s", child.keyword, child.arg)
-                add = producers[child.keyword](child)
-                result.update(add)
+                try:
+                    add = producers[child.keyword](child)
+                    result.update(add)
+                except Exception as e:
+                    logging.error(
+                        "Error processing child: %s %s, error: %s",
+                        child.keyword,
+                        child.arg,
+                        str(e),
+                    )
             else:
                 logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
         else:
@@ -226,7 +240,6 @@ def produce_schema(root_stmt):
 
 
 def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
-    logging.warning(f"Converting schema to Ansible xml_namespace: {xml_namespace}\n")
     if len(schema) == 1:
         config = next(iter(schema.values()))
 
@@ -310,7 +323,7 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
             "Multiple top-level keys found in the schema. Expected only one."
         )
     else:
-        raise error.EmitError("No top-level keys found in the schema.")
+        raise error.EmitError(f"No top-level keys found in the schema: {xml_namespace}")
 
 
 def produce_type(type_stmt):
@@ -464,13 +477,14 @@ def produce_leaf_list(stmt):
     logging.debug("In produce_leaf_list for %s, returning %s", stmt.arg, result)
     return result
 
+
 def produce_container(stmt):
     logging.debug("in produce_container: %s %s", stmt.keyword, stmt.arg)
     arg = qualify_name(stmt)
 
-    # Check if the leaf is configurable
+    # Check if the container is configurable
     if not stmt.i_config:
-        logging.debug("Skipping non-configurable leaf: %s", arg)
+        logging.debug("Skipping non-configurable container: %s", arg)
         return {}
 
     suboptions_dict = {}
@@ -478,10 +492,19 @@ def produce_container(stmt):
         for child in stmt.i_children:
             if child.keyword in producers:
                 logging.debug("keyword hit on: %s %s", child.keyword, child.arg)
-                child_data = producers[child.keyword](child)
-                suboptions_dict.update(child_data)
+                try:
+                    child_data = producers[child.keyword](child)
+                    suboptions_dict.update(child_data)
+                except Exception as e:
+                    logging.error(
+                        "Error processing child: %s %s, error: %s",
+                        child.keyword,
+                        child.arg,
+                        str(e),
+                    )
             else:
                 logging.warning("keyword miss on: %s %s", child.keyword, child.arg)
+
     description = stmt.search_one("description")
     if description is not None:
         description_str = preprocess_string(description.arg)
@@ -621,6 +644,52 @@ def leafref_trans(stmt):
     return result
 
 
+def find_identity(module, identity_name):
+    for identity in module.search("identity"):
+        if identity.arg == identity_name:
+            return identity
+    for imp in module.search("import"):
+        imported_module = imp.i_module
+        identity_stmt = find_identity(imported_module, identity_name)
+        if identity_stmt:
+            return identity_stmt
+    return None
+
+
+def collect_derived_identities(base_identity_stmt):
+    derived_identities = []
+    module = base_identity_stmt.i_module
+    for identity in module.search("identity"):
+        base_stmt = identity.search_one("base")
+        if base_stmt and base_stmt.arg == base_identity_stmt.arg:
+            derived_identities.append(identity.arg)
+            derived_identities.extend(collect_derived_identities(identity))
+    for imp in module.search("import"):
+        imported_module = imp.i_module
+        for identity in imported_module.search("identity"):
+            base_stmt = identity.search_one("base")
+            if base_stmt and base_stmt.arg == base_identity_stmt.arg:
+                derived_identities.append(identity.arg)
+                derived_identities.extend(collect_derived_identities(identity))
+    return derived_identities
+
+
+def identityref_trans(stmt):
+    logging.debug("in identityref_trans with stmt %s %s", stmt.keyword, stmt.arg)
+    base_stmt = stmt.search_one("base")
+    if base_stmt:
+        base_identity_stmt = find_identity(stmt.i_module, base_stmt.arg)
+        if base_identity_stmt:
+            derived_identities = collect_derived_identities(base_identity_stmt)
+            result = {"type": "str", "choices": derived_identities}
+        else:
+            result = {"type": "str", "base": base_stmt.arg}
+    else:
+        result = {"type": "str"}
+    logging.debug("In identityref_trans for %s, returning %s", stmt.arg, result)
+    return result
+
+
 _other_type_trans_tbl = {
     # https://tools.ietf.org/html/draft-ietf-netmod-yang-json-02#section-6
     "string": string_trans,
@@ -631,6 +700,7 @@ _other_type_trans_tbl = {
     "union": union_trans,
     "instance-identifier": instance_identifier_trans,
     "leafref": leafref_trans,
+    "identityref": identityref_trans,
     "empty": string_trans,
 }
 
