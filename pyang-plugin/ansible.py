@@ -123,7 +123,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
         # Extract namespace; raise a more specific exception
         namespace_stmt = root_stmt.search_one("namespace")
         if not namespace_stmt:
-            raise error.EmitError("YANG module must contain a namespace statement.")
+            raise error.EmitError(f"YANG module must contain a namespace statement: {root_stmt.arg}")
         xml_namespace = namespace_stmt.arg
 
         logging.info(f"Producing schema for namespace: {xml_namespace}")
@@ -248,11 +248,11 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
     """Converts the schema to Ansible module documentation format."""
 
     if not schema:
-        raise error.EmitError("Schema is empty.")
+        raise error.EmitError(f"Schema is empty: {xml_namespace}")
 
     if len(schema) > 1:
         raise error.EmitError(
-            "Multiple top-level keys found in schema. Expected only one."
+            f"Multiple top-level keys found in schema. Expected only one: {xml_namespace}"
         )
 
     config = next(iter(schema.values()))
@@ -374,7 +374,7 @@ def produce_leaf(stmt):
     logging.debug(f"Producing leaf: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not stmt.i_config:
+    if not hasattr(stmt, 'i_config') or not stmt.i_config:
         logging.debug(f"Skipping non-configurable leaf: {arg}")
         return {}
 
@@ -417,7 +417,7 @@ def produce_list(stmt):
     logging.debug(f"Producing list: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not stmt.i_config:
+    if not hasattr(stmt, 'i_config') or not stmt.i_config:
         logging.debug(f"Skipping non-configurable list: {arg}")
         return {}
 
@@ -500,7 +500,7 @@ def produce_container(stmt):
     logging.debug(f"Producing container: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not stmt.i_config:
+    if not hasattr(stmt, 'i_config') or not stmt.i_config:
         logging.debug(f"Skipping non-configurable container: {arg}")
         return {}
 
@@ -775,6 +775,12 @@ def identityref_trans(stmt):
         return {"type": "str", "description": "Identityref with no base."}
 
 
+def binary_trans(stmt):
+    """Translates the YANG binary type to Ansible."""
+    logging.debug(f"Translating binary type: {stmt.arg}")
+    return {"type": "str"}
+
+
 # Mapping of other YANG types to Ansible types
 _other_type_trans_tbl = {
     "string": string_trans,
@@ -786,6 +792,7 @@ _other_type_trans_tbl = {
     "instance-identifier": instance_identifier_trans,
     "leafref": leafref_trans,
     "identityref": identityref_trans,
+    "binary": binary_trans,  # Add this line
 }
 
 

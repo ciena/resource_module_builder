@@ -1,0 +1,92 @@
+GENERATOR_VERSION: '2.0'
+NETWORK_OS: saos10
+RESOURCE: alarms
+XML_NAMESPACE: urn:ietf:params:xml:ns:yang:ietf-alarms
+XML_ROOT_KEY: alarms
+XML_ITEMS: null
+XML_ITEMS_KEY: null
+ANSIBLE_METADATA:
+  metadata_version: '2.0'
+  status:
+  - preview
+  supported_by: network
+COPYRIGHT: Copyright 2025 Ciena
+DOCUMENTATION:
+  module: saos10_alarms
+  short_description: Manage alarms on Ciena saos10 devices
+  description: The top container for this module
+  author: Ciena
+  options:
+    config:
+      description: The top container for this module
+      type: dict
+      suboptions:
+        control:
+          description: Configuration to control the alarm behaviour.
+          type: dict
+          suboptions:
+            alarm_shelving:
+              description: The alarm-shelving/shelf list is used to shelve (block/filter) alarms. The server will move any alarms corresponding
+                to the shelving criteria from the alarms/alarm-list/alarm list to the alarms/shelved-alarms/shelved-alarm list. It will also stop
+                sending notifications for the shelved alarms. The conditions in the shelf criteria are logically ANDed. When the shelving criteria
+                is deleted or changed, the non-matching alarms MUST appear in the alarms/alarm-list/alarm list according to the real state. This
+                means that the instrumentation MUST maintain states for the shelved alarms. Alarms that match the criteria shall have an operator-state
+                'shelved'. When the shelf configuration will remove an alarm from the shelf the server shall add an operator state 'unshelved'
+              type: dict
+              suboptions:
+                shelf:
+                  description: Each entry defines the criteria for shelving alarms. Criterias are ANDed. If no criteria are specified, all alarms
+                    will be shelved.
+                  type: list
+                  elements: dict
+                  suboptions:
+                    name:
+                      description: 'An arbitrary name for the alarm shelf. (Key for list: shelf)'
+                      type: str
+                      required: true
+                    description:
+                      description: An optional textual description of the shelf. This description should include the reason for shelving these
+                        alarms.
+                      type: str
+                      required: false
+                    alarm_type_id:
+                      description: Shelve all alarms that have an alarm-type-id that is equal to or derived from the given alarm-type-id.
+                      type: str
+                      required: false
+                      choices:
+                      - alarm-type-id
+                    alarm_type_qualifier_match:
+                      description: A W3C regular expression that is used to match an alarm type qualifier. Shelve all alarms that matches this
+                        regular expression for the alarm type qualifier.
+                      type: str
+                      required: false
+                    resource:
+                      description: Shelve alarms for matching resources.
+                      type: list
+                      elements: str
+            max_alarm_status_changes:
+              description: The status-change entries are kept in a circular list per alarm. When this number is exceeded, the oldest status change
+                entry is automatically removed. If the value is 'infinite', the status change entries are accumulated infinitely.
+              type: str
+              required: false
+            notify_status_changes:
+              description: This leaf controls whether notifications are sent on all alarm status updates, e.g., updated perceived-severity or
+                alarm-text. By default the notifications are only sent when a new alarm is raised, re-raised after being cleared and when an alarm
+                is cleared.
+              type: bool
+              required: false
+    state:
+      description: The state of the configuration after module completion.
+      type: str
+      choices:
+      - merged
+      - deleted
+      default: merged
+EXAMPLES:
+- merged_example_01.txt
+- deleted_example_01.txt
+notes:
+- This module requires the netconf system service be enabled on the remote device being managed.
+- This module works with connection C(netconf)
+requirements:
+- ncclient (>=v0.6.4)

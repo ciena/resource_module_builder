@@ -1,0 +1,512 @@
+GENERATOR_VERSION: '2.0'
+NETWORK_OS: saos10
+RESOURCE: ospf
+XML_NAMESPACE: http://ciena.com/ns/yang/ciena-ospf
+XML_ROOT_KEY: ospf
+XML_ITEMS: instance
+XML_ITEMS_KEY: tag
+ANSIBLE_METADATA:
+  metadata_version: '2.0'
+  status:
+  - preview
+  supported_by: network
+COPYRIGHT: Copyright 2025 Ciena
+DOCUMENTATION:
+  module: saos10_ospf
+  short_description: Manage ospf on Ciena saos10 devices
+  description: OSPF protocol Instance
+  author: Ciena
+  options:
+    config:
+      description: OSPF structure
+      type: list
+      elements: dict
+      suboptions:
+        tag:
+          description: 'OSPF instance ID (Key for list: instance)'
+          type: int
+          required: true
+        admin_distance:
+          description: OSPF administrative distance
+          type: int
+          required: false
+        areas:
+          description: All areas.
+          type: dict
+          suboptions:
+            area:
+              description: List of OSPF areas
+              type: list
+              elements: dict
+              suboptions:
+                id:
+                  description: 'Area ID (Key for list: area)'
+                  type: str
+                  required: true
+                type:
+                  description: Configure type of area as stub or nssa area
+                  type: dict
+                  suboptions:
+                    nssa:
+                      description: Configure the NSSA area
+                      type: dict
+                      suboptions:
+                        default_information_originate:
+                          description: Originate type 7 default LSA into NSSA area
+                          type: dict
+                          suboptions:
+                            metric:
+                              description: OSPF metric for NSSA default route
+                              type: int
+                              required: false
+                            metric_type:
+                              description: OSPF metric type for NSSA default routes
+                              type: str
+                              required: false
+                              choices:
+                              - type-1
+                              - type-2
+                        no_redistribution:
+                          description: No redistribution into this NSSA area
+                          type: bool
+                          required: false
+                        no_summary:
+                          description: Do not send summary LSA into NSSA area
+                          type: bool
+                          required: false
+                        set:
+                          description: Set/Unset the NSSA area. Set should be true to enable functionality
+                          type: bool
+                          required: false
+                        translator_role:
+                          description: NSSA-ABR translator role
+                          type: str
+                          required: false
+                          choices:
+                          - always
+                          - candidate
+                          - never
+                    stub:
+                      description: Configure stub area
+                      type: dict
+                      suboptions:
+                        no_summary:
+                          description: Do not inject inter-area routes into stub
+                          type: bool
+                          required: false
+                        set:
+                          description: Set/Unset the stub area. Set should be true to enable functionality
+                          type: bool
+                          required: false
+                fast_reroute:
+                  description: Configurations for OSPF remote LFA fast reroute
+                  type: dict
+                  suboptions:
+                    remote_lfa:
+                      description: OSPF remote LFA fast reroute
+                      type: dict
+                      suboptions:
+                        enable:
+                          description: Enables/disables remote LFA FRR. Must be enabled with instance-level LFA configuration.
+                          type: bool
+                          required: false
+                        protection:
+                          description: Protection provided to the repair tunnel
+                          type: list
+                          elements: dict
+                          suboptions:
+                            protection_type:
+                              description: 'The protection type (Key for list: protection)'
+                              type: str
+                              required: true
+                              choices:
+                              - downstream-protection
+                            enable:
+                              description: Enable/disable the protection type
+                              type: bool
+                              required: false
+                        tunnel_cost:
+                          description: Maximum cost of the repair tunnel.
+                          type: int
+                          required: false
+                    ti_lfa:
+                      description: OSPF TI LFA fast reroute
+                      type: dict
+                      suboptions:
+                        enable:
+                          description: Enables/disables TI-LFA FRR, Must be enabled with instance-level LFA configuration
+                          type: bool
+                          required: false
+                network:
+                  description: OSPF network
+                  type: list
+                  elements: dict
+                  suboptions:
+                    prefix:
+                      description: 'Network prefix and length (Key for list: network)'
+                      type: str
+                      required: true
+                prefix_list:
+                  description: Name of the prefix list
+                  type: list
+                  elements: dict
+                  suboptions:
+                    prefix_name:
+                      description: 'Refers to prefix list name (Key for list: prefix-list)'
+                      type: str
+                      required: true
+                    prefixType:
+                      description: Filter type ( filter-in | filter-out)
+                      type: str
+                      required: false
+                      choices:
+                      - filter-in
+                      - filter-out
+                range:
+                  description: Summarize routes matching address/mask (Area Border Routers (ABRs) only)
+                  type: list
+                  elements: dict
+                  suboptions:
+                    prefix:
+                      description: 'The network prefix (Key for list: range)'
+                      type: str
+                      required: true
+                    range_advertise:
+                      description: Advertise or not-advertise
+                      type: str
+                      required: false
+                      choices:
+                      - not-advertise
+                      - advertise
+                virtual_link:
+                  description: Virtual link ID(IP addr) associated with neighbor
+                  type: list
+                  elements: dict
+                  suboptions:
+                    peer_id:
+                      description: 'The Virtual Link ID associated with neighbor (Key for list: virtual-link)'
+                      type: str
+                      required: true
+                    bfd:
+                      description: Enable BFD for virtual link.
+                      type: dict
+                      suboptions:
+                        enable:
+                          description: Enable BFD.
+                          type: bool
+                          required: false
+                    vlink_dead_interval:
+                      description: Vlink Dead interval (in seconds) for router detection time
+                      type: int
+                      required: false
+                    vlink_hello_interval:
+                      description: Vlink Hello interval (in seconds)
+                      type: int
+                      required: false
+                    vlink_retransmit_interval:
+                      description: Vlink LSA retransmit interval (in seconds)
+                      type: int
+                      required: false
+                    vlink_transmit_delay:
+                      description: Vlink LSA transmission delay (in seconds)
+                      type: int
+                      required: false
+        default_information_originate:
+          description: Create a default route into an OSPF routing domain.
+          type: dict
+          suboptions:
+            always:
+              description: Always advertise default route
+              type: dict
+              suboptions:
+                enable:
+                  description: Enable/Disable advertise default route
+                  type: bool
+                  required: false
+                metric:
+                  description: Sets the OSPF metric used in creating the default route
+                  type: int
+                  required: false
+                metric_type:
+                  description: External link type associated with the default route advertised into the OSPF routing domain
+                  type: str
+                  required: false
+                  choices:
+                  - type-1
+                  - type-2
+            enable:
+              description: Enable/Disable advertise default route
+              type: bool
+              required: false
+            metric:
+              description: Sets the OSPF metric used in creating the default route
+              type: int
+              required: false
+            metric_type:
+              description: External link type associated with the default route advertised into the OSPF routing domain
+              type: str
+              required: false
+              choices:
+              - type-1
+              - type-2
+        fast_reroute:
+          description: Configurations for OSPF LFA fast reroute
+          type: dict
+          suboptions:
+            lfa:
+              description: OSPF LFA fast reroute
+              type: dict
+              suboptions:
+                per_prefix_enable:
+                  description: Enables/disables LFA FRR
+                  type: bool
+                  required: false
+        graceful_restart:
+          description: OSPF graceful restart capabilities.
+          type: dict
+          suboptions:
+            helper_enable:
+              description: Enable/disable graceful restart helper mode (enabled by default).
+              type: bool
+              required: false
+            helper_grace_period:
+              description: OSPF GR Helper Grace Period in seconds (1-1800) should be greater than Restart grace period
+              type: int
+              required: false
+            restart_capable:
+              description: Enable/disable graceful restart capability (disable by default).
+              type: bool
+              required: false
+            restart_grace_period:
+              description: OSPF GR Restart Grace Period in seconds (1-1800)
+              type: int
+              required: false
+        interfaces:
+          description: All interfaces.
+          type: dict
+          suboptions:
+            interface:
+              description: List of OSPF interfaces.
+              type: list
+              elements: dict
+              suboptions:
+                name:
+                  description: 'Interface name reference. (Key for list: interface)'
+                  type: str
+                  required: true
+                type:
+                  description: Interface type.
+                  type: str
+                  required: false
+                  choices:
+                  - broadcast
+                  - point-to-point
+                authentication:
+                  description: OSPF message-digest-key (MD5) related operations
+                  type: list
+                  elements: dict
+                  suboptions:
+                    id:
+                      description: 'Key ID (Key for list: authentication)'
+                      type: int
+                      required: true
+                    password:
+                      description: MD5 Authentiation key (password)
+                      type: str
+                      required: true
+                bfd:
+                  description: BFD Client Configuration.
+                  type: dict
+                  suboptions:
+                    enable:
+                      description: Enable BFD.
+                      type: bool
+                      required: false
+                dead_interval:
+                  description: Interval after which a neighbor is declared down (seconds) if hello packets are not received. It is typically 3
+                    or 4 times the hello-interval. A typical value for LAN networks is 40 seconds.
+                  type: int
+                  required: false
+                disable:
+                  description: Disable OSPF protocol on the interface.
+                  type: bool
+                  required: false
+                hello_interval:
+                  description: Interval between hello packets (seconds). It must be the same for all routers on the same network. Different networks,
+                    implementations, and deployments will use different hello-intervals. A sample value for a LAN network would be 10 seconds.
+                  type: int
+                  required: false
+                ldp_igp_sync:
+                  description: Enables IGP/LDP synchronization
+                  type: dict
+                  suboptions:
+                    hold_down:
+                      description: Hold-down timer for the OSPF ldp-igp synchronization configuration range; [1-69999]/none/infinite
+                      type: str
+                      required: true
+                lfa_candidate_enable:
+                  description: Enable/disable the interface from being used as the next hop in a repair path
+                  type: bool
+                  required: false
+                metric:
+                  description: Interface cost.
+                  type: int
+                  required: false
+                mtu:
+                  description: Set the ospf packet MTU size. By default, ospf uses the interface MTU size
+                  type: int
+                  required: false
+                passive:
+                  description: Enable/Disable passive interface - a passive interface's prefix will be advertised but no neighbor adjacencies
+                    will be formed on the interface.
+                  type: bool
+                  required: false
+                priority:
+                  description: Configure OSPF router priority. On multi-access network this value is for Designated Router (DR) election. The
+                    priority is ignored on other interface types. A router with a higher priority will be preferred in the election and a value
+                    of 0 indicates the router is not eligible to become Designated Router or Backup Designated Router (BDR).
+                  type: int
+                  required: false
+                retransmit_interval:
+                  description: Interval between retransmitting unacknowledged Link State Advertisements (LSAs) (seconds). This should be well
+                    over the round-trip transmit delay for any two routers on the network. A sample value would be 5 seconds.
+                  type: int
+                  required: false
+                transmit_delay:
+                  description: Estimated time needed to transmit Link State Update (LSU) packets on the interface (seconds). LSAs have their age
+                    incremented by this amount when advertised on the interface. A sample value would be 1 second.
+                  type: int
+                  required: false
+        microloop_avoidance:
+          description: OSPF microloop avoidance configuration.
+          type: dict
+          suboptions:
+            enable:
+              description: Enable/disable microloop avoidance for protected prefixes.
+              type: bool
+              required: false
+            rib_update_delay:
+              description: Set route download delay for microloop avoidance on local interfaces.
+              type: int
+              required: false
+        redistribute:
+          description: Redistribute routes to external process
+          type: list
+          elements: dict
+          suboptions:
+            protocol:
+              description: 'Redistibute protocol name (Key for list: redistribute)'
+              type: str
+              required: true
+              choices:
+              - static
+              - connected
+              - bgp
+              - isis
+            instance:
+              description: ISIS instance when redistribution protocol is ISIS
+              type: list
+              elements: dict
+              suboptions:
+                tag:
+                  description: 'Tag should be instance of ISIS (Key for list: instance)'
+                  type: str
+                  required: true
+                metric:
+                  description: Metric value
+                  type: int
+                  required: false
+                metric_type:
+                  description: Metric type
+                  type: str
+                  required: false
+                  choices:
+                  - type-1
+                  - type-2
+                policy:
+                  description: Name of the routemap to apply the filter to.
+                  type: str
+                  required: false
+            metric:
+              description: Metric value
+              type: int
+              required: false
+            metric_type:
+              description: Metric type
+              type: str
+              required: false
+              choices:
+              - type-1
+              - type-2
+            policy:
+              description: Name of the routemap to apply the filter to.
+              type: str
+              required: false
+        router_id:
+          description: Defined in RFC 2328. A 32-bit number that uniquely identifies the router.
+          type: str
+          required: false
+        segment_routing:
+          description: Attribute to enable MPLS-based segment routing for an ISIS or OSPF process
+          type: dict
+          suboptions:
+            enabled:
+              description: Enable MPLS Segment Routing
+              type: bool
+              required: false
+            srgb:
+              description: List of global blocks to be advertised.
+              type: list
+              elements: dict
+              suboptions:
+                lower_bound:
+                  description: 'Lower value in the block. (Key for list: srgb)'
+                  type: int
+                  required: true
+                upper_bound:
+                  description: 'Upper value in the block. (Key for list: srgb)'
+                  type: int
+                  required: true
+        spf_max_delay:
+          description: The maximum SPF hold delay time in milliseconds; 50000 milliseconds (50 seconds)
+          type: int
+          required: false
+        spf_min_delay:
+          description: The minimum SPF delay time in milliseconds; 500 milliseconds.
+          type: int
+          required: false
+        summary_address:
+          description: Summary address for external routes. address/mask
+          type: list
+          elements: dict
+          suboptions:
+            prefix:
+              description: 'The network prefix (Key for list: summary-address)'
+              type: str
+              required: true
+            address_advertise:
+              description: Advertise or not-advertise
+              type: str
+              required: false
+              choices:
+              - not-advertise
+              - advertise
+            tag:
+              description: Tag for summary address
+              type: int
+              required: false
+    state:
+      description: The state of the configuration after module completion.
+      type: str
+      choices:
+      - merged
+      - deleted
+      default: merged
+EXAMPLES:
+- merged_example_01.txt
+- deleted_example_01.txt
+notes:
+- This module requires the netconf system service be enabled on the remote device being managed.
+- This module works with connection C(netconf)
+requirements:
+- ncclient (>=v0.6.4)
