@@ -1,0 +1,193 @@
+g8032_rings:
+  description: Contains all the G.8032 system specific related configuration.
+  suboptions:
+    g8032_ring:
+      description: Provides configuration nodes in support of ERP instances on the
+        device.
+      elements: dict
+      key: ring-name
+      suboptions:
+        erp_instances:
+          description: Collection of ring instances.
+          suboptions:
+            erp_instance:
+              description: There can be multiple ERP instances associated with a given
+                G.8032 ring. Each ERP instance must have a separate set of data member
+                VLAN identifiers.
+              elements: dict
+              key: instance-name
+              suboptions:
+                data_members:
+                  description: The range of data member identifiers protected by the
+                    ERP instance.
+                  elements: str
+                  type: list
+                erp_instance_construct:
+                  choices:
+                  - sub-ring-virtual-channel
+                  - major-ring
+                  - sub-ring-no-virtual-channel
+                  - erp-instance-type
+                  description: Type of ERP instance.
+                  required: true
+                  type: str
+                flush_propagation:
+                  choices:
+                  - 'off'
+                  - 'on'
+                  description: Indicates the state of flush-propagation for the ring.
+                  required: false
+                  type: str
+                guard_timer:
+                  description: The guard timer is used to prevent Ethernet ring nodes
+                    from acting upon outdated R-APS messages and prevents the possibility
+                    of forming a closed loop.
+                  required: false
+                  type: int
+                hold_off_time:
+                  description: The hold-off timer is used to coordinate the timing
+                    of protection switches.
+                  required: false
+                  type: int
+                instance_description:
+                  description: Textual description of the instance.
+                  required: false
+                  type: str
+                instance_name:
+                  description: 'The ERP instance name. (Key for list: erp-instance)'
+                  required: true
+                  type: str
+                ports:
+                  description: Port specific configurations for ring instances.
+                  suboptions:
+                    port:
+                      description: List of the ring ports. If this is a major ring,
+                        or this node is in a sub-ring but is not the interconnection
+                        node where the sub-ring terminates, then this list must have
+                        2 entries. If this is a sub-ring (with or without a virtual
+                        channel), and this is an interconnection node where the sub-ring
+                        terminates, then this list must have only 1 entry.
+                      elements: dict
+                      key: port-id
+                      suboptions:
+                        port_id:
+                          description: 'Port id of the ring instance. This leaf identifies
+                            one of the two ring ports. (Key for list: port)'
+                          required: true
+                          type: str
+                        rpl:
+                          choices:
+                          - none
+                          - owner
+                          - neighbor
+                          - next-neighbor
+                          description: RPL port role for the ring instance.
+                          required: false
+                          type: str
+                      type: list
+                  type: dict
+                raps_level:
+                  description: The Maintenance Entity Level used by the ERP instance
+                    for ring APS control messages.
+                  required: true
+                  type: int
+                raps_priority:
+                  description: The priority assigned to the R-APS PDUs.
+                  required: false
+                  type: int
+                raps_vid:
+                  description: The VLAN identifier used by the ERP instance for ring
+                    APS control messages.
+                  required: true
+                  type: int
+                reversion:
+                  choices:
+                  - revertive
+                  - non-revertive
+                  description: Configuration node specifying the reversion capabilities
+                    of this ERP instance.
+                  required: false
+                  type: str
+                wtr_timer:
+                  description: The wait-to-restore timer associated with the ERP instance.
+                  required: false
+                  type: int
+              type: list
+          type: dict
+        ring_description:
+          description: Textual description of the ring.
+          required: false
+          type: str
+        ring_id:
+          description: The Ring ID.
+          required: false
+          type: int
+        ring_name:
+          description: 'G.8032 ring name. (Key for list: g8032-ring)'
+          required: true
+          type: str
+        ring_ports:
+          description: Ring port configurations.
+          suboptions:
+            ring_port:
+              description: List of the ring ports. If all of the ERP instances for
+                this ring are sub-rings that terminate at this node, this list may
+                have only 1 entry.
+              elements: dict
+              key: port-id
+              suboptions:
+                cfm_instance:
+                  description: Represents a cfm MEP that can be used to detect signal
+                    failure on a ring port. It is a metric used for ring protection
+                    switching.
+                  suboptions:
+                    maintenance_association:
+                      description: A reference to a specific Maintenance Association.
+                      required: false
+                      type: str
+                    maintenance_association_end_point:
+                      description: A reference to a specific Maintenance association
+                        End Point.
+                      required: false
+                      type: str
+                    maintenance_domain:
+                      description: A reference to a specific Maintenance Domain.
+                      required: false
+                      type: str
+                  type: dict
+                interface:
+                  description: Port interface reference of the Ring.
+                  required: true
+                  type: str
+                port_id:
+                  choices:
+                  - port0
+                  - port1
+                  description: 'Port identifier (port0 or port1). (Key for list: ring-port)'
+                  required: true
+                  type: str
+              type: list
+          type: dict
+      type: list
+    notification_enabled:
+      description: Enable/disable ring status change notification. If true, any change
+        in ring state will be notified via ring-state-change notification.
+      required: false
+      type: bool
+    raps_version:
+      choices:
+      - g8032-version1
+      - g8032-version-type
+      - g8032-version2
+      description: The version of the ERP R-APS protocol being used.
+      required: false
+      type: str
+    ring_system_control:
+      choices:
+      - disabled
+      - enabled
+      description: Setting this control allows the enablement or disablement of the
+        G.8032 protection switching on a system wide basis.
+      required: false
+      type: str
+  type: dict
