@@ -1,0 +1,328 @@
+default_md_levels:
+  description: Data definitions related to the global default MD level and the default
+    MD levels associated with specific VIDs
+  suboptions:
+    default_id_permission:
+      choices:
+      - none
+      - chassis
+      - manage
+      - chassis-manage
+      - defer
+      description: This parameter indicates what, if anything, is to be included in
+        the Sender ID TLV transmitted by MPs configured in a default MD Level
+      required: false
+      type: str
+    default_md_level:
+      description: Data definitions related to the default MD level associated with
+        specific VIDs
+      elements: dict
+      suboptions:
+        component_id:
+          description: 'The bridge component within the system to which the information
+            in this default-md-level applies (Key for list: default-md-level)'
+          required: true
+          type: int
+        default_id_permission:
+          choices:
+          - none
+          - chassis
+          - manage
+          - chassis-manage
+          - defer
+          description: This parameter indicates what, if anything, is to be included
+            in the Sender ID TLV transmitted by MPs configured in a default MD Level
+          required: false
+          type: str
+        md_level:
+          description: The MD Level at which MHFs are to be created and Sender ID
+            TLV transmission by those MHFs is to be controlled, for the VLAN to which
+            this entry's definitions apply. If this leaf has the value -1, the MD
+            Level for MHF creation for this VLAN is controlled by the content of the
+            default-md-levels container. -1 is not a valid value for this parameter
+            when used in the default-md-levels.
+          required: false
+          type: int
+        mhf_creation:
+          choices:
+          - none
+          - default
+          - explicit
+          - defer
+          description: This parameter indicates whether the management entity can
+            create MHFs for this VID(s). The value 'defer' has different meanings
+            depending on where the grouping is used; - The value 'defer' is not allowed
+            when this grouping is used in the 'default-md-levels' container - When
+            used in a member of the 'default-md-level' list the value 'defer' means
+            that MHF creation for the VLAN is controlled by the corresponding 'mhf-creation'
+            leaf in the 'default-md-levels' container.
+          required: false
+          type: str
+        primary_vid:
+          description: 'The primary VID on the MD (Key for list: default-md-level)'
+          required: true
+          type: int
+        status:
+          description: State of this list entry. The value 'true' if there is no entry
+            in the maintenance-assoication list entry defining an MA for the same
+            VLAN ID and MD Level as this table's entry, and on which MA an Up MEP
+            is defined, else 'false'.
+          required: false
+          type: bool
+        vid:
+          description: A list of VIDs associated with the MHF
+          elements: int
+          type: list
+      type: list
+    md_level:
+      description: The MD Level at which MHFs are to be created and Sender ID TLV
+        transmission by those MHFs is to be controlled, for the VLAN to which this
+        entry's definitions apply. If this leaf has the value -1, the MD Level for
+        MHF creation for this VLAN is controlled by the content of the default-md-levels
+        container. -1 is not a valid value for this parameter when used in the default-md-levels.
+      required: false
+      type: int
+    mhf_creation:
+      choices:
+      - none
+      - default
+      - explicit
+      - defer
+      description: This parameter indicates whether the management entity can create
+        MHFs for this VID(s). The value 'defer' has different meanings depending on
+        where the grouping is used; - The value 'defer' is not allowed when this grouping
+        is used in the 'default-md-levels' container - When used in a member of the
+        'default-md-level' list the value 'defer' means that MHF creation for the
+        VLAN is controlled by the corresponding 'mhf-creation' leaf in the 'default-md-levels'
+        container.
+      required: false
+      type: str
+  type: dict
+maintenance_domain:
+  description: A Maintenance Domain managed object is required in order to create
+    an MA with a MAID that includes that Maintenance Domain's Name. From this Maintenance
+    Domain managed object, all Maintenance Association managed objects associated
+    with that Maintenance Domain managed object can be accessed, and thus controlled.
+  elements: dict
+  suboptions:
+    id:
+      description: 'A unique identifier of a Maintenance Domain (Key for list: maintenance-domain)'
+      required: true
+      type: str
+    id_permission:
+      choices:
+      - none
+      - chassis
+      - manage
+      - chassis-manage
+      - defer
+      description: This parameter indicates what, if anything, is to be included in
+        the Sender ID TLV. Since, in this variable, there is no encompassing Maintenance
+        Domain, the value 'defer' is not allowed
+      required: true
+      type: str
+    maintenance_association:
+      description: This list represents Maintenance Entity Groups (Y.1731) or Maintenance
+        Associations (802.1ag). MEGs/MAs are sets of MEPs, each configured to the
+        same service inside a common OAM domain.
+      elements: dict
+      suboptions:
+        ccm_interval:
+          choices:
+          - invalid
+          - 3.3ms
+          - 10ms
+          - 100ms
+          - 1s
+          - 10s
+          - 1min
+          - 10min
+          description: The interval between CCM transmissions to be used by all MEPs
+            in the MA
+          required: true
+          type: str
+        component_list:
+          description: A list of components each of which can be managed in a manner
+            essentially equivalent to an 802.1Q bridge.
+          elements: dict
+          suboptions:
+            component_id:
+              description: 'The bridge component within the system to which the information
+                in this maintenance-association applies (Key for list: component-list)'
+              required: true
+              type: int
+            id_permission:
+              choices:
+              - none
+              - chassis
+              - manage
+              - chassis-manage
+              - defer
+              description: This parameter indicates what, if anything, is to be included
+                in the Sender ID TLV transmitted by MPs configured in this MA. A value
+                of 'defer' means that the contents of the Sender ID TLV are determined
+                by the enclosing maintenance-domain instance,
+              required: false
+              type: str
+            mhf_creation:
+              choices:
+              - none
+              - default
+              - explicit
+              - defer
+              description: An enumerated value indicating whether the management entity
+                can create MHFs for this MA. A value of 'defer' here means that control
+                of MHF creation is deferred to the corresponding variable in the enclosing
+                maintenance-domain.
+              required: false
+              type: str
+            vid:
+              description: The VID(s) monitored by this MA, or 0, if the MA is not
+                attached to any VID. The first VID returned is the MA's Primary VID
+              elements: int
+              type: list
+          type: list
+        id:
+          description: 'A unique identifier of a Maintenance Association (Key for
+            list: maintenance-association)'
+          required: true
+          type: str
+        maintenance_association_end_point:
+          description: The list of Maintenance association End Points in a specific
+            Maintance Association.
+          elements: dict
+          suboptions:
+            administrative_state:
+              description: The administrative state of the MEP
+              required: true
+              type: bool
+            ccm_ltm_priority:
+              description: The priority parameter for CCMs and LTMs transmitted by
+                the MEP.
+              required: true
+              type: int
+            continuity_check:
+              description: Data definitions related to the Continuity Check function.
+              suboptions:
+                cci_enabled:
+                  description: An indicator of whether the MEP is or is not to generate
+                    CCMs
+                  required: false
+                  type: bool
+                fng_alarm_time:
+                  description: The time that defects must be present before a Fault
+                    Alarm is issued
+                  required: false
+                  type: int
+                fng_reset_time:
+                  description: The time that defects must be absent before resetting
+                    a Fault Alarm
+                  required: false
+                  type: int
+                lowest_fault_priority_defect:
+                  choices:
+                  - remote-rdi
+                  - remote-mac-error
+                  - remote-invalid-ccm
+                  - invalid-ccm
+                  - cross-connect-ccm
+                  description: The lowest priority defect that is allowed to generate
+                    a Fault Alarm. The non-existence of this leaf means that no defects
+                    are to be reported
+                  required: false
+                  type: str
+              type: dict
+            direction:
+              choices:
+              - up
+              - down
+              description: A value indicating the direction in which the MEP faces
+                on the interface.
+              required: true
+              type: str
+            interface:
+              description: An interface, either a Bridge Port or an aggregated IEEE
+                802.3 port within a Bridge Port, to which the MEP is attached. Each
+                interface in the system is uniquely identified by an interface-name.
+                The structure and content of the name is outside the scope of this
+                specification.
+              required: true
+              type: str
+            mep_identifier:
+              description: 'Integer that is unique among all the MEPs in the same
+                MA. Other definition is; a small integer, unique over a given Maintenance
+                Association, identifying a specific Maintenance association End Point.
+                (Key for list: maintenance-association-end-point)'
+              required: true
+              type: int
+            primary_vid:
+              description: The Primary VID of the MEP. The value 0 indicates that
+                either the Primary VID is that of the MEP's MA or that the MEP's MA
+                is associated with no VID
+              required: true
+              type: int
+          type: list
+        name:
+          description: The value union for the Maintenance Association Name. The type
+            must correspond to the configuration name-type according to the following;
+            - If the name-type is 'primary-vid' then the name must be of type vlan-id-type
+            - If the name-type is 'character-string' then the name must be of type
+            string - If the name-type is 'uint16' then the name must be of type uint16
+            - If the name-type is 'rfc2685-vpn-id' then the name must be of type binary
+          required: false
+          type: str
+        name_type:
+          choices:
+          - primary-vid
+          - character-string
+          - uint16
+          - rfc2685-vpn-id
+          description: Name type discriminator for the 'name' leaf.
+          required: false
+          type: str
+        remote_meps:
+          description: A list of the MEPIDs of the MEPs in the MA.
+          elements: int
+          type: list
+      type: list
+    md_level:
+      description: Integer identifying the Maintenance Domain Level (MD Level). Higher
+        numbers correspond to higher Maintenance Domains, those with the greatest
+        physical reach, with the highest values for customers' CFM PDUs. Lower numbers
+        correspond to lower Maintenance Domains, those with more limited physical
+        reach, with the lowest values for CFM PDUs protecting single bridges or physical
+        links.
+      required: false
+      type: int
+    mhf_creation:
+      choices:
+      - none
+      - default
+      - explicit
+      - defer
+      description: A value indicating if the Management entity can create MHFs (MIP
+        Half Function) for this VID at this MD Level. The value 'defer' means that
+        MHF creation for the VLAN is controlled by the corresponding 'mhf-creation'
+        leaf in the 'default-md-level' list entry.
+      required: true
+      type: str
+    name:
+      description: The value union for the Maintenance Domain Name. The type must
+        correspond to the configuration name-type according to the following; - If
+        the name-type is 'domain-name ' then the name must be of type inet;host -
+        If the name-type is 'mac-address-and-uint' then the name must be of type mac-address-and-uint-type
+        - If the name-type is 'character-string' then the name must be of type string
+        - If the name-type is 'none' then the name must not be defined
+      required: false
+      type: str
+    name_type:
+      choices:
+      - none
+      - domain-name
+      - mac-address-and-uint
+      - character-string
+      description: Type discriminator for the value union described in the 'name'
+        leaf.
+      required: false
+      type: str
+  type: list

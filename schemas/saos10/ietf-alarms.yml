@@ -1,0 +1,69 @@
+alarms:
+  description: The top container for this module
+  suboptions:
+    control:
+      description: Configuration to control the alarm behaviour.
+      suboptions:
+        alarm_shelving:
+          description: The alarm-shelving/shelf list is used to shelve (block/filter)
+            alarms. The server will move any alarms corresponding to the shelving
+            criteria from the alarms/alarm-list/alarm list to the alarms/shelved-alarms/shelved-alarm
+            list. It will also stop sending notifications for the shelved alarms.
+            The conditions in the shelf criteria are logically ANDed. When the shelving
+            criteria is deleted or changed, the non-matching alarms MUST appear in
+            the alarms/alarm-list/alarm list according to the real state. This means
+            that the instrumentation MUST maintain states for the shelved alarms.
+            Alarms that match the criteria shall have an operator-state 'shelved'.
+            When the shelf configuration will remove an alarm from the shelf the server
+            shall add an operator state 'unshelved'
+          suboptions:
+            shelf:
+              description: Each entry defines the criteria for shelving alarms. Criterias
+                are ANDed. If no criteria are specified, all alarms will be shelved.
+              elements: dict
+              suboptions:
+                alarm_type_id:
+                  choices:
+                  - alarm-type-id
+                  description: Shelve all alarms that have an alarm-type-id that is
+                    equal to or derived from the given alarm-type-id.
+                  required: false
+                  type: str
+                alarm_type_qualifier_match:
+                  description: A W3C regular expression that is used to match an alarm
+                    type qualifier. Shelve all alarms that matches this regular expression
+                    for the alarm type qualifier.
+                  required: false
+                  type: str
+                description:
+                  description: An optional textual description of the shelf. This
+                    description should include the reason for shelving these alarms.
+                  required: false
+                  type: str
+                name:
+                  description: 'An arbitrary name for the alarm shelf. (Key for list:
+                    shelf)'
+                  required: true
+                  type: str
+                resource:
+                  description: Shelve alarms for matching resources.
+                  elements: str
+                  type: list
+              type: list
+          type: dict
+        max_alarm_status_changes:
+          description: The status-change entries are kept in a circular list per alarm.
+            When this number is exceeded, the oldest status change entry is automatically
+            removed. If the value is 'infinite', the status change entries are accumulated
+            infinitely.
+          required: false
+          type: str
+        notify_status_changes:
+          description: This leaf controls whether notifications are sent on all alarm
+            status updates, e.g., updated perceived-severity or alarm-text. By default
+            the notifications are only sent when a new alarm is raised, re-raised
+            after being cleared and when an alarm is cleared.
+          required: false
+          type: bool
+      type: dict
+  type: dict

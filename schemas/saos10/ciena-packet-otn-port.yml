@@ -1,0 +1,382 @@
+otn_ports:
+  description: OTN Port configuration and operational data.
+  suboptions:
+    ports:
+      description: Configuration and operational data for the port.
+      elements: dict
+      suboptions:
+        channels:
+          description: List of ODU4 channels within the parent OTU port object.
+          elements: dict
+          suboptions:
+            channel_id:
+              description: 'Channel number or ODU4 tributary number within the parent
+                OTU port object. Key value for the channels list. (Key for list: channels)'
+              required: true
+              type: int
+            id:
+              description: Channel identification attributes.
+              suboptions:
+                label:
+                  description: The user-specified label string for this channel object.
+                  required: false
+                  type: str
+              type: dict
+            properties:
+              description: Channel properties.
+              suboptions:
+                odu_facility_loopback:
+                  description: Loopback in the facility direction. Traffic ingressing
+                    the odu is looped back in the egress direction
+                  required: false
+                  type: bool
+                odu_sd_threshold:
+                  description: ODU4 Signal Degrade threshold value.
+                  required: false
+                  type: str
+                odu_terminal_loopback:
+                  description: Loopback in the terminal direction. Traffic due to
+                    egress the odu is looped back in the ingress direction
+                  required: false
+                  type: bool
+                trace:
+                  description: ODU4 path trace attributes for this channel.
+                  suboptions:
+                    exp_dapi:
+                      description: The expected destination access point identifier
+                        (DAPI) portion of the received trace string, up to 15 characters,
+                        excluding the first byte in the TTI DAPI overhead, which is
+                        implicitly always null.
+                      required: false
+                      type: str
+                    exp_oper:
+                      description: Expected Rx operator-specific trace string, up
+                        to 32 characters. If this string value is changed the Tx oper
+                        string will also be updated to the same value.
+                      required: false
+                      type: str
+                    exp_sapi:
+                      description: The expected source access point identifier (SAPI)
+                        portion of the received trace string, up to 15 characters,
+                        excluding the first byte in the TTI SAPI overhead, which is
+                        implicitly always null.
+                      required: false
+                      type: str
+                    mismatch_fail_mode:
+                      choices:
+                      - none
+                      - alarm-only
+                      - squelch-traffic
+                      description: The trail trace identifier (TTI) mismatch failure
+                        mode. When TTI mismatch condition occurs, this indicates the
+                        consequent action taken, e.g. whether or not to raise an alarm.
+                      required: false
+                      type: str
+                    mismatch_mode:
+                      choices:
+                      - operator-only
+                      - sapi
+                      - dapi
+                      - sapi-and-dapi
+                      description: The trail trace identifier (TTI) mismatch mode,
+                        indicating which fields of the TTI overhead are used for trace
+                        mismatch detection.
+                      required: false
+                      type: str
+                    tx_dapi:
+                      description: The destination access point identifier (DAPI)
+                        portion of the transmitted trace string, up to 15 characters,
+                        excluding the first byte in the TTI DAPI overhead, which is
+                        implicitly always null.
+                      required: false
+                      type: str
+                    tx_oper:
+                      description: Tx operator-specific trace string, up to 32 characters.
+                        If this string value is changed the Expected Rx oper string
+                        will also be updated to the same value.
+                      required: false
+                      type: str
+                    tx_oper_mode:
+                      choices:
+                      - manual
+                      - automatic
+                      description: Specifies whether to allow manual provisioning
+                        of the transmitted TTI string, or let the system assign this
+                        value automatically based on a pre-defined format.
+                      required: false
+                      type: str
+                    tx_sapi:
+                      description: The source access point identifier (SAPI) portion
+                        of the transmitted trace string, up to 15 characters, excluding
+                        the first byte in the TTI SAPI overhead, which is implicitly
+                        always null.
+                      required: false
+                      type: str
+                  type: dict
+              type: dict
+            state:
+              description: Channel administrative and operational states.
+              suboptions:
+                admin_state:
+                  choices:
+                  - disabled
+                  - enabled
+                  description: The configured administrative state of the channel.
+                  required: false
+                  type: str
+              type: dict
+          type: list
+        id:
+          description: Port identification attributes.
+          suboptions:
+            label:
+              description: The user-specified label string for this port interface.
+              required: false
+              type: str
+            type:
+              choices:
+              - unknown
+              - otn
+              - OTUk
+              - OTUCn
+              - OTUCn-Flex
+              description: The port interface type.
+              required: false
+              type: str
+          type: dict
+        port_id:
+          description: 'Unique, access identifier string of the port in ''<slot>/<port>''
+            format. (Key for list: ports)'
+          required: true
+          type: str
+        properties:
+          description: Port properties.
+          suboptions:
+            forward_error_correction:
+              choices:
+              - disabled
+              - enabled
+              description: Forward error correction
+              required: false
+              type: str
+            loopback:
+              choices:
+              - disabled
+              - rx
+              - tx
+              description: Port PHY layer loopback. RX loopback is a loopback forwarding
+                ingress traffic from RX port directly to TX port. TX loopback is a
+                loopback forwarding egress traffic from TX port directly to RX port,
+                TX loopback is not supported in I-NNI ports. The RX/TX loopback can
+                only be enabled when the port admin-state is disabled. Enable an RX/TX
+                loopback shall fail when the port has its admin-state enabled. Users
+                shall be able to disable the xcvr/ptp when its child port loopback
+                enabled. Enable xcvr/ptp shall not enable its child port with loopback
+                enabled. A port shall has its operational state rx loopback when rx
+                loopback is enabled, and tx loopback when tx loopback is enabled.
+              required: false
+              type: str
+            otn:
+              description: OTN-specific properties.
+              suboptions:
+                conditioning_type:
+                  choices:
+                  - otn
+                  - laser-off
+                  description: Conditioning type for OTN ports.
+                  required: false
+                  type: str
+                odu_sd_threshold:
+                  description: ODUk Signal Degrade threshold value, e.g. '10E-05'
+                    to '10E-09'.
+                  required: false
+                  type: str
+                odu_termination:
+                  choices:
+                  - terminated
+                  - passthrough
+                  description: ODUk termination mode.
+                  required: false
+                  type: str
+                otu_sd_threshold:
+                  description: OTU Signal Degrade threshold value, e.g. '10E-06' to
+                    '10E-09'.
+                  required: false
+                  type: str
+                pre_fec_otu_sd_threshold:
+                  description: Pre-FEC OTU Signal Degrade threshold value.
+                  required: false
+                  type: float
+                pre_fec_otu_sf_threshold:
+                  description: Pre-FEC OTU Signal Fail threshold value.
+                  required: false
+                  type: float
+                trace:
+                  description: OTN port trace attributes
+                  suboptions:
+                    path:
+                      description: ODUk path trace attributes for this port.
+                      suboptions:
+                        exp_dapi:
+                          description: The expected destination access point identifier
+                            (DAPI) portion of the received trace string, up to 15
+                            characters, excluding the first byte in the TTI DAPI overhead,
+                            which is implicitly always null.
+                          required: false
+                          type: str
+                        exp_oper:
+                          description: Expected Rx operator-specific trace string,
+                            up to 32 characters. If this string value is changed the
+                            Tx oper string will also be updated to the same value.
+                          required: false
+                          type: str
+                        exp_sapi:
+                          description: The expected source access point identifier
+                            (SAPI) portion of the received trace string, up to 15
+                            characters, excluding the first byte in the TTI SAPI overhead,
+                            which is implicitly always null.
+                          required: false
+                          type: str
+                        mismatch_fail_mode:
+                          choices:
+                          - none
+                          - alarm-only
+                          - squelch-traffic
+                          description: The trail trace identifier (TTI) mismatch failure
+                            mode. When TTI mismatch condition occurs, this indicates
+                            the consequent action taken, e.g. whether or not to raise
+                            an alarm.
+                          required: false
+                          type: str
+                        mismatch_mode:
+                          choices:
+                          - operator-only
+                          - sapi
+                          - dapi
+                          - sapi-and-dapi
+                          description: The trail trace identifier (TTI) mismatch mode,
+                            indicating which fields of the TTI overhead are used for
+                            trace mismatch detection.
+                          required: false
+                          type: str
+                        tx_dapi:
+                          description: The destination access point identifier (DAPI)
+                            portion of the transmitted trace string, up to 15 characters,
+                            excluding the first byte in the TTI DAPI overhead, which
+                            is implicitly always null.
+                          required: false
+                          type: str
+                        tx_oper:
+                          description: Tx operator-specific trace string, up to 32
+                            characters. If this string value is changed the Expected
+                            Rx oper string will also be updated to the same value.
+                          required: false
+                          type: str
+                        tx_oper_mode:
+                          choices:
+                          - manual
+                          - automatic
+                          description: Specifies whether to allow manual provisioning
+                            of the transmitted TTI string, or let the system assign
+                            this value automatically based on a pre-defined format.
+                          required: false
+                          type: str
+                        tx_sapi:
+                          description: The source access point identifier (SAPI) portion
+                            of the transmitted trace string, up to 15 characters,
+                            excluding the first byte in the TTI SAPI overhead, which
+                            is implicitly always null.
+                          required: false
+                          type: str
+                      type: dict
+                    section:
+                      description: OTUk section trace attributes for this port.
+                      suboptions:
+                        exp_dapi:
+                          description: The expected destination access point identifier
+                            (DAPI) portion of the received trace string, up to 15
+                            characters, excluding the first byte in the TTI DAPI overhead,
+                            which is implicitly always null.
+                          required: false
+                          type: str
+                        exp_oper:
+                          description: Expected Rx operator-specific trace string,
+                            up to 32 characters. If this string value is changed the
+                            Tx oper string will also be updated to the same value.
+                          required: false
+                          type: str
+                        exp_sapi:
+                          description: The expected source access point identifier
+                            (SAPI) portion of the received trace string, up to 15
+                            characters, excluding the first byte in the TTI SAPI overhead,
+                            which is implicitly always null.
+                          required: false
+                          type: str
+                        mismatch_fail_mode:
+                          choices:
+                          - none
+                          - alarm-only
+                          - squelch-traffic
+                          description: The trail trace identifier (TTI) mismatch failure
+                            mode. When TTI mismatch condition occurs, this indicates
+                            the consequent action taken, e.g. whether or not to raise
+                            an alarm.
+                          required: false
+                          type: str
+                        mismatch_mode:
+                          choices:
+                          - operator-only
+                          - sapi
+                          - dapi
+                          - sapi-and-dapi
+                          description: The trail trace identifier (TTI) mismatch mode,
+                            indicating which fields of the TTI overhead are used for
+                            trace mismatch detection.
+                          required: false
+                          type: str
+                        tx_dapi:
+                          description: The destination access point identifier (DAPI)
+                            portion of the transmitted trace string, up to 15 characters,
+                            excluding the first byte in the TTI DAPI overhead, which
+                            is implicitly always null.
+                          required: false
+                          type: str
+                        tx_oper:
+                          description: Tx operator-specific trace string, up to 32
+                            characters. If this string value is changed the Expected
+                            Rx oper string will also be updated to the same value.
+                          required: false
+                          type: str
+                        tx_oper_mode:
+                          choices:
+                          - manual
+                          - automatic
+                          description: Specifies whether to allow manual provisioning
+                            of the transmitted TTI string, or let the system assign
+                            this value automatically based on a pre-defined format.
+                          required: false
+                          type: str
+                        tx_sapi:
+                          description: The source access point identifier (SAPI) portion
+                            of the transmitted trace string, up to 15 characters,
+                            excluding the first byte in the TTI SAPI overhead, which
+                            is implicitly always null.
+                          required: false
+                          type: str
+                      type: dict
+                  type: dict
+              type: dict
+          type: dict
+        state:
+          description: Port administrative and operational states.
+          suboptions:
+            admin_state:
+              choices:
+              - enabled
+              - disabled
+              description: Administrative state of the port. Intended for future use.
+              required: false
+              type: str
+          type: dict
+      type: list
+  type: dict
