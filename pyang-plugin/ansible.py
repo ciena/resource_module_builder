@@ -76,16 +76,19 @@ def get_nested_schema(schema, sub_path):
 
 
 def prune_statements(stmt):
-    """Prunes notification and rpc statements, as well as containers and leafs that are config false."""
+    """Prunes notification, rpc, augment, and deviation statements, as well as containers and leafs that are config false."""
     pruned_children = []
     for child in stmt.i_children:
-        if child.keyword in ("notification", "rpc"):
+        if child.keyword in ("notification", "rpc", "augment", "deviation"):
             logging.debug(f"Pruning {child.keyword} statement: {child.arg}")
             continue
-        if child.keyword in ("container", "leaf", "leaf-list") and not child.i_config:
+        if (
+            child.keyword in ("container", "leaf", "leaf-list", "list")
+            and not child.i_config
+        ):
             logging.debug(f"Pruning config false {child.keyword}: {child.arg}")
             continue
-        if hasattr(child, 'i_children'):
+        if hasattr(child, "i_children"):
             prune_statements(child)
         pruned_children.append(child)
     stmt.i_children = pruned_children
@@ -138,10 +141,14 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 f"YANG module must contain a namespace statement: {root_stmt.arg}"
             )
         xml_namespace = namespace_stmt.arg
-
+        # convert xml_namespace to friendly file name
+        filename = xml_namespace.split("/")[-1].split(":")[-1]
         logging.info(f"Producing schema for namespace: {xml_namespace}")
         try:
             schema = produce_schema(root_stmt)
+            # output the raw schema to a file
+            with open(f"schemas/{filename}.yml", "w") as f:
+                yaml.dump(schema, f, Dumper=CustomDumper)
             logging.info(f"Converting schema to Ansible format: {xml_namespace}")
             converted_schema = convert_schema_to_ansible(
                 schema, xml_namespace, root_stmt, network_os
@@ -246,10 +253,6 @@ def produce_schema(root_stmt):
                     )
             else:
                 logging.warning(f"Unsupported keyword: {child.keyword} {child.arg}")
-        elif child.keyword in ("rpc", "notification"):
-            logging.debug(
-                f"Skipping non-data definition keyword: {child.keyword} {child.arg}"
-            )
         else:
             logging.warning(f"Unexpected keyword: {child.keyword} {child.arg}")
     return result
