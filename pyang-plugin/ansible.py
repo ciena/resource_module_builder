@@ -115,7 +115,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
         if ctx.opts.ansible_debug:
             logging.basicConfig(level=logging.DEBUG)
         else:
-            logging.basicConfig(level=logging.WARNING)  # Or INFO, as appropriate
+            logging.basicConfig(level=logging.INFO)  # Or INFO, as appropriate
 
         network_os = ctx.opts.network_os
         logging.debug(f"network_os: {network_os}")
