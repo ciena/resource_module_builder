@@ -76,15 +76,17 @@ def get_nested_schema(schema, sub_path):
 
 
 def prune_statements(stmt):
-    """Prunes notification and rpc statements, as well as containers that are config false."""
+    """Prunes notification and rpc statements, as well as containers and leafs that are config false."""
     pruned_children = []
     for child in stmt.i_children:
         if child.keyword in ("notification", "rpc"):
             logging.debug(f"Pruning {child.keyword} statement: {child.arg}")
             continue
-        if child.keyword == "container" and not child.i_config:
-            logging.debug(f"Pruning config false container: {child.arg}")
+        if child.keyword in ("container", "leaf", "leaf-list") and not child.i_config:
+            logging.debug(f"Pruning config false {child.keyword}: {child.arg}")
             continue
+        if hasattr(child, 'i_children'):
+            prune_statements(child)
         pruned_children.append(child)
     stmt.i_children = pruned_children
     return stmt
