@@ -150,7 +150,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 yaml.dump(schema, f, Dumper=CustomDumper)
             logging.info(f"Converting schema to Ansible format: {xml_namespace}")
             converted_schema = convert_schema_to_ansible(
-                schema, xml_namespace, root_stmt, network_os
+                schema, xml_namespace, network_os
             )
         except Exception as e:
             logging.error(f"Error during schema processing: {e}", exc_info=True)
@@ -257,7 +257,7 @@ def produce_schema(root_stmt):
     return result
 
 
-def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
+def convert_schema_to_ansible(schema, xml_namespace, network_os):
     """Converts the schema to Ansible module documentation format."""
 
     if not schema:
@@ -274,35 +274,44 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
     config = {}
 
     if len(schema) > 1:
-        raise error.EmitError(
-            f"Multiple top-level keys found in schema. Expected only one: {xml_namespace}"
-        )
+        resource = xml_namespace.split(":")[-1].split("/")[-1].split("-")[-1]
+        module_name = f"{network_os}_{resource}"
+        config = schema
     # iterate through key/values in schema
     if len(schema) == 1:
         for parent_key, parent_value in schema.items():
-            xml_root_key = parent_key
-            resource = parent_key
+            xml_root_key = parent_key.replace("_", "-")
+            resource = parent_key.replace("_", "-")
             parent = schema[parent_key]
             module_name = f"{network_os}_{parent_key}"
             suboptions = parent.get("suboptions")
-            for child_key, child_value in suboptions.items():
-                if isinstance(child_value, dict) and child_value.get("type") == "list":
-                    logging.info(f"Singular list found: {xml_namespace}")
-                    logging.info(f"Singular list found: {child_key}")
-                    config = child_value
-                    description = f"Manage {parent_key} {child_key} on Ciena {network_os} devices."
-                    short_description = f'{parent_value.get("description")}. {child_value.get("description")}'
-                    xml_items = child_key
-                    xml_items_key = child_value['key']
-                elif isinstance(child_value, dict) and child_value.get("type") == "dict":
-                    logging.info(f"Dictionary found: {xml_namespace}")
-                    logging.info(f"Dictionary found: {child_key}")
-                    config = child_value
-                    description = f"Manage {parent_key} on Ciena {network_os} devices."
-                    short_description = parent_value.get("description")
-                else:
-                    logging.error(f"Unexpected schema format: {xml_namespace}")
-                    raise error.EmitError(f"Unexpected schema format: {xml_namespace}")
+            if len(suboptions) == 1:
+                # This is a single entity yang that can be treated as a root config
+                for child_key, child_value in suboptions.items():
+                    logging.info(f"Processing child: {child_key}")
+                    if isinstance(child_value, dict) and child_value.get("type") == "list":
+                        logging.info(f"Singular list found: {xml_namespace}")
+                        logging.info(f"Singular list found: {child_key}")
+                        config = child_value
+                        short_description = f"Manage {parent_key} {child_key} on Ciena {network_os} devices."
+                        description = f'{parent_value.get("description")}. {child_value.get("description")}'
+                        xml_items = child_key.replace("_", "-")
+                        xml_items_key = child_value['key'].replace("_", "-")
+                    elif isinstance(child_value, dict) and child_value.get("type") == "dict":
+                        logging.info(f"Dictionary found: {xml_namespace}")
+                        logging.info(f"Dictionary found: {child_key}")
+                        config = child_value
+                        short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                        description = parent_value.get("description")
+                    else:
+                        config = suboptions
+                        short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                        description = parent_value.get("description")
+            else:
+                # This is a multi prop yang that needs to be treated each
+                config = suboptions
+                short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                description = parent_value.get("description")
 
     result = {
         "GENERATOR_VERSION": "2.0",

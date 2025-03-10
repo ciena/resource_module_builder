@@ -3,8 +3,8 @@ NETWORK_OS: saos10
 RESOURCE: snmp
 XML_NAMESPACE: urn:ietf:params:xml:ns:yang:ietf-snmp
 XML_ROOT_KEY: snmp
-XML_ITEMS: target
-XML_ITEMS_KEY: name
+XML_ITEMS: null
+XML_ITEMS_KEY: null
 ANSIBLE_METADATA:
   metadata_version: '2.0'
   status:
@@ -13,58 +13,533 @@ ANSIBLE_METADATA:
 COPYRIGHT: Copyright 2025 Ciena
 DOCUMENTATION:
   module: saos10_snmp
-  short_description: Manage snmp on Ciena saos10 devices
+  short_description: Manage snmp on Ciena saos10 devices.
   description: Top-level container for SNMP-related configuration and status objects.
   author: Ciena
   options:
     config:
-      description: List of targets.
-      type: list
-      elements: dict
-      suboptions:
-        name:
-          description: 'Identifies the target. (Key for list: target)'
-          type: str
-          required: true
-        target_params:
-          description: No description available
-          type: str
-          required: true
-        mms:
-          description: The maximum message size.
-          type: str
-          required: false
-        retries:
-          description: Needed only if this target can receive InformRequest-PDUs.
-          type: int
-          required: false
-        tag:
-          description: List of tag values used to select target addresses.
-          type: list
-          elements: str
-        timeout:
-          description: Needed only if this target can receive InformRequest-PDUs.
-          type: int
-          required: false
-        udp:
-          description: No description available
-          type: dict
-          suboptions:
-            ip:
-              description: No description available
-              type: str
-              required: true
-            port:
-              description: UDP port number.
-              type: int
-              required: false
-            prefix_length:
-              description: The value of this leaf must match the value of ../snmp;ip. If ../snmp;ip contains an IPv4 address, this leaf must be
-                less than or equal to 32. If it contains an IPv6 address, it must be less than or equal to 128. Note that the prefix-length is
-                currently only used by the Community-based Security Model to filter incoming messages. Furthermore, the prefix-length filtering
-                does not cover all possible filters supported by the corresponding MIB object.
-              type: int
-              required: false
+      community:
+        description: List of communities.
+        type: list
+        elements: dict
+        suboptions:
+          index:
+            description: 'Index into the community list. (Key for list: community)'
+            type: str
+            required: true
+          security_name:
+            description: The snmpCommunitySecurityName of this entry.
+            type: str
+            required: true
+          binary_name:
+            description: A community name represented as a binary value.
+            type: str
+            required: false
+          context:
+            description: The context in which management information is accessed when using the community string specified by this entry.
+            type: str
+            required: false
+          engine_id:
+            description: If not set, the value of the local SNMP engine is operationally used by the device.
+            type: str
+            required: false
+          target_tag:
+            description: Used to limit access for this community to the specified targets. Implementations MAY restrict the values of this leaf
+              to be one of the available values of /snmp/target/tag in a valid configuration.
+            type: str
+            required: false
+          text_name:
+            description: A community name that can be represented as a YANG string.
+            type: str
+            required: false
+        key: index
+      engine:
+        description: Configuration of the SNMP engine.
+        type: dict
+        suboptions:
+          enable_authen_traps:
+            description: Indicates whether the SNMP entity is permitted to generate authenticationFailure traps.
+            type: bool
+            required: false
+          enabled:
+            description: Enables the SNMP engine.
+            type: bool
+            required: false
+          engine_id:
+            description: The local SNMP engine's administratively assigned unique identifier. If this leaf is not set, the device automatically
+              calculates an engine ID, as described in RFC 3411. A server MAY initialize this leaf with the automatically created value.
+            type: str
+            required: false
+          listen:
+            description: Configuration of the transport endpoints on which the engine listens.
+            type: list
+            elements: dict
+            suboptions:
+              name:
+                description: 'An arbitrary name for the list entry. (Key for list: listen)'
+                type: str
+                required: true
+              udp:
+                description: No description available
+                type: dict
+                suboptions:
+                  ip:
+                    description: The IPv4 or IPv6 address on which the engine listens.
+                    type: str
+                    required: true
+                  port:
+                    description: The UDP port on which the engine listens. If the port is not configured, an engine that acts as a Command Responder
+                      uses port 161, and an engine that acts as a Notification Receiver uses port 162.
+                    type: int
+                    required: false
+            key: name
+          version:
+            description: SNMP version used by the engine.
+            type: dict
+            suboptions:
+              v1:
+                description: No description available
+                type: list
+                required: false
+                elements: str
+                choices:
+                - 'null'
+              v2c:
+                description: No description available
+                type: list
+                required: false
+                elements: str
+                choices:
+                - 'null'
+              v3:
+                description: No description available
+                type: list
+                required: false
+                elements: str
+                choices:
+                - 'null'
+      notify:
+        description: Targets that will receive notifications. Entries in this list are mapped 1-1 to entries in snmpNotifyTable, except that if
+          an entry in snmpNotifyTable has an snmpNotifyTag for which no snmpTargetAddrEntry exists, then the snmpNotifyTable entry is not mapped
+          to an entry in this list.
+        type: list
+        elements: dict
+        suboptions:
+          name:
+            description: 'An arbitrary name for the list entry. (Key for list: notify)'
+            type: str
+            required: true
+          tag:
+            description: Target tag, selects a set of notification targets. Implementations MAY restrict the values of this leaf to be one of
+              the available values of /snmp/target/tag in a valid configuration.
+            type: str
+            required: true
+          type:
+            description: Defines the notification type to be generated.
+            type: str
+            required: false
+            choices:
+            - trap
+            - inform
+        key: name
+      notify_filter_profile:
+        description: Notification filter profiles. The leaf /snmp/target/notify-filter-profile is used to associate a filter profile with a target.
+          If an entry in this list is referred to by one or more /snmp/target/notify-filter-profile items, each such notify-filter-profile is
+          represented by one snmpNotifyFilterProfileEntry. If an entry in this list is not referred to by any /snmp/target/notify-filter-profile,
+          the entry is not mapped to snmpNotifyFilterProfileTable.
+        type: list
+        elements: dict
+        suboptions:
+          name:
+            description: 'Name of the filter profile. (Key for list: notify-filter-profile)'
+            type: str
+            required: true
+          exclude:
+            description: A family of subtrees excluded from this filter.
+            type: list
+            elements: str
+          include:
+            description: A family of subtrees included in this filter.
+            type: list
+            elements: str
+        key: name
+      proxy:
+        description: List of proxy parameters.
+        type: list
+        elements: dict
+        suboptions:
+          type:
+            description: No description available
+            type: str
+            required: true
+            choices:
+            - read
+            - write
+            - trap
+            - inform
+          context_engine_id:
+            description: No description available
+            type: str
+            required: true
+          name:
+            description: 'Identifies the proxy parameter entry. (Key for list: proxy)'
+            type: str
+            required: true
+          context_name:
+            description: No description available
+            type: str
+            required: false
+          multiple_target_out:
+            description: Implementations MAY restrict the values of this leaf to be one of the available values of /snmp/target/tag in a valid
+              configuration.
+            type: str
+            required: false
+          single_target_out:
+            description: Implementations MAY restrict the values of this leaf to be one of the available values of /snmp/target/name in a valid
+              configuration.
+            type: str
+            required: false
+          target_params_in:
+            description: The name of a target parameters list entry. Implementations MAY restrict the values of this leaf to be one of the available
+              values of /snmp/target-params/name in a valid configuration.
+            type: str
+            required: false
+        key: name
+      target:
+        description: List of targets.
+        type: list
+        elements: dict
+        suboptions:
+          name:
+            description: 'Identifies the target. (Key for list: target)'
+            type: str
+            required: true
+          target_params:
+            description: No description available
+            type: str
+            required: true
+          mms:
+            description: The maximum message size.
+            type: str
+            required: false
+          retries:
+            description: Needed only if this target can receive InformRequest-PDUs.
+            type: int
+            required: false
+          tag:
+            description: List of tag values used to select target addresses.
+            type: list
+            elements: str
+          timeout:
+            description: Needed only if this target can receive InformRequest-PDUs.
+            type: int
+            required: false
+          udp:
+            description: No description available
+            type: dict
+            suboptions:
+              ip:
+                description: No description available
+                type: str
+                required: true
+              port:
+                description: UDP port number.
+                type: int
+                required: false
+              prefix_length:
+                description: The value of this leaf must match the value of ../snmp;ip. If ../snmp;ip contains an IPv4 address, this leaf must
+                  be less than or equal to 32. If it contains an IPv6 address, it must be less than or equal to 128. Note that the prefix-length
+                  is currently only used by the Community-based Security Model to filter incoming messages. Furthermore, the prefix-length filtering
+                  does not cover all possible filters supported by the corresponding MIB object.
+                type: int
+                required: false
+        key: name
+      target_params:
+        description: List of target parameters.
+        type: list
+        elements: dict
+        suboptions:
+          name:
+            description: 'No description available (Key for list: target-params)'
+            type: str
+            required: true
+          notify_filter_profile:
+            description: This leafref leaf is used to represent the sparse relationship between the /snmp/target-params list and the /snmp/notify-filter-profile
+              list.
+            type: str
+            required: false
+        key: name
+      tlstm:
+        description: No description available
+        type: dict
+        suboptions:
+          cert_to_name:
+            description: This list defines how certificates are mapped to names. The name is derived by considering each cert-to-name list entry
+              in order. The cert-to-name entry's fingerprint determines whether the list entry is a match; 1) If the cert-to-name list entry's
+              fingerprint value matches that of the presented certificate, then consider the list entry a successful match. 2) If the cert-to-name
+              list entry's fingerprint value matches that of a locally held copy of a trusted CA certificate, and that CA certificate was part
+              of the CA certificate chain to the presented certificate, then consider the list entry a successful match. Once a matching cert-to-name
+              list entry has been found, the map-type is used to determine how the name associated with the certificate should be determined.
+              See the map-type leaf's description for details on determining the name value. If it is impossible to determine a name from the
+              cert-to-name list entry's data combined with the data presented in the certificate, then additional cert-to-name list entries MUST
+              be searched to look for another potential match. Security administrators are encouraged to make use of certificates with subjectAltName
+              fields that can be mapped to names so that a single root CA certificate can allow all child certificates' subjectAltName fields
+              to map directly to a name via a 1;1 transformation.
+            type: list
+            elements: dict
+            suboptions:
+              fingerprint:
+                description: Specifies a value with which the fingerprint of the full certificate presented by the peer is compared. If the fingerprint
+                  of the full certificate presented by the peer does not match the fingerprint configured, then the entry is skipped, and the
+                  search for a match continues.
+                type: str
+                required: true
+              id:
+                description: 'The id specifies the order in which the entries in the cert-to-name list are searched. Entries with lower numbers
+                  are searched first. (Key for list: cert-to-name)'
+                type: int
+                required: true
+              map_type:
+                description: Mappings that use the snmpTlstmCertToTSNData column need to augment the cert-to-name list with additional configuration
+                  objects corresponding to the snmpTlstmCertToTSNData value. Such objects should use the 'when' statement to make them conditional
+                  based on the map-type.
+                type: str
+                required: true
+                choices:
+                - specified
+                - san-dns-name
+                - san-ip-address
+                - san-any
+                - san-rfc822-name
+                - cert-to-name
+                - common-name
+              name:
+                description: Directly specifies the NETCONF username when the map-type is 'specified'.
+                type: str
+                required: true
+            key: id
+      tsm:
+        description: Configuration of the Transport Security Model.
+        type: dict
+        suboptions:
+          use_prefix:
+            description: No description available
+            type: bool
+            required: false
+      usm:
+        description: Configuration of the User-based Security Model.
+        type: dict
+        suboptions:
+          local:
+            description: No description available
+            type: dict
+            suboptions:
+              user:
+                description: No description available
+                type: list
+                elements: dict
+                suboptions:
+                  name:
+                    description: 'No description available (Key for list: user)'
+                    type: str
+                    required: true
+                  auth:
+                    description: Enables authentication of the user.
+                    type: dict
+                    suboptions:
+                      md5:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                      sha:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                  priv:
+                    description: Enables encryption of SNMP messages.
+                    type: dict
+                    suboptions:
+                      aes:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                      des:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                key: name
+          remote:
+            description: No description available
+            type: list
+            elements: dict
+            suboptions:
+              engine_id:
+                description: 'No description available (Key for list: remote)'
+                type: str
+                required: true
+              user:
+                description: No description available
+                type: list
+                elements: dict
+                suboptions:
+                  name:
+                    description: 'No description available (Key for list: user)'
+                    type: str
+                    required: true
+                  auth:
+                    description: Enables authentication of the user.
+                    type: dict
+                    suboptions:
+                      md5:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                      sha:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                  priv:
+                    description: Enables encryption of SNMP messages.
+                    type: dict
+                    suboptions:
+                      aes:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                      des:
+                        description: No description available
+                        type: dict
+                        suboptions:
+                          key:
+                            description: Localized key specified as a list of colon-specified hexadecimal octets.
+                            type: str
+                            required: true
+                key: name
+            key: engine-id
+      vacm:
+        description: Configuration of the View-based Access Control Model.
+        type: dict
+        suboptions:
+          group:
+            description: VACM groups. This data model has a different structure than the MIB. Groups are explicitly defined in this list, and
+              group members are defined in the 'member' list (mapped to vacmSecurityToGroupTable), and access for the group is defined in the
+              'access' list (mapped to vacmAccessTable).
+            type: list
+            elements: dict
+            suboptions:
+              name:
+                description: 'The name of this VACM group. (Key for list: group)'
+                type: str
+                required: true
+              access:
+                description: Definition of access right for groups.
+                type: list
+                elements: dict
+                suboptions:
+                  context:
+                    description: 'The context (prefix) under which the access rights apply. (Key for list: access)'
+                    type: str
+                    required: true
+                  security_level:
+                    description: 'The minimum security level under which the access rights apply. (Key for list: access)'
+                    type: str
+                    required: true
+                    choices:
+                    - no-auth-no-priv
+                    - auth-no-priv
+                    - auth-priv
+                  security_model:
+                    description: 'The security model under which the access rights apply. (Key for list: access)'
+                    type: str
+                    required: true
+                  context_match:
+                    description: No description available
+                    type: str
+                    required: false
+                    choices:
+                    - exact
+                    - prefix
+                  notify_view:
+                    description: The name of the MIB view of the SNMP context authorizing notify access. If this leaf does not exist in a configuration,
+                      it maps to a zero-length vacmAccessNotifyViewName. Implementations MAY restrict the values of this leaf to be one of the
+                      available values of /snmp/vacm/view/name in a valid configuration.
+                    type: str
+                    required: false
+                  read_view:
+                    description: The name of the MIB view of the SNMP context authorizing read access. If this leaf does not exist in a configuration,
+                      it maps to a zero-length vacmAccessReadViewName. Implementations MAY restrict the values of this leaf to be one of the available
+                      values of /snmp/vacm/view/name in a valid configuration.
+                    type: str
+                    required: false
+                  write_view:
+                    description: The name of the MIB view of the SNMP context authorizing write access. If this leaf does not exist in a configuration,
+                      it maps to a zero-length vacmAccessWriteViewName. Implementations MAY restrict the values of this leaf to be one of the
+                      available values of /snmp/vacm/view/name in a valid configuration.
+                    type: str
+                    required: false
+                key: context security-model security-level
+              member:
+                description: A member of this VACM group. A specific combination of security-name and security-model MUST NOT be present in more
+                  than one group.
+                type: list
+                elements: dict
+                suboptions:
+                  security_name:
+                    description: 'The securityName of a group member. (Key for list: member)'
+                    type: str
+                    required: true
+                  security_model:
+                    description: The security models under which this security-name is a member of this group.
+                    type: list
+                    elements: str
+                key: security-name
+            key: name
+          view:
+            description: Definition of MIB views.
+            type: list
+            elements: dict
+            suboptions:
+              name:
+                description: 'The name of this VACM MIB view. (Key for list: view)'
+                type: str
+                required: true
+              exclude:
+                description: A family of subtrees excluded from this MIB view.
+                type: list
+                elements: str
+              include:
+                description: A family of subtrees included in this MIB view.
+                type: list
+                elements: str
+            key: name
     state:
       description: The state of the configuration after module completion.
       type: str
