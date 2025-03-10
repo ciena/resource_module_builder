@@ -263,13 +263,6 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
     if not schema:
         raise error.EmitError(f"Schema is empty: {xml_namespace}")
 
-    if len(schema) > 1:
-        raise error.EmitError(
-            f"Multiple top-level keys found in schema. Expected only one: {xml_namespace}"
-        )
-
-    config = next(iter(schema.values()))
-
     resource = None
     xml_root_key = None
     xml_items = None
@@ -278,31 +271,38 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
     description = None
     short_description = None
     author = "Ciena"
+    config = {}
 
-    for child in root_stmt.i_children:
-        if child.keyword == "module":
-            module_name = child.arg
-        elif child.keyword == "container":
-            resource = child.arg
-            short_description = f"Manage {resource} on Ciena {network_os} devices"
-            xml_root_key = child.arg
-            module_name = f"{network_os}_{resource.replace('-', '_')}"
-
-            for sub_child in child.i_children:
-                if sub_child.keyword == "list":
-                    xml_items = sub_child.arg
-                    key_stmt = sub_child.search_one("key")
-                    if key_stmt:
-                        xml_items_key = key_stmt.arg
-                    else:
-                        xml_items_key = None
-
-                    config = get_nested_schema(config, f"suboptions.{xml_items}")
-                    break
-
-            description_stmt = child.search_one("description")
-            if description_stmt:
-                description = preprocess_string(description_stmt.arg)
+    if len(schema) > 1:
+        raise error.EmitError(
+            f"Multiple top-level keys found in schema. Expected only one: {xml_namespace}"
+        )
+    # iterate through key/values in schema
+    if len(schema) == 1:
+        for parent_key, parent_value in schema.items():
+            xml_root_key = parent_key
+            resource = parent_key
+            parent = schema[parent_key]
+            module_name = f"{network_os}_{parent_key}"
+            suboptions = parent.get("suboptions")
+            for child_key, child_value in suboptions.items():
+                if isinstance(child_value, dict) and child_value.get("type") == "list":
+                    logging.info(f"Singular list found: {xml_namespace}")
+                    logging.info(f"Singular list found: {child_key}")
+                    config = child_value
+                    description = f"Manage {parent_key} {child_key} on Ciena {network_os} devices."
+                    short_description = f'{parent_value.get("description")}. {child_value.get("description")}'
+                    xml_items = child_key
+                    xml_items_key = child_value['key']
+                elif isinstance(child_value, dict) and child_value.get("type") == "dict":
+                    logging.info(f"Dictionary found: {xml_namespace}")
+                    logging.info(f"Dictionary found: {child_key}")
+                    config = child_value
+                    description = f"Manage {parent_key} on Ciena {network_os} devices."
+                    short_description = parent_value.get("description")
+                else:
+                    logging.error(f"Unexpected schema format: {xml_namespace}")
+                    raise error.EmitError(f"Unexpected schema format: {xml_namespace}")
 
     result = {
         "GENERATOR_VERSION": "2.0",
@@ -442,6 +442,7 @@ def produce_list(stmt):
         if description_stmt
         else "No description available"
     )
+    key = stmt.search_one("key")
 
     result = {
         arg: {
@@ -449,6 +450,7 @@ def produce_list(stmt):
             "elements": "dict",
             "description": description_str,
             "suboptions": suboptions_dict,
+            "key": key.arg,
         }
     }
     logging.debug(f"Result for list {stmt.arg}: {result}")
