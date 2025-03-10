@@ -74,6 +74,21 @@ def get_nested_schema(schema, sub_path):
     return schema
 
 
+def prune_statements(stmt):
+    """Prunes notification and rpc statements, as well as containers that are config false."""
+    pruned_children = []
+    for child in stmt.i_children:
+        if child.keyword in ("notification", "rpc"):
+            logging.debug(f"Pruning {child.keyword} statement: {child.arg}")
+            continue
+        if child.keyword == "container" and not child.i_config:
+            logging.debug(f"Pruning config false container: {child.arg}")
+            continue
+        pruned_children.append(child)
+    stmt.i_children = pruned_children
+    return stmt
+
+
 class AnsiblePlugin(plugin.PyangPlugin):
     def add_output_format(self, fmts):
         fmts["ansible"] = self
@@ -108,8 +123,14 @@ class AnsiblePlugin(plugin.PyangPlugin):
         if not modules:
             logging.error("No modules provided to emit.")
             return
+        if len(modules) > 1:
+            logging.error("Multiple modules provided. Using the first one.")
+            exit(1)
 
         root_stmt = modules[0]
+
+        # Prune unwanted statements
+        root_stmt = prune_statements(root_stmt)
 
         # Configure logging based on debug option
         if ctx.opts.ansible_debug:
