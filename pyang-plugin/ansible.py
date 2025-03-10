@@ -18,6 +18,7 @@ from pyang import error
 
 # Set recursion limit - increased for safety, but depth checks are better
 sys.setrecursionlimit(3000)
+logging.basicConfig(level=logging.INFO)
 
 
 # Custom YAML Dumper for OrderedDict support
@@ -96,12 +97,6 @@ class AnsiblePlugin(plugin.PyangPlugin):
     def add_opts(self, optparser):
         optlist = [
             optparse.make_option(
-                "--ansible-debug",
-                dest="ansible_debug",
-                action="store_true",
-                help="Enable debugging output for the Ansible plugin.",
-            ),
-            optparse.make_option(
                 "-n",
                 "--network-os",
                 dest="network_os",
@@ -131,19 +126,15 @@ class AnsiblePlugin(plugin.PyangPlugin):
         # Prune unwanted statements
         root_stmt = prune_statements(root_stmt)
 
-        # Configure logging based on debug option
-        if ctx.opts.ansible_debug:
-            logging.basicConfig(level=logging.DEBUG)
-        else:
-            logging.basicConfig(level=logging.INFO)  # Or INFO, as appropriate
-
         network_os = ctx.opts.network_os
         logging.debug(f"network_os: {network_os}")
 
         # Extract namespace; raise a more specific exception
         namespace_stmt = root_stmt.search_one("namespace")
         if not namespace_stmt:
-            raise error.EmitError(f"YANG module must contain a namespace statement: {root_stmt.arg}")
+            raise error.EmitError(
+                f"YANG module must contain a namespace statement: {root_stmt.arg}"
+            )
         xml_namespace = namespace_stmt.arg
 
         logging.info(f"Producing schema for namespace: {xml_namespace}")
@@ -154,9 +145,7 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 schema, xml_namespace, root_stmt, network_os
             )
         except Exception as e:
-            logging.error(
-                f"Error during schema processing: {e}", exc_info=ctx.opts.ansible_debug
-            )  # Show stack trace only in debug mode
+            logging.error(f"Error during schema processing: {e}", exc_info=True)
             return  # Stop processing if schema generation/conversion failed.
 
         priority_keys = [
@@ -290,10 +279,6 @@ def convert_schema_to_ansible(schema, xml_namespace, root_stmt, network_os):
         if child.keyword == "module":
             module_name = child.arg
         elif child.keyword == "container":
-            if not child.i_config:
-                logging.debug(f"Skipping config false container: {child.arg}")
-                continue
-
             resource = child.arg
             short_description = f"Manage {resource} on Ciena {network_os} devices"
             xml_root_key = child.arg
@@ -394,10 +379,6 @@ def produce_leaf(stmt):
     logging.debug(f"Producing leaf: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not hasattr(stmt, 'i_config') or not stmt.i_config:
-        logging.debug(f"Skipping non-configurable leaf: {arg}")
-        return {}
-
     type_stmt = stmt.search_one("type")
     if not type_stmt:
         logging.error(f"Leaf {stmt.arg} has no type defined.")
@@ -437,10 +418,6 @@ def produce_list(stmt):
     logging.debug(f"Producing list: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not hasattr(stmt, 'i_config') or not stmt.i_config:
-        logging.debug(f"Skipping non-configurable list: {arg}")
-        return {}
-
     suboptions_dict = {}
     for child in stmt.i_children:
         if child.keyword in producers:
@@ -479,10 +456,6 @@ def produce_leaf_list(stmt):
     logging.debug(f"Producing leaf-list: {stmt.arg}")
     arg = qualify_name(stmt)
 
-    if not stmt.i_config:
-        logging.debug(f"Skipping non-configurable leaf-list: {arg}")
-        return {}
-
     type_stmt = stmt.search_one("type")
     if not type_stmt:
         logging.error(f"Leaf-list {stmt.arg} has no type defined")
@@ -519,10 +492,6 @@ def produce_container(stmt):
     """Produces the Ansible option for a YANG container."""
     logging.debug(f"Producing container: {stmt.arg}")
     arg = qualify_name(stmt)
-
-    if not hasattr(stmt, 'i_config') or not stmt.i_config:
-        logging.debug(f"Skipping non-configurable container: {arg}")
-        return {}
 
     suboptions_dict = {}
     for child in stmt.i_children:
