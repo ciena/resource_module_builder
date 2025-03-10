@@ -1,0 +1,104 @@
+GENERATOR_VERSION: '2.0'
+NETWORK_OS: waveserverai
+RESOURCE: waveserver-protection
+XML_NAMESPACE: urn:ciena:params:xml:ns:yang:ciena-ws:ciena-waveserver-protection
+XML_ROOT_KEY: waveserver-protection
+XML_ITEMS: groups
+XML_ITEMS_KEY: group-id
+ANSIBLE_METADATA:
+  metadata_version: '2.0'
+  status:
+  - preview
+  supported_by: network
+COPYRIGHT: Copyright 2025 Ciena
+DOCUMENTATION:
+  module: waveserverai_waveserver_protection
+  short_description: Manage waveserver_protection groups on Ciena waveserverai devices.
+  description: Waveserver PTP protection configuration data and operational data.. List of protection groups.
+  author: Ciena
+  options:
+    config:
+      description: List of protection groups.
+      type: list
+      elements: dict
+      suboptions:
+        group_id:
+          description: 'Unique identifier string of the protection group. Format is ''PG-<slot>-<port>.<minorport>''. (Key for list: groups)'
+          type: str
+          required: true
+        id:
+          description: Protection group identification attributes.
+          type: dict
+          suboptions:
+            label:
+              description: The user-specified label string for this protection group.
+              type: str
+              required: false
+        member:
+          description: List of members in the protection group.
+          type: list
+          elements: dict
+          suboptions:
+            interface:
+              description: 'Points to the working, common, or protection interface. This is a unique access identifier string of the member PTP
+                (e.g., ''1-1.1''). (Key for list: member)'
+              type: str
+              required: true
+            role:
+              description: 'The role for this member - working, common, or protection. (Key for list: member)'
+              type: str
+              required: true
+              choices:
+              - working
+              - protection
+              - common
+            properties:
+              description: Member properties.
+              type: dict
+              suboptions: {}
+          key: role interface
+        properties:
+          description: Protection group properties.
+          type: dict
+          suboptions:
+            protection_class:
+              description: Protection class for this protection group
+              type: str
+              required: false
+              choices:
+              - eOPS
+              - TT-eOPS
+            recovery_guard_time:
+              description: Number of milliseconds to hold-off after switching before another switch request will be processed.
+              type: int
+              required: false
+            revertive:
+              description: Specifies whether protection switch reversion is enabled on the line. If reversion is enabled, a switch from the working
+                path to the protection path will attempt to re-establish the working path once it is available and the wait-to-restore period
+                has elapsed.
+              type: bool
+              required: false
+            switch_hold_off:
+              description: Number of milliseconds to wait before traffic will be swiched after fault detection.
+              type: int
+              required: false
+            wait_to_restore_timer:
+              description: Number of seconds to wait before traffic will be restored to the working path, if reversion is enabled.
+              type: int
+              required: false
+      key: group-id
+    state:
+      description: The state of the configuration after module completion.
+      type: str
+      choices:
+      - merged
+      - deleted
+      default: merged
+EXAMPLES:
+- merged_example_01.txt
+- deleted_example_01.txt
+notes:
+- This module requires the netconf system service be enabled on the remote device being managed.
+- This module works with connection C(netconf)
+requirements:
+- ncclient (>=v0.6.4)

@@ -45,7 +45,6 @@ waveserverai_yangs=(
   ciena-waveserver-interfaces
   ciena-waveserver-license
   ciena-waveserver-lldp
-  ciena-wavesever-logging
   ciena-waveserver-module
   ciena-waveserver-ndp
   ciena-waveserver-pkix
