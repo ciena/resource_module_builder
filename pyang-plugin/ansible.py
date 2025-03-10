@@ -141,13 +141,12 @@ class AnsiblePlugin(plugin.PyangPlugin):
                 f"YANG module must contain a namespace statement: {root_stmt.arg}"
             )
         xml_namespace = namespace_stmt.arg
-        # convert xml_namespace to friendly file name
-        filename = xml_namespace.split("/")[-1].split(":")[-1]
         logging.info(f"Producing schema for namespace: {xml_namespace}")
         try:
             schema = produce_schema(root_stmt)
             # output the raw schema to a file
-            with open(f"schemas/{filename}.yml", "w") as f:
+            filename = xml_namespace.split("/")[-1].split(":")[-1]
+            with open(f"schemas/{network_os}/{filename}.yml", "w") as f:
                 yaml.dump(schema, f, Dumper=CustomDumper)
             logging.info(f"Converting schema to Ansible format: {xml_namespace}")
             converted_schema = convert_schema_to_ansible(
