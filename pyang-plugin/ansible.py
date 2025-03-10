@@ -121,11 +121,10 @@ class AnsiblePlugin(plugin.PyangPlugin):
 
     def emit(self, ctx, modules, fd):
         if not modules:
-            logging.error("No modules provided to emit.")
-            return
+            raise error.EmitError(f"No modules provided to emit.")
         if len(modules) > 1:
             logging.error("Multiple modules provided. Using the first one.")
-            exit(1)
+            raise error.EmitError(f"Multiple modules provided. ")
 
         root_stmt = modules[0]
 
