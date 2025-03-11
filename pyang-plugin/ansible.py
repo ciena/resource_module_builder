@@ -333,7 +333,7 @@ def convert_schema_to_ansible(schema, xml_namespace, network_os):
             "This module requires the netconf system service be enabled on the remote device being managed.",
             "This module works with connection C(netconf)",
         ],
-        "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],  # Placeholder
+        "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],
     }
     result["DOCUMENTATION"]["module"] = module_name
     result["DOCUMENTATION"]["short_description"] = short_description
