@@ -22,9 +22,14 @@ def create_module(
     structure,
     xml_namespace,
     xml_root_key,
+    potential_module,  # Add potential_module parameter
     xml_items=None,
     xml_items_key=None,
 ):
+    short_description = potential_module.get("description", "")
+    author = "Ciena"  # You can modify this as needed
+    config = potential_module.get("suboptions", {})
+
     result = {
         "GENERATOR_VERSION": "2.0",
         "ANSIBLE_METADATA": {
@@ -37,7 +42,21 @@ def create_module(
         "COPYRIGHT": "Copyright 2025 Ciena",
         "XML_NAMESPACE": xml_namespace,
         "XML_ROOT_KEY": xml_root_key,
-        "DOCUMENTATION": {},
+        "DOCUMENTATION": {
+            "module": module_name,
+            "short_description": short_description,
+            "description": short_description,
+            "author": author,
+            "options": {
+                "config": config,
+                "state": {
+                    "description": ["The state of the configuration"],
+                    "required": True,
+                    "choices": ["merged", "replaced", "deleted"],
+                    "type": "str",
+                },
+            },
+        },
         "requirements": ["ncclient (>=v0.6.4)"],
         "notes": [
             "This module requires the netconf system service be enabled on the remote device being managed.",
@@ -71,6 +90,7 @@ def process_yaml_file(filepath, network_os):
                 structure,
                 xml_namespace,
                 xml_root_key,
+                potential_module,  # Pass potential_module to create_module
                 xml_items,
                 xml_items_key,
             )
