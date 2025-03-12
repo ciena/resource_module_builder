@@ -216,6 +216,23 @@ def process_yaml_file(filepath, network_os):
                         module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
                     )
                 logging.info(f"Module written to {output_filepath}")
+            elif structure == "multiple_properties":
+                module = create_module(
+                    network_os,
+                    module_name,
+                    structure,
+                    xml_namespace,
+                    xml_root_key,
+                    potential_module,
+                )
+                output_dir = os.path.join("models", network_os, xml_root_key)
+                os.makedirs(output_dir, exist_ok=True)
+                output_filepath = os.path.join(output_dir, "model.yml")
+                with open(output_filepath, "w") as output_file:
+                    yaml.dump(
+                        module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                    )
+                logging.info(f"Module written to {output_filepath}")
             elif structure == "single_list_plus_properties":
                 suboptions = potential_module["suboptions"]
                 for property_name, property_value in suboptions.items():
