@@ -194,6 +194,7 @@ def process_yaml_file(filepath, network_os):
                 f"Skipping {filepath} as it does not contain 'xml_namespace'"
             )
         xml_namespace = data["xml_namespace"]
+        schema_name = os.path.splitext(os.path.basename(filepath))[0]
         for module_name, potential_module in data["potential_modules"].items():
             logging.info(f"Determining structure for module {filepath} - {module_name}")
             structure = determine_structure(potential_module)
@@ -217,7 +218,7 @@ def process_yaml_file(filepath, network_os):
                     xml_items,
                     xml_items_key,
                 )
-                output_dir = os.path.join("models", network_os, xml_root_key)
+                output_dir = os.path.join("models", network_os, schema_name, xml_root_key)
                 os.makedirs(output_dir, exist_ok=True)
                 output_filepath = os.path.join(output_dir, "model.yml")
                 with open(output_filepath, "w") as output_file:
@@ -241,7 +242,7 @@ def process_yaml_file(filepath, network_os):
                         xml_items,
                         xml_items_key,
                     )
-                    output_dir = os.path.join("models", network_os, xml_items)
+                    output_dir = os.path.join("models", network_os, schema_name, xml_items)
                     os.makedirs(output_dir, exist_ok=True)
                     output_filepath = os.path.join(output_dir, "model.yml")
                     with open(output_filepath, "w") as output_file:
@@ -265,7 +266,7 @@ def process_yaml_file(filepath, network_os):
                         xml_items,
                         xml_items_key,
                     )
-                    output_dir = os.path.join("models", network_os, xml_items)
+                    output_dir = os.path.join("models", network_os, schema_name, xml_items)
                     os.makedirs(output_dir, exist_ok=True)
                     output_filepath = os.path.join(output_dir, "model.yml")
                     with open(output_filepath, "w") as output_file:
@@ -285,7 +286,7 @@ def process_yaml_file(filepath, network_os):
                     xml_items=xml_items,
                     is_properties_module=True,
                 )
-                properties_output_dir = os.path.join("models", network_os, properties_module_name)
+                properties_output_dir = os.path.join("models", network_os, schema_name, properties_module_name)
                 os.makedirs(properties_output_dir, exist_ok=True)
                 properties_output_filepath = os.path.join(properties_output_dir, "model.yml")
                 with open(properties_output_filepath, "w") as output_file:
@@ -302,7 +303,7 @@ def process_yaml_file(filepath, network_os):
                     xml_root_key,
                     potential_module,
                 )
-                output_dir = os.path.join("models", network_os, xml_root_key)
+                output_dir = os.path.join("models", network_os, schema_name, xml_root_key)
                 os.makedirs(output_dir, exist_ok=True)
                 output_filepath = os.path.join(output_dir, "model.yml")
                 with open(output_filepath, "w") as output_file:
@@ -328,7 +329,7 @@ def process_yaml_file(filepath, network_os):
                     xml_items,
                     xml_items_key,
                 )
-                output_dir = os.path.join("models", network_os, xml_root_key)
+                output_dir = os.path.join("models", network_os, schema_name, xml_root_key)
                 os.makedirs(output_dir, exist_ok=True)
                 output_filepath = os.path.join(output_dir, "model.yml")
                 with open(output_filepath, "w") as output_file:
@@ -348,7 +349,7 @@ def process_yaml_file(filepath, network_os):
                     xml_items=xml_items,
                     is_properties_module=True,
                 )
-                properties_output_dir = os.path.join("models", network_os, properties_module_name)
+                properties_output_dir = os.path.join("models", network_os, schema_name, properties_module_name)
                 os.makedirs(properties_output_dir, exist_ok=True)
                 properties_output_filepath = os.path.join(properties_output_dir, "model.yml")
                 with open(properties_output_filepath, "w") as output_file:
