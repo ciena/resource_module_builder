@@ -62,7 +62,7 @@ waveserverai_yangs=(
 )
 network_os=waveserverai
 for yang in ${waveserverai_yangs[@]}; do
-  pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang >rmb_models/$network_os/$yang.yml
+  pyang -f ansible -n $network_os -p yangs/$network_os yangs/$network_os/$yang.yang > schemas/$network_os/$yang.yml
   # resource=$(yq -e .RESOURCE rmb_models/$network_os/$yang.yml)
   # mkdir -p models/$network_os/$resource
   # cp rmb_models/$network_os/$yang.yml models/$network_os/$resource/model.yml
