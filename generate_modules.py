@@ -65,7 +65,10 @@ def determine_structure(potential_module):
         if list_count == 1:
             result = "single_list_plus_properties"
         elif list_count > 1:
-            result = "multiple_list_plus_properties"
+            if len(suboptions) == list_count:
+                result = "multiple_lists"
+            else:
+                result = "single_list_plus_properties"
         else:
             result = "multiple_properties"
 
@@ -218,6 +221,30 @@ def process_yaml_file(filepath, network_os):
                         module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
                     )
                 logging.info(f"Module written to {output_filepath}")
+            elif structure == "multiple_lists":
+                suboptions = potential_module["suboptions"]
+                for property_name, property_value in suboptions.items():
+                    if property_value["type"] == "list":
+                        xml_items = property_name
+                        xml_items_key = property_value["key"]
+                    module = create_module(
+                        network_os,
+                        module_name,
+                        "single_list",
+                        xml_namespace,
+                        xml_root_key,
+                        potential_module,
+                        xml_items,
+                        xml_items_key,
+                    )
+                    output_dir = os.path.join("models", network_os, xml_items)
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_filepath = os.path.join(output_dir, "model.yml")
+                    with open(output_filepath, "w") as output_file:
+                        yaml.dump(
+                            module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                        )
+                    logging.info(f"Module written to {output_filepath}")
             elif structure == "multiple_properties" or structure == "multiple_list_plus_properties":
                 module = create_module(
                     network_os,
