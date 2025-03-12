@@ -193,9 +193,11 @@ def process_yaml_file(filepath, network_os):
             xml_items_key = None
             if structure == "single_list":
                 suboptions = potential_module["suboptions"]
-                property_name, property_value = next(iter(suboptions.items()))
-                xml_items = property_name
-                xml_items_key = property_value["key"]
+                for property_name, property_value in suboptions.items():
+                    if property_value["type"] == "list":
+                        xml_items = property_name
+                        xml_items_key = property_value["key"]
+                        break
                 module = create_module(
                     network_os,
                     module_name,
@@ -216,9 +218,11 @@ def process_yaml_file(filepath, network_os):
                 logging.info(f"Module written to {output_filepath}")
             elif structure == "single_list_plus_properties":
                 suboptions = potential_module["suboptions"]
-                property_name, property_value = next(iter(suboptions.items()))
-                xml_items = property_name
-                xml_items_key = property_value["key"]
+                for property_name, property_value in suboptions.items():
+                    if property_value["type"] == "list":
+                        xml_items = property_name
+                        xml_items_key = property_value["key"]
+                        break
                 # Create single_list module
                 single_list_module = create_module(
                     network_os,
