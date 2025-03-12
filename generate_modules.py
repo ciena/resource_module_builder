@@ -190,7 +190,7 @@ def process_yaml_file(filepath, network_os):
             output_filepath = os.path.join(output_dir, "model.yml")
             with open(output_filepath, "w") as output_file:
                 yaml.dump(
-                    module, output_file, Dumper=CustomDumper, default_flow_style=False
+                    module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140
                 )
             logging.info(f"Module written to {output_filepath}")
 
