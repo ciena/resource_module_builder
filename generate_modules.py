@@ -77,11 +77,12 @@ def process_yaml_file(filepath, network_os):
 
 def main():
     base_dir = "schemas"
+    files_to_process = ["ciena-flexe.yml", "ciena-bgp.yml"]  # Example list of files to process
     for network_os in os.listdir(base_dir):
         network_os_dir = os.path.join(base_dir, network_os)
         if os.path.isdir(network_os_dir):
             for filename in os.listdir(network_os_dir):
-                if filename.endswith(".yml"):
+                if filename.endswith(".yml") and filename in files_to_process:
                     filepath = os.path.join(network_os_dir, filename)
                     process_yaml_file(filepath, network_os)
 
