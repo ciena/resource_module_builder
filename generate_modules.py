@@ -94,7 +94,12 @@ def process_yaml_file(filepath, network_os):
                 xml_items,
                 xml_items_key,
             )
-            print(module)
+            output_dir = os.path.join("models", network_os, xml_root_key)
+            os.makedirs(output_dir, exist_ok=True)
+            output_filepath = os.path.join(output_dir, "model.yml")
+            with open(output_filepath, "w") as output_file:
+                yaml.dump(module, output_file, default_flow_style=False)
+            print(f"Module written to {output_filepath}")
 
 
 def main():
