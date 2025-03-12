@@ -76,14 +76,16 @@ def create_module(
     xml_items_key=None,
 ):
     short_description = potential_module.get("description", "")
+    description = potential_module.get("description", "")
     author = "Ciena"
     config = potential_module.get("suboptions", {})
     config = reorder_required_first(config)
 
     if structure == "single_list" and xml_items:
         instance_description = config[xml_items].get("description", "")
-        short_description += f" {instance_description}"
+        short_description += f"Manage the {module_name} {xml_items} configuration of a Ciena {network_os} device"
         config = config[xml_items]
+        description = f"{description}\n {instance_description}"
 
     result = OrderedDict(
         [
@@ -111,7 +113,7 @@ def create_module(
                     [
                         ("module", f"{network_os}_{module_name}"),
                         ("short_description", short_description),
-                        ("description", short_description),
+                        ("description", description),
                         ("author", author),
                         (
                             "options",
@@ -126,12 +128,12 @@ def create_module(
                                                     "description",
                                                     ["The state of the configuration"],
                                                 ),
-                                                ("required", True),
+                                                ("type", "str"),
                                                 (
                                                     "choices",
-                                                    ["merged", "replaced", "deleted"],
+                                                    ["merged", "deleted"],
                                                 ),
-                                                ("type", "str"),
+                                                ("default", "merged"),
                                             ]
                                         ),
                                     ),
@@ -141,7 +143,7 @@ def create_module(
                     ]
                 ),
             ),
-            ("requirements", ["ncclient (>=v0.6.4)"]),
+            ("EXAMPLES", ["merged_example_01.txt", "deleted_example_01.txt"]),
             (
                 "notes",
                 [
@@ -149,7 +151,7 @@ def create_module(
                     "This module works with connection C(netconf)",
                 ],
             ),
-            ("EXAMPLES", ["merged_example_01.txt", "deleted_example_01.txt"]),
+            ("requirements", ["ncclient (>=v0.6.4)"]),
         ]
     )
 
@@ -190,7 +192,7 @@ def process_yaml_file(filepath, network_os):
             output_filepath = os.path.join(output_dir, "model.yml")
             with open(output_filepath, "w") as output_file:
                 yaml.dump(
-                    module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140
+                    module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
                 )
             logging.info(f"Module written to {output_filepath}")
 
