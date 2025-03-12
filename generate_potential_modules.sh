@@ -10,14 +10,20 @@ saos10_yangs=(
   ciena-igmp-snooping
   ciena-isis
   ciena-itut-g8032-draft # 1 list + props
+  ciena-ldp
   ciena-mef-access-flow  # multiple
+  ciena-mef-classifier
+  ciena-mef-fd
   ciena-mef-fp
   ciena-mef-logical-port
+  ciena-mpls
+  # ciena-openconfig-system
   ciena-ospf
   ciena-ospfv3
   ciena-packet-otn-port
   ciena-packet-ptp
   ciena-packet-xcvr
+  ciena-rib
   ciena-routing-policy
   ciena-sat
   ciena-sr-policy
