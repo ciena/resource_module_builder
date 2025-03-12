@@ -10,22 +10,21 @@ saos10_yangs=(
   ciena-packet-xcvr
   ciena-cfm
   ciena-flexe            # multiple lists
-
+  ciena-itut-g8032-draft # 1 list + props
   ciena-dhcpv6-client
-  ciena-igmp-snooping
   ciena-mef-logical-port
+  ciena-igmp-snooping
   ciena-ospf
   ciena-ospfv3
   ciena-packet-otn-port
-  ciena-pkix
   ciena-routing-policy
+
   ciena-sat
   ciena-sr-policy
   ciena-sync
   ietf-alarms
   ietf-snmp
   ietf-twamp
-  ciena-itut-g8032-draft # multiple
   ciena-mef-access-flow  # multiple
   mef-cfm                # multiple
 )
