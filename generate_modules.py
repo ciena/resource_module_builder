@@ -14,7 +14,15 @@ def determine_structure(potential_module):
         return "unknown"
 
 
-def create_module(network_os, module_name, structure, xml_namespace, xml_root_key, xml_items=None, xml_items_key=None):
+def create_module(
+    network_os,
+    module_name,
+    structure,
+    xml_namespace,
+    xml_root_key,
+    xml_items=None,
+    xml_items_key=None,
+):
     result = {
         "GENERATOR_VERSION": "2.0",
         "ANSIBLE_METADATA": {
@@ -35,7 +43,7 @@ def create_module(network_os, module_name, structure, xml_namespace, xml_root_ke
         ],
         "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],
     }
-    if structure == 'single_list':
+    if structure == "single_list":
         result["XML_ITEMS"] = xml_items
         result["XML_ITEMS_KEY"] = xml_items_key
     return result
@@ -44,6 +52,8 @@ def create_module(network_os, module_name, structure, xml_namespace, xml_root_ke
 def process_yaml_file(filepath, network_os):
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
+        if "xml_namespace" not in data:
+            raise ValueError(f"Skipping {filepath} as it does not contain 'xml_namespace'")
         xml_namespace = data["xml_namespace"]
         for module_name, potential_module in data["potential_modules"].items():
             structure = determine_structure(potential_module)
