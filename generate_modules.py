@@ -93,22 +93,24 @@ def create_module(
     short_description = potential_module.get("description", "")
     description = potential_module.get("description", "")
     author = "Ciena"
-    config = potential_module.get("suboptions", {})
-    config = reorder_required_first(config)
     resource = module_name.replace("_", "-")
     xml_root_key = xml_root_key.replace("_", "-")
+    config = potential_module
 
     if structure == "single_list" and xml_items:
+        config = potential_module.get("suboptions", {})
         instance_description = config[xml_items].get("description", "")
         short_description += f"Manage the {module_name} {xml_items} configuration of a Ciena {network_os} device"
         config = config[xml_items]
         description = f"{description}\n {instance_description}"
     elif is_properties_module:
         short_description += f"Manage the {module_name} properties configuration of a Ciena {network_os} device"
-        if xml_items in config:
-            del config[xml_items]
+        if xml_items in config['suboptions']:
+            del config['suboptions'][xml_items]
         resource = xml_root_key
         xml_items = None
+
+    config = reorder_required_first(config)
 
     result = OrderedDict(
         [
