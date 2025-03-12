@@ -105,8 +105,10 @@ def create_module(
         description = f"{description}\n {instance_description}"
     elif is_properties_module:
         short_description += f"Manage the {module_name} properties configuration of a Ciena {network_os} device"
-        if xml_items in config['suboptions']:
-            del config['suboptions'][xml_items]
+        if "suboptions" in config:
+            keys_to_delete = [key for key, value in config["suboptions"].items() if value["type"] == "list"]
+            for key in keys_to_delete:
+                del config["suboptions"][key]
         resource = xml_root_key
         xml_items = None
 
