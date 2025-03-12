@@ -25,6 +25,27 @@ logging.basicConfig(
 )
 
 
+def reorder_required_first(data):
+    """Reorders suboptions to place required ones first."""
+    if isinstance(data, dict):
+        if "suboptions" in data and isinstance(data["suboptions"], dict):
+            suboptions = data["suboptions"]
+            required_items = OrderedDict(
+                (k, v) for k, v in suboptions.items() if v.get("required", False)
+            )
+            other_items = OrderedDict(
+                (k, v) for k, v in suboptions.items() if not v.get("required", False)
+            )
+            data["suboptions"] = OrderedDict(
+                list(required_items.items()) + list(other_items.items())
+            )
+
+        return OrderedDict((k, reorder_required_first(v)) for k, v in data.items())
+    elif isinstance(data, list):
+        return [reorder_required_first(item) for item in data]
+    return data
+
+
 def determine_structure(potential_module):
     result = "unknown"
     logging.info("Determining structure for module")
@@ -57,6 +78,7 @@ def create_module(
     short_description = potential_module.get("description", "")
     author = "Ciena"
     config = potential_module.get("suboptions", {})
+    config = reorder_required_first(config)
 
     if structure == "single_list" and xml_items:
         instance_description = config[xml_items].get("description", "")
