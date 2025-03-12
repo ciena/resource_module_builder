@@ -33,6 +33,19 @@ def represent_ordered_dict(dumper, data):
 CustomDumper.add_representer(OrderedDict, represent_ordered_dict)
 
 
+def load_mappings(file_path):
+    """Loads YAML mappings from a file."""
+    try:
+        with open(file_path, "r") as file:
+            return yaml.safe_load(file)
+    except FileNotFoundError:
+        logging.error(f"Mapping file not found: {file_path}")
+        return {}  # Or raise, depending on desired behavior
+    except yaml.YAMLError as e:
+        logging.error(f"Error parsing YAML file {file_path}: {e}")
+        return {}  # Or raise
+
+
 def pyang_plugin_init():
     plugin.register_plugin(AnsiblePlugin())
 
@@ -50,6 +63,16 @@ def order_dict(obj, priority_keys):
     elif isinstance(obj, list):
         return [order_dict(element, priority_keys) for element in obj]
     return obj
+
+
+def get_nested_schema(schema, sub_path):
+    """Retrieves a nested schema element by its path."""
+    keys = sub_path.split(".")
+    for key in keys:
+        schema = schema.get(key, {})
+        if not schema:
+            return {}  # Or None, depending on the use case
+    return schema
 
 
 def prune_statements(stmt):
@@ -122,9 +145,9 @@ class AnsiblePlugin(plugin.PyangPlugin):
         try:
             schema = produce_schema(root_stmt)
             result = {
-                "potential_modules": schema,
-                "xml_namespace": xml_namespace,
-                "network_os": network_os,
+                'potential_modules': schema,
+                'xml_namespace': xml_namespace,
+                'network_os': network_os
             }
 
             logging.info(f"Converting schema to Ansible format: {xml_namespace}")
@@ -136,6 +159,13 @@ class AnsiblePlugin(plugin.PyangPlugin):
             return  # Stop processing if schema generation/conversion failed.
 
         priority_keys = [
+            # "GENERATOR_VERSION",
+            # "NETWORK_OS",
+            # "RESOURCE",
+            # "XML_NAMESPACE",
+            # "XML_ROOT_KEY",
+            # "XML_ITEMS",
+            # "XML_ITEMS_KEY",
             "xml_namespace",
             "module",
             "short_description",
@@ -171,6 +201,42 @@ def preprocess_string(s):
     return re.sub(r"\s+", " ", s).replace(":", ";")
 
 
+def find_stmt_by_path(module, path):
+    """Finds a statement within the module by its path."""
+    logging.debug(f"Finding statement by path: {path} in module {module.arg}")
+
+    if not path:
+        return None
+
+    spath = path.split("/")
+    if spath[0] == "":
+        spath = spath[1:]  # Handle absolute paths
+
+    children = [
+        child
+        for child in module.i_children
+        if child.keyword in statements.data_definition_keywords
+    ]
+
+    current_node = None
+    for i, segment in enumerate(spath):
+        match = [child for child in children if child.arg == segment]
+        if match:
+            current_node = match[0]
+            if i < len(spath) - 1:
+                children = [
+                    c
+                    for c in current_node.i_children
+                    if c.keyword in statements.data_definition_keywords
+                ]
+        else:
+            logging.warning(f"Path segment not found: {segment} in path {path}")
+            return None
+
+    logging.debug(f"Found statement: {current_node.keyword} {current_node.arg}")
+    return current_node
+
+
 def produce_schema(root_stmt):
     """Produces the intermediate schema representation from the YANG module."""
     logging.debug(f"Producing schema for: {root_stmt.keyword} {root_stmt.arg}")
@@ -191,6 +257,98 @@ def produce_schema(root_stmt):
                 logging.warning(f"Unsupported keyword: {child.keyword} {child.arg}")
         else:
             logging.warning(f"Unexpected keyword: {child.keyword} {child.arg}")
+    return result
+
+
+def convert_schema_to_ansible(schema, xml_namespace, network_os):
+    """Converts the schema to Ansible module documentation format."""
+
+    if not schema:
+        raise error.EmitError(f"Schema is empty: {xml_namespace}")
+
+    resource = None
+    xml_root_key = None
+    xml_items = None
+    xml_items_key = None
+    module_name = None
+    description = None
+    short_description = None
+    author = "Ciena"
+    config = {}
+
+    if len(schema) > 1:
+        resource = xml_namespace.split(":")[-1].split("/")[-1].split("-")[-1]
+        module_name = f"{network_os}_{resource}"
+        config = schema
+    # iterate through key/values in schema
+    if len(schema) == 1:
+        for parent_key, parent_value in schema.items():
+            xml_root_key = parent_key.replace("_", "-")
+            resource = parent_key.replace("_", "-")
+            parent = schema[parent_key]
+            module_name = f"{network_os}_{parent_key}"
+            suboptions = parent.get("suboptions")
+            if len(suboptions) == 1:
+                # This is a single entity yang that can be treated as a root config
+                for child_key, child_value in suboptions.items():
+                    logging.info(f"Processing child: {child_key}")
+                    if isinstance(child_value, dict) and child_value.get("type") == "list":
+                        logging.info(f"Singular list found: {xml_namespace}")
+                        logging.info(f"Singular list found: {child_key}")
+                        config = child_value
+                        short_description = f"Manage {parent_key} {child_key} on Ciena {network_os} devices."
+                        description = f'{parent_value.get("description")}. {child_value.get("description")}'
+                        xml_items = child_key.replace("_", "-")
+                        xml_items_key = child_value['key'].replace("_", "-")
+                    elif isinstance(child_value, dict) and child_value.get("type") == "dict":
+                        logging.info(f"Dictionary found: {xml_namespace}")
+                        logging.info(f"Dictionary found: {child_key}")
+                        config = child_value
+                        short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                        description = parent_value.get("description")
+                    else:
+                        config = suboptions
+                        short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                        description = parent_value.get("description")
+            else:
+                # This is a multi prop yang that needs to be treated each
+                config = suboptions
+                short_description = f"Manage {parent_key} on Ciena {network_os} devices."
+                description = parent_value.get("description")
+
+    result = {
+        "GENERATOR_VERSION": "2.0",
+        "ANSIBLE_METADATA": {
+            "metadata_version": "2.0",
+            "status": ["preview"],
+            "supported_by": "network",
+        },
+        "NETWORK_OS": network_os,
+        "RESOURCE": resource,
+        "COPYRIGHT": "Copyright 2025 Ciena",
+        "XML_NAMESPACE": xml_namespace,
+        "XML_ROOT_KEY": xml_root_key,
+        "XML_ITEMS": xml_items,
+        "XML_ITEMS_KEY": xml_items_key,
+        "DOCUMENTATION": {},
+        "requirements": ["ncclient (>=v0.6.4)"],
+        "notes": [
+            "This module requires the netconf system service be enabled on the remote device being managed.",
+            "This module works with connection C(netconf)",
+        ],
+        "EXAMPLES": ["merged_example_01.txt", "deleted_example_01.txt"],
+    }
+    result["DOCUMENTATION"]["module"] = module_name
+    result["DOCUMENTATION"]["short_description"] = short_description
+    result["DOCUMENTATION"]["description"] = description
+    result["DOCUMENTATION"]["author"] = author
+    result["DOCUMENTATION"]["options"] = dict(config=config)
+    result["DOCUMENTATION"]["options"]["state"] = {
+        "choices": ["merged", "deleted"],
+        "default": "merged",
+        "description": "The state of the configuration after module completion.",
+        "type": "str",
+    }
     return result
 
 
@@ -641,7 +799,7 @@ _other_type_trans_tbl = {
     "instance-identifier": instance_identifier_trans,
     "leafref": leafref_trans,
     "identityref": identityref_trans,
-    "binary": binary_trans,
+    "binary": binary_trans,  # Add this line
 }
 
 
