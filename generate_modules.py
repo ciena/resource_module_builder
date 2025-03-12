@@ -91,11 +91,11 @@ def create_module(
         [
             ("GENERATOR_VERSION", "2.0"),
             ("NETWORK_OS", network_os),
-            ("RESOURCE", module_name),
+            ("RESOURCE", module_name.replace("_", "-")),
             ("XML_NAMESPACE", xml_namespace),
-            ("XML_ROOT_KEY", xml_root_key),
-            ("XML_ITEMS", xml_items),
-            ("XML_ITEMS_KEY", xml_items_key),
+            ("XML_ROOT_KEY", xml_root_key.replace("_", "-")),
+            ("XML_ITEMS", xml_items.replace("_", "-") if xml_items else None),
+            ("XML_ITEMS_KEY", xml_items_key.replace("_", "-") if xml_items_key else None),
             (
                 "ANSIBLE_METADATA",
                 OrderedDict(
