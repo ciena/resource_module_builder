@@ -20,7 +20,9 @@ CustomDumper.add_representer(OrderedDict, represent_ordered_dict)
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 def determine_structure(potential_module):
@@ -63,6 +65,8 @@ def create_module(
             ("RESOURCE", module_name),
             ("XML_NAMESPACE", xml_namespace),
             ("XML_ROOT_KEY", xml_root_key),
+            ("XML_ITEMS", xml_items),
+            ("XML_ITEMS_KEY", xml_items_key),
             (
                 "ANSIBLE_METADATA",
                 OrderedDict(
@@ -121,9 +125,7 @@ def create_module(
             ("EXAMPLES", ["merged_example_01.txt", "deleted_example_01.txt"]),
         ]
     )
-    if structure == "single_list":
-        result["XML_ITEMS"] = xml_items
-        result["XML_ITEMS_KEY"] = xml_items_key
+
     return result
 
 
