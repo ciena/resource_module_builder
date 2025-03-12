@@ -49,19 +49,20 @@ def reorder_required_first(data):
 def determine_structure(potential_module):
     result = "unknown"
     logging.info("Determining structure for module")
-    if "elements" in potential_module:
-        result = "single_list"
-    elif "suboptions" in potential_module:
+    if "suboptions" in potential_module:
         suboptions = potential_module["suboptions"]
         if len(suboptions) == 1:
             property_name, property_value = next(iter(suboptions.items()))
             if property_value["type"] == "list":
                 result = "single_list"
-    elif "type" in potential_module and potential_module["type"] == "dict":
-        result = "single_dict"
+        else:
+            result = "multiple_properties"
     else:
-        result = "unknown"
+        raise ValueError("No suboptions found in potential module")
     logging.info(f"Determined structure: {result}")
+    if result == "unknown":
+        logging.error(f"Determined structure: {result}")
+        exit(1)
     return result
 
 
