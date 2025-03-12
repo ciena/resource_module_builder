@@ -216,7 +216,7 @@ def process_yaml_file(filepath, network_os):
                         module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
                     )
                 logging.info(f"Module written to {output_filepath}")
-            elif structure == "multiple_properties":
+            elif structure == "multiple_properties" or structure == "multiple_list_plus_properties":
                 module = create_module(
                     network_os,
                     module_name,

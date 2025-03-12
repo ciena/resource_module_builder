@@ -1,0 +1,185 @@
+GENERATOR_VERSION: '2.0'
+NETWORK_OS: saos10
+RESOURCE: maintenance-domain
+XML_NAMESPACE: http://metroethernetforum.org/ns/yang/mef-cfm
+XML_ROOT_KEY: maintenance-domain
+XML_ITEMS: maintenance-association
+XML_ITEMS_KEY: id
+ANSIBLE_METADATA:
+  metadata_version: '2.0'
+  status:
+  - preview
+  supported_by: network
+COPYRIGHT: Copyright 2025 Ciena
+DOCUMENTATION:
+  module: saos10_maintenance_domain
+  short_description: A Maintenance Domain managed object is required in order to create an MA with a MAID that includes that Maintenance Domain's
+    Name. From this Maintenance Domain managed object, all Maintenance Association managed objects associated with that Maintenance Domain managed
+    object can be accessed, and thus controlled.Manage the maintenance_domain maintenance_association configuration of a Ciena saos10 device
+  description: "A Maintenance Domain managed object is required in order to create an MA with a MAID that includes that Maintenance Domain's Name.\
+    \ From this Maintenance Domain managed object, all Maintenance Association managed objects associated with that Maintenance Domain managed\
+    \ object can be accessed, and thus controlled.\n This list represents Maintenance Entity Groups (Y.1731) or Maintenance Associations (802.1ag).\
+    \ MEGs/MAs are sets of MEPs, each configured to the same service inside a common OAM domain."
+  author: Ciena
+  options:
+    config:
+      description: This list represents Maintenance Entity Groups (Y.1731) or Maintenance Associations (802.1ag). MEGs/MAs are sets of MEPs, each
+        configured to the same service inside a common OAM domain.
+      type: list
+      elements: dict
+      suboptions:
+        ccm_interval:
+          description: The interval between CCM transmissions to be used by all MEPs in the MA
+          type: str
+          required: true
+          choices:
+          - invalid
+          - 3.3ms
+          - 10ms
+          - 100ms
+          - 1s
+          - 10s
+          - 1min
+          - 10min
+        id:
+          description: 'A unique identifier of a Maintenance Association (Key for list: maintenance-association)'
+          type: str
+          required: true
+        component_list:
+          description: A list of components each of which can be managed in a manner essentially equivalent to an 802.1Q bridge.
+          type: list
+          elements: dict
+          suboptions:
+            component_id:
+              description: 'The bridge component within the system to which the information in this maintenance-association applies (Key for list:
+                component-list)'
+              type: int
+              required: true
+            id_permission:
+              description: This parameter indicates what, if anything, is to be included in the Sender ID TLV transmitted by MPs configured in
+                this MA. A value of 'defer' means that the contents of the Sender ID TLV are determined by the enclosing maintenance-domain instance,
+              type: str
+              required: false
+              choices:
+              - none
+              - chassis
+              - manage
+              - chassis-manage
+              - defer
+            mhf_creation:
+              description: An enumerated value indicating whether the management entity can create MHFs for this MA. A value of 'defer' here means
+                that control of MHF creation is deferred to the corresponding variable in the enclosing maintenance-domain.
+              type: str
+              required: false
+              choices:
+              - none
+              - default
+              - explicit
+              - defer
+            vid:
+              description: The VID(s) monitored by this MA, or 0, if the MA is not attached to any VID. The first VID returned is the MA's Primary
+                VID
+              type: list
+              elements: int
+          key: component-id
+        maintenance_association_end_point:
+          description: The list of Maintenance association End Points in a specific Maintance Association.
+          type: list
+          elements: dict
+          suboptions:
+            administrative_state:
+              description: The administrative state of the MEP
+              type: bool
+              required: true
+            ccm_ltm_priority:
+              description: The priority parameter for CCMs and LTMs transmitted by the MEP.
+              type: int
+              required: true
+            direction:
+              description: A value indicating the direction in which the MEP faces on the interface.
+              type: str
+              required: true
+              choices:
+              - up
+              - down
+            interface:
+              description: An interface, either a Bridge Port or an aggregated IEEE 802.3 port within a Bridge Port, to which the MEP is attached.
+                Each interface in the system is uniquely identified by an interface-name. The structure and content of the name is outside the
+                scope of this specification.
+              type: str
+              required: true
+            mep_identifier:
+              description: 'Integer that is unique among all the MEPs in the same MA. Other definition is; a small integer, unique over a given
+                Maintenance Association, identifying a specific Maintenance association End Point. (Key for list: maintenance-association-end-point)'
+              type: int
+              required: true
+            primary_vid:
+              description: The Primary VID of the MEP. The value 0 indicates that either the Primary VID is that of the MEP's MA or that the MEP's
+                MA is associated with no VID
+              type: int
+              required: true
+            continuity_check:
+              description: Data definitions related to the Continuity Check function.
+              type: dict
+              suboptions:
+                cci_enabled:
+                  description: An indicator of whether the MEP is or is not to generate CCMs
+                  type: bool
+                  required: false
+                fng_alarm_time:
+                  description: The time that defects must be present before a Fault Alarm is issued
+                  type: int
+                  required: false
+                fng_reset_time:
+                  description: The time that defects must be absent before resetting a Fault Alarm
+                  type: int
+                  required: false
+                lowest_fault_priority_defect:
+                  description: The lowest priority defect that is allowed to generate a Fault Alarm. The non-existence of this leaf means that
+                    no defects are to be reported
+                  type: str
+                  required: false
+                  choices:
+                  - remote-rdi
+                  - remote-mac-error
+                  - remote-invalid-ccm
+                  - invalid-ccm
+                  - cross-connect-ccm
+          key: mep-identifier
+        name:
+          description: The value union for the Maintenance Association Name. The type must correspond to the configuration name-type according
+            to the following; - If the name-type is 'primary-vid' then the name must be of type vlan-id-type - If the name-type is 'character-string'
+            then the name must be of type string - If the name-type is 'uint16' then the name must be of type uint16 - If the name-type is 'rfc2685-vpn-id'
+            then the name must be of type binary
+          type: str
+          required: false
+        name_type:
+          description: Name type discriminator for the 'name' leaf.
+          type: str
+          required: false
+          choices:
+          - primary-vid
+          - character-string
+          - uint16
+          - rfc2685-vpn-id
+        remote_meps:
+          description: A list of the MEPIDs of the MEPs in the MA.
+          type: list
+          elements: int
+      key: id
+    state:
+      description:
+      - The state of the configuration
+      type: str
+      choices:
+      - merged
+      - deleted
+      default: merged
+EXAMPLES:
+- merged_example_01.txt
+- deleted_example_01.txt
+notes:
+- This module requires the netconf system service be enabled on the remote device being managed.
+- This module works with connection C(netconf)
+requirements:
+- ncclient (>=v0.6.4)
