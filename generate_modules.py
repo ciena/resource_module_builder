@@ -1,6 +1,8 @@
 #! /bin/python3
+# python3 generate_modules.py --files ciena-flexe.yml ciena-bgp.yml
 import os
 import yaml
+import argparse  # Add argparse for command-line argument parsing
 
 
 def determine_structure(potential_module):
@@ -76,8 +78,17 @@ def process_yaml_file(filepath, network_os):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Generate modules from YAML files.")
+    parser.add_argument(
+        "--files",
+        nargs="+",
+        help="List of YAML files to process",
+        required=True
+    )
+    args = parser.parse_args()
+
     base_dir = "schemas"
-    files_to_process = ["ciena-flexe.yml", "ciena-bgp.yml"]  # Example list of files to process
+    files_to_process = args.files  # Get the list of files to process from command-line arguments
     for network_os in os.listdir(base_dir):
         network_os_dir = os.path.join(base_dir, network_os)
         if os.path.isdir(network_os_dir):
