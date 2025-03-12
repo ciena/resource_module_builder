@@ -3,6 +3,7 @@
 import os
 import yaml
 import argparse
+import logging
 from collections import OrderedDict
 
 
@@ -18,15 +19,23 @@ def represent_ordered_dict(dumper, data):
 CustomDumper.add_representer(OrderedDict, represent_ordered_dict)
 
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 def determine_structure(potential_module):
+    result = "unknown"
+    logging.info("Determining structure for module")
     if "elements" in potential_module:
-        return "single_list"
+        result = "single_list"
     elif "suboptions" in potential_module:
-        return "list_with_properties"
+        result = "list_with_properties"
     elif "type" in potential_module and potential_module["type"] == "dict":
-        return "single_dict"
+        result = "single_dict"
     else:
-        return "unknown"
+        result = "unknown"
+    logging.info(f"Determined structure: {result}")
+    return result
 
 
 def create_module(
@@ -115,6 +124,7 @@ def create_module(
 
 
 def process_yaml_file(filepath, network_os):
+    logging.info(f"Processing file: {filepath}")
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
         if "xml_namespace" not in data:
@@ -147,10 +157,11 @@ def process_yaml_file(filepath, network_os):
                 yaml.dump(
                     module, output_file, Dumper=CustomDumper, default_flow_style=False
                 )
-            print(f"Module written to {output_filepath}")
+            logging.info(f"Module written to {output_filepath}")
 
 
 def main():
+    logging.info("Starting module generation")
     parser = argparse.ArgumentParser(description="Generate modules from YAML files.")
     parser.add_argument(
         "--files", nargs="+", help="List of YAML files to process", required=True
@@ -166,6 +177,7 @@ def main():
                 if filename.endswith(".yml") and filename in files_to_process:
                     filepath = os.path.join(network_os_dir, filename)
                     process_yaml_file(filepath, network_os)
+    logging.info("Module generation completed")
 
 
 if __name__ == "__main__":
