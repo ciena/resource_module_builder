@@ -29,7 +29,11 @@ def determine_structure(potential_module):
     if "elements" in potential_module:
         result = "single_list"
     elif "suboptions" in potential_module:
-        result = "list_with_properties"
+        suboptions = potential_module["suboptions"]
+        if len(suboptions) == 1:
+            property_name, property_value = next(iter(suboptions.items()))
+            if property_value["type"] == "list":
+                result = "single_list"
     elif "type" in potential_module and potential_module["type"] == "dict":
         result = "single_dict"
     else:
@@ -138,8 +142,10 @@ def process_yaml_file(filepath, network_os):
             xml_items = None
             xml_items_key = None
             if structure == "single_list":
-                xml_items = list(potential_module["suboptions"].keys())[0]
-                xml_items_key = potential_module["suboptions"][xml_items]["key"]
+                suboptions = potential_module["suboptions"]
+                property_name, property_value = next(iter(suboptions.items()))
+                xml_items = property_name
+                xml_items_key = property_value["key"]
             module = create_module(
                 network_os,
                 module_name,
