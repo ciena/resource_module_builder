@@ -49,7 +49,6 @@ def reorder_required_first(data):
 def determine_structure(potential_module):
     result = "unknown"
     list_count = 0
-    logging.info("Determining structure for module")
     if "suboptions" not in potential_module:
         raise ValueError("No suboptions found in potential module")
     suboptions = potential_module["suboptions"]
@@ -57,6 +56,8 @@ def determine_structure(potential_module):
         property_name, property_value = next(iter(suboptions.items()))
         if property_value["type"] == "list":
             result = "single_list"
+        else:
+            result = "multiple_properties"
     else:
         for property_name, property_value in suboptions.items():
             if property_value["type"] == "list":
@@ -187,6 +188,7 @@ def process_yaml_file(filepath, network_os):
             )
         xml_namespace = data["xml_namespace"]
         for module_name, potential_module in data["potential_modules"].items():
+            logging.info(f"Determining structure for module {filepath} - {module_name}")
             structure = determine_structure(potential_module)
             xml_root_key = module_name
             xml_items = None
@@ -285,19 +287,31 @@ def main():
     logging.info("Starting module generation")
     parser = argparse.ArgumentParser(description="Generate modules from YAML files.")
     parser.add_argument(
-        "--files", nargs="+", help="List of YAML files to process", required=True
+        "--files", nargs="+", help="List of YAML files to process"
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="Process all YAML files in the directory"
+    )
+    parser.add_argument(
+        "--network_os", help="Specify the network OS to process", required=True
     )
     args = parser.parse_args()
 
     base_dir = "schemas"
-    files_to_process = args.files
-    for network_os in os.listdir(base_dir):
+    files_to_process = args.files if args.files else []
+    network_os = args.network_os
+
+    if args.all:
         network_os_dir = os.path.join(base_dir, network_os)
         if os.path.isdir(network_os_dir):
             for filename in os.listdir(network_os_dir):
-                if filename.endswith(".yml") and filename in files_to_process:
-                    filepath = os.path.join(network_os_dir, filename)
-                    process_yaml_file(filepath, network_os)
+                if filename.endswith(".yml"):
+                    files_to_process.append(filename)
+
+    for filename in files_to_process:
+        filepath = os.path.join(base_dir, network_os, filename)
+        if os.path.isfile(filepath):
+            process_yaml_file(filepath, network_os)
     logging.info("Module generation completed")
 
 

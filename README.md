@@ -51,7 +51,7 @@ To handle each of these cases the following steps are taken:
 
 For all output modules, the following properties are set:
 * XML_NAMESPACE
-* XML_ROOT_GET
+* XML_ROOT_KEY
 
 For a single list module, the module is created with the list as the main resource. The additional properties are set:
 * XML_ITEMS
