@@ -58,6 +58,11 @@ def create_module(
     author = "Ciena"
     config = potential_module.get("suboptions", {})
 
+    if structure == "single_list" and xml_items:
+        instance_description = config[xml_items].get("description", "")
+        short_description += f" {instance_description}"
+        config = config[xml_items]
+
     result = OrderedDict(
         [
             ("GENERATOR_VERSION", "2.0"),
