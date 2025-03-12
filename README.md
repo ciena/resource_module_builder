@@ -49,6 +49,20 @@ To handle each of these cases the following steps are taken:
 4. Create a deleted example file for each module
 5. Create a module for each potential module
 
+For all output modules, the following properties are set:
+* XML_NAMESPACE
+* XML_ROOT_GET
+
+For a single list module, the module is created with the list as the main resource. The additional properties are set:
+* XML_ITEMS
+* XML_ITEMS_KEY
+
+For potential modules structures that contain a list and some properties, the module is created with the list as the main resource. The additional properties are created in a separate module. The separate module is named `{network_os}_{module_name}__properties`.
+
+```bash
+./generate_modules.py
+```
+
 ### Convert Modules to collection code
 
 ```bash
