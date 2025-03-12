@@ -84,26 +84,35 @@ def create_module(
     potential_module,
     xml_items=None,
     xml_items_key=None,
+    is_properties_module=False,
 ):
     short_description = potential_module.get("description", "")
     description = potential_module.get("description", "")
     author = "Ciena"
     config = potential_module.get("suboptions", {})
     config = reorder_required_first(config)
+    resource = module_name.replace("_", "-")
+    xml_root_key = xml_root_key.replace("_", "-")
 
     if structure == "single_list" and xml_items:
         instance_description = config[xml_items].get("description", "")
         short_description += f"Manage the {module_name} {xml_items} configuration of a Ciena {network_os} device"
         config = config[xml_items]
         description = f"{description}\n {instance_description}"
+    elif is_properties_module:
+        short_description += f"Manage the {module_name} properties configuration of a Ciena {network_os} device"
+        if xml_items in config:
+            del config[xml_items]
+        resource = xml_root_key
+        xml_items = None
 
     result = OrderedDict(
         [
             ("GENERATOR_VERSION", "2.0"),
             ("NETWORK_OS", network_os),
-            ("RESOURCE", module_name.replace("_", "-")),
+            ("RESOURCE", resource),
             ("XML_NAMESPACE", xml_namespace),
-            ("XML_ROOT_KEY", xml_root_key.replace("_", "-")),
+            ("XML_ROOT_KEY", xml_root_key),
             ("XML_ITEMS", xml_items.replace("_", "-") if xml_items else None),
             ("XML_ITEMS_KEY", xml_items_key.replace("_", "-") if xml_items_key else None),
             (
@@ -187,24 +196,68 @@ def process_yaml_file(filepath, network_os):
                 property_name, property_value = next(iter(suboptions.items()))
                 xml_items = property_name
                 xml_items_key = property_value["key"]
-            module = create_module(
-                network_os,
-                module_name,
-                structure,
-                xml_namespace,
-                xml_root_key,
-                potential_module,
-                xml_items,
-                xml_items_key,
-            )
-            output_dir = os.path.join("models", network_os, xml_root_key)
-            os.makedirs(output_dir, exist_ok=True)
-            output_filepath = os.path.join(output_dir, "model.yml")
-            with open(output_filepath, "w") as output_file:
-                yaml.dump(
-                    module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                module = create_module(
+                    network_os,
+                    module_name,
+                    structure,
+                    xml_namespace,
+                    xml_root_key,
+                    potential_module,
+                    xml_items,
+                    xml_items_key,
                 )
-            logging.info(f"Module written to {output_filepath}")
+                output_dir = os.path.join("models", network_os, xml_root_key)
+                os.makedirs(output_dir, exist_ok=True)
+                output_filepath = os.path.join(output_dir, "model.yml")
+                with open(output_filepath, "w") as output_file:
+                    yaml.dump(
+                        module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                    )
+                logging.info(f"Module written to {output_filepath}")
+            elif structure == "single_list_plus_properties":
+                suboptions = potential_module["suboptions"]
+                property_name, property_value = next(iter(suboptions.items()))
+                xml_items = property_name
+                xml_items_key = property_value["key"]
+                # Create single_list module
+                single_list_module = create_module(
+                    network_os,
+                    module_name,
+                    "single_list",
+                    xml_namespace,
+                    xml_root_key,
+                    potential_module,
+                    xml_items,
+                    xml_items_key,
+                )
+                output_dir = os.path.join("models", network_os, xml_root_key)
+                os.makedirs(output_dir, exist_ok=True)
+                output_filepath = os.path.join(output_dir, "model.yml")
+                with open(output_filepath, "w") as output_file:
+                    yaml.dump(
+                        single_list_module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                    )
+                logging.info(f"Single list module written to {output_filepath}")
+                # Create properties module
+                properties_module_name = f"{module_name}__properties"
+                properties_module = create_module(
+                    network_os,
+                    properties_module_name,
+                    "multiple_properties",
+                    xml_namespace,
+                    xml_root_key,
+                    potential_module,
+                    xml_items=xml_items,
+                    is_properties_module=True,
+                )
+                properties_output_dir = os.path.join("models", network_os, properties_module_name)
+                os.makedirs(properties_output_dir, exist_ok=True)
+                properties_output_filepath = os.path.join(properties_output_dir, "model.yml")
+                with open(properties_output_filepath, "w") as output_file:
+                    yaml.dump(
+                        properties_module, output_file, Dumper=CustomDumper, default_flow_style=False, width=140, allow_unicode=True
+                    )
+                logging.info(f"Properties module written to {properties_output_filepath}")
 
 
 def main():
