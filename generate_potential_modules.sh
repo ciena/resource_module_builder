@@ -30,7 +30,7 @@ saos10_yangs=(
   ciena-sync
   ietf-snmp
   ietf-twamp
-  mef-cfm                # multiple
+  # mef-cfm                # multiple
 )
 network_os=saos10
 for yang in ${saos10_yangs[@]}; do
