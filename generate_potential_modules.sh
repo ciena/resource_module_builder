@@ -6,10 +6,12 @@ saos10_yangs=(
   ciena-bgp
   ciena-cfm
   ciena-dhcpv6-client
+  ciena-evpn
   ciena-flexe            # multiple lists
   ciena-igmp-snooping
   ciena-isis
   ciena-itut-g8032-draft # 1 list + props
+  ciena-l2vpn
   ciena-ldp
   ciena-mef-access-flow  # multiple
   ciena-mef-classifier
@@ -17,20 +19,25 @@ saos10_yangs=(
   ciena-mef-fp
   ciena-mef-logical-port
   ciena-mpls
-  # ciena-openconfig-system
+  # ciena-openconfig-interfaces  # Empty
   ciena-ospf
   ciena-ospfv3
   ciena-packet-otn-port
   ciena-packet-ptp
   ciena-packet-xcvr
+  ciena-platform
   ciena-rib
   ciena-routing-policy
   ciena-sat
+  ciena-sr
   ciena-sr-policy
   ciena-sync
+  # ciena-system          # Empty
+  # ciena-vrf             # Not Handled yet. Top level list
   ietf-snmp
   ietf-twamp
-  # mef-cfm                # multiple
+  # mef-cfm               # Not Handled yet. Top level list
+  openconfig-system
 )
 network_os=saos10
 for yang in ${saos10_yangs[@]}; do
