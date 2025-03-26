@@ -1,5 +1,5 @@
 #!/bin/bash
-export PYANG_PLUGINPATH=/home/jgroom/src/resource_module_builder/pyang-plugin
+export PYANG_PLUGINPATH=./pyang-plugin
 
 # Function to display help
 show_help() {
@@ -15,7 +15,7 @@ show_help() {
 # Function to check if a YANG file contains useful definitions
 contains_useful_definitions() {
   local yang_file=$1
-  if pyang -f tree -p yangs/$network_os "$yang_file" | grep -q -E 'container|list|leaf|leaf-list'; then
+  if pyang -f tree --lax-quote-checks -p yangs/$network_os "$yang_file" | grep -q -E '\-\-rw'; then
     return 0
   else
     return 1
