@@ -1,4 +1,4 @@
-#! /bin/python3
+#!/bin/python3
 import os
 import yaml
 import argparse
@@ -58,16 +58,16 @@ def create_module(
             ("description", list_config.get("description", "")),
             ("type", "list"),
             ("elements", "dict"),
-            ("key", list_config.get("key", "")),  # Preserve the key field
+            ("key", list_config.get("key", "")), 
             ("suboptions", reorder_required_first(list_config.get("suboptions", {})))
         ])
         instance_description = list_config.get("description", "")
-        short_description += f"Manage the {resource.replace('-',"_")} {xml_items} configuration of a Ciena {network_os} device"
+        short_description += f"Manage the {resource.replace('-', '_')} {xml_items} configuration of a Ciena {network_os} device"
         description = f"{description}\n {instance_description}"
     else:
         # Properties module
         config = reorder_required_first(config)
-        short_description += f"Manage the {resource.replace('-',"_")} configuration of a Ciena {network_os} device"
+        short_description += f"Manage the {resource.replace('-', '_')} configuration of a Ciena {network_os} device"
 
     result = OrderedDict(
         [
@@ -117,14 +117,12 @@ def process_yaml_file(filepath, network_os):
             raise ValueError(f"Skipping {filepath} as it does not contain 'xml_namespace'")
 
         xml_namespace = data["xml_namespace"]
-        # Extract schema name from the filename (without extension)
         schema_name = os.path.splitext(os.path.basename(filepath))[0]
 
         for module_name, potential_module in data["potential_modules"].items():
             if "suboptions" not in potential_module:
                 raise ValueError(f"No suboptions found in module {module_name}")
             if potential_module["type"] == "list":
-                logging.info(f"Creating list module for {module_name}")
                 raise ValueError(f"Not implemented. Top level list: {module_name}")
             else:
                 suboptions = potential_module["suboptions"]
@@ -162,7 +160,6 @@ def process_yaml_file(filepath, network_os):
                     ("type", "dict"),
                     ("suboptions", non_list_props)
                 ])
-                # Check if there are only non-list items
                 if len(non_list_props) == len(suboptions):
                     logging.info(f"Creating properties module for {module_name}")
                     resource = module_name.replace("_", "-")
