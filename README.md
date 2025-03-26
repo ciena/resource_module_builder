@@ -21,6 +21,13 @@ pip install git+https://github.com/ansible-network/collection_prep.git
 ansible-playbook yang_get.yml
 ```
 
+### Check which might be useful to generate potentials
+
+```bash
+generate_yang_list.sh saos10
+generate_yang_list.sh waveserver5
+```
+
 ### Convert YANGs to Module Potentials
 
 1. Convert the yangs to a module format. This will create a yml file for each yang.
