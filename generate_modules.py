@@ -112,7 +112,7 @@ def create_module(
             ])),
             ("COPYRIGHT", "Copyright 2025 Ciena"),
             ("DOCUMENTATION", OrderedDict([
-                ("module", f"{network_os}_{module_name}"),
+                ("module", f"{network_os}_{resource}"),
                 ("short_description", short_description),
                 ("description", description),
                 ("author", author),
