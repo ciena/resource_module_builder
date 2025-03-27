@@ -136,7 +136,7 @@ def create_module(
     )
     return result
 
-def process_yaml_file(filepath, network_os):
+def process_yaml_file(filepath, network_os, prune_path, prune_resource_name):
     logging.info(f"Processing file: {filepath}")
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
@@ -160,14 +160,14 @@ def process_yaml_file(filepath, network_os):
                 if property_value.get("type") == "list":
                     xml_items = property_name
                     xml_items_key = property_value.get("key")
-                    resource = module_name.replace("_", "-")
+                    resource = module_name.replace("_", "-").replace(prune_resource_name, "")
 
                     module = create_module(
                         network_os, module_name, resource, xml_namespace, xml_root_key,
                         potential_module, xml_items, xml_items_key
                     )
 
-                    output_dir = os.path.join("models", network_os, schema_name, xml_root_key)
+                    output_dir = os.path.join("models", network_os, schema_name, xml_root_key.replace(prune_path, ""))
                     os.makedirs(output_dir, exist_ok=True)
 
                     # Write model.yml
@@ -191,11 +191,11 @@ def process_yaml_file(filepath, network_os):
                 ])
                 if len(non_list_props) == len(suboptions):
                     logging.info(f"Creating properties module for {module_name}")
-                    resource = module_name.replace("_", "-")
+                    resource = module_name.replace("_", "-").replace(prune_resource_name, "")
                     properties_module_name = module_name
                 else:
                     logging.info(f"Creating properties module as __properties for {module_name}")
-                    resource = module_name.replace("_", "-")
+                    resource = module_name.replace("_", "-").replace(prune_resource_name, "")
                     module_name = f"{module_name}__properties"
                     properties_module_name = module_name
 
@@ -204,7 +204,7 @@ def process_yaml_file(filepath, network_os):
                     properties_config, is_properties_module=True
                 )
 
-                output_dir = os.path.join("models", network_os, schema_name, properties_module_name)
+                output_dir = os.path.join("models", network_os, schema_name, properties_module_name.replace(prune_path, ""))
                 os.makedirs(output_dir, exist_ok=True)
 
                 # Write model.yml
@@ -220,12 +220,17 @@ def process_yaml_file(filepath, network_os):
 def main():
     parser = argparse.ArgumentParser(description="Generate modules from YAML files.")
     parser.add_argument("--files", nargs="+", help="List of YAML files to process")
+    parser.add_argument("--prune_path", help="Prune this text from the path while creating directories")
+    parser.add_argument("--prune_resource_name", help="Prune this text from the resource name while creating models")
     parser.add_argument("--all", action="store_true", help="Process all YAML files in the directory")
     parser.add_argument("--network_os", help="Specify the network OS to process", required=True)
     args = parser.parse_args()
 
     base_dir = "schemas"
     files_to_process = args.files if args.files else []
+    prune_path = args.prune_path if args.prune_path else ""
+    prune_resource_name = args.prune_resource_name if args.prune_resource_name else ""
+    logging.info(f"Pruning path: {prune_path}")
     network_os = args.network_os
 
     if args.all:
@@ -236,7 +241,7 @@ def main():
     for filename in files_to_process:
         filepath = os.path.join(base_dir, network_os, filename)
         if os.path.isfile(filepath):
-            process_yaml_file(filepath, network_os)
+            process_yaml_file(filepath, network_os, prune_path, prune_resource_name)
     logging.info("Module generation completed")
 
 if __name__ == "__main__":
