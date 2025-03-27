@@ -67,7 +67,7 @@ For a single list module, the module is created with the list as the main resour
 For potential modules structures that contain a list and some properties, the module is created with the list as the main resource. The additional properties are created in a separate module. The separate module is named `{network_os}_{module_name}__properties`.
 
 ```bash
-./generate_modules.py
+./generate_modules.py --network_os saos10 --all
 ```
 
 ### Convert Modules to collection code
