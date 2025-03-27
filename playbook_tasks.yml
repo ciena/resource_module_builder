@@ -7,7 +7,7 @@
     rm_dest: build/{{ product }}
     collection_org: ciena
     collection_name: '{{ product }}'
-    model: models/{{ product }}/{{ item }}/model.yml
+    model: models/{{ product }}/{{ item.directory }}/{{ item.resource }}/model.yml
     transport: netconf
 - name: Generation
   ansible.builtin.include_role:
@@ -16,14 +16,14 @@
     structure: collection
     rm_dest: build/{{ product }}
     collection_org: ciena
-    collection_name: '{{ product }}'
-    model: models/{{ product }}/{{ item }}/model.yml
+    collection_name: '{{ item.resource }}'
+    model: models/{{ product }}/{{ item.directory }}/{{ item.resource }}/model.yml
     transport: netconf
 - name: Copy modules
   block:
     - name: Copy modules
       ansible.builtin.copy:
-        src: build/{{ product }}/plugins/modules/{{ product }}_{{ item }}.py
+        src: build/{{ product }}/plugins/modules/{{ product }}_{{ item.resource }}.py
         dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/modules/{{ product }}_{{ item | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
@@ -32,7 +32,7 @@
         state: directory
     - name: Copy config
       ansible.builtin.copy:
-        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item }}/{{ item }}.py
+        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item.resource }}/{{ item.resource }}.py
         dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
@@ -41,7 +41,7 @@
         state: directory
     - name: Copy argspec
       ansible.builtin.copy:
-        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item }}/{{ item }}.py
+        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item.resource }}/{{ item.resource }}.py
         dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
@@ -50,7 +50,7 @@
         state: directory
     - name: Copy facts gather
       ansible.builtin.copy:
-        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item }}/{{ item }}.py
+        src: build/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item.resource }}/{{ item.resource }}.py
         dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
         mode: 0755
     - ansible.builtin.set_fact:
