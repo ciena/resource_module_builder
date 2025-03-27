@@ -61,75 +61,6 @@ def get_example_value(prop_name, prop_config):
         return ["sample_item"]
     return f"sample_{prop_name}"
 
-def generate_example_content(module_name, config, network_os, is_list_module=False):
-    """Generate content for merged and deleted example files"""
-    logging.debug(f"Starting example generation for {module_name}, is_list_module={is_list_module}")
-    merged_content = f"# Using merged\n\n- name: Configure {module_name}\n  ciena.{network_os}.{network_os}_{module_name}:\n    config:\n"
-    deleted_content = f"# Using deleted\n\n- name: Delete {module_name}\n  ciena.{network_os}.{network_os}_{module_name}:\n    config:\n"
-
-    suboptions = config.get("suboptions", {})
-    logging.debug(f"Available suboptions: {list(suboptions.keys())}")
-
-    if is_list_module:
-        key_field = config.get("key", "name")
-        logging.debug(f"Using key field: {key_field}")
-
-        # Merged example with two entries
-        for key_value in ["untagged", "foo-100"]:
-            logging.debug(f"Building entry with {key_field}={key_value}")
-            merged_content += f"      - {key_field}: {key_value}\n"
-            additional_prop_added = False
-            for prop_name, prop_config in suboptions.items():
-                if prop_name != key_field:  # Explicitly exclude the key field
-                    logging.debug(f"Considering additional property: {prop_name}")
-                    value = get_example_value(prop_name, prop_config)
-                    if isinstance(value, list):
-                        merged_content += f"        {prop_name}:\n"
-                        for item in value:
-                            for k, v in item.items():
-                                merged_content += f"          - {k}: {v}\n"
-                                logging.debug(f"Added list item {prop_name}.{k}: {v}")
-                    else:
-                        merged_content += f"        {prop_name}: {value}\n"
-                        logging.debug(f"Added property {prop_name}: {value}")
-                    additional_prop_added = True
-                    break  # Only add one additional property
-            if not additional_prop_added:
-                logging.debug("No additional properties added for this entry")
-
-        # Deleted example - just needs the key
-        deleted_content += f"      - {key_field}: untagged\n"
-        logging.debug("Added deleted example with key only")
-
-    else:
-        # For dict/properties modules
-        logging.debug("Processing as properties module")
-        if suboptions:
-            prop_added = False
-            for prop_name, prop_config in suboptions.items():
-                if prop_config.get("required") or not prop_added:
-                    logging.debug(f"Adding property: {prop_name}")
-                    value = get_example_value(prop_name, prop_config)
-                    if isinstance(value, list):
-                        merged_content += f"      {prop_name}:\n"
-                        deleted_content += f"      {prop_name}:\n"
-                        for item in value:
-                            for k, v in item.items():
-                                merged_content += f"        - {k}: {v}\n"
-                                deleted_content += f"        - {k}: {v}\n"
-                                logging.debug(f"Added list item {prop_name}.{k}: {v}")
-                    else:
-                        merged_content += f"      {prop_name}: {value}\n"
-                        deleted_content += f"      {prop_name}: {value}\n"
-                        logging.debug(f"Added property {prop_name}: {value}")
-                    prop_added = True
-
-    merged_content += "    state: merged\n"
-    deleted_content += "    state: deleted\n"
-
-    logging.debug(f"Generated merged content:\n{merged_content}")
-    logging.debug(f"Generated deleted content:\n{deleted_content}")
-    return merged_content, deleted_content
 
 def create_module(
     network_os,
@@ -248,17 +179,6 @@ def process_yaml_file(filepath, network_os):
                         )
                     logging.info(f"List module written to {output_filepath}")
 
-                    # Generate and write example files
-                    merged_content, deleted_content = generate_example_content(
-                        module_name, module["DOCUMENTATION"]["options"]["config"],
-                        network_os, is_list_module=True
-                    )
-                    with open(os.path.join(output_dir, "merged_example_01.txt"), "w") as f:
-                        f.write(merged_content)
-                    with open(os.path.join(output_dir, "deleted_example_01.txt"), "w") as f:
-                        f.write(deleted_content)
-                    logging.info(f"Example files written to {output_dir}")
-
             # Create properties module if there are non-list properties
             non_list_props = OrderedDict(
                 (k, v) for k, v in suboptions.items() if v.get("type") != "list"
@@ -296,16 +216,6 @@ def process_yaml_file(filepath, network_os):
                     )
                 logging.info(f"Properties module written to {output_filepath}")
 
-                # Generate and write example files
-                merged_content, deleted_content = generate_example_content(
-                    module_name, module["DOCUMENTATION"]["options"]["config"],
-                    network_os, is_list_module=False
-                )
-                with open(os.path.join(output_dir, "merged_example_01.txt"), "w") as f:
-                    f.write(merged_content)
-                with open(os.path.join(output_dir, "deleted_example_01.txt"), "w") as f:
-                    f.write(deleted_content)
-                logging.info(f"Example files written to {output_dir}")
 
 def main():
     parser = argparse.ArgumentParser(description="Generate modules from YAML files.")
