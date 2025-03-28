@@ -68,12 +68,16 @@ For potential modules structures that contain a list and some properties, the mo
 
 ```bash
 ./generate_modules.py --network_os saos10 --all
+./generate_modules.py --network_os waveserverai --all --prune_path "waveserver_" --prune_resource_name "waveserver-"
 ```
 
 ### Convert Modules to collection code
 
 ```bash
 # Generate the module code
+ansible-playbook generate_waveserverai.yml
+
+
 ansible-playbook generate_saos10.yml
 ansible-playbook generate_waveserver5.yml
 ```
