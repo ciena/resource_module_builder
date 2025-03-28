@@ -24,37 +24,37 @@
     - name: Copy modules
       ansible.builtin.copy:
         src: build/{{ product }}/plugins/modules/{{ product }}_{{ item.resource }}.py
-        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/modules/{{ product }}_{{ item | replace('-', '_') }}.py"
+        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/modules/{{ product }}_{{ item.resource | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
       ansible.builtin.file:
-        path: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item | replace('-', '_') }}"
+        path: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item.resource | replace('-', '_') }}"
         state: directory
     - name: Copy config
       ansible.builtin.copy:
         src: build/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item.resource }}/{{ item.resource }}.py
-        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
+        dest: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/config/{{ item.resource | replace('-', '_') }}/{{ item.resource | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
       ansible.builtin.file:
-        path: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item | replace('-', '_') }}"
+        path: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item.resource | replace('-', '_') }}"
         state: directory
     - name: Copy argspec
       ansible.builtin.copy:
         src: build/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item.resource }}/{{ item.resource }}.py
-        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
+        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/argspec/{{ item.resource | replace('-', '_') }}/{{ item.resource | replace('-', '_') }}.py"
         mode: 0755
     - name: Creates directory
       ansible.builtin.file:
-        path: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item | replace('-', '_') }}"
+        path: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item.resource | replace('-', '_') }}"
         state: directory
     - name: Copy facts gather
       ansible.builtin.copy:
         src: build/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item.resource }}/{{ item.resource }}.py
-        dest: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item | replace('-', '_') }}/{{ item | replace('-', '_') }}.py"
+        dest: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/{{ item.resource | replace('-', '_') }}/{{ item.resource | replace('-', '_') }}.py"
         mode: 0755
     - ansible.builtin.set_fact:
-        line_match: "from ansible_collections.ciena.{{ product }}.plugins.module_utils.network.{{ product }}.facts.{{ item | replace('-', '_') }}.{{ item | replace('-', '_') }} import \\("
+        line_match: "from ansible_collections.ciena.{{ product }}.plugins.module_utils.network.{{ product }}.facts.{{ item.resource | replace('-', '_') }}.{{ item.resource | replace('-', '_') }} import \\("
     - name: Read and check for line
       ansible.builtin.slurp:
         src: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/facts.py"
@@ -65,16 +65,16 @@
       ansible.builtin.lineinfile:
         path: "{{ ansible_collection_root }}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/facts.py"
         insertbefore: 'FACT_LEGACY_SUBSETS = dict'
-        regexp: "^from ansible_collections\\.ciena\\.{{ product }}\\.plugins\\.module_utils\\.network\\.{{ product }}\\.facts\\.{{ item | replace('-', '_') }}\\.{{ item | replace('-', '_') }} import \\(\\n.*{{ item | title | replace('-','') }}Facts,"
-        line: "from ansible_collections.ciena.{{ product }}.plugins.module_utils.network.{{ product }}.facts.{{ item | replace('-', '_') }}.{{ item | replace('-', '_') }} import ( {{ item | title | replace('-','') }}Facts, )"
+        regexp: "^from ansible_collections\\.ciena\\.{{ product }}\\.plugins\\.module_utils\\.network\\.{{ product }}\\.facts\\.{{ item.resource | replace('-', '_') }}\\.{{ item.resource | replace('-', '_') }} import \\(\\n.*{{ item.resource | title | replace('-','') }}Facts,"
+        line: "from ansible_collections.ciena.{{ product }}.plugins.module_utils.network.{{ product }}.facts.{{ item.resource | replace('-', '_') }}.{{ item.resource | replace('-', '_') }} import ( {{ item.resource | title | replace('-','') }}Facts, )"
         state: present
       when: not line_exists
     - name: Ensure assignment line exists in facts file
       ansible.builtin.lineinfile:
         path: "{{ansible_collection_root}}/ciena/{{ product }}/plugins/module_utils/network/{{ product }}/facts/facts.py"
         insertafter: 'FACT_RESOURCE_SUBSETS = dict\('
-        regexp: "^\\s*{{ item | replace('-','_') }}={{ item|title | replace('-','') }}Facts,$"
-        line: '    {{ item | replace("-","_") }}={{ item | title | replace("-","") }}Facts,'
+        regexp: "^\\s*{{ item.resource | replace('-','_') }}={{ item.resource |title | replace('-','') }}Facts,$"
+        line: '    {{ item.resource | replace("-","_") }}={{ item.resource | title | replace("-","") }}Facts,'
         state: present
     - name: Run black
       ansible.builtin.command: black . -l 120
