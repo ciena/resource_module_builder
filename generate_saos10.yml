@@ -2,33 +2,56 @@
 - name: Generate SAOS10 module
   hosts: localhost
   vars:
+    product: saos10
     ansible_collection_root: /home/{{ansible_user_id}}/src/ansible_collections
-    saos10:
-      modules:
+    modules:
+      - directory: ciena-mef-classifier
+        resource: classifiers
+      - directory: ciena-mef-fd
+        resource: fds
+      - directory: ciena-mef-fp
+        resource: fps
+      - directory: ciena-bgp
+        resource: bgp
+      - directory: ciena-mef-logical-port
+        resource: logical_ports
+      - directory: ciena-isis
+        resource: isis
+
+      # - directory: ciena-ldp
+      #   resource: ldp
+      # - directory: ciena-mpls
+      #   resource: mpls
+      # - directory: ciena-packet-xcvr
+      #   resource: xcvrs
+      # - directory: ciena-packet-ptp
+      #   resource: ptps
+    overwrite: true
         # - classifiers
         # - fds
         # - fps
         # - bgp
-        - logical-ports
+        # - logical-ports
         # - isis
         # - ldp
-        - mpls
-        - ospf
-        - ospfv3
-        - otn-ports
+        # - mpls
+        # - ospf
+        # - ospfv3
+        # - otn-ports
         # - routing-policy
-        - rib
-        - xcvrs
-        - system
-        - ptps
-        - flexe
-        - g8032-rings
-        - otn-ports
-        - segment-routing-traffic-engineering
-    overwrite: true
+        # - rib
+        # - xcvrs
+        # - system
+        # - ptps
+        # - flexe
+        # - g8032-rings
+        # - otn-ports
+        # - segment-routing-traffic-engineering
   tasks:
+    - name: Remove directory
+      ansible.builtin.file:
+        path: build/{{ product }}
+        state: absent
     - name: Run execution
       ansible.builtin.include_tasks: playbook_tasks.yml
-      vars:
-        product: saos10
-      with_items: "{{ saos10.modules }}"
+      with_items: "{{ modules }}"
